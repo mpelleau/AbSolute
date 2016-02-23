@@ -1,0 +1,10 @@
+ADCP.cmo: /usr/local/lib/polka.cmi /usr/local/lib/oct.cmi \
+    /usr/local/lib/mpqf.cmi /usr/local/lib/mpfrf.cmi /usr/local/lib/mpfr.cmi \
+    /usr/local/lib/box.cmi
+ADCP.cmx: /usr/local/lib/polka.cmx /usr/local/lib/oct.cmi \
+    /usr/local/lib/mpqf.cmx /usr/local/lib/mpfrf.cmx /usr/local/lib/mpfr.cmx \
+    /usr/local/lib/box.cmx
+minimizer.cmo: /usr/local/lib/mpqf.cmi /usr/local/lib/mpfrf.cmi \
+    /usr/local/lib/mpfr.cmi ADCP.cmx
+minimizer.cmx: /usr/local/lib/mpqf.cmx /usr/local/lib/mpfrf.cmx \
+    /usr/local/lib/mpfr.cmx ADCP.cmx
