@@ -4,12 +4,12 @@ OCAMLOPT =  ocamlopt.opt
 OCAMLDEP =  ocamldep
 
 # libraries
-# APRONDIR = $(HOME)/lib
-APRONDIR = /usr/local/lib
-GMPDIR = /usr/lib
+OPAMDIR = $(HOME)/.opam/4.02.3/lib
+APRONDIR = $(OPAMDIR)/apron
+GMPDIR = $(OPAMDIR)/gmp
 OCAMLINC = -I $(APRONDIR) -I $(GMPDIR)
-OCAMLLIBS = bigarray.cma gmp.cma apron.cma polkaMPQ.cma octD.cma boxMPQ.cma ppl.cma str.cma unix.cma -cclib "-L$(APRONDIR) -L$(GMPDIR)"
-OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa octD.cmxa boxMPQ.cmxa ppl.cmxa str.cmxa unix.cmxa -cclib "-L$(APRONDIR) -L$(GMPDIR)"
+OCAMLLIBS = bigarray.cma gmp.cma apron.cma polkaMPQ.cma octD.cma boxMPQ.cma str.cma unix.cma -cclib "-L$(APRONDIR) -L$(GMPDIR)"
+OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa octD.cmxa boxMPQ.cmxa str.cmxa unix.cmxa -cclib "-L$(APRONDIR) -L$(GMPDIR)"
 CLIBS = -lgmp
 
 # targets
