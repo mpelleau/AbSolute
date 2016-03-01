@@ -119,16 +119,15 @@ module Minimize(Abs : AbstractCP) =
         )
       else
         printf "No Solutions - #created nodes: 0@."
+
+    let minimizing problem = 
+      let (env, domains, andor, constraints, objective) = problem in
+      minimizing env domains constraints objective
+
   end
 
+    
+module OctBox = Minimize(OctBoxCP)
+module OctMinMax = Minimize(OctMinMaxCP)
+module OctMinMin = Minimize(OctMinMinCP)
 
-let main =
-  let (env, domains, andor, constraints, objective) = Problems.test in
-  let module MinimizerBox = Minimize(BoxCP) in
-  MinimizerBox.minimizing env domains constraints objective;
-  let module MinimizerOctBox = Minimize(OctBoxCP) in
-  MinimizerOctBox.minimizing env domains constraints objective;
-  let module MinimizerOctMinMax = Minimize(OctMinMaxCP) in
-  MinimizerOctMinMax.minimizing env domains constraints objective;
-  let module MinimizerOctMinMin = Minimize(OctMinMinCP) in
-  MinimizerOctMinMin.minimizing env domains constraints objective

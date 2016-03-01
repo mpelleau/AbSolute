@@ -72,6 +72,6 @@ module Solve(Abs : AbstractCP) =
       solving env domains constraints
   end
 
-module SolverBox = Solve(BoxCP)
-module SolverOct = Solve(OctMinMinCP)
-module SolverPoly = Solve(PolyCP)
+module Box = Solve(BoxCP)
+module Oct = Solve(OctMinMinCP)
+module Poly = Solve(PolyCP)
