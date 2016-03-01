@@ -66,29 +66,12 @@ module Solve(Abs : AbstractCP) =
         | _ -> printf "#solutions: %d - #created nodes: %d@." nb_sol nb_steps
       else
         printf "No Solutions - #created nodes: 0@."
+
+    let solving solving_problem =
+      let (env, domains, _, constraints) = solving_problem in
+      solving env domains constraints
   end
 
-
-
-
-
-
-let main =
-  (*let x = Var.of_string "x" in
-  let y = Var.of_string "y" in
-  let env = Environment.make [|x|] [|y|] in
-  let domains = Parser.lincons1_of_lstring env ["x>=-5"; "x<=5"; "y>=-5"; "y<=5"] in
-  (*let tab = ["x^2+y^2=4"; "(x-2)^2+(y+1)^2=1"] in*)
-  let tab = ["y-x^2=0"; "y+x^2=2"] in
-  let constraints = Parser.tcons1_of_lstring env tab in*)
-
-  let (env, domains, andor, constraints) = Problems.gear4 in
-
-  let module SolverBox = Solve(BoxCP) in
-  SolverBox.solving env domains constraints;
-
-  let module SolverOct = Solve(OctMinMinCP) in
-  SolverOct.solving env domains constraints;
-
-  let module SolverPoly = Solve(PolyCP) in
-  SolverPoly.solving env domains constraints;
+module SolverBox = Solve(BoxCP)
+module SolverOct = Solve(OctMinMinCP)
+module SolverPoly = Solve(PolyCP)
