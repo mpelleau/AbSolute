@@ -16,7 +16,7 @@ CLIBS = -lgmp
 TARGETS = minimizer.opt
 
 # source files
-MLFILES = ADCP.ml minimizer.ml
+MLFILES = utils.ml ADCP.ml minimizer.ml
 # MLIFILES = ADCP.mli
 
 # object files

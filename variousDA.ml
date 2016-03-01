@@ -1,44 +1,17 @@
-
 (** 
  * This is an implementation of a CP solver using APRON.
  *)
 
-open Apron;;
-open Mpqf;;
-open Format;;
+open Apron
+open Mpqf
+open Format
+open Utils
 
-let split_prec = 0.001;;
-let split_prec_mpqf = Mpqf.of_float split_prec;;
-
-let print_array = Abstract0.print_array;;
-let lincons1_array_print fmt x =
-  Lincons1.array_print fmt x
-;;
-let generator1_array_print fmt x =
-  Generator1.array_print fmt x
-;;
+let split_prec = 0.001
+let split_prec_mpqf = Mpqf.of_float split_prec
 
 
-(******************************************************************)
-(***************** Different conversion operators *****************)
-(******************************************************************)
 
-let scalar_to_mpqf = function
-  | Scalar.Mpqf x -> x
-  | Scalar.Float x -> Mpqf.of_float x
-  | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
-;;
-
-let scalar_to_float = function
-  | Scalar.Mpqf x -> Mpqf.to_float x
-  | Scalar.Float x -> x
-  | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
-;;
-
-let coeff_to_float = function
-  | Coeff.Scalar x -> scalar_to_float x
-  | Coeff.Interval i -> scalar_to_float i.Interval.inf
-;;
 
 (** Converts a linear expression into its negation
  * ex: converts 3x-y into -3x+y
@@ -50,7 +23,7 @@ let linexpr_neg linexpr env =
   Linexpr1.iter (fun c -> fun v -> list := List.append !list [(Coeff.neg c, v)]) linexpr;
   Linexpr1.set_list linexpr' !list (Some (Coeff.neg cst));
   linexpr'
-;;
+
 
 (** Converts a Generator0 into an array of floats. *)
 let to_float_array gen size =
@@ -61,7 +34,7 @@ let to_float_array gen size =
     tab.(i) <- coeff_to_float coeff
   done;
   tab
-;;
+
 
 (** Converts a Generator1 into an array of array of floats. *)
 let gen_to_array gens size =
@@ -71,7 +44,7 @@ let gen_to_array gens size =
     tab.(i) <- to_float_array gen_tab.(i) size
   done;
   tab
-;;
+
 
 (** Converts a polyhedron into an octagon. *)
 let poly_to_oct manpoly poly manoct oct_env =
@@ -81,7 +54,7 @@ let poly_to_oct manpoly poly manoct oct_env =
   let oct0 = Oct.of_generator_array manoct dim.Dim.intd dim.Dim.reald gens.Generator1.generator0_array in
   let oct = {Abstract1.abstract0 = oct0; Abstract1.env = oct_env} in
   oct
-;;
+
 
 (** Converts an octagon into a polyhedron. *)
 let oct_to_poly manoct oct manpoly poly_env =
@@ -89,7 +62,7 @@ let oct_to_poly manoct oct manpoly poly_env =
   let cons = Abstract1.to_lincons_array manoct oct' in
   let poly = Abstract1.of_lincons_array manpoly poly_env cons in
   poly
-;;
+
 
 (** Converts a polyhedron into a box. *)
 let poly_to_box manpoly poly manbox box_env =
@@ -99,7 +72,7 @@ let poly_to_box manpoly poly manbox box_env =
   let tvars = Array.append ivars rvars in
   let box = Abstract1.of_box manbox box_env tvars bounds.Abstract1.interval_array in
   box
-;;
+
 
 (** Converts a box into a polyhedron. *)
 let box_to_poly manbox box manpoly poly_env =
@@ -107,7 +80,7 @@ let box_to_poly manbox box manpoly poly_env =
   let cons = Abstract1.to_lincons_array manbox box' in
   let poly = Abstract1.of_lincons_array manpoly poly_env cons in
   poly
-;;
+
 
 (** Converts an octagon into a box. *)
 let oct_to_box manoct oct manbox box_env =
@@ -117,7 +90,7 @@ let oct_to_box manoct oct manbox box_env =
   let tvars = Array.append ivars rvars in
   let box = Abstract1.of_box manbox box_env tvars bounds.Abstract1.interval_array in
   box
-;;
+
 
 (** Converts a box into an octagon. *)
 let box_to_oct manbox box manoct oct_env =
@@ -127,7 +100,7 @@ let box_to_oct manbox box manoct oct_env =
   let tvars = Array.append ivars rvars in
   let oct = Abstract1.of_box manoct oct_env tvars bounds.Abstract1.interval_array in
   oct
-;;
+
 
 
 (******************************************************************)
@@ -140,31 +113,31 @@ let scalar_add sca sca' =
   let value' = scalar_to_mpqf sca' in
   let sum = Mpqf.add value value' in
   Scalar.of_mpqf sum
-;;
+
 
 (** Compute the medium value of two scalars *)
 let mid inf sup = 
   let mpqf_inf = scalar_to_mpqf inf in
   let mpqf_sup = scalar_to_mpqf sup in
   Scalar.of_mpqf (Mpqf.add (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) split_prec_mpqf)
-;;
+
 
 (** Compute the middle value of an interval *)
 let mid_interval itv =
   mid itv.Interval.inf itv.Interval.sup
-;;
+
 
 (** Compute the euclidian distance between two scalars *)
 let diam inf sup = 
   let mpqf_inf = scalar_to_mpqf inf in
   let mpqf_sup = scalar_to_mpqf sup in
   Scalar.of_mpqf (Mpqf.sub mpqf_sup mpqf_inf)
-;;
+
 
 (** Compute the diameter od an interval *)
 let diam_interval itv = 
   diam itv.Interval.inf itv.Interval.sup
-;;
+
 
 (** Compute the euclidian distance between two arrays of floats. *)
 let dist tab1 tab2 =
@@ -176,7 +149,7 @@ let dist tab1 tab2 =
       sum := !sum +. ((tab1.(i) -. tab2.(i)) ** 2.)
     done;
     sqrt !sum
-;;
+
 
 (** Tests if the box is small enough (wrt prec). *)
 let is_small box prec =
@@ -193,7 +166,7 @@ let is_small box prec =
   
   let itv = box.Abstract1.interval_array in
   small itv 0
-;;
+
 
 (** Tests if two arrays of Interval are equals. *)
 let equals tab1 tab2 =
@@ -209,7 +182,7 @@ let equals tab1 tab2 =
     false
   else
     tab_eq tab1 tab2 0
-;;
+
 
 (**
  * Tests if an array of Interval is feasible.
@@ -225,7 +198,7 @@ let is_feasible tab =
   in
   
   is_bot tab 0
-;;
+
 
 (**
  * Tests if an array of Interval is equal to top.
@@ -241,7 +214,7 @@ let is_top tab =
   in
   
   top tab 0
-;;
+
 
 (** Create a new array of constraints depending on the differences between the two boxes. *)
 let from_diff env box box' =
@@ -319,7 +292,7 @@ let from_diff env box box' =
   done;
   
   tab'
-;;
+
 
 (**
  * Add the new constraint (linexpr typ 0) at the begining of tab.
@@ -341,7 +314,7 @@ let copy linexpr typ env tab =
   done;
   
   tab'
-;;
+
 
 (** Print the solution. *)
 let print_sol box =
@@ -351,12 +324,12 @@ let print_sol box =
     printf "; [%f; %f]" (scalar_to_float (itv.(i)).Interval.inf) (scalar_to_float (itv.(i)).Interval.sup);
   done;
   printf "|]@.";
-;;
+
 
 (** Print the generators. *)
 let print_linexpr0 expr env =
   Linexpr0.iter (fun c -> fun d -> printf "%f%s " (coeff_to_float c) (Var.to_string (Environment.var_of_dim env d))) expr;
-;;
+
 
 (** Print the generators. *)
 let print_gen gens env =
@@ -368,7 +341,7 @@ let print_gen gens env =
     print_linexpr0 (gen_tab.(i)).Generator0.linexpr0 env;
   done;
   printf "}@.";
-;;
+
 
 
 (******************************************************************)
@@ -382,7 +355,7 @@ let box_meet_oct manbox box manoct oct =
   Abstract1.meet_with manoct oct box2oct;
   let oct2box = oct_to_box manoct oct manbox box_env in
   Abstract1.meet_with manbox box oct2box;
-;;
+
 
 let box_meet_poly manbox box manpoly poly =
   let box_env = Abstract1.env box in
@@ -391,7 +364,7 @@ let box_meet_poly manbox box manpoly poly =
   Abstract1.meet_with manpoly poly box2poly;
   let poly2box = poly_to_box manpoly poly manbox box_env in
   Abstract1.meet_with manbox box poly2box;
-;;
+
 
 let oct_meet_poly manoct oct manpoly poly =
   let oct_env = Abstract1.env oct in
@@ -400,7 +373,7 @@ let oct_meet_poly manoct oct manpoly poly =
   Abstract1.meet_with manpoly poly oct2poly;
   let poly2oct = poly_to_oct manpoly poly manoct oct_env in
   Abstract1.meet_with manoct oct poly2oct;
-;;
+
 
 let abs_meet_abs man abs abs' =
   let env = Abstract1.env abs in
@@ -409,7 +382,7 @@ let abs_meet_abs man abs abs' =
   Abstract1.meet_with man abs' abs_tmp1;
   let abs_tmp2 = Abstract1.change_environment man abs' env false in
   Abstract1.meet_with man abs abs_tmp2;
-;;
+
 
 (**
  * Compute the reduced product of the two abstractions.
@@ -473,7 +446,7 @@ let reduced_product abs abs' =
     printf "poly & poly@.";
     abs_meet_abs man abs abs'
     )
-;;
+
 
 (**
  * Compute the reduced product of the two abstractions.
@@ -510,7 +483,7 @@ let reduced_product_print abs abs' =
   ;
   if (Polka.manager_is_polka_strict man) && (Polka.manager_is_polka_strict man') then
     printf "poly & poly@."
-;;
+
 
 
 (******************************************************************)
@@ -584,7 +557,7 @@ let barycenter man abs =
   Linexpr1.set_list linexp list (Some (Coeff.Scalar cst_sca));
    
   linexp
-;;
+
 
 
 (**
@@ -600,7 +573,7 @@ let rec largest tab i size i_max =
       largest tab (i+1) size' i
     else
       largest tab (i+1) size i_max
-;;
+
 
 (**
  * Split a box along its largest domain.
@@ -613,7 +586,7 @@ let largest_first tab env =
   Linexpr1.set_list expr [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
   
   expr
-;;
+
 
 
 (**
@@ -685,7 +658,7 @@ let split_octo man abs env =
   Linexpr1.set_cst linexpr (Coeff.Scalar (Scalar.neg cst));
   
   linexpr
-;;
+
 
 
 (**
@@ -720,7 +693,7 @@ let split man abs env =
   let abs2 = Abstract1.meet_lincons_array man abs tab in
   
   [abs1; abs2]
-;;
+
 
 
 (******************************************************************)
@@ -760,7 +733,7 @@ let one_step_cons man abs0 env domains list =
   inter 0;
   
   abs
-;;
+
 
 (**
  * Apply the consistency on a set of conjuctions of dijonctions of constraints
@@ -818,7 +791,7 @@ let and_or_consistency man abs env list max_iter =
   
   let abs' = cons_loop abs 0 in
   abs'
-;;
+
 
 
 (******************************************************************)
@@ -855,7 +828,7 @@ let rec find_all man abs env list max_iter prec nb_steps nb_sol =
       
       List.fold_left (fun (nbe, nbsol) absi -> find_all man absi env list max_iter prec (nbe+1) nbsol) (nb_steps, nb_sol) list_abs
       )
-;;
+
 
 (*
  * Simulates the continuous search procedure in CP.
@@ -875,7 +848,7 @@ let search man env domains cons max_iter prec =
   else
     printf "No Solutions - #created nodes: 0@."
   ;
-;;
+
 
 (**
  * Search the space by splitting the domains in two.
@@ -905,7 +878,7 @@ let rec find_one man abs env list max_iter prec nb_steps nb_sol =
         let list_abs = split man abs' env in
         
         List.fold_left (fun (nbe, nbsol) absi -> find_one man absi env list max_iter prec (nbe+1) nbsol) (nb_steps, nb_sol) list_abs
-;;
+
 
 (*
  * Search the space until it finds a solution.
@@ -922,7 +895,7 @@ let search_one man env domains cons max_iter prec =
   else
     printf "No Solutions - #created nodes: 0@."
   ;
-;;
+
 
 
 
@@ -930,18 +903,18 @@ let search_one man env domains cons max_iter prec =
 (**************************** Problems ****************************)
 (******************************************************************)
 
-let x = Var.of_string "x";;
-let y = Var.of_string "y";;
-let z = Var.of_string "z";;
-let x1 = Var.of_string "x1";;
-let x2 = Var.of_string "x2";;
-let x3 = Var.of_string "x3";;
-let x4 = Var.of_string "x4";;
-let x5 = Var.of_string "x5";;
-let x6 = Var.of_string "x6";;
-let x7 = Var.of_string "x7";;
-let x8 = Var.of_string "x8";;
-let x9 = Var.of_string "x9";;
+let x = Var.of_string "x"
+let y = Var.of_string "y"
+let z = Var.of_string "z"
+let x1 = Var.of_string "x1"
+let x2 = Var.of_string "x2"
+let x3 = Var.of_string "x3"
+let x4 = Var.of_string "x4"
+let x5 = Var.of_string "x5"
+let x6 = Var.of_string "x6"
+let x7 = Var.of_string "x7"
+let x8 = Var.of_string "x8"
+let x9 = Var.of_string "x9"
 
 (* One solution: x=0, y=1, z=2 *)
 let eqlin =
@@ -950,7 +923,7 @@ let eqlin =
   let list = [["3*x+5*y-3*z+1=0"];["x-2*y+z=0"];["2*x+4*y+7*z-18=0"]] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) list in
   (env, domains, cons)
-;;
+
 
 (* Two solutions: y=0.618034, x=0.786151 ; y=0.618034, x=-0.786151 *)
 let a =
@@ -961,7 +934,7 @@ let a =
   (*let list = [["(x-2)*(x-2)+(y-2)*(y-2)-1=0"];["(x-2)*(x-2)-(y-2)=0"]] in*)
   let cons = List.map (List.map (Parser.tcons1_of_string env)) list in
   (env, domains, cons)
-;;
+
 
 (* No solutions! *)
 let appolonius =
@@ -970,7 +943,7 @@ let appolonius =
   let list = [["2*x1=2"]; ["2*x2=1"]; ["2*x3=2"]; ["2*x4=1"]; ["2*x5-x6=0"]; ["x5+2*x6=2"]; ["(x1-x7)*(x1-x7)+x8*x8-x7*x7-(x8-x2)*(x8-x2)=0"]; ["(x1-x7)*(x1-x7)+x8*x8-(x3-x7)*(x3-x7)-(x4-x8)*(x4-x8)=0"]; ["x1*x1+x2*x2-2*x1*x7+2*x2*x8=0"]; ["x1*x1-x3*x3*x3-x4*x4-2*x7*(x1-x3)+2*x4*x8=0"]] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) list in
   (env, domains, cons)
-;;
+
 
 (* 8 solutions *)
 let bellido =
@@ -979,7 +952,7 @@ let bellido =
   let list = [["(x1-6)*(x1-6)+x2*x2+x3*x3=104"]; ["x4*x4+(x5-6)*(x5-6)+x6*x6=104"]; ["x7*x7+(x8-12)*(x8-12)+(x9-6)*(x9-6)=80"]; ["x1*(x4-6)+x5*(x2-6)+x3*x6=52"]; ["x1*(x7-6)+x8*(x2-12)+x9*(x3-6)=-64"]; ["x4*x7+x8*(x5-12)+x9*(x6-6)-6*x5=-32"]; ["2*x2+2*x3-2*x6-x4-x5-x7-x9=-18"]; ["x1+x2+2*x3+2*x4+2*x6-2*x7+x8-x9=38"]; ["x1+x3+x5-x6+2*x7-2*x8-2*x4=-8"]] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) list in
   (env, domains, cons)
-;;
+
 
 (* Two solutions: y=1, x=1 ; y=1, x=-1 *)
 let entier =    
@@ -988,7 +961,7 @@ let entier =
   (*let domains = Parser.lincons1_of_lstring env ["x>=-3"; "x<=2"; "y>=-3"; "y<=2"; "x+y>=-1"; "3y-6x<=-1"; "x+y<=2"; "6y-3x>=-2"] in*)
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [["x*x-y=0"];["x*x+y-2=0"]] in
   (env, domains, cons)
-;;
+
 
 (* Two solutions: y=1, x=1 ; y=1, x=-1 *)
 let reel =    
@@ -997,7 +970,7 @@ let reel =
   (*let domains = Parser.lincons1_of_lstring env ["x>=-3"; "x<=2"; "y>=-3"; "y<=2"; "x+y>=-1"; "3y-6x<=-1"; "x+y<=2"; "6y-3x>=-2"] in*)
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [["x*x-y=0"];["x*x+y-2=0"]] in
   (env, domains, cons)
-;;
+
 
 (* Two solutions: y=1, x=1 ; y=1, x=-1 *)
 let mixte =    
@@ -1006,7 +979,7 @@ let mixte =
   (*let domains = Parser.lincons1_of_lstring env ["x>=-3"; "x<=2"; "y>=-3"; "y<=2"; "x+y>=-1"; "3y-6x<=-1"; "x+y<=2"; "6y-3x>=-2"] in*)
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [["x*x-y=0"];["x*x+y-2=0"]] in
   (env, domains, cons)
-;;
+
 
 
 
@@ -1078,7 +1051,7 @@ let mixte =
     | 2 -> doit (Oct.manager_alloc ())
     | _ -> failwith "The manager argument must be in [0, 6], type ./continu.opt for more info."
     )
-;;*)
+*)
 
 let test_conversions =
   let manpoly = Polka.manager_alloc_strict() in
@@ -1139,4 +1112,3 @@ let test_conversions =
   printf "box_bounds = %a@." (print_array Interval.print) (Abstract1.to_box manbox box).Abstract1.interval_array;
   printf "oct = %a@." Abstract1.print oct;
   printf "oct_bounds = %a@." (print_array Interval.print) (Abstract1.to_box manoct oct).Abstract1.interval_array;
-;;

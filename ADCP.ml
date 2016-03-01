@@ -1,36 +1,13 @@
-open Apron;;
-open Mpqf;;
-open Format;;
+open Apron
+open Mpqf
+open Format
+open Utils
 
 let split_prec = 0.000001
 let split_prec_mpqf = Mpqf.of_float split_prec
 
 let sqrt2 = 0.707106781186548
 let sqrt2_mpqf = Mpqf.of_float sqrt2
-
-let print_array = Abstract0.print_array
-let lincons1_array_print fmt x =
-  Lincons1.array_print fmt x
-
-let generator1_array_print fmt x =
-  Generator1.array_print fmt x
-
-(*
- * Different conversion operators 
- *)
-let scalar_to_mpqf = function
-  | Scalar.Mpqf x -> x
-  | Scalar.Float x -> Mpqf.of_float x
-  | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
-
-let scalar_to_float = function
-  | Scalar.Mpqf x -> Mpqf.to_float x
-  | Scalar.Float x -> x
-  | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
-
-let coeff_to_float = function
-  | Coeff.Scalar x -> scalar_to_float x
-  | Coeff.Interval i -> scalar_to_float i.Interval.inf
 
 (* Compute the sum of two scalars *)
 let scalar_add sca sca' = 

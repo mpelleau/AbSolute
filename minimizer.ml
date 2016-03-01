@@ -1,7 +1,8 @@
-open Apron;;
-open Mpqf;;
-open Format;;
-open ADCP;;
+open Apron
+open Mpqf
+open Format
+open Utils
+open ADCP
 
 let scalar_to_float = function
   | Scalar.Mpqf x -> Mpqf.to_float x
@@ -148,4 +149,3 @@ let main =
   MinimizerOctMinMax.minimizing env domains constraints objective 3 0.001;
   let module MinimizerOctMinMin = Minimize(OctMinMinCP) in
   MinimizerOctMinMin.minimizing env domains constraints objective 3 0.001;
-
