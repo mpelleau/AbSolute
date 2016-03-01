@@ -13,10 +13,10 @@ OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa octD.cmxa boxMPQ.
 CLIBS = -lgmp
 
 # targets
-TARGETS = minimizer.opt
+TARGETS = minimizer.opt solver.opt
 
 # source files
-MLFILES = utils.ml ADCP.ml minimizer.ml
+MLFILES = constant.ml utils.ml ADCP.ml problems.ml minimizer.ml solver.ml
 # MLIFILES = ADCP.mli
 
 # object files

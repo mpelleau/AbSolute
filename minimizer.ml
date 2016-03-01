@@ -4,18 +4,13 @@ open Format
 open Utils
 open ADCP
 
-let scalar_to_float = function
-  | Scalar.Mpqf x -> Mpqf.to_float x
-  | Scalar.Float x -> x
-  | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
-
 let print_sol box =
   let itv = box.Abstract1.interval_array in
   printf "solution = [|[%f; %f]" (scalar_to_float (itv.(0)).Interval.inf) (scalar_to_float (itv.(0)).Interval.sup);
   for i=1 to ((Array.length itv)-1) do
     printf "; [%f; %f]" (scalar_to_float (itv.(i)).Interval.inf) (scalar_to_float (itv.(i)).Interval.sup);
   done;
-  printf "|]@.";
+  printf "|]@."
 
 module Minimize(Abs : AbstractCP) =
   struct
@@ -85,7 +80,8 @@ module Minimize(Abs : AbstractCP) =
             )
           )
         )
-    let minimizing env domains cons obj max_iter prec =
+    let minimizing env domains cons obj =
+      let max_iter = !Constant.max_iter and prec = !Constant.precision in
       let abs = Abs.of_lincons_array env domains in
       printf "abs = %a@." Abstract1.print abs;
       let box = Abstract1.to_box man abs in
@@ -126,26 +122,13 @@ module Minimize(Abs : AbstractCP) =
   end
 
 
-let x1 = Var.of_string "x1";;
-let x2 = Var.of_string "x2";;
-let test =    
-  let env = Environment.make [|x1|] [|x2|] in
-  let domains = Parser.lincons1_of_lstring env ["x1>=1"; "x1<=5"; "x2>=1"; "x2<=5"] in
-  let list = [["x2 - x1 > 2"; "x1 + x2 < 3"; "x1 - x2 > 2.5"]] in
-  let tab = ["x2 - x1 <= 2"; "x1 + x2 >= 3"; "x1 - x2 <= 2.5"] in
-  let cons = List.map (List.map (Parser.tcons1_of_string env)) list in
-  let cons' = Parser.tcons1_of_lstring env tab in
-  let obj = Parser.texpr1_of_string env "x1 + 2*x2" in
-  (env, domains, cons, cons', obj)
-;; 
-
 let main =
-  let (env, domains, andor, constraints, objective) = test in
+  let (env, domains, andor, constraints, objective) = Problems.test in
   let module MinimizerBox = Minimize(BoxCP) in
-  MinimizerBox.minimizing env domains constraints objective 3 0.001;
+  MinimizerBox.minimizing env domains constraints objective;
   let module MinimizerOctBox = Minimize(OctBoxCP) in
-  MinimizerOctBox.minimizing env domains constraints objective 3 0.001;
+  MinimizerOctBox.minimizing env domains constraints objective;
   let module MinimizerOctMinMax = Minimize(OctMinMaxCP) in
-  MinimizerOctMinMax.minimizing env domains constraints objective 3 0.001;
+  MinimizerOctMinMax.minimizing env domains constraints objective;
   let module MinimizerOctMinMin = Minimize(OctMinMinCP) in
-  MinimizerOctMinMin.minimizing env domains constraints objective 3 0.001;
+  MinimizerOctMinMin.minimizing env domains constraints objective
