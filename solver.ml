@@ -4,13 +4,6 @@ open Format
 open Utils
 open ADCP
 
-let print_sol box =
-  let open Interval in
-  let itv = box.Abstract1.interval_array in
-  printf "[| ";
-  Array.iter (fun e -> printf "[%f; %f];" (scalar_to_float e.inf) (scalar_to_float e.sup)) itv;
-  printf "|] "
-
 module Solve(Abs : AbstractCP) =
   struct
     let man = Abs.get_manager
@@ -23,9 +16,8 @@ module Solve(Abs : AbstractCP) =
           if Abstract1.is_eq man abs_tmp abs then abs
           else cons_loop abs (n+1)
         )
-      in
-      let abs' = cons_loop abs 0 in
-      abs'
+      in cons_loop abs 0 
+
     let rec explore abs env tab max_iter prec nb_steps nb_sol =
       let abs' = consistency abs tab max_iter in
       if Abstract1.is_bottom man abs' then

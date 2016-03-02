@@ -4,36 +4,20 @@ open Format
 open Utils
 open ADCP
 
-let print_sol box =
-  let itv = box.Abstract1.interval_array in
-  printf "solution = [|[%f; %f]" (scalar_to_float (itv.(0)).Interval.inf) (scalar_to_float (itv.(0)).Interval.sup);
-  for i=1 to ((Array.length itv)-1) do
-    printf "; [%f; %f]" (scalar_to_float (itv.(i)).Interval.inf) (scalar_to_float (itv.(i)).Interval.sup);
-  done;
-  printf "|]@."
-
 module Minimize(Abs : AbstractCP) =
   struct
     let man = Abs.get_manager
     let consistency abs tab max_iter =
-      let rec cons_loop abs n =
-        if n >= max_iter then
-          (abs)
-        else
-          if Abstract1.is_bottom man abs then
-            abs
-          else
-            (
-            let abs_tmp = Abstract1.copy man abs in
-            Abstract1.meet_tcons_array_with man abs tab;		
-            if Abstract1.is_eq man abs_tmp abs then
-              abs
-            else
-              cons_loop abs (n+1)
-            )
-      in
-      let abs' = cons_loop abs 0 in
-      abs'
+      let rec cons_loop abs n =	
+	if n >= max_iter || Abstract1.is_bottom man abs then abs
+	else(
+          let abs_tmp = Abstract1.copy man abs in
+          Abstract1.meet_tcons_array_with man abs tab;		
+          if Abstract1.is_eq man abs_tmp abs then abs
+          else cons_loop abs (n+1)
+        )
+      in cons_loop abs 0
+
     let rec explore abs env tab obj min_obj minabs max_iter prec nb_steps =
       let abs' = consistency abs tab max_iter in
       if Abstract1.is_bottom man abs' then

@@ -12,7 +12,7 @@ let get_solving_problem p =
 let get_minimization_problem p =
   match p with
   | "test" -> Problems.test
-  | _ -> "minimization problem undefined"^p |> failwith
+  | _ -> "minimization problem undefined "^p |> failwith
 
 let parse_args () =
   let rec doit args = match args with
