@@ -20,6 +20,7 @@ let parse_args () =
   | "-max_iter"::x::r -> Constant.max_iter := int_of_string x; doit r
   | "-domain_s"::x::r -> Constant.domain_solving := x; doit r
   | "-domain_m"::x::r -> Constant.domain_minimizing:= x; doit r
+  | "-visualization"::r ->Constant.visualization:=true; doit r
   | x::r -> Constant.problem:=x; doit r
   | [] -> ()
   in

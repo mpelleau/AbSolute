@@ -21,10 +21,8 @@ module Minimize(Abs : AbstractCP) =
     let rec explore abs env tab obj min_obj minabs max_iter prec nb_steps =
       let abs' = consistency abs tab max_iter in
       if Abstract1.is_bottom man abs' then
-        (
         (* No solutions in this sub-tree. *)
         (nb_steps, min_obj, minabs)
-        )
       else
         (
         (*let box = Abstract1.to_box man abs' in

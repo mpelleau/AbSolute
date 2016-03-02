@@ -16,7 +16,7 @@ module Solve(Abs : AbstractCP) =
           if Abstract1.is_eq man abs_tmp abs then abs
           else cons_loop abs (n+1)
         )
-      in cons_loop abs 0 
+      in cons_loop abs 0
 
     let rec explore abs env tab max_iter prec nb_steps nb_sol =
       let abs' = consistency abs tab max_iter in
