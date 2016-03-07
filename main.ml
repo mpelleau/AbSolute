@@ -7,6 +7,10 @@ let get_solving_problem p =
   match p with
   | "gear4" -> Problems.gear4
   | "st_miqp5" -> Problems.st_miqp5
+  | "nonlin1" -> Problems.nonlin1
+  | "nonlin2" -> Problems.nonlin2
+  | "two_circles" -> Problems.two_circles
+  | "one_circle" -> Problems.one_circle
   | _ -> "solving problem undefined "^p |> failwith
 
 let get_minimization_problem p =
@@ -30,6 +34,7 @@ let main =
   let open Constant in
   parse_args ();
   solving := !Constant.problem <> "test";
+  if !Constant.visualization then Vue.create_window 800 800;
   if !solving then
     match !domain_solving with
     | "box" -> Solver.Box.solving (get_solving_problem !problem)

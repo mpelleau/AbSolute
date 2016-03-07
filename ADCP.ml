@@ -188,6 +188,7 @@ module type AbstractCP =
   val get_manager : t Manager.t
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
+  val points_to_draw : t Abstract1.t -> (int * int) list
  end
  
 (** 
@@ -224,6 +225,17 @@ module BoxCP : AbstractCP =
       let abs1 = meet_linexpr boxad man env (List.nth list 0) in
       let abs2 = meet_linexpr boxad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let points_to_draw box =
+      let env = Abstract1.env box in
+      let var1 = Environment.var_of_dim env 0 
+      and var2 = Environment.var_of_dim env 1 in
+      let i1 = Abstract1.bound_variable man box var1 
+      and i2 = Abstract1.bound_variable man box var2 in
+      let open Interval in
+      let x1,x2 = (scalar_to_int i1.inf,scalar_to_int i1.sup) in
+      let y1,y2 = (scalar_to_int i2.inf,scalar_to_int i2.sup) in
+      [x1,y1; x2,y1; x2,y2; x1,y2]
   end
  
 (** 
@@ -342,6 +354,8 @@ module OctMinMinCP : AbstractCP =
       let abs1 = meet_linexpr octad man env (List.nth list 0) in
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let points_to_draw box = []
   end
 
 (** 
@@ -450,6 +464,9 @@ module OctMinMaxCP : AbstractCP =
       let abs1 = meet_linexpr octad man env (List.nth list 0) in
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
+	
+    let points_to_draw box = []
+
   end
 
  
@@ -486,6 +503,8 @@ module OctBoxCP : AbstractCP =
       let abs1 = meet_linexpr octad man env (List.nth list 0) in
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let points_to_draw box = []
   end
 
 (** 
@@ -520,4 +539,6 @@ module PolyCP : AbstractCP =
       let abs1 = meet_linexpr polyad man env (List.nth list 0) in
       let abs2 = meet_linexpr polyad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let points_to_draw box = []
   end

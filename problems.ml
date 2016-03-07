@@ -67,7 +67,54 @@ let st_miqp5:solving =
   and cons' = Parser.tcons1_of_lstring env tab in
   (env, domains, cons, cons')
 
-                    
+let nonlin1:solving =
+  let x = Var.of_string "x" and y = Var.of_string "y" in
+  let env = Environment.make [||] [|x;y|] in
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=5";"y>=0"; "y<=5"] 
+  and tab = ["(y-103.5)^2+(x-2.5)^2>10000";
+	     "(x+8)^2+(y+8)^2>202";
+	     "(x-23.5)^2+(y-2.5)^2>400"] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
+let nonlin2:solving = 
+  (**Problème Difficile de racines*)
+  let x1 = Var.of_string "x1" and x2 = Var.of_string "x2" in
+  let env = Environment.make [||] [|x1;x2|] in
+  let domains = Parser.lincons1_of_lstring env ["x1>=0"; "x1<=5";"x2>=0"; "x2<=5"]
+  and tab = ["0.5*(x1-2.5)*(x1-2.5)+(x2-2.5)*(x2-2.5)>1";
+	     "sqrt(x1)-x2>-2.5";"-sqrt(x1)-x2<-2.5";
+	     "sqrt(5-x1)-x2>-2.5";
+	     "-sqrt(5-x1)-x2<-2.5"] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
+let one_circle:solving = 
+  let x = Var.of_string "x" and y = Var.of_string "y" in
+  let env = Environment.make [||] [|x;y|] in
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=50";"y>=0"; "y<=50"]
+  and tab = [
+    "(x-25)^2 + (y-25)^2 <= 400"
+  ] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
+let two_circles:solving = 
+  (*Deux Cercles *)
+  let x = Var.of_string "x" and y = Var.of_string "y" in
+  let env = Environment.make [||] [|x;y|] in
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=5";"y>=0"; "y<=5"]
+  and tab = [
+    "(x-1.5)^2 + (y-1.5)^2 + (x-3)^2 + (y-3)^2 -
+     sqrt( ((x-3)^2+(y-3)^2-(x-1.5)^2-(y-1.5)^2)^2) <1"
+  ] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
 
                       (* MINIMIZATION PROBLEMS *)
 
