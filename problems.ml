@@ -27,8 +27,6 @@ end
 
 
 
-
-
                 (*****************************)
                 (*    PROBLEMS INSTANCES     *)
                 (*****************************)
@@ -94,9 +92,9 @@ let nonlin2:solving =
 let one_circle:solving = 
   let x = Var.of_string "x" and y = Var.of_string "y" in
   let env = Environment.make [||] [|x;y|] in
-  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=50";"y>=0"; "y<=50"]
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=40";"y>=0"; "y<=40"]
   and tab = [
-    "(x-25)^2 + (y-25)^2 <= 400"
+    "(x-20)^2 + (y-20)^2 <= 400"
   ] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
   and cons' = Parser.tcons1_of_lstring env tab in 
@@ -106,10 +104,10 @@ let two_circles:solving =
   (*Deux Cercles *)
   let x = Var.of_string "x" and y = Var.of_string "y" in
   let env = Environment.make [||] [|x;y|] in
-  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=5";"y>=0"; "y<=5"]
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=40";"y>=0"; "y<=40"]
   and tab = [
-    "(x-1.5)^2 + (y-1.5)^2 + (x-3)^2 + (y-3)^2 -
-     sqrt( ((x-3)^2+(y-3)^2-(x-1.5)^2-(y-1.5)^2)^2) <1"
+    "(x-20)^2 + (y-20)^2 <= 400";
+    "(x)^2 + (y)^2 <= 1000"
   ] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
   and cons' = Parser.tcons1_of_lstring env tab in 

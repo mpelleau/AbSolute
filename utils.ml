@@ -36,3 +36,13 @@ let print_sol box =
   printf "[| ";
   Array.iter (fun e -> printf "[%f; %f];" (scalar_to_float e.inf) (scalar_to_float e.sup)) itv;
   printf "|] "
+
+(* Tcons earray utilities *)
+let tcons_for_all pred tcons =
+  let open Tcons1 in
+  try
+    for i = 0 to (array_length tcons) -1  do
+      if array_get tcons i |> pred |> not then raise Exit 
+    done;
+    true
+  with Exit -> false

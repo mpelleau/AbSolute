@@ -24,7 +24,6 @@ module Solve(Abs : AbstractCP) =
 	if !Constant.visualization then 
 	  Vue.draw (Abs.points_to_draw abs) col info
       in
-      draw abs Graphics.red;
       let rec aux abs env nb_steps nb_sol =
 	draw abs Graphics.yellow;
 	let abs' = consistency abs tab in
@@ -34,8 +33,13 @@ module Solve(Abs : AbstractCP) =
           (nb_steps, nb_sol)
 	)
 	else
-          let (small, exprs) = Abs.is_small abs' !Constant.precision in
-	  if small then
+	  if Abs.sat_cons abs' tab then begin
+	    draw abs' Graphics.blue;
+	    (nb_steps, nb_sol+1) 
+	  end  
+	  else
+            let (small, exprs) = Abs.is_small abs' !Constant.precision in
+	    if small then
             (* Keep on searching in this sub-tree. *)
             (* Solution found! *)
             (

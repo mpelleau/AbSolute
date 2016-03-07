@@ -76,7 +76,6 @@ let draw_dom_list l =
   | _ -> assert false
 
 
-
 let loop state = 
   loop_at_exit [] (fun _ -> ())
 

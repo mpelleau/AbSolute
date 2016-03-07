@@ -187,6 +187,7 @@ module type AbstractCP =
   val of_lincons_array : Environment.t -> Lincons1.earray -> t Abstract1.t
   val get_manager : t Manager.t
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
+  val sat_cons : t Abstract1.t -> Tcons1.earray -> bool
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
   val points_to_draw : t Abstract1.t -> (int * int) list
  end
@@ -225,6 +226,9 @@ module BoxCP : AbstractCP =
       let abs1 = meet_linexpr boxad man env (List.nth list 0) in
       let abs2 = meet_linexpr boxad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let sat_cons box cons = 
+      tcons_for_all (Abstract1.sat_tcons man box) cons
 
     let points_to_draw box =
       let env = Abstract1.env box in
@@ -355,6 +359,9 @@ module OctMinMinCP : AbstractCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 
+    let sat_cons box cons = 
+      tcons_for_all (Abstract1.sat_tcons man box) cons
+
     let points_to_draw box = []
   end
 
@@ -465,6 +472,9 @@ module OctMinMaxCP : AbstractCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 	
+    let sat_cons box cons = 
+      tcons_for_all (Abstract1.sat_tcons man box) cons
+
     let points_to_draw box = []
 
   end
@@ -504,6 +514,9 @@ module OctBoxCP : AbstractCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 
+    let sat_cons box cons = 
+      tcons_for_all (Abstract1.sat_tcons man box) cons
+
     let points_to_draw box = []
   end
 
@@ -539,6 +552,9 @@ module PolyCP : AbstractCP =
       let abs1 = meet_linexpr polyad man env (List.nth list 0) in
       let abs2 = meet_linexpr polyad man env (List.nth list 1) in
       [abs1; abs2]
+
+    let sat_cons box cons =
+      tcons_for_all (Abstract1.sat_tcons man box) cons
 
     let points_to_draw box = []
   end
