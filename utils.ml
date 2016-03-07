@@ -20,6 +20,8 @@ let coeff_to_float = function
   | Coeff.Scalar x -> scalar_to_float x
   | Coeff.Interval i -> scalar_to_float i.Interval.inf
 
+let coeff_to_int x = coeff_to_float x |> int_of_float
+
 (**********************)
 (* Printing utilities *)
 (**********************)

@@ -523,38 +523,55 @@ module OctBoxCP : AbstractCP =
 (** 
  * Module for the Polyhedron Abstract Domains for Constraint Programming.
  *)
-module PolyCP : AbstractCP =
-  struct
-    type t = Polka.strict Polka.t
-    let man = Polka.manager_alloc_strict()
-    let of_lincons_array env domains =
-      let abs = Abstract1.of_lincons_array man env domains in
-      abs
-    let get_manager =
-      man
-    let is_small polyad prec =
-      let poly = Abstract1.to_generator_array man polyad in 
-      let gen_env = poly.Generator1.array_env in
-      (*print_gen gens gen_env;*)
-      let size = Environment.size gen_env in
-      let gen_float_array = gen_to_array poly size in
-      let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
-      let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
-      let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
-      let cst_sca2 = Scalar.of_float (cst +. split_prec) in
-      let linexp = Linexpr1.make gen_env in
-      Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
-      let linexp' = Linexpr1.make gen_env in
-      Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
-      (dist_max <= prec, [linexp; linexp'])
-    let split polyad list =
-      let env = Abstract1.env polyad in
-      let abs1 = meet_linexpr polyad man env (List.nth list 0) in
-      let abs2 = meet_linexpr polyad man env (List.nth list 1) in
-      [abs1; abs2]
-
-    let sat_cons box cons =
-      tcons_for_all (Abstract1.sat_tcons man box) cons
-
-    let points_to_draw box = []
-  end
+module PolyCP : AbstractCP = struct
+  type t = Polka.strict Polka.t
+  let man = Polka.manager_alloc_strict()
+  let of_lincons_array env domains =
+    let abs = Abstract1.of_lincons_array man env domains in
+    abs
+      
+  let get_manager = man
+    
+  let is_small polyad prec =
+    let poly = Abstract1.to_generator_array man polyad in 
+    let gen_env = poly.Generator1.array_env in
+    (*print_gen gens gen_env;*)
+    let size = Environment.size gen_env in
+    let gen_float_array = gen_to_array poly size in
+    let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
+    let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
+    let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
+    let cst_sca2 = Scalar.of_float (cst +. split_prec) in
+    let linexp = Linexpr1.make gen_env in
+    Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
+    let linexp' = Linexpr1.make gen_env in
+    Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
+    (dist_max <= prec, [linexp; linexp'])
+      
+  let split polyad list =
+    let env = Abstract1.env polyad in
+    let abs1 = meet_linexpr polyad man env (List.nth list 0) in
+    let abs2 = meet_linexpr polyad man env (List.nth list 1) in
+    [abs1; abs2]
+      
+  let sat_cons box cons =
+    tcons_for_all (Abstract1.sat_tcons man box) cons
+      
+  let points_to_draw pol =    
+    let env = Abstract1.env pol in
+    let x = Environment.var_of_dim env 0 
+    and y = Environment.var_of_dim env 1 in
+    let get_coord l = 
+      (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y)
+    in
+    let l' = Abstract1.to_lincons_array man pol in
+    let pol = Abstract1.of_lincons_array man env l' in
+    let gen' = Abstract1.to_generator_array man pol in
+    let v = Array.init (Generator1.array_length gen')
+      (fun i -> get_coord 
+	(Generator1.get_linexpr1 (Generator1.array_get gen' i)))
+	   |> Array.to_list
+    in 
+    List.map (fun(a,b)-> (coeff_to_int a, coeff_to_int b)) v
+      
+end
