@@ -138,22 +138,19 @@ let maxdist point tabpoints =
   
   (point_max, i_max, dist_max)
 
-(** Compute the maximal distance between two points in an array of points. 
- * A point correspond to an array of floats.
- *)
+(* Compute the maximal distance between two points in an array of points. 
+   A point correspond to an array of floats *)
 let maxdisttab tabpoints =
   let length = Array.length tabpoints in
-  
   let rec maxd i p1 i1 p2 i2 dist_max =
-    if i >= length then
-      (p1, i1, p2, i2, dist_max)
+    if i >= length then (p1, i1, p2, i2, dist_max)
     else
-      let tabpoints' = Array.sub tabpoints (i+1) (length-i-1) in
-      let (pj, j, dist) = maxdist tabpoints.(i) tabpoints' in
-      if dist > dist_max then
-        maxd (i+1) tabpoints.(i) i pj j dist
-      else
-        maxd (i+1) p1 i1 p2 i2 dist_max
+      try 
+	let tabpoints' = Array.sub tabpoints (i+1) (length-i-1) in
+	let (pj, j, dist) = maxdist tabpoints.(i) tabpoints' in
+	if dist > dist_max then maxd (i+1) tabpoints.(i) i pj j dist
+	else maxd (i+1) p1 i1 p2 i2 dist_max
+      with Invalid_argument _ -> (p1, i1, p2, i2, dist_max)
   in
   let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
   let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
@@ -166,8 +163,7 @@ let maxdisttab tabpoints =
  * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2)
  *)
 let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
-  if i >= size then
-    (list1, list2, cst)
+  if i >= size then (list1, list2, cst)
   else
     let ci = p2.(i) -. p1.(i) in
     let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
@@ -187,7 +183,6 @@ module type AbstractCP =
   val of_lincons_array : Environment.t -> Lincons1.earray -> t Abstract1.t
   val get_manager : t Manager.t
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
-  val sat_cons : t Abstract1.t -> Tcons1.earray -> bool
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
   val points_to_draw : t Abstract1.t -> (int * int) list
  end
@@ -226,9 +221,6 @@ module BoxCP : AbstractCP =
       let abs1 = meet_linexpr boxad man env (List.nth list 0) in
       let abs2 = meet_linexpr boxad man env (List.nth list 1) in
       [abs1; abs2]
-
-    let sat_cons box cons = 
-      tcons_for_all (Abstract1.sat_tcons man box) cons
 
     let points_to_draw box =
       let env = Abstract1.env box in
@@ -471,9 +463,6 @@ module OctMinMaxCP : AbstractCP =
       let abs1 = meet_linexpr octad man env (List.nth list 0) in
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
-	
-    let sat_cons box cons = 
-      tcons_for_all (Abstract1.sat_tcons man box) cons
 
     let points_to_draw box = []
 
@@ -514,10 +503,23 @@ module OctBoxCP : AbstractCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 
-    let sat_cons box cons = 
-      tcons_for_all (Abstract1.sat_tcons man box) cons
-
-    let points_to_draw box = []
+    let points_to_draw oct = 
+      let env = Abstract1.env oct in
+      let x = Environment.var_of_dim env 0 
+      and y = Environment.var_of_dim env 1 in
+      let l' = Abstract1.to_lincons_array man oct in
+      let manpolka = Polka.manager_alloc_strict() in
+      let get_coord l = 
+	(Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y)
+      in
+      let pol = Abstract1.of_lincons_array manpolka env l' in
+      let gen' = Abstract1.to_generator_array manpolka pol in
+      let v = Array.init (Generator1.array_length gen')
+	(fun i -> get_coord 
+	  (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
+	     |> Array.to_list
+      in 
+    List.map (fun(a,b)-> (coeff_to_int a, coeff_to_int b)) v      
   end
 
 (** 
@@ -553,9 +555,6 @@ module PolyCP : AbstractCP = struct
     let abs1 = meet_linexpr polyad man env (List.nth list 0) in
     let abs2 = meet_linexpr polyad man env (List.nth list 1) in
     [abs1; abs2]
-      
-  let sat_cons box cons =
-    tcons_for_all (Abstract1.sat_tcons man box) cons
       
   let points_to_draw pol =    
     let env = Abstract1.env pol in

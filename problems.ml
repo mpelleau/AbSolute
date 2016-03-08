@@ -65,6 +65,23 @@ let st_miqp5:solving =
   and cons' = Parser.tcons1_of_lstring env tab in
   (env, domains, cons, cons')
 
+let lin1:solving =
+  let x = Var.of_string "x" and y = Var.of_string "y" in
+  let env = Environment.make [||] [|x;y|]  in
+  let domains = Parser.lincons1_of_lstring env ["x>=0"; "x<=50";"y>=0"; "y<=50"] 
+  and tab = [
+    "x>=0"; "x<=50";"y>=0"; "y<=50";
+    "y-x < 40";
+    "y-x > -40";
+    "y+x < 90";
+    "y+x > 10" 
+  ] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
+let lin2 = lin1
+
 let nonlin1:solving =
   let x = Var.of_string "x" and y = Var.of_string "y" in
   let env = Environment.make [||] [|x;y|] in
@@ -109,6 +126,32 @@ let two_circles:solving =
     "(x-20)^2 + (y-20)^2 <= 400";
     "(x)^2 + (y)^2 <= 1000"
   ] in
+  let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
+  and cons' = Parser.tcons1_of_lstring env tab in 
+  (env, domains, cons, cons')
+
+let cpr2:solving =
+(*CPR2-ANI-10-10*)
+  let b = Array.make 10 "" in 
+  Array.iteri (fun i x-> b.(i)<-"x"^(string_of_int (1+i))) b;
+  let t = Array.map Var.of_string b in
+  let env = Environment.make [||] t in
+  let domains = 
+    (Array.map (fun s -> [s^">=-1"; s^"<=1"]) b) |>
+	Array.to_list |> List.concat |>
+	    Parser.lincons1_of_lstring env 
+  in
+  let tab = [
+    "x2 + 2*x6 + x9 + 2*x10 - 1.0E-5 = 0";
+    "x3 + x8 - 3.0E-5 = 0";
+    "x1 + x3 + 2*x5 + 2*x8 + x9 + x10 - 5.0E-5 = 0";
+    "x4 + 2*x7 - 1.0E-5 = 0";
+    "0.5140437E-7 * x5 - x1^2 = 0";
+    "0.1006932E-6 * x6 - x2^2 = 0";
+    "0.7816278E-15 * x7 - x4^2 = 0";
+    "0.1496236E-6 * x8 - x1*x3 = 0";
+    "0.6194411E-7 * x9 - x1*x2 = 0";
+    "0.2089296E-14 * x10 - x1*x2^2 = 0"] in
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [tab] 
   and cons' = Parser.tcons1_of_lstring env tab in 
   (env, domains, cons, cons')

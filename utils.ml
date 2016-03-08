@@ -1,5 +1,4 @@
 open Apron
-
 (******************************************************************)
 (***************** Different conversion operators *****************)
 (******************************************************************)
@@ -43,8 +42,8 @@ let print_sol box =
 let tcons_for_all pred tcons =
   let open Tcons1 in
   try
-    for i = 0 to (array_length tcons) -1  do
-      if array_get tcons i |> pred |> not then raise Exit 
+    for i = 0 to (array_length tcons) -1 do
+      if array_get tcons i |> pred |> not then raise Exit
     done;
     true
   with Exit -> false

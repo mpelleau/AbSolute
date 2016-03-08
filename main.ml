@@ -9,8 +9,11 @@ let get_solving_problem p =
   | "st_miqp5" -> Problems.st_miqp5
   | "nonlin1" -> Problems.nonlin1
   | "nonlin2" -> Problems.nonlin2
+  | "lin1" -> Problems.lin1
+  | "lin2" -> Problems.lin2
   | "two_circles" -> Problems.two_circles
   | "one_circle" -> Problems.one_circle
+  | "cpr2" -> Problems.cpr2
   | _ -> "solving problem undefined "^p |> failwith
 
 let get_minimization_problem p =
