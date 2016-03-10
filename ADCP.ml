@@ -184,7 +184,7 @@ module type AbstractCP =
   val get_manager : t Manager.t
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
-  val points_to_draw : t Abstract1.t -> (int * int) list
+  val points_to_draw : t Abstract1.t -> (float * float) list
  end
  
 (** 
@@ -229,8 +229,8 @@ module BoxCP : AbstractCP =
       let i1 = Abstract1.bound_variable man box var1 
       and i2 = Abstract1.bound_variable man box var2 in
       let open Interval in
-      let x1,x2 = (scalar_to_int i1.inf,scalar_to_int i1.sup) in
-      let y1,y2 = (scalar_to_int i2.inf,scalar_to_int i2.sup) in
+      let x1,x2 = (scalar_to_float i1.inf,scalar_to_float i1.sup) in
+      let y1,y2 = (scalar_to_float i2.inf,scalar_to_float i2.sup) in
       [x1,y1; x2,y1; x2,y2; x1,y2]
   end
  
@@ -519,7 +519,7 @@ module OctBoxCP : AbstractCP =
 	  (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
 	     |> Array.to_list
       in 
-    List.map (fun(a,b)-> (coeff_to_int a, coeff_to_int b)) v      
+    List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v      
   end
 
 (** 
@@ -571,6 +571,6 @@ module PolyCP : AbstractCP = struct
 	(Generator1.get_linexpr1 (Generator1.array_get gen' i)))
 	   |> Array.to_list
     in 
-    List.map (fun(a,b)-> (coeff_to_int a, coeff_to_int b)) v
+    List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
       
 end

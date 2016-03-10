@@ -8,12 +8,15 @@ module Solve(Abs : AbstractCP) =
   struct
     let man = Abs.get_manager
 
-    type consistency = Bottom | Sure | Maybe
+    type consistency = Empty | Full | Maybe
 
     let consistency abs tab =
-      if Abstract1.is_bottom man abs then abs
-      else Abstract1.meet_tcons_array man abs tab
-
+      if Abstract1.is_bottom man abs then Empty,abs
+      else 
+	let abs' = Abstract1.meet_tcons_array man abs tab in
+	(if tcons_for_all (Abstract1.sat_tcons man abs') tab then Full
+	else if Abstract1.is_bottom man abs then Empty else Maybe),abs'
+	  
     let draw abs info col =
       if !Constant.visualization then 
 	Vue.draw (Abs.points_to_draw abs) col info
@@ -22,67 +25,20 @@ module Solve(Abs : AbstractCP) =
       let info = Vue.get_info (Abs.points_to_draw abs) in
       draw abs info Graphics.yellow;
       let rec aux abs env nb_steps nb_sol =
-	let abs' = consistency abs tab in
-	if Abstract1.is_bottom man abs' then(
-	  draw abs info Graphics.red;	  
-          (* No solutions in this sub-tree. *)
-          (nb_steps, nb_sol)
-	)
-	else(
-	  if tcons_for_all (Abstract1.sat_tcons man abs') tab then begin
-	    draw abs' info Graphics.blue;
-	    (nb_steps, nb_sol+1)
-	  end  
-	  else begin
-	    Format.printf "sat_cons false\n";
-            let (small, exprs) = Abs.is_small abs' !Constant.precision in
-	    if small then(
-	      draw abs' info Graphics.green;
-	      (nb_steps, nb_sol+1)
-            )else begin
-	      Format.printf "small false\n";      
-	      draw abs' info Graphics.yellow;
-              (* Split the next variable, heuristic *)
-              let list_abs = Abs.split abs' exprs in
-              List.fold_left (fun (nbe, nbsol) absi ->
-		aux absi env (nbe+1) nbsol) (nb_steps, nb_sol
-	      ) list_abs
-	    end
-	  end)
-      in 
-      let return = aux abs env nb_steps nb_sol in
-      return
-	
-    (* Same as explore but with Breadth-first search *)
-    let explore2 abs env tab nb_steps nb_sol =
-      let info = Vue.get_info (Abs.points_to_draw abs) in
-      let queue = Queue.create() in
-      Queue.add abs queue;
-      let nb_step = ref 0
-      and nb_sol = ref 0 in
-      while not (Queue.is_empty queue) do
-	let abs = Queue.take queue in
-	draw abs info Graphics.yellow;
-	let abs' = consistency abs tab in
-	draw abs' info Graphics.yellow;
-	if Abstract1.is_bottom man abs' then ()
-	else if tcons_for_all (Abstract1.sat_tcons man abs') tab then begin
-	  draw abs' info Graphics.blue;
-	  incr nb_sol
-	end  
-	else
-          let (small, exprs) = Abs.is_small abs' !Constant.precision in
-	  if small then(
+	let cons,abs' = consistency abs tab in
+	match cons with
+	| Empty -> (nb_steps, nb_sol)
+	| Full -> draw abs' info Graphics.blue;(nb_steps, nb_sol+1)
+	| Maybe  ->
+	  (match (Abs.is_small abs' !Constant.precision) with
+	  | true,_ -> 
 	    draw abs' info Graphics.green;
-	    incr nb_sol
-          )
-          else begin
-            (* Split the next variable, heuristic *)
-            let list_abs = Abs.split abs' exprs in
-	    List.iter (fun e -> Queue.add e queue; incr nb_step) list_abs;
-	  end
-      done;
-      (!nb_step),(!nb_sol)
+	    (nb_steps, nb_sol+1)
+	  | _,exprs -> 
+	    draw abs' info Graphics.yellow;
+            Abs.split abs' exprs |>
+            List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol))
+      in aux abs env nb_steps nb_sol
 
     let solving env domains cons =
       let abs = Abs.of_lincons_array env domains in
