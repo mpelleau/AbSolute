@@ -3,7 +3,7 @@ open Mpqf
 open Format
 open Utils
 
-let split_prec = 0.000001
+let split_prec = 0.00001
 let split_prec_mpqf = Mpqf.of_float split_prec
 
 let sqrt2 = 0.707106781186548
@@ -44,9 +44,14 @@ let diam_interval itv =
   diam itv.Interval.inf itv.Interval.sup
 
 let mid inf sup = 
-  let mpqf_inf = scalar_to_mpqf inf in
-  let mpqf_sup = scalar_to_mpqf sup in
-  Scalar.of_mpqf (Mpqf.add (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) split_prec_mpqf)
+  let mpqf_inf = scalar_to_mpqf inf 
+  and mpqf_sup = scalar_to_mpqf sup in
+  let mid =
+    let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
+    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2) 
+    in Scalar.of_mpqf (Mpqf.add div_inf div_sup)
+  in mid
+  (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
 
 let mid_interval itv =
   mid itv.Interval.inf itv.Interval.sup
@@ -207,8 +212,10 @@ module BoxCP : AbstractCP =
       let dim = Mpqf.to_float max in
       let mid = mid_interval itv.(i_max) in
       let var = Environment.var_of_dim env i_max in
-      let typ_var = Environment.typ_of_var env var in
-      let value = if typ_var == Environment.INT then (scalar_plus_mpqf mid split_prec_mpqf) else mid in
+      let value = match Environment.typ_of_var env var with
+	| Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf 
+	| _ -> mid
+      in
       (* var <= mid*)
       let expr =  Linexpr1.make env in
       Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
@@ -216,6 +223,7 @@ module BoxCP : AbstractCP =
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       (dim <= prec, [expr; expr'])
+
     let split boxad list =
       let env = Abstract1.env boxad in
       let abs1 = meet_linexpr boxad man env (List.nth list 0) in
@@ -223,14 +231,12 @@ module BoxCP : AbstractCP =
       [abs1; abs2]
 
     let points_to_draw box =
-      let env = Abstract1.env box in
-      let var1 = Environment.var_of_dim env 0 
-      and var2 = Environment.var_of_dim env 1 in
-      let i1 = Abstract1.bound_variable man box var1 
-      and i2 = Abstract1.bound_variable man box var2 in
+      let b = Abstract1.to_box man box in
+      let i1 = Abstract1.(b.interval_array.(0))
+      and i2 = Abstract1.(b.interval_array.(1)) in
       let open Interval in
-      let x1,x2 = (scalar_to_float i1.inf,scalar_to_float i1.sup) in
-      let y1,y2 = (scalar_to_float i2.inf,scalar_to_float i2.sup) in
+      let x1,x2 = (scalar_to_float i1.inf, scalar_to_float i1.sup) in
+      let y1,y2 = (scalar_to_float i2.inf, scalar_to_float i2.sup) in
       [x1,y1; x2,y1; x2,y2; x1,y2]
   end
  
@@ -560,9 +566,7 @@ module PolyCP : AbstractCP = struct
     let env = Abstract1.env pol in
     let x = Environment.var_of_dim env 0 
     and y = Environment.var_of_dim env 1 in
-    let get_coord l = 
-      (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y)
-    in
+    let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in
     let l' = Abstract1.to_lincons_array man pol in
     let pol = Abstract1.of_lincons_array man env l' in
     let gen' = Abstract1.to_generator_array man pol in

@@ -49,15 +49,20 @@ let get_info l =
     ) ((min_x,max_x),(min_y,max_y)) l
   | _ -> assert false
 
+exception Cata
+
 let projection (a,b) (c,d) n =
+  if n < a || n > b then raise Cata;
   let r = (d-.c)/.(b-.a) in
   (n-.a) *. r +. c
 
-let to_coord (min_x,max_x) (min_y,max_y) (x,y) =
+let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
   let padding = 150. and s_x = size_x() |> float and s_y = size_y() |> float in
-  let x = projection (min_x,max_x) (padding,(s_x-.padding)) x
-  and y = projection (min_y,max_y) (padding,(s_y-.padding)) y
-  in (int_of_float x, int_of_float y)
+  try 
+    let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
+    and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
+    in (int_of_float a, int_of_float b)
+  with Cata -> (Format.printf "%f %f \n%!" a b; failwith "nimp")
 
 let draw dom col ((x_min,x_max),(y_min,y_max)) =
   let l = graham_sort dom in

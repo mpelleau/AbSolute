@@ -8,10 +8,12 @@ let scalar_to_mpqf = function
   | Scalar.Float x -> Mpqf.of_float x
   | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
 
-let scalar_to_float = function
+let scalar_to_float s = 
+  let res = match s with
   | Scalar.Mpqf x -> Mpqf.to_float x
   | Scalar.Float x -> x
   | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
+  in res
 
 let scalar_to_int x = scalar_to_float x |> int_of_float
 

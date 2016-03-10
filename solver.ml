@@ -11,11 +11,10 @@ module Solve(Abs : AbstractCP) =
     type consistency = Empty | Full | Maybe
 
     let consistency abs tab =
-      if Abstract1.is_bottom man abs then Empty,abs
-      else 
-	let abs' = Abstract1.meet_tcons_array man abs tab in
-	(if tcons_for_all (Abstract1.sat_tcons man abs') tab then Full
-	else if Abstract1.is_bottom man abs then Empty else Maybe),abs'
+      let abs' = Abstract1.meet_tcons_array man abs tab in
+      (if  Abstract1.is_bottom man abs' then Empty
+       else if tcons_for_all (Abstract1.sat_tcons man abs') tab then
+	 Full else Maybe),abs'
 	  
     let draw abs info col =
       if !Constant.visualization then 
@@ -28,16 +27,19 @@ module Solve(Abs : AbstractCP) =
 	let cons,abs' = consistency abs tab in
 	match cons with
 	| Empty -> (nb_steps, nb_sol)
-	| Full -> draw abs' info Graphics.blue;(nb_steps, nb_sol+1)
+	| Full -> 
+	  draw abs' info Graphics.blue; 
+	  (nb_steps, nb_sol+1)
 	| Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
 	  | true,_ -> 
 	    draw abs' info Graphics.green;
 	    (nb_steps, nb_sol+1)
-	  | _,exprs -> 
+	  | _,exprs ->
 	    draw abs' info Graphics.yellow;
             Abs.split abs' exprs |>
-            List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol))
+            List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol) 
+	  )
       in aux abs env nb_steps nb_sol
 
     let solving env domains cons =
