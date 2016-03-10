@@ -5,38 +5,37 @@ open Utils
 
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
-      
-  let bas_gauche l = 
-    let rec aux (best_x,best_y) l = 
-      match l with
-      | [] -> best_x,best_y
-      | (x,y)::b -> 
-	if best_y > y || best_y = y && x < best_x then
-	  aux (x,y) b
-	else aux (best_x,best_y) b
-    in aux (List.hd l) (List.tl l) 
     
-  let angle (ax,ay) (bx,by) =
-    let (ax,ay) = (bx -. ax), (by -. ay)
-    and (bx,by) = (1.,0.)
-    in 
-    let na = sqrt (ax *. ax +. ay *. ay)
-    and nb = sqrt (bx *. bx +. by *. by) in
-    let c = (ax *. bx +. ay *. by)/.(na*.nb)
-    and s = (ax *. by -. ay *. bx) in
-    (signF s)*.(acos c)
-      
-  let graham_sort l =
-    let p = bas_gauche l in
-    let comp p1 p2 =
-      if p1 = p then 1
-      else if p2 = p then -1
-      else if angle p p1 < angle p p2 then 1 
-      else if angle p p1 = angle p p2 then 0
-      else -1
-    in
-    List.sort comp l
-
+let bas_gauche l = 
+  let rec aux (best_x,best_y) l = 
+    match l with
+    | [] -> best_x,best_y
+    | (x,y)::b -> 
+      if best_y > y || best_y = y && x < best_x then
+	aux (x,y) b
+      else aux (best_x,best_y) b
+  in aux (List.hd l) (List.tl l) 
+  
+let angle (ax,ay) (bx,by) =
+  let (ax,ay) = (bx -. ax), (by -. ay)
+  and (bx,by) = (1.,0.) in 
+  let na = sqrt (ax *. ax +. ay *. ay)
+  and nb = sqrt (bx *. bx +. by *. by) in
+  let c = (ax *. bx +. ay *. by)/.(na*.nb)
+  and s = (ax *. by -. ay *. bx) in
+  (signF s)*.(acos c)
+    
+let graham_sort l =
+  let p = bas_gauche l in
+  let comp p1 p2 =
+    if p1 = p then 1
+    else if p2 = p then -1
+    else if angle p p1 < angle p p2 then 1 
+    else if angle p p1 = angle p p2 then 0
+    else -1
+  in
+  List.sort comp l
+    
 (* returns the bounds of a generator list *)
 let get_info l =
   match l with
@@ -48,22 +47,17 @@ let get_info l =
       (min_x,max_x),(min_y,max_y)
     ) ((min_x,max_x),(min_y,max_y)) l
   | _ -> assert false
-
-exception Cata
-
+  
 let projection (a,b) (c,d) n =
-  if n < a || n > b then raise Cata;
   let r = (d-.c)/.(b-.a) in
   (n-.a) *. r +. c
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
   let padding = 150. and s_x = size_x() |> float and s_y = size_y() |> float in
-  try 
-    let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
-    and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
-    in (int_of_float a, int_of_float b)
-  with Cata -> (Format.printf "%f %f \n%!" a b; failwith "nimp")
-
+  let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
+  and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
+  in (int_of_float a, int_of_float b)
+  
 let draw dom col ((x_min,x_max),(y_min,y_max)) =
   let l = graham_sort dom in
   let l = List.rev_map (to_coord (x_min,x_max) (y_min,y_max)) l in

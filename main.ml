@@ -24,6 +24,7 @@ let get_minimization_problem p =
 let parse_args () =
   let rec doit args = match args with
   | "-precision"::x::r -> Constant.precision := float_of_string x; doit r
+  | "-max_sol"::x::r -> Constant.max_sol := int_of_string x; doit r
   | "-max_iter"::x::r -> Constant.max_iter := int_of_string x; doit r
   | "-domain_s"::x::r -> Constant.domain_solving := x; doit r
   | "-domain_m"::x::r -> Constant.domain_minimizing:= x; doit r

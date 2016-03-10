@@ -6,10 +6,12 @@ OCAMLDEP =  ocamldep
 # libraries
 OPAMDIR = $(HOME)/.opam/4.02.3/lib
 APRONDIR = $(OPAMDIR)/apron
+ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
-OCAMLINC = -I $(APRONDIR) -I $(GMPDIR) -I visualization
-OCAMLLIBS = bigarray.cma gmp.cma apron.cma polkaMPQ.cma octD.cma boxMPQ.cma str.cma unix.cma graphics.cma -cclib "-L$(APRONDIR) -L$(GMPDIR)"
-OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa octD.cmxa boxMPQ.cmxa str.cmxa unix.cmxa graphics.cmxa -cclib "-L$(APRONDIR) -L$(GMPDIR)"
+CAMLIDLDIR = $(OPAMDIR)/camlidl
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR)
+OCAMLLIBS = bigarray.cma gmp.cma apron.cma polkaMPQ.cma zarith.cma octD.cma boxMPQ.cma str.cma unix.cma graphics.cma -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
+OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa zarith.cmxa octD.cmxa boxMPQ.cmxa str.cmxa unix.cmxa graphics.cmxa -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 CLIBS = -lgmp -lxcb
 
 # targets
