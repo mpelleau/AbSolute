@@ -1,0 +1,11 @@
+/*Deux Cercles */
+
+init{
+  real x = [0;40];
+  real y = [0;40];
+}
+
+constraints{
+  (x+20) + (y+20) <= 400;
+  (x) + (y) <= 1000;
+}

@@ -31,6 +31,7 @@ MLFILES = \
   frontend/syntax.ml \
   frontend/parser.ml \
   frontend/lexer.ml \
+  frontend/file_parser.ml \
   src/constant.ml \
   src/utils.ml \
   src/ADCP.ml \

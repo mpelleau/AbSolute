@@ -39,6 +39,7 @@ let main =
   parse_args ();
   solving := !Constant.problem <> "test";
   if !Constant.visualization then Vue.create_window 800 800;
+  (* Syntax.print Format.std_formatter (File_parser.parse !problem); *)
   if !solving then
     match !domain_solving with
     | "box" -> Solver.Box.solving (get_solving_problem !problem)

@@ -74,7 +74,7 @@ module Solve(Abs : AbstractCP) =
       let s' = {s with Manager.algorithm = 100} in
       Manager.set_funopt man Manager.Funid_meet_tcons_array s';
       if not (Abstract1.is_bottom man abs) then
-        let (nb_steps, nb_sol) = explore_breath_first abs env cons 1 0 in
+        let (nb_steps, nb_sol) = explore abs env cons 1 0 in
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
 	| 1 -> printf "Unique solution - #created nodes: %d@." nb_steps

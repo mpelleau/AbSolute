@@ -65,17 +65,17 @@ open Syntax
 %%
 
 file: 
-  TOK_INIT decls
-  TOK_CONSTR bexprs
+  TOK_INIT TOK_LBRACE decls TOK_RBRACE
+  TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE
   TOK_EOF
-  { {init=$2;constraints=$4} }
+  {{init=$3; constraints=$7}}
 
 decls:
   | decl decls {$1::$2}
   | {[]}
 
 bexprs:
-  | bexpr bexprs {$1::$2}
+  | bexpr TOK_SEMICOLON bexprs {$1::$3}
   | {[]}
 
 typ:
@@ -87,7 +87,7 @@ decl:
     { ($1, $2, $4) }
 
 init:
-  | TOK_LBRACKET TOK_const TOK_COMMA TOK_const TOK_RBRACKET 
+  | TOK_LBRACKET TOK_const TOK_SEMICOLON TOK_const TOK_RBRACKET 
       {($2,$4)}
 
 bexpr:
