@@ -1,7 +1,9 @@
 # tools
-OCAMLC =    ocamlc.opt
-OCAMLOPT =  ocamlopt.opt
-OCAMLDEP =  ocamldep
+OCAMLC    = ocamlc.opt
+OCAMLOPT  = ocamlopt.opt
+OCAMLDEP  = ocamldep
+OCAMLLEX  = ocamllex
+OCAMLYACC = ocamlyacc
 
 # libraries
 OPAMDIR = $(HOME)/.opam/4.02.3/lib
@@ -9,16 +11,30 @@ APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
 CAMLIDLDIR = $(OPAMDIR)/camlidl
-OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR)
-OCAMLLIBS = bigarray.cma gmp.cma apron.cma polkaMPQ.cma zarith.cma octD.cma boxMPQ.cma str.cma unix.cma graphics.cma -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
-OCAMLOPTLIBS = bigarray.cmxa gmp.cmxa apron.cmxa polkaMPQ.cmxa zarith.cmxa octD.cmxa boxMPQ.cmxa str.cmxa unix.cmxa graphics.cmxa -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I frontend
+LIBS = bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
+CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
+OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
+OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB) 
 CLIBS = -lgmp -lxcb
 
 # targets
 TARGETS = minimizer.opt solver.opt
 
 # source files
-MLFILES = constant.ml utils.ml ADCP.ml problems.ml vue.ml minimizer.ml solver.ml main.ml
+MLFILES = \
+  frontend/syntax.ml \
+  frontend/parser.ml \
+  frontend/lexer.ml \
+  src/constant.ml \
+  src/utils.ml \
+  src/ADCP.ml \
+  src/problems.ml \
+  src/vue.ml \
+  src/minimizer.ml \
+  src/solver.ml \
+  src/main.ml
+
 # MLIFILES = ADCP.mli
 
 # object files
@@ -55,6 +71,19 @@ minimizer: $(CMOFILES)
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC)  -c $*.ml
+
+%.ml: %.mll
+	$(OCAMLLEX) $*.mll
+
+%.ml %.mli: %.mly
+	$(OCAMLYACC) $*.mly
+
+clean:
+	rm -f depend $(TARGETS) $(AUTOGEN)
+	rm -f `find . -name "*.o"`
+	rm -f `find . -name "*.a"`
+	rm -f `find . -name "*.cm*"`
+	rm -f `find . -name "*~"`
 
 clean:
 	rm -f depend $(TARGETS) *.o *.a *.cm* *~ \#*
