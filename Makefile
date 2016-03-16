@@ -21,6 +21,11 @@ CLIBS = -lgmp -lxcb
 # targets
 TARGETS = minimizer.opt solver.opt
 
+AUTOGEN =\
+  frontend/parser.ml \
+  frontend/lexer.ml \
+  frontend/parser.mli
+
 # source files
 MLFILES = \
   frontend/syntax.ml \
@@ -84,9 +89,6 @@ clean:
 	rm -f `find . -name "*.a"`
 	rm -f `find . -name "*.cm*"`
 	rm -f `find . -name "*~"`
-
-clean:
-	rm -f depend $(TARGETS) *.o *.a *.cm* *~ \#*
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
