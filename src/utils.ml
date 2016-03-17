@@ -49,3 +49,143 @@ let tcons_for_all pred tcons =
     done;
     true
   with Exit -> false
+
+
+(******************************************************************)
+(*********************** Various operators ************************)
+(******************************************************************)
+
+let split_prec = 0.00001
+let split_prec_mpqf = Mpqf.of_float split_prec
+
+let sqrt2 = 0.707106781186548
+let sqrt2_mpqf = Mpqf.of_float sqrt2
+
+(* Compute the sum of two scalars *)
+let scalar_add sca sca' = 
+  let value = scalar_to_mpqf sca in
+  let value' = scalar_to_mpqf sca' in
+  let sum = Mpqf.add value value' in
+  Scalar.of_mpqf sum
+
+(* Compute the sum of two scalars *)
+let scalar_mul_sqrt2 sca = 
+  let value = scalar_to_mpqf sca in
+  let mult = Mpqf.mul value sqrt2_mpqf in
+  Scalar.of_mpqf mult
+
+(* Compute the sum of a scalar and a Mpqf *)
+let scalar_plus_mpqf sca mpqf = 
+  let value = scalar_to_mpqf sca in
+  let sum = Mpqf.add value mpqf in
+  Scalar.of_mpqf sum
+
+(* Compute the medium value of two scalars *)
+let mid inf sup = 
+  let mpqf_inf = scalar_to_mpqf inf 
+  and mpqf_sup = scalar_to_mpqf sup in
+  let mid =
+    let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
+    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2) 
+    in Scalar.of_mpqf (Mpqf.add div_inf div_sup)
+  in mid
+  (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
+
+(* Compute the middle value of an interval *)
+let mid_interval itv =
+  mid itv.Interval.inf itv.Interval.sup
+
+
+(* Compute the euclidian distance between two scalars *)
+let diam inf sup = 
+  let mpqf_inf = scalar_to_mpqf inf in
+  let mpqf_sup = scalar_to_mpqf sup in
+  Mpqf.sub mpqf_sup mpqf_inf
+
+(* Compute the diameter of an interval *)
+let diam_interval itv = 
+  diam itv.Interval.inf itv.Interval.sup
+
+
+(* Compute the euclidian distance between two arrays of floats. *)
+let dist tab1 tab2 =
+  if Array.length tab1 != Array.length tab2 then
+    failwith ("The two arrays must have the same length.")
+  else
+    let sum = ref 0. in
+    for i=0 to ((Array.length tab1)-1) do
+      sum := !sum +. ((tab1.(i) -. tab2.(i)) ** 2.)
+    done;
+    sqrt !sum
+
+(* Compute the maximal distance between a point and an array of points. 
+ * A point correspond to an array of floats.
+ *)
+let maxdist point tabpoints =
+  let length = Array.length tabpoints in
+  
+  let rec maxd i point_max i_max dist_max =
+    if i >= length then
+      (point_max, i_max, dist_max)
+    else
+      let dist_i = dist tabpoints.(i) point in
+      if dist_i > dist_max then
+        maxd (i+1) tabpoints.(i) i dist_i
+      else
+        maxd (i+1) point_max i_max dist_max
+  in
+  
+  let (point_max, i_max, dist_max) = maxd 1 tabpoints.(0) 0 (dist tabpoints.(0) point) in
+  
+  (point_max, i_max, dist_max)
+
+(* Compute the maximal distance between two points in an array of points. 
+   A point correspond to an array of floats *)
+let maxdisttab tabpoints =
+  let length = Array.length tabpoints in
+  let rec maxd i p1 i1 p2 i2 dist_max =
+    if i >= length then (p1, i1, p2, i2, dist_max)
+    else
+      try 
+	let tabpoints' = Array.sub tabpoints (i+1) (length-i-1) in
+	let (pj, j, dist) = maxdist tabpoints.(i) tabpoints' in
+	if dist > dist_max then maxd (i+1) tabpoints.(i) i pj j dist
+	else maxd (i+1) p1 i1 p2 i2 dist_max
+      with Invalid_argument _ -> (p1, i1, p2, i2, dist_max)
+  in
+  let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
+  let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
+  (p1, i1, p2, i2, dist_max)
+
+
+(* Converts a linear expression into its negation
+ * ex: converts 3x-y into -3x+y
+ *)
+let linexpr_neg linexpr env =
+  let linexpr' = Linexpr1.make env in
+  let list = ref [] in
+  let cst = Linexpr1.get_cst linexpr in
+  Linexpr1.iter (fun c -> fun v -> list := List.append !list [(Coeff.neg c, v)]) linexpr;
+  Linexpr1.set_list linexpr' !list (Some (Coeff.neg cst));
+  linexpr'
+
+
+(* Converts a Generator0 into an array of floats. *)
+let to_float_array gen size =
+  let tab = Array.make size 0. in
+  let gen_lin = gen.Generator0.linexpr0 in
+  for i=0 to (size-1) do
+    let coeff = Linexpr0.get_coeff gen_lin i in
+    tab.(i) <- coeff_to_float coeff
+  done;
+  tab
+
+
+(* Converts a Generator1 into an array of array of floats. *)
+let gen_to_array gens size =
+  let gen_tab = gens.Generator1.generator0_array in
+  let tab = Array.make (Array.length gen_tab) (Array.make size 0.) in
+  for i=0 to ((Array.length gen_tab)-1) do
+    tab.(i) <- to_float_array gen_tab.(i) size
+  done;
+  tab

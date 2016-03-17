@@ -14,9 +14,15 @@ let get_solving_problem p =
   | "two_circles" -> Problems.two_circles
   | "one_circle" -> Problems.one_circle
   | "cpr2" -> Problems.cpr2
+  | "octo_hole" -> Problems.octo_hole
   | _ -> "solving problem undefined "^p |> failwith
 
 let get_minimization_problem p =
+  match p with
+  | "test" -> Problems.test
+  | _ -> "minimization problem undefined "^p |> failwith
+
+let get_variousDA_problem p =
   match p with
   | "test" -> Problems.test
   | _ -> "minimization problem undefined "^p |> failwith
@@ -45,6 +51,9 @@ let main =
     | "box" -> Solver.Box.solving (get_solving_problem !problem)
     | "oct" -> Solver.Oct.solving (get_solving_problem !problem)
     | "poly" -> Solver.Poly.solving (get_solving_problem !problem)
+    | "boxNoct" -> VariousDA.BoxNOct.solving (get_solving_problem !problem)
+    | "boxNpoly" -> VariousDA.BoxNPoly.solving (get_solving_problem !problem)
+    | "octNpoly" -> VariousDA.OctNPoly.solving (get_solving_problem !problem)
     | _ -> "domain undefined"^(!domain_solving) |> failwith
   else
     match !domain_minimizing with

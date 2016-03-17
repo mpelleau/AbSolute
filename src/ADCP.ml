@@ -3,58 +3,12 @@ open Mpqf
 open Format
 open Utils
 
-let split_prec = 0.00001
-let split_prec_mpqf = Mpqf.of_float split_prec
-
-let sqrt2 = 0.707106781186548
-let sqrt2_mpqf = Mpqf.of_float sqrt2
-
-(* Compute the sum of two scalars *)
-let scalar_add sca sca' = 
-  let value = scalar_to_mpqf sca in
-  let value' = scalar_to_mpqf sca' in
-  let sum = Mpqf.add value value' in
-  Scalar.of_mpqf sum
-
-(* Compute the sum of two scalars *)
-let scalar_mul_sqrt2 sca = 
-  let value = scalar_to_mpqf sca in
-  let mult = Mpqf.mul value sqrt2_mpqf in
-  Scalar.of_mpqf mult
-
-(* Compute the sum of a scalar and a Mpqf *)
-let scalar_plus_mpqf sca mpqf = 
-  let value = scalar_to_mpqf sca in
-  let sum = Mpqf.add value mpqf in
-  Scalar.of_mpqf sum
-
 let meet_linexpr abs man env expr =
   let cons = Lincons1.make expr Lincons1.SUPEQ in
   let tab = Lincons1.array_make env 1 in
   Lincons1.array_set tab 0 cons;
   let abs' = Abstract1.meet_lincons_array man abs tab in
   abs'
-
-let diam inf sup =
-  let mpqf_inf = scalar_to_mpqf inf in
-  let mpqf_sup = scalar_to_mpqf sup in
-  Mpqf.sub mpqf_sup mpqf_inf
-
-let diam_interval itv =
-  diam itv.Interval.inf itv.Interval.sup
-
-let mid inf sup = 
-  let mpqf_inf = scalar_to_mpqf inf 
-  and mpqf_sup = scalar_to_mpqf sup in
-  let mid =
-    let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
-    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2) 
-    in Scalar.of_mpqf (Mpqf.add div_inf div_sup)
-  in mid
-  (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
-
-let mid_interval itv =
-  mid itv.Interval.inf itv.Interval.sup
 
 let rec largest tab i max i_max =
   if i>=Array.length tab then
@@ -78,7 +32,7 @@ let rec largest tab i max i_max =
       )
     )
 
-(** Compute the minimal and the maximal diameter of an array on intervals *)
+(* Compute the minimal and the maximal diameter of an array on intervals *)
 let rec minmax tab i max i_max min i_min =
   if i>=Array.length tab then
     (max, i_max, min, i_min)
@@ -91,75 +45,6 @@ let rec minmax tab i max i_max min i_min =
         minmax tab (i+1) max i_max dim i
       else
         minmax tab (i+1) max i_max min i_min
-
-(** Converts a Generator0 into an array of floats. *)
-let to_float_array gen size =
-  let tab = Array.make size 0. in
-  let gen_lin = gen.Generator0.linexpr0 in
-  for i=0 to (size-1) do
-    let coeff = Linexpr0.get_coeff gen_lin i in
-    tab.(i) <- coeff_to_float coeff
-  done;
-  tab
-
-(** Converts a Generator1 into an array of array of floats. *)
-let gen_to_array gens size =
-  let gen_tab = gens.Generator1.generator0_array in
-  let tab = Array.make (Array.length gen_tab) (Array.make size 0.) in
-  for i=0 to ((Array.length gen_tab)-1) do
-    tab.(i) <- to_float_array gen_tab.(i) size
-  done;
-  tab
-  
-(** Compute the euclidian distance between two arrays of floats. *)
-let dist tab1 tab2 =
-  if Array.length tab1 != Array.length tab2 then
-    failwith ("The two arrays must have the same length.")
-  else
-    let sum = ref 0. in
-    for i=0 to ((Array.length tab1)-1) do
-      sum := !sum +. ((tab1.(i) -. tab2.(i)) ** 2.)
-    done;
-    sqrt !sum
-
-(** Compute the maximal distance between a point and an array of points. 
- * A point correspond to an array of floats.
- *)
-let maxdist point tabpoints =
-  let length = Array.length tabpoints in
-  
-  let rec maxd i point_max i_max dist_max =
-    if i >= length then
-      (point_max, i_max, dist_max)
-    else
-      let dist_i = dist tabpoints.(i) point in
-      if dist_i > dist_max then
-        maxd (i+1) tabpoints.(i) i dist_i
-      else
-        maxd (i+1) point_max i_max dist_max
-  in
-  
-  let (point_max, i_max, dist_max) = maxd 1 tabpoints.(0) 0 (dist tabpoints.(0) point) in
-  
-  (point_max, i_max, dist_max)
-
-(* Compute the maximal distance between two points in an array of points. 
-   A point correspond to an array of floats *)
-let maxdisttab tabpoints =
-  let length = Array.length tabpoints in
-  let rec maxd i p1 i1 p2 i2 dist_max =
-    if i >= length then (p1, i1, p2, i2, dist_max)
-    else
-      try 
-	let tabpoints' = Array.sub tabpoints (i+1) (length-i-1) in
-	let (pj, j, dist) = maxdist tabpoints.(i) tabpoints' in
-	if dist > dist_max then maxd (i+1) tabpoints.(i) i pj j dist
-	else maxd (i+1) p1 i1 p2 i2 dist_max
-      with Invalid_argument _ -> (p1, i1, p2, i2, dist_max)
-  in
-  let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
-  let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
-  (p1, i1, p2, i2, dist_max)
 
 (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
  * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line 
@@ -190,12 +75,15 @@ module type AbstractCP =
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
   val points_to_draw : t Abstract1.t -> (float * float) list
+  (* val to_box : t Abstract1.t -> Environment.t -> Box.t Apron.Abstract1.t *)
+  (* val to_oct : t Abstract1.t -> Environment.t -> Oct.t Apron.Abstract1.t *)
+  (* val to_poly : t Abstract1.t -> Environment.t -> (Polka.strict Polka.t) Apron.Abstract1.t *)
  end
  
 (** 
  * Module for the Box Abstract Domains for Constraint Programming.
  *)
-module BoxCP : AbstractCP =
+module BoxCP  =
   struct
     type t = Box.t
     let man = Box.manager_alloc ()
@@ -238,6 +126,23 @@ module BoxCP : AbstractCP =
       let x1,x2 = (scalar_to_float i1.inf, scalar_to_float i1.sup) in
       let y1,y2 = (scalar_to_float i2.inf, scalar_to_float i2.sup) in
       [x1,y1; x2,y1; x2,y2; x1,y2]
+
+    let to_box box env = Abstract1.change_environment man box env false
+
+    let to_oct box env = 
+      let box' = Abstract1.change_environment man box env false in
+      let bounds = Abstract1.to_box man box' in
+      let (ivars, rvars) = Environment.vars env in
+      let tvars = Array.append ivars rvars in
+      let oct = Abstract1.of_box (Oct.manager_alloc ()) env tvars bounds.Abstract1.interval_array in
+      oct
+    
+    let to_poly box env = 
+      let box' = Abstract1.change_environment man box env false in
+      let cons = Abstract1.to_lincons_array man box' in
+      let poly = Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env cons in
+      poly
+
   end
  
 (** 
@@ -361,6 +266,24 @@ module OctMinMinCP : AbstractCP =
       tcons_for_all (Abstract1.sat_tcons man box) cons
 
     let points_to_draw box = []
+
+    let to_box oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let bounds = Abstract1.to_box man oct' in
+      let (ivars, rvars) = Environment.vars env in
+      let tvars = Array.append ivars rvars in
+      let box = Abstract1.of_box (Box.manager_alloc ()) env tvars bounds.Abstract1.interval_array in
+      box
+
+    let to_oct oct env = 
+      Abstract1.change_environment man oct env false
+
+    let to_poly oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let cons = Abstract1.to_lincons_array man oct' in
+      let poly = Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env cons in
+      poly
+
   end
 
 (** 
@@ -472,13 +395,30 @@ module OctMinMaxCP : AbstractCP =
 
     let points_to_draw box = []
 
+    let to_box oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let bounds = Abstract1.to_box man oct' in
+      let (ivars, rvars) = Environment.vars env in
+      let tvars = Array.append ivars rvars in
+      let box = Abstract1.of_box (Box.manager_alloc ()) env tvars bounds.Abstract1.interval_array in
+      box
+
+    let to_oct oct env = 
+      Abstract1.change_environment man oct env false
+
+    let to_poly oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let cons = Abstract1.to_lincons_array man oct' in
+      let poly = Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env cons in
+      poly
+
   end
 
  
 (** 
  * Module for the Octagon Abstract Domains for Constraint Programming.
  *)
-module OctBoxCP : AbstractCP =
+module OctBoxCP =
   struct
     type t = Oct.t
     let man = Oct.manager_alloc ()
@@ -526,12 +466,29 @@ module OctBoxCP : AbstractCP =
 	     |> Array.to_list
       in 
     List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v      
+
+    let to_box oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let bounds = Abstract1.to_box man oct' in
+      let (ivars, rvars) = Environment.vars env in
+      let tvars = Array.append ivars rvars in
+      let box = Abstract1.of_box (Box.manager_alloc ()) env tvars bounds.Abstract1.interval_array in
+      box
+
+    let to_oct oct env = 
+      Abstract1.change_environment man oct env false
+
+    let to_poly oct env = 
+      let oct' = Abstract1.change_environment man oct env false in
+      let cons = Abstract1.to_lincons_array man oct' in
+      let poly = Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env cons in
+      poly
   end
 
 (** 
  * Module for the Polyhedron Abstract Domains for Constraint Programming.
  *)
-module PolyCP : AbstractCP = struct
+module PolyCP = struct
   type t = Polka.strict Polka.t
   let man = Polka.manager_alloc_strict()
   let of_lincons_array env domains =
@@ -576,5 +533,23 @@ module PolyCP : AbstractCP = struct
 	   |> Array.to_list
     in 
     List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
-      
+
+    let to_box poly env =
+      let poly' = Abstract1.change_environment man poly env false in
+      let bounds = Abstract1.to_box man poly' in
+      let (ivars, rvars) = Environment.vars env in
+      let tvars = Array.append ivars rvars in
+      let box = Abstract1.of_box (Box.manager_alloc ()) env tvars bounds.Abstract1.interval_array in
+      box
+
+    let to_oct poly env =
+      let poly' = Abstract1.change_environment man poly env false in
+      let gens = Abstract1.to_generator_array man poly' in
+      let dim = Environment.dimension env in
+      let oct0 = Oct.of_generator_array (Oct.manager_alloc ()) dim.Dim.intd dim.Dim.reald gens.Generator1.generator0_array in
+      let oct = {Abstract1.abstract0 = oct0; Abstract1.env = env} in
+      oct
+
+    let to_poly poly env =
+      Abstract1.change_environment man poly env false
 end

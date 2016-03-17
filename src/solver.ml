@@ -83,7 +83,7 @@ module Solve(Abs : AbstractCP) =
         printf "No Solutions - #created nodes: 0@."
 
     let solving solving_problem =
-      let (env, domains, _, constraints) = solving_problem in
+      let (env, domains, _, constraints, _, _) = solving_problem in
       solving env domains constraints
   end
 
