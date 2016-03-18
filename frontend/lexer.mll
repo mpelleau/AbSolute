@@ -20,7 +20,7 @@ let _ =
    ]
 
 (* (exact) parsing of decimal constants constants *)
-let parse_const c =
+(*let parse_const c =
   let rec div10 x n =
     if n <= 0 then x else div10 (x /. (float_of_int 10)) (n-1)
   in
@@ -31,6 +31,9 @@ let parse_const c =
     div10 (float_of_string x) p'
   with Not_found ->
     float_of_string c
+*)
+
+let parse_const = float_of_string
 }
 
 
@@ -61,6 +64,7 @@ rule token = parse
 | "-"    { TOK_MINUS }
 | "*"    { TOK_MULTIPLY }
 | "/"    { TOK_DIVIDE }
+| "^"    { TOK_POW }
 | "<"    { TOK_LESS }
 | ">"    { TOK_GREATER }
 | "<="   { TOK_LESS_EQUAL }
