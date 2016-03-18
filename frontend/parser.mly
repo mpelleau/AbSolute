@@ -104,7 +104,7 @@ expr:
   | TOK_COS expr                        { Unary (COS,$2) }
   | TOK_SIN expr                        { Unary (SIN,$2) }
   | TOK_SQRT expr                       { Unary (SQRT,$2) }
-  | TOK_const                           { Cst ($1,$1) }
+  | TOK_const                           { Cst ($1) }
   | parenthesized_expr                  { $1 }
 
 parenthesized_expr :
