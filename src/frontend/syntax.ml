@@ -82,6 +82,8 @@ let print_assign fmt (a,b,c) =
   Format.fprintf fmt "%a %a=%a" print_typ a print_var b print_dom c
 
 let rec print_expr fmt = function  
+  | Unary (NEG, e) -> 
+    Format.fprintf fmt "(- %a)" print_expr e
   | Unary (u, e) -> 
     Format.fprintf fmt "%a %a" print_unop u print_expr e
   | Binary (b, e1 , e2) -> 

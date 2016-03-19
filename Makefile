@@ -11,7 +11,7 @@ APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
 CAMLIDLDIR = $(OPAMDIR)/camlidl
-OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I frontend
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/frontend
 LIBS = bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
 CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
@@ -22,16 +22,16 @@ CLIBS = -lgmp -lxcb
 TARGETS = minimizer.opt solver.opt variousDA.opt
 
 AUTOGEN =\
-  frontend/parser.ml \
-  frontend/lexer.ml \
-  frontend/parser.mli
+  src/frontend/parser.ml \
+  src/frontend/lexer.ml \
+  src/frontend/parser.mli
 
 # source files
 MLFILES = \
-  frontend/syntax.ml \
-  frontend/parser.ml \
-  frontend/lexer.ml \
-  frontend/file_parser.ml \
+  src/frontend/syntax.ml \
+  src/frontend/parser.ml \
+  src/frontend/lexer.ml \
+  src/frontend/file_parser.ml \
   src/constant.ml \
   src/utils.ml \
   src/ADCP.ml \
