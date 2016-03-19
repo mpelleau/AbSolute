@@ -42,15 +42,11 @@ open Syntax
 %token TOK_EOF
 
 /* priorities */
-%left TOK_OR
-%left TOK_AND
-%nonassoc TOK_NOT
-%left TOK_PLUS 
-%left TOK_MINUS
-%left TOK_MULTIPLY 
-%left TOK_DIVIDE
+%left TOK_OR TOK_AND
 %left TOK_POW
-%nonassoc unary_minus
+%left TOK_MULTIPLY  TOK_DIVIDE
+%left TOK_PLUS
+%nonassoc TOK_MINUS
 %nonassoc TOK_COS TOK_SIN TOK_SQRT
 
 %type <typ> typ
@@ -99,34 +95,33 @@ bexpr:
 
 
 expr:
-  | TOK_id                              { Var $1 }
-  | binop_expr                          { $1 }
-  | TOK_COS expr                        { Unary (COS,$2) }
-  | TOK_SIN expr                        { Unary (SIN,$2) }
-  | TOK_SQRT expr                       { Unary (SQRT,$2) }
-  | TOK_const                           { Cst ($1) }
   | parenthesized_expr                  { $1 }
+  | binop_expr                          { $1 }
+  | TOK_COS       expr                  { Unary (COS,$2) }
+  | TOK_SIN       expr                  { Unary (SIN,$2) }
+  | TOK_SQRT      expr                  { Unary (SQRT,$2) }
+  | leaf                                { $1 }
+
+leaf:
+  | TOK_const                           { Cst ($1) }
+  | TOK_id                              { Var $1 }
 
 parenthesized_expr :
-  | TOK_LPAREN expr TOK_RPAREN                { $2 }
-  | TOK_LPAREN expr_with_prefix TOK_RPAREN    { $2 }
-
+  | TOK_LPAREN expr TOK_RPAREN   { $2 }
+  | TOK_LPAREN TOK_MINUS expr TOK_RPAREN   { Unary (NEG, $3) }
 
 binop_expr:
-  | expr TOK_POW expr {Binary (POW,$1,$3)}
-  | binop_expr2 {$1}
+  | expr TOK_POW expr  {Binary (POW,$1,$3)}
+  | binop_expr2        {$1}
 
 binop_expr2:
-  | expr TOK_DIVIDE expr {Binary(DIV,$1,$3)}
-  | expr TOK_MULTIPLY expr {Binary(MUL,$1,$3)}
-  | binop_expr3 {$1}
+  | expr TOK_DIVIDE   expr  {Binary(DIV,$1,$3)}
+  | expr TOK_MULTIPLY expr  {Binary(MUL,$1,$3)}
+  | binop_expr3             {$1}
 
 binop_expr3:
-  | expr TOK_PLUS expr {Binary(ADD,$1,$3)}
+  | expr TOK_PLUS  expr {Binary(ADD,$1,$3)}
   | expr TOK_MINUS expr {Binary(SUB,$1,$3)}
-
-expr_with_prefix :
-  | TOK_MINUS expr { Unary (NEG,$2) }
 
 cmp:
   | TOK_LESS                    { LT }
