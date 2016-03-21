@@ -181,8 +181,7 @@ module Solve (Reduced : Reduction) =
 
     let solving solving_problem =
       let (env, domains, _, _, cons, cons') = TA.to_apron solving_problem in
-      printf "cons = %a\ncons' = %a\n" tcons1_print_array cons tcons1_print_array cons';
-      solving env domains cons' cons
+      solving env domains cons cons'
   end
 
 module BoxNOct = Solve(BoxAndOct)

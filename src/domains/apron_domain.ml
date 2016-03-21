@@ -129,6 +129,6 @@ module SyntaxTranslator (D:ADomain) = struct
      domains,
      [all],
      (Utils.tcons_list_to_earray all),
-     (Utils.tcons_list_to_earray c_l),
-     (Utils.tcons_list_to_earray c_nl))
+     (Utils.tcons_list_to_earray c_nl),
+     (Utils.tcons_list_to_earray c_l))
 end
