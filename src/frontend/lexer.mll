@@ -16,7 +16,9 @@ let _ =
       "cos",            TOK_COS;
       "sin",            TOK_SIN;
       "int",            TOK_INT;
-      "real",           TOK_REAL
+      "real",           TOK_REAL;
+      "oo",             TOK_INF;
+      "-oo",            TOK_MINF
    ]
 
 (* (exact) parsing of decimal constants constants *)

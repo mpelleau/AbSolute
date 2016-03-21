@@ -3,6 +3,6 @@
 *.opt
 depend
 *~
-frontend/parser.ml
-frontend/parser.mli
-frontend/lexer.ml
+*parser.ml
+*parser.mli
+*lexer.ml

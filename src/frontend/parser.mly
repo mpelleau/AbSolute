@@ -36,6 +36,9 @@ open Syntax
 %token TOK_INIT
 %token TOK_CONSTR
 
+%token TOK_MINF
+%token TOK_INF
+
 %token <string> TOK_id
 %token <float> TOK_const
 
@@ -43,11 +46,11 @@ open Syntax
 
 /* priorities */
 %left TOK_OR TOK_AND
+%nonassoc TOK_NOT
+%left TOK_PLUS TOK_MINUS
 %left TOK_MULTIPLY  TOK_DIVIDE
-%left TOK_PLUS
-%left TOK_POW
-%nonassoc TOK_MINUS
-%nonassoc TOK_COS TOK_SIN TOK_SQRT
+%nonassoc unary_minus
+%nonassoc TOK_COS TOK_SIN TOK_SQRT TOK_POW
 
 %type <typ> typ
 %type <dom> init
@@ -83,8 +86,14 @@ decl:
     { ($1, $2, $4) }
 
 init:
-  | TOK_LBRACKET TOK_const TOK_SEMICOLON TOK_const TOK_RBRACKET 
-      {($2,$4)}
+  | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_INF TOK_RBRACKET     {Top}
+  | TOK_LBRACKET TOK_MINF TOK_SEMICOLON const TOK_RBRACKET       {Minf ($4)}
+  | TOK_LBRACKET const TOK_SEMICOLON TOK_INF TOK_RBRACKET        {Inf ($2)}
+  | TOK_LBRACKET const TOK_SEMICOLON const TOK_RBRACKET          {Finite($2,$4)}
+
+const:
+  | TOK_const {$1}
+  | TOK_MINUS TOK_const {(-.$2)}
 
 bexpr:
   | expr cmp expr                       {Cmp ($2, $1, $3)}
@@ -95,20 +104,17 @@ bexpr:
 
 
 expr:
-  | parenthesized_expr                  { $1 }
+  | TOK_LPAREN expr TOK_RPAREN          { $2 }
   | binop_expr                          { $1 }
-  | TOK_COS       expr                  { Unary (COS,$2) }
-  | TOK_SIN       expr                  { Unary (SIN,$2) }
+  | TOK_MINUS expr %prec unary_minus    { Unary (NEG, $2) }
+  | TOK_COS       expr                  { Unary (COS, $2) }
+  | TOK_SIN       expr                  { Unary (SIN, $2) }
   | TOK_SQRT      expr                  { Unary (SQRT,$2) }
   | leaf                                { $1 }
 
 leaf:
   | TOK_const                           { Cst ($1) }
   | TOK_id                              { Var $1 }
-
-parenthesized_expr :
-  | TOK_LPAREN expr TOK_RPAREN   { $2 }
-  | TOK_LPAREN TOK_MINUS expr TOK_RPAREN   { Unary (NEG, $3) }
 
 binop_expr:
   | expr TOK_POW expr  {Binary (POW,$1,$3)}
@@ -128,5 +134,5 @@ cmp:
   | TOK_GREATER                 { GT }
   | TOK_LESS_EQUAL              { LEQ } 
   | TOK_GREATER_EQUAL           { GEQ }
-  | TOK_EQUAL_EQUAL             { EQ }
+  | TOK_ASSIGN                  { EQ }
   | TOK_NOT_EQUAL               { NEQ }

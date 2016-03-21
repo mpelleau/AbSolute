@@ -65,7 +65,7 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cmp (cmp, e1, e2) -> cmp_expr_to_apron (e1,cmp,e2) env
     | _ -> failwith "NOT, OR and AND are not implemented yet"
     
-  let abstract_of_dom a v (l,h) =
+  let abstract_of_finite a v (l,h) =
     let env = Abstract1.env a in
     let v = Var.of_string v in
     let ar = Lincons1.array_make env 2 in
@@ -79,11 +79,26 @@ module SyntaxTranslator (D:ADomain) = struct
       Lincons1.set_list c2 [Coeff.s_of_float (-1.), v] (Some (Coeff.s_of_float h));
       Lincons1.array_set ar 1 c2
     );
-    let a = Abstract1.meet_lincons_array man a ar in
-    Environment.print Format.std_formatter env;
-    Format.printf "domain = %a@." Abstract1.print a;
-    a
-  
+    Abstract1.meet_lincons_array man a ar
+
+  let abstract_of_dom a v = function
+    | Finite (l,h) -> abstract_of_finite a v (l,h)
+    | Top -> Abstract1.(top man a.env)
+    | Minf i ->
+      let v = Var.of_string v in
+      let ar = Lincons1.array_make a.Abstract1.env 1 in
+      let c2 = Lincons1.make( Linexpr1.make a.Abstract1.env) Lincons1.SUPEQ in
+      Lincons1.set_list c2 [Coeff.s_of_float (-1.), v] (Some (Coeff.s_of_float i));
+      Lincons1.array_set ar 0 c2;
+      Abstract1.meet_lincons_array man a ar
+    | Inf i ->      
+      let v = Var.of_string v in
+      let ar = Lincons1.array_make a.Abstract1.env 1 in
+      let c1 = Lincons1.make( Linexpr1.make a.Abstract1.env) Lincons1.SUPEQ in
+      Lincons1.set_list c1 [Coeff.s_of_float 1., v] (Some (Coeff.s_of_float (-. i)));
+      Lincons1.array_set ar 0 c1;
+      Abstract1.meet_lincons_array man a ar
+
   let to_apron p =
     let integers,reals = List.partition (fun (a,_,_) -> a = INT) p.init in
     let integers = List.map (fun (_,v,_) -> Var.of_string v) integers |> Array.of_list

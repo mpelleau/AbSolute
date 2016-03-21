@@ -29,6 +29,8 @@ type token =
   | TOK_SQRT
   | TOK_INIT
   | TOK_CONSTR
+  | TOK_MINF
+  | TOK_INF
   | TOK_id of (string)
   | TOK_const of (float)
   | TOK_EOF

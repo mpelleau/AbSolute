@@ -16,7 +16,9 @@ let _ =
       "cos",            TOK_COS;
       "sin",            TOK_SIN;
       "int",            TOK_INT;
-      "real",           TOK_REAL
+      "real",           TOK_REAL;
+      "oo",             TOK_INF;
+      "-oo",            TOK_MINF
    ]
 
 (* (exact) parsing of decimal constants constants *)
@@ -35,7 +37,7 @@ let _ =
 
 let parse_const = float_of_string
 
-# 39 "src/frontend/lexer.ml"
+# 41 "src/frontend/lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\226\255\002\000\007\000\228\255\078\000\090\000\013\000\
@@ -194,163 +196,163 @@ and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 50 "src/frontend/lexer.mll"
+# 52 "src/frontend/lexer.mll"
                                                                id
-# 200 "src/frontend/lexer.ml"
+# 202 "src/frontend/lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 51 "src/frontend/lexer.mll"
+# 53 "src/frontend/lexer.mll"
 ( try Hashtbl.find kwd_table id with Not_found -> TOK_id id )
-# 204 "src/frontend/lexer.ml"
+# 206 "src/frontend/lexer.ml"
 
   | 1 ->
-# 55 "src/frontend/lexer.mll"
+# 57 "src/frontend/lexer.mll"
          ( TOK_LPAREN )
-# 209 "src/frontend/lexer.ml"
+# 211 "src/frontend/lexer.ml"
 
   | 2 ->
-# 56 "src/frontend/lexer.mll"
+# 58 "src/frontend/lexer.mll"
          ( TOK_RPAREN )
-# 214 "src/frontend/lexer.ml"
+# 216 "src/frontend/lexer.ml"
 
   | 3 ->
-# 57 "src/frontend/lexer.mll"
+# 59 "src/frontend/lexer.mll"
          ( TOK_LBRACE )
-# 219 "src/frontend/lexer.ml"
+# 221 "src/frontend/lexer.ml"
 
   | 4 ->
-# 58 "src/frontend/lexer.mll"
+# 60 "src/frontend/lexer.mll"
          ( TOK_RBRACE )
-# 224 "src/frontend/lexer.ml"
+# 226 "src/frontend/lexer.ml"
 
   | 5 ->
-# 59 "src/frontend/lexer.mll"
+# 61 "src/frontend/lexer.mll"
          ( TOK_LBRACKET )
-# 229 "src/frontend/lexer.ml"
+# 231 "src/frontend/lexer.ml"
 
   | 6 ->
-# 60 "src/frontend/lexer.mll"
+# 62 "src/frontend/lexer.mll"
          ( TOK_RBRACKET )
-# 234 "src/frontend/lexer.ml"
+# 236 "src/frontend/lexer.ml"
 
   | 7 ->
-# 61 "src/frontend/lexer.mll"
+# 63 "src/frontend/lexer.mll"
          ( TOK_COMMA )
-# 239 "src/frontend/lexer.ml"
+# 241 "src/frontend/lexer.ml"
 
   | 8 ->
-# 62 "src/frontend/lexer.mll"
+# 64 "src/frontend/lexer.mll"
          ( TOK_SEMICOLON )
-# 244 "src/frontend/lexer.ml"
+# 246 "src/frontend/lexer.ml"
 
   | 9 ->
-# 63 "src/frontend/lexer.mll"
+# 65 "src/frontend/lexer.mll"
          ( TOK_PLUS )
-# 249 "src/frontend/lexer.ml"
+# 251 "src/frontend/lexer.ml"
 
   | 10 ->
-# 64 "src/frontend/lexer.mll"
+# 66 "src/frontend/lexer.mll"
          ( TOK_MINUS )
-# 254 "src/frontend/lexer.ml"
+# 256 "src/frontend/lexer.ml"
 
   | 11 ->
-# 65 "src/frontend/lexer.mll"
+# 67 "src/frontend/lexer.mll"
          ( TOK_MULTIPLY )
-# 259 "src/frontend/lexer.ml"
+# 261 "src/frontend/lexer.ml"
 
   | 12 ->
-# 66 "src/frontend/lexer.mll"
+# 68 "src/frontend/lexer.mll"
          ( TOK_DIVIDE )
-# 264 "src/frontend/lexer.ml"
+# 266 "src/frontend/lexer.ml"
 
   | 13 ->
-# 67 "src/frontend/lexer.mll"
+# 69 "src/frontend/lexer.mll"
          ( TOK_POW )
-# 269 "src/frontend/lexer.ml"
+# 271 "src/frontend/lexer.ml"
 
   | 14 ->
-# 68 "src/frontend/lexer.mll"
+# 70 "src/frontend/lexer.mll"
          ( TOK_LESS )
-# 274 "src/frontend/lexer.ml"
+# 276 "src/frontend/lexer.ml"
 
   | 15 ->
-# 69 "src/frontend/lexer.mll"
+# 71 "src/frontend/lexer.mll"
          ( TOK_GREATER )
-# 279 "src/frontend/lexer.ml"
+# 281 "src/frontend/lexer.ml"
 
   | 16 ->
-# 70 "src/frontend/lexer.mll"
+# 72 "src/frontend/lexer.mll"
          ( TOK_LESS_EQUAL )
-# 284 "src/frontend/lexer.ml"
+# 286 "src/frontend/lexer.ml"
 
   | 17 ->
-# 71 "src/frontend/lexer.mll"
+# 73 "src/frontend/lexer.mll"
          ( TOK_GREATER_EQUAL )
-# 289 "src/frontend/lexer.ml"
+# 291 "src/frontend/lexer.ml"
 
   | 18 ->
-# 72 "src/frontend/lexer.mll"
+# 74 "src/frontend/lexer.mll"
          ( TOK_EQUAL_EQUAL )
-# 294 "src/frontend/lexer.ml"
+# 296 "src/frontend/lexer.ml"
 
   | 19 ->
-# 73 "src/frontend/lexer.mll"
+# 75 "src/frontend/lexer.mll"
          ( TOK_NOT_EQUAL )
-# 299 "src/frontend/lexer.ml"
+# 301 "src/frontend/lexer.ml"
 
   | 20 ->
-# 74 "src/frontend/lexer.mll"
+# 76 "src/frontend/lexer.mll"
          ( TOK_ASSIGN )
-# 304 "src/frontend/lexer.ml"
+# 306 "src/frontend/lexer.ml"
 
   | 21 ->
-# 75 "src/frontend/lexer.mll"
+# 77 "src/frontend/lexer.mll"
          ( TOK_AND )
-# 309 "src/frontend/lexer.ml"
+# 311 "src/frontend/lexer.ml"
 
   | 22 ->
-# 76 "src/frontend/lexer.mll"
+# 78 "src/frontend/lexer.mll"
          ( TOK_OR )
-# 314 "src/frontend/lexer.ml"
+# 316 "src/frontend/lexer.ml"
 
   | 23 ->
-# 77 "src/frontend/lexer.mll"
+# 79 "src/frontend/lexer.mll"
          ( TOK_NOT )
-# 319 "src/frontend/lexer.ml"
+# 321 "src/frontend/lexer.ml"
 
   | 24 ->
 let
-# 80 "src/frontend/lexer.mll"
+# 82 "src/frontend/lexer.mll"
            c
-# 325 "src/frontend/lexer.ml"
+# 327 "src/frontend/lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 80 "src/frontend/lexer.mll"
+# 82 "src/frontend/lexer.mll"
              ( TOK_const (float_of_string c) )
-# 329 "src/frontend/lexer.ml"
+# 331 "src/frontend/lexer.ml"
 
   | 25 ->
-# 83 "src/frontend/lexer.mll"
+# 85 "src/frontend/lexer.mll"
        ( comment lexbuf; token lexbuf )
-# 334 "src/frontend/lexer.ml"
+# 336 "src/frontend/lexer.ml"
 
   | 26 ->
-# 84 "src/frontend/lexer.mll"
+# 86 "src/frontend/lexer.mll"
                       ( token lexbuf )
-# 339 "src/frontend/lexer.ml"
+# 341 "src/frontend/lexer.ml"
 
   | 27 ->
-# 85 "src/frontend/lexer.mll"
+# 87 "src/frontend/lexer.mll"
           ( new_line lexbuf; token lexbuf )
-# 344 "src/frontend/lexer.ml"
+# 346 "src/frontend/lexer.ml"
 
   | 28 ->
-# 86 "src/frontend/lexer.mll"
+# 88 "src/frontend/lexer.mll"
         ( token lexbuf )
-# 349 "src/frontend/lexer.ml"
+# 351 "src/frontend/lexer.ml"
 
   | 29 ->
-# 89 "src/frontend/lexer.mll"
+# 91 "src/frontend/lexer.mll"
       ( TOK_EOF )
-# 354 "src/frontend/lexer.ml"
+# 356 "src/frontend/lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
       __ocaml_lex_token_rec lexbuf __ocaml_lex_state
@@ -360,19 +362,19 @@ and comment lexbuf =
 and __ocaml_lex_comment_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 93 "src/frontend/lexer.mll"
+# 95 "src/frontend/lexer.mll"
        ( () )
-# 366 "src/frontend/lexer.ml"
+# 368 "src/frontend/lexer.ml"
 
   | 1 ->
-# 94 "src/frontend/lexer.mll"
+# 96 "src/frontend/lexer.mll"
                 ( comment lexbuf )
-# 371 "src/frontend/lexer.ml"
+# 373 "src/frontend/lexer.ml"
 
   | 2 ->
-# 95 "src/frontend/lexer.mll"
+# 97 "src/frontend/lexer.mll"
           ( new_line lexbuf; comment lexbuf )
-# 376 "src/frontend/lexer.ml"
+# 378 "src/frontend/lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
       __ocaml_lex_comment_rec lexbuf __ocaml_lex_state
