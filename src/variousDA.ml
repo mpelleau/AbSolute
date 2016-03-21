@@ -175,9 +175,12 @@ module Solve (Reduced : Reduction) =
       else
         printf "No Solutions - #created nodes: 0@."
 
+   let tcons1_print_array fmt tab = Tcons1.array_print fmt tab
+
     let solving solving_problem =
       let (env, domains, _, _, cons, cons') = TA.to_apron solving_problem in
-      solving env domains cons cons'
+      printf "cons = %a\ncons' = %a\n" tcons1_print_array cons tcons1_print_array cons';
+      solving env domains cons' cons
   end
 
 module BoxNOct = Solve(BoxAndOct)
