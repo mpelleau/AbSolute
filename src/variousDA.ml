@@ -109,7 +109,7 @@ module Solve (Reduced : Reduction) =
     let explore abs env tab abs' nb_steps nb_sol =
       let info = Vue.get_info (Reduced.A.points_to_draw abs) in
       draw_a abs info Graphics.yellow;
-      let (abs, _) = Reduced.reduced_product abs abs' in
+      let abs = Reduced.b_meet_a abs abs' in
       let rec aux abs env nb_steps nb_sol =
         let cons, abs = consistency abs tab in
         match cons with
@@ -135,6 +135,7 @@ module Solve (Reduced : Reduction) =
       let nb_steps = ref nb_steps and nb_sol = ref nb_sol in
       let queue = Queue.create () in
       draw_a abs info Graphics.yellow;
+      let abs = Reduced.b_meet_a abs abs' in
       Queue.add abs queue;
       while Queue.is_empty queue |> not do
 	let cons, abs = consistency (Queue.take queue) tab in
