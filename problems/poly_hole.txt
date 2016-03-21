@@ -1,0 +1,18 @@
+/* polygon with a hole */
+
+init{
+  real x = [0;5];
+  real y = [0;5];
+}
+
+constraints{
+  x >= 1;
+  x <= 4;
+  y >= 1;
+  y <= 4;
+  2*y - x <= 6;
+  2*y - x >= 0;
+  2*x + y ­>= 4;
+  (x-2.5)^2 + (y-2.5)^2 > 0.1;
+}
+
