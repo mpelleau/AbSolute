@@ -98,62 +98,62 @@ module Solve (Reduced : Reduction) =
        else if tcons_for_all (Abstract1.sat_tcons man abs') tab then `Full
        else `Maybe), abs'
 
-    let draw_a abs info col =
+    let draw_a abs info col vars =
       if !Constant.visualization then
-        Vue.draw (Reduced.A.points_to_draw abs) col info
+        Vue.draw (Reduced.A.points_to_draw abs vars) col info
 
-    let draw_b abs info col =
+    let draw_b abs info col vars=
       if !Constant.visualization then
-        Vue.draw (Reduced.B.points_to_draw abs) col info
+        Vue.draw (Reduced.B.points_to_draw abs vars) col info
 
-    let explore abs env tab abs' nb_steps nb_sol =
-      let info = Vue.get_info (Reduced.A.points_to_draw abs) in
-      draw_a abs info Graphics.yellow;
+    let explore abs env tab abs' nb_steps nb_sol vars=
+      let info = Vue.get_info (Reduced.A.points_to_draw abs vars) in
+      draw_a abs info Graphics.yellow vars;
       let abs = Reduced.b_meet_a abs abs' in
       let rec aux abs env nb_steps nb_sol =
         let cons, abs = consistency abs tab in
         match cons with
         | `Empty -> (nb_steps, nb_sol)
         | `Full ->
-          draw_b (Reduced.a_meet_b abs abs') info Graphics.blue;
+          draw_b (Reduced.a_meet_b abs abs') info Graphics.blue vars;
           (nb_steps, nb_sol+1)
         | `Maybe ->
           (match (Reduced.A.is_small abs !Constant.precision) with
           | true, _ ->
-            draw_b (Reduced.a_meet_b abs abs') info Graphics.green;
+            draw_b (Reduced.a_meet_b abs abs') info Graphics.green vars;
             (nb_steps, nb_sol+1)
           | _, exprs when nb_sol <= !Constant.max_sol ->
-            draw_a abs info Graphics.yellow;
+            draw_a abs info Graphics.yellow vars;
             Reduced.A.split abs exprs |>
             List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol)
           | _ -> (nb_steps, nb_sol)
           )
         in aux abs env nb_steps nb_sol
 
-    let explore_breath_first abs env tab abs' nb_steps nb_sol =
-      let info = Vue.get_info (Reduced.A.points_to_draw abs) in
+    let explore_breath_first abs env tab abs' nb_steps nb_sol vars=
+      let info = Vue.get_info (Reduced.A.points_to_draw abs vars) in
       let nb_steps = ref nb_steps and nb_sol = ref nb_sol in
       let queue = Queue.create () in
-      draw_a abs info Graphics.yellow;
+      draw_a abs info Graphics.yellow vars;
       let abs = Reduced.b_meet_a abs abs' in
       Queue.add abs queue;
       while Queue.is_empty queue |> not do
 	let cons, abs = consistency (Queue.take queue) tab in
 	match cons with
 	| `Empty -> ()
-	| `Full -> draw_b (Reduced.a_meet_b abs abs') info Graphics.blue; incr nb_sol
+	| `Full -> draw_b (Reduced.a_meet_b abs abs') info Graphics.blue vars; incr nb_sol
 	| `Maybe  ->
 	  (match (Reduced.A.is_small abs !Constant.precision) with
-	  | true, _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green; incr nb_sol
+	  | true, _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green vars; incr nb_sol
 	  | _, exprs when !nb_sol < !Constant.max_sol ->
-	    draw_a abs info Graphics.yellow;
+	    draw_a abs info Graphics.yellow vars;
             Reduced.A.split abs exprs |> List.iter (fun e -> incr nb_steps; Queue.add e queue)
-	  | _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green
+	  | _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green vars
 	  )
       done;
       !nb_steps,!nb_sol
 
-    let solving env domains cons cons' =
+    let solving env domains cons cons' vars =
       let abs = Reduced.A.of_lincons_array env domains in
       printf "abs = %a@." Abstract1.print abs;
       let abs_aux = Reduced.B.of_lincons_array env domains in
@@ -169,7 +169,7 @@ module Solve (Reduced : Reduction) =
       let s' = {s with Manager.algorithm = 100} in
       Manager.set_funopt man Manager.Funid_meet_tcons_array s';
       if not (Abstract1.is_bottom man abs) then
-        let (nb_steps, nb_sol) = explore abs env cons abs' 1 0 in
+        let (nb_steps, nb_sol) = explore abs env cons abs' 1 0 vars in
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
 	| 1 -> printf "Unique solution - #created nodes: %d@." nb_steps
@@ -180,8 +180,9 @@ module Solve (Reduced : Reduction) =
    let tcons1_print_array fmt tab = Tcons1.array_print fmt tab
 
     let solving solving_problem =
+      let open Syntax in
       let (env, domains, _, _, cons, cons') = TA.to_apron solving_problem in
-      solving env domains cons cons'
+      solving env domains cons cons' solving_problem.to_draw
   end
 
 module BoxNOct = Solve(BoxAndOct)

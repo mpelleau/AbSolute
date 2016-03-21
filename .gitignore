@@ -3,6 +3,4 @@
 *.opt
 depend
 *~
-*parser.ml
-*parser.mli
-*lexer.ml
+*#

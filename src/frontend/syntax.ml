@@ -42,7 +42,7 @@ type decls =  assign list
 type constrs = bexpr list
 
 (* program *)
-type prog = { init: decls; constraints: constrs}
+type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
 
 
 (*****************************************)
@@ -61,7 +61,6 @@ let rec is_cons_linear = function
   | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
-
 
 
 (*************************************************************)

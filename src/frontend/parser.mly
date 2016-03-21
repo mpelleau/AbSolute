@@ -12,6 +12,7 @@ open Syntax
 %token TOK_RPAREN
 %token TOK_COMMA
 %token TOK_SEMICOLON
+%token TOK_COLON
 %token TOK_PLUS
 %token TOK_MINUS
 %token TOK_MULTIPLY
@@ -29,13 +30,13 @@ open Syntax
 %token TOK_NOT
 %token TOK_INT
 %token TOK_REAL
-
 %token TOK_COS
 %token TOK_SIN
 %token TOK_SQRT
 %token TOK_INIT
 %token TOK_CONSTR
-
+%token TOK_ANNOT
+%token TOK_DRAW
 %token TOK_MINF
 %token TOK_INF
 
@@ -63,11 +64,15 @@ open Syntax
 
 %%
 
-file: 
+file:
+  TOK_ANNOT TOK_LBRACE annot TOK_RBRACE
   TOK_INIT TOK_LBRACE decls TOK_RBRACE
   TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE
   TOK_EOF
-  {{init=$3; constraints=$7}}
+  {{init=$7; constraints=$11;to_draw=$3}}
+
+annot:
+ | TOK_DRAW TOK_COLON TOK_id TOK_COMMA TOK_id {Some ($3,$5)}
 
 decls:
   | decl decls {$1::$2}

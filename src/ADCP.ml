@@ -74,7 +74,7 @@ module type AbstractCP =
   val get_manager : t Manager.t
   val is_small : t Abstract1.t -> float -> (bool * Linexpr1.t list)
   val split : t Abstract1.t -> Linexpr1.t list -> t Abstract1.t list
-  val points_to_draw : t Abstract1.t -> (float * float) list
+  val points_to_draw : t Abstract1.t -> (string*string) option-> (float * float) list
   (* val to_box : t Abstract1.t -> Environment.t -> Box.t Apron.Abstract1.t *)
   (* val to_oct : t Abstract1.t -> Environment.t -> Oct.t Apron.Abstract1.t *)
   (* val to_poly : t Abstract1.t -> Environment.t -> (Polka.strict Polka.t) Apron.Abstract1.t *)
@@ -118,10 +118,20 @@ module BoxCP  =
       let abs2 = meet_linexpr boxad man env (List.nth list 1) in
       [abs1; abs2]
 
-    let points_to_draw box =
+    let points_to_draw box vars =
+      let env = Abstract1.env box in
       let b = Abstract1.to_box man box in
-      let i1 = Abstract1.(b.interval_array.(0))
-      and i2 = Abstract1.(b.interval_array.(1)) in
+      let i1,i2 =
+	match vars with
+	| None ->
+	  Abstract1.(b.interval_array.(0)),
+	  Abstract1.(b.interval_array.(1))
+	| Some (x,y) ->
+	  let i1 = Environment.dim_of_var env (Var.of_string x)
+	  and i2 = Environment.dim_of_var env (Var.of_string y) in
+	  Abstract1.(b.interval_array.(i1)),
+	  Abstract1.(b.interval_array.(i2))
+      in
       let open Interval in
       let x1,x2 = (scalar_to_float i1.inf, scalar_to_float i1.sup) in
       let y1,y2 = (scalar_to_float i2.inf, scalar_to_float i2.sup) in
@@ -265,7 +275,7 @@ module OctMinMinCP : AbstractCP =
     let sat_cons box cons = 
       tcons_for_all (Abstract1.sat_tcons man box) cons
 
-    let points_to_draw box = []
+    let points_to_draw box _ = []
 
     let to_box oct env = 
       let oct' = Abstract1.change_environment man oct env false in
@@ -393,7 +403,7 @@ module OctMinMaxCP : AbstractCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 
-    let points_to_draw box = []
+    let points_to_draw box _ = []
 
     let to_box oct env = 
       let oct' = Abstract1.change_environment man oct env false in
@@ -449,10 +459,18 @@ module OctBoxCP =
       let abs2 = meet_linexpr octad man env (List.nth list 1) in
       [abs1; abs2]
 
-    let points_to_draw oct = 
+    let points_to_draw oct vars = 
       let env = Abstract1.env oct in
-      let x = Environment.var_of_dim env 0 
-      and y = Environment.var_of_dim env 1 in
+      let i1,i2 =
+	match vars with
+	| None -> (0,1)
+	| Some (x,y) ->
+	  let i1 = Environment.dim_of_var env (Var.of_string x)
+	  and i2 = Environment.dim_of_var env (Var.of_string y) in
+	  (i1,i2)
+      in
+      let x = Environment.var_of_dim env i1 
+      and y = Environment.var_of_dim env i2 in
       let l' = Abstract1.to_lincons_array man oct in
       let manpolka = Polka.manager_alloc_strict() in
       let get_coord l = 
@@ -519,10 +537,18 @@ module PolyCP = struct
     let abs2 = meet_linexpr polyad man env (List.nth list 1) in
     [abs1; abs2]
       
-  let points_to_draw pol =    
+  let points_to_draw pol vars =  
     let env = Abstract1.env pol in
-    let x = Environment.var_of_dim env 0 
-    and y = Environment.var_of_dim env 1 in
+    let i1,i2 =
+      match vars with
+      | None -> (0,1)
+      | Some (x,y) ->
+	let i1 = Environment.dim_of_var env (Var.of_string x)
+	and i2 = Environment.dim_of_var env (Var.of_string y) in
+	(i1,i2)
+    in
+    let x = Environment.var_of_dim env i1 
+    and y = Environment.var_of_dim env i2 in
     let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in
     let l' = Abstract1.to_lincons_array man pol in
     let pol = Abstract1.of_lincons_array man env l' in

@@ -7,6 +7,7 @@ type token =
   | TOK_RPAREN
   | TOK_COMMA
   | TOK_SEMICOLON
+  | TOK_COLON
   | TOK_PLUS
   | TOK_MINUS
   | TOK_MULTIPLY
@@ -29,6 +30,8 @@ type token =
   | TOK_SQRT
   | TOK_INIT
   | TOK_CONSTR
+  | TOK_ANNOT
+  | TOK_DRAW
   | TOK_MINF
   | TOK_INF
   | TOK_id of (string)

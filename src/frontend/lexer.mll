@@ -10,6 +10,7 @@ let kwd_table = Hashtbl.create 10
 let _ = 
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
+      "to_draw",        TOK_DRAW; 
       "init",           TOK_INIT;
       "constraints",    TOK_CONSTR;
       "sqrt",           TOK_SQRT;
@@ -77,6 +78,7 @@ rule token = parse
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
 | "!"    { TOK_NOT }
+| "@"    { TOK_ANNOT }
     
 (* literals *)
 | const as c { TOK_const (float_of_string c) }
