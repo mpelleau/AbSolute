@@ -12,21 +12,9 @@ module type Reduction =
   sig
     module A:AbstractCP
     module B:AbstractCP
-    type a
-    type b
-    val a_manager : a Manager.t
-    val b_manager : b Manager.t
-    val draw_a : (a Abstract1.t -> (float * float) list)
-    val draw_b : (b Abstract1.t -> (float * float) list)
-    val a_is_small : (a Abstract1.t -> float -> (bool * Linexpr1.t list))
-    val b_is_small : (b Abstract1.t -> float -> (bool * Linexpr1.t list))
-    val a_split : (a Abstract1.t -> Linexpr1.t list -> a Abstract1.t list)
-    val b_split : (b Abstract1.t -> Linexpr1.t list -> b Abstract1.t list)
-    val a_of_lincons_array : (Environment.t -> Lincons1.earray -> a Abstract1.t)
-    val b_of_lincons_array : (Environment.t -> Lincons1.earray -> b Abstract1.t)
-    val a_meet_b : a Abstract1.t -> b Abstract1.t -> b Abstract1.t
-    val b_meet_a : a Abstract1.t -> b Abstract1.t -> a Abstract1.t
-    val reduced_product : a Abstract1.t -> b Abstract1.t -> a Abstract1.t * b Abstract1.t
+    val a_meet_b : A.t Abstract1.t -> B.t Abstract1.t -> B.t Abstract1.t
+    val b_meet_a : A.t Abstract1.t -> B.t Abstract1.t -> A.t Abstract1.t
+    val reduced_product : A.t Abstract1.t -> B.t Abstract1.t -> A.t Abstract1.t * B.t Abstract1.t
   end
 
 module BoxAndPoly : Reduction =
@@ -34,24 +22,6 @@ module BoxAndPoly : Reduction =
 
     module A=BoxCP
     module B=PolyCP
-    
-    type a = BoxCP.t
-    type b = PolyCP.t
-
-    let a_manager = BoxCP.get_manager
-    let b_manager = PolyCP.get_manager
-
-    let draw_a = BoxCP.points_to_draw
-    let draw_b = PolyCP.points_to_draw
-
-    let a_is_small = BoxCP.is_small
-    let b_is_small = PolyCP.is_small
-
-    let a_split = BoxCP.split
-    let b_split = PolyCP.split
-
-    let a_of_lincons_array = BoxCP.of_lincons_array
-    let b_of_lincons_array = PolyCP.of_lincons_array
 
     let a_meet_b box poly =
       let poly_env = Abstract1.env poly in
@@ -74,24 +44,6 @@ module BoxAndOct : Reduction =
 
     module A=BoxCP
     module B=OctBoxCP
-    
-    type a = BoxCP.t
-    type b = OctBoxCP.t
-
-    let a_manager = BoxCP.get_manager
-    let b_manager = OctBoxCP.get_manager
-
-    let draw_a = BoxCP.points_to_draw
-    let draw_b = OctBoxCP.points_to_draw
-
-    let a_is_small = BoxCP.is_small
-    let b_is_small = OctBoxCP.is_small
-
-    let a_split = BoxCP.split
-    let b_split = OctBoxCP.split
-
-    let a_of_lincons_array = BoxCP.of_lincons_array
-    let b_of_lincons_array = OctBoxCP.of_lincons_array
 
     let a_meet_b box oct =
       let oct_env = Abstract1.env oct in
@@ -115,24 +67,6 @@ module OctAndPoly : Reduction =
     module A = OctBoxCP
     module B = PolyCP
 
-    type a = OctBoxCP.t
-    type b = PolyCP.t
-
-    let a_manager = OctBoxCP.get_manager
-    let b_manager = PolyCP.get_manager
-
-    let draw_a = OctBoxCP.points_to_draw
-    let draw_b = PolyCP.points_to_draw
-
-    let a_is_small = OctBoxCP.is_small
-    let b_is_small = PolyCP.is_small
-
-    let a_split = OctBoxCP.split
-    let b_split = PolyCP.split
-
-    let a_of_lincons_array = OctBoxCP.of_lincons_array
-    let b_of_lincons_array = PolyCP.of_lincons_array
-
     let a_meet_b oct poly =
       let poly_env = Abstract1.env poly in
       let poly' = OctBoxCP.to_poly oct poly_env in
@@ -155,8 +89,8 @@ module Solve (Reduced : Reduction) =
     module TA = Apron_domain.SyntaxTranslator(Reduced.A)
     module TB = Apron_domain.SyntaxTranslator(Reduced.B)
 
-    let man = Reduced.a_manager
-    let man' = Reduced.b_manager
+    let man = Reduced.A.get_manager
+    let man' = Reduced.B.get_manager
 
     let consistency abs tab =
       let abs' = Abstract1.meet_tcons_array man abs tab in
@@ -166,14 +100,14 @@ module Solve (Reduced : Reduction) =
 
     let draw_a abs info col =
       if !Constant.visualization then
-        Vue.draw (Reduced.draw_a abs) col info
+        Vue.draw (Reduced.A.points_to_draw abs) col info
 
     let draw_b abs info col =
       if !Constant.visualization then
-        Vue.draw (Reduced.draw_b abs) col info
+        Vue.draw (Reduced.B.points_to_draw abs) col info
 
     let explore abs env tab abs' nb_steps nb_sol =
-      let info = Vue.get_info (Reduced.draw_a abs) in
+      let info = Vue.get_info (Reduced.A.points_to_draw abs) in
       draw_a abs info Graphics.yellow;
       let rec aux abs env nb_steps nb_sol =
         let cons, abs = consistency abs tab in
@@ -183,20 +117,20 @@ module Solve (Reduced : Reduction) =
           draw_b (Reduced.a_meet_b abs abs') info Graphics.blue;
           (nb_steps, nb_sol+1)
         | `Maybe ->
-          (match (Reduced.a_is_small abs !Constant.precision) with
+          (match (Reduced.A.is_small abs !Constant.precision) with
           | true, _ ->
             draw_b (Reduced.a_meet_b abs abs') info Graphics.green;
             (nb_steps, nb_sol+1)
           | _, exprs when nb_sol <= !Constant.max_sol ->
             draw_a abs info Graphics.yellow;
-            Reduced.a_split abs exprs |>
+            Reduced.A.split abs exprs |>
             List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol)
           | _ -> (nb_steps, nb_sol)
           )
         in aux abs env nb_steps nb_sol
 
     let explore_breath_first abs env tab abs' nb_steps nb_sol =
-      let info = Vue.get_info (Reduced.draw_a abs) in
+      let info = Vue.get_info (Reduced.A.points_to_draw abs) in
       let nb_steps = ref nb_steps and nb_sol = ref nb_sol in
       let queue = Queue.create () in
       draw_a abs info Graphics.yellow;
@@ -207,20 +141,20 @@ module Solve (Reduced : Reduction) =
 	| `Empty -> ()
 	| `Full -> draw_b (Reduced.a_meet_b abs abs') info Graphics.blue; incr nb_sol
 	| `Maybe  ->
-	  (match (Reduced.a_is_small abs !Constant.precision) with
+	  (match (Reduced.A.is_small abs !Constant.precision) with
 	  | true, _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green; incr nb_sol
 	  | _, exprs when !nb_sol < !Constant.max_sol ->
 	    draw_a abs info Graphics.yellow;
-            Reduced.a_split abs exprs |> List.iter (fun e -> incr nb_steps; Queue.add e queue)
+            Reduced.A.split abs exprs |> List.iter (fun e -> incr nb_steps; Queue.add e queue)
 	  | _ -> draw_b (Reduced.a_meet_b abs abs') info Graphics.green
 	  )
       done;
       !nb_steps,!nb_sol
 
     let solving env domains cons cons' =
-      let abs = Reduced.a_of_lincons_array env domains in
+      let abs = Reduced.A.of_lincons_array env domains in
       printf "abs = %a@." Abstract1.print abs;
-      let abs_aux = Reduced.b_of_lincons_array env domains in
+      let abs_aux = Reduced.B.of_lincons_array env domains in
       let abs' = Abstract1.meet_tcons_array man' abs_aux cons' in
       printf "abs' = %a@." Abstract1.print abs';
       let box = Abstract1.to_box man abs in
