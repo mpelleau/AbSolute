@@ -10,6 +10,8 @@ open ADCP
 
 module type Reduction = 
   sig
+    module A:AbstractCP
+    module B:AbstractCP
     type a
     type b
     val a_manager : a Manager.t
@@ -29,6 +31,10 @@ module type Reduction =
 
 module BoxAndPoly : Reduction =
   struct
+
+    module A=BoxCP
+    module B=PolyCP
+    
     type a = BoxCP.t
     type b = PolyCP.t
 
@@ -65,6 +71,10 @@ module BoxAndPoly : Reduction =
 
 module BoxAndOct : Reduction =
   struct
+
+    module A=BoxCP
+    module B=OctBoxCP
+    
     type a = BoxCP.t
     type b = OctBoxCP.t
 
@@ -101,6 +111,10 @@ module BoxAndOct : Reduction =
 
 module OctAndPoly : Reduction =
   struct
+
+    module A = OctBoxCP
+    module B = PolyCP
+
     type a = OctBoxCP.t
     type b = PolyCP.t
 
@@ -137,6 +151,10 @@ module OctAndPoly : Reduction =
 
 module Solve (Reduced : Reduction) =
   struct
+
+    module TA = Apron_domain.SyntaxTranslator(Reduced.A)
+    module TB = Apron_domain.SyntaxTranslator(Reduced.B)
+
     let man = Reduced.a_manager
     let man' = Reduced.b_manager
 
@@ -224,7 +242,7 @@ module Solve (Reduced : Reduction) =
         printf "No Solutions - #created nodes: 0@."
 
     let solving solving_problem =
-      let (env, domains, _, _, cons, cons') = solving_problem in
+      let (env, domains, _, _, cons, cons') = TA.to_apron solving_problem in
       solving env domains cons cons'
   end
 

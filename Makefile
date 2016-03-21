@@ -11,7 +11,7 @@ APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
 CAMLIDLDIR = $(OPAMDIR)/camlidl
-OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/frontend
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/domains -I src/frontend
 LIBS = bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
 CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
@@ -34,6 +34,7 @@ MLFILES = \
   src/frontend/file_parser.ml \
   src/constant.ml \
   src/utils.ml \
+  src/domains/apron_domain.ml \
   src/ADCP.ml \
   src/problems.ml \
   src/vue.ml \

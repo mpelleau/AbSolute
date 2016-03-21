@@ -43,9 +43,9 @@ open Syntax
 
 /* priorities */
 %left TOK_OR TOK_AND
-%left TOK_POW
 %left TOK_MULTIPLY  TOK_DIVIDE
 %left TOK_PLUS
+%left TOK_POW
 %nonassoc TOK_MINUS
 %nonassoc TOK_COS TOK_SIN TOK_SQRT
 

@@ -3,6 +3,7 @@ open ADCP
 
 let solving = ref true 
 
+(*
 let get_solving_problem p =
   match p with
   | "gear4" -> Problems.gear4
@@ -21,6 +22,7 @@ let get_minimization_problem p =
   match p with
   | "test" -> Problems.test
   | _ -> "minimization problem undefined "^p |> failwith
+*)
 
 let get_variousDA_problem p =
   match p with
@@ -45,19 +47,22 @@ let main =
   parse_args ();
   solving := !Constant.problem <> "test";
   if !Constant.visualization then Vue.create_window 800 800;
-  (* Syntax.print Format.std_formatter (File_parser.parse !problem); *)
+  let prob = File_parser.parse !problem in
+  Syntax.print Format.std_formatter prob;
   if !solving then
     match !domain_solving with
-    | "box" -> Solver.Box.solving (get_solving_problem !problem)
-    | "oct" -> Solver.Oct.solving (get_solving_problem !problem)
-    | "poly" -> Solver.Poly.solving (get_solving_problem !problem)
-    | "boxNoct" -> VariousDA.BoxNOct.solving (get_solving_problem !problem)
-    | "boxNpoly" -> VariousDA.BoxNPoly.solving (get_solving_problem !problem)
-    | "octNpoly" -> VariousDA.OctNPoly.solving (get_solving_problem !problem)
+    | "box" -> Solver.Box.solving prob
+    | "oct" -> Solver.Oct.solving prob
+    | "poly" -> Solver.Poly.solving prob 
+    | "boxNoct" -> VariousDA.BoxNOct.solving prob
+    | "boxNpoly" -> VariousDA.BoxNPoly.solving prob
+    | "octNpoly" -> VariousDA.OctNPoly.solving prob
     | _ -> "domain undefined"^(!domain_solving) |> failwith
-  else
+  else(*
     match !domain_minimizing with
     | "octbox" -> Minimizer.OctBox.minimizing (get_minimization_problem !problem)
     | "octminmax" -> Minimizer.OctMinMax.minimizing (get_minimization_problem !problem)
     | "octminmin" -> Minimizer.OctMinMin.minimizing (get_minimization_problem !problem)
     | _ -> "domain undefined"^(!domain_minimizing) |> failwith
+      *)
+    failwith "minimization not implemented yet"

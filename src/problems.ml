@@ -1,7 +1,12 @@
 open Apron
 
 type solving = 
-  Environment.t * Lincons1.earray * Tcons1.t list list * Tcons1.earray * Tcons1.earray * Tcons1.earray
+  Environment.t         (* Environnement *)
+  * Lincons1.earray     (* The domains of the variables*)
+  * Tcons1.t list list  (* The constraints list list*)
+  * Tcons1.earray       (* The constraints earray *)
+  * Tcons1.earray       (* The non linear constraints earray *)
+  * Tcons1.earray       (* The linear constraints earray *)
 
 type minimization = 
   Environment.t * Lincons1.earray * Tcons1.t list list * Tcons1.earray * Texpr1.t

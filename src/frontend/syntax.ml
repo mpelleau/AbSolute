@@ -45,6 +45,25 @@ type constrs = bexpr list
 type prog = { init: decls; constraints: constrs}
 
 
+(*****************************************)
+(*        USEFUL FUNCTION ON AST         *)
+(*****************************************)
+
+(* checks if a expression is linear *)
+let rec is_linear = function  
+  | Unary (NEG,e) -> is_linear e
+  | Binary(b, e1, e2) when b <> POW -> is_linear e1 && is_linear e2
+  | Var _ | Cst _ -> true
+  | _ -> false
+
+let rec is_cons_linear = function
+  | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
+  | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
+  | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
+  | Not b -> is_cons_linear b
+
+
+
 (*************************************************************)
 (*                    PRINTING UTILITIES                     *)
 (*************************************************************)

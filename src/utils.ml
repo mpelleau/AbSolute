@@ -40,6 +40,13 @@ let print_sol box =
   Array.iter (fun e -> printf "[%f; %f];" (scalar_to_float e.inf) (scalar_to_float e.sup)) itv;
   printf "|] "
 
+
+(**********************)
+(*   APRON Utilities  *)
+(**********************)
+
+let empty_env = Environment.make [||] [||]
+
 (* Tcons earray utilities *)
 let tcons_for_all pred tcons =
   let open Tcons1 in
@@ -50,6 +57,15 @@ let tcons_for_all pred tcons =
     true
   with Exit -> false
 
+let tcons_list_to_earray tcl =
+  let open Tcons1 in
+  if tcl = [] then array_make empty_env 0
+  else
+    let size = List.length tcl
+    and env = (List.hd tcl).env in
+    let ear = array_make env size in
+    List.iteri (fun i b -> array_set ear i b) tcl;
+    ear
 
 (******************************************************************)
 (*********************** Various operators ************************)

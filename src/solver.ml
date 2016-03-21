@@ -6,6 +6,8 @@ open ADCP
 
 module Solve(Abs : AbstractCP) =
   struct
+    module T = Apron_domain.SyntaxTranslator(Abs)
+
     let man = Abs.get_manager
 
     let consistency abs tab =
@@ -20,10 +22,12 @@ module Solve(Abs : AbstractCP) =
 	Vue.draw (Abs.points_to_draw abs) col info
 
     let explore abs env tab nb_steps nb_sol =
+      Format.printf "solving begins\n%!";
       let info = Vue.get_info (Abs.points_to_draw abs) in
+      Format.printf "points to draw done\n%!";
       draw abs info Graphics.yellow;
       let rec aux abs env nb_steps nb_sol =
-	let cons,abs' = consistency abs tab in
+	let cons,abs' = consistency abs tab in	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
 	| `Full -> 
@@ -65,6 +69,7 @@ module Solve(Abs : AbstractCP) =
       !nb_steps,!nb_sol
 
     let solving env domains cons =
+      
       let abs = Abs.of_lincons_array env domains in
       printf "abs = %a@." Abstract1.print abs;
       let box = Abstract1.to_box man abs in
@@ -75,6 +80,7 @@ module Solve(Abs : AbstractCP) =
       Manager.set_funopt man Manager.Funid_meet_tcons_array s';
       if not (Abstract1.is_bottom man abs) then
         let (nb_steps, nb_sol) = explore abs env cons 1 0 in
+	Format.printf "solving ends\n%!";
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
 	| 1 -> printf "Unique solution - #created nodes: %d@." nb_steps
@@ -83,7 +89,7 @@ module Solve(Abs : AbstractCP) =
         printf "No Solutions - #created nodes: 0@."
 
     let solving solving_problem =
-      let (env, domains, _, constraints, _, _) = solving_problem in
+      let (env, domains, _, constraints, _, _) = T.to_apron solving_problem in
       solving env domains constraints
   end
 
