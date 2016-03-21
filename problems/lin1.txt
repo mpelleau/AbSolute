@@ -1,0 +1,13 @@
+/* linear problem */
+
+init{
+  real x = [0;50];
+  real y = [0;50];
+}
+
+constraints{
+  y-x < 40;
+  x-y < 40;
+  y+x < 90;
+  y+x > 10;
+}
