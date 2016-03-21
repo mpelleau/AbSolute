@@ -109,6 +109,7 @@ module Solve (Reduced : Reduction) =
     let explore abs env tab abs' nb_steps nb_sol =
       let info = Vue.get_info (Reduced.A.points_to_draw abs) in
       draw_a abs info Graphics.yellow;
+      let (abs, _) = Reduced.reduced_product abs abs' in
       let rec aux abs env nb_steps nb_sol =
         let cons, abs = consistency abs tab in
         match cons with
@@ -167,7 +168,7 @@ module Solve (Reduced : Reduction) =
       let s' = {s with Manager.algorithm = 100} in
       Manager.set_funopt man Manager.Funid_meet_tcons_array s';
       if not (Abstract1.is_bottom man abs) then
-        let (nb_steps, nb_sol) = explore_breath_first abs env cons abs' 1 0 in
+        let (nb_steps, nb_sol) = explore abs env cons abs' 1 0 in
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
 	| 1 -> printf "Unique solution - #created nodes: %d@." nb_steps
