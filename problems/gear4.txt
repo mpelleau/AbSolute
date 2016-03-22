@@ -1,3 +1,4 @@
+
 /* Gear4: best known solution=1.643428; eps=0.5e-6; prec=1.0e-1 */
 
 init{
@@ -29,4 +30,3 @@ constraints{
   1000000*x1*x2/(x3*x4) + x5 - x6 = 14279.32477276;
   x5 + x6 = 1.643423;
 }
-

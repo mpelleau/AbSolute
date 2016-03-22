@@ -4,3 +4,6 @@
 depend
 *~
 *#
+src/frontend/parser.ml
+src/frontend/parser.mli
+src/frontend/lexer.ml
