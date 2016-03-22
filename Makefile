@@ -35,6 +35,10 @@ MLFILES = \
   src/constant.ml \
   src/utils.ml \
   src/domains/apron_domain.ml \
+  src/domains/bot.ml \
+  src/domains/bound_sig.ml \
+  src/domains/bound_float.ml \
+  src/domains/itv.ml \
   src/ADCP.ml \
   src/problems.ml \
   src/vue.ml \
