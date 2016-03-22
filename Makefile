@@ -38,6 +38,7 @@ MLFILES = \
   src/domains/bot.ml \
   src/domains/bound_sig.ml \
   src/domains/bound_float.ml \
+  src/domains/bound_mpqf.ml \
   src/domains/itv.ml \
   src/ADCP.ml \
   src/problems.ml \

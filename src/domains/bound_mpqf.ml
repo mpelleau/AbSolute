@@ -96,5 +96,23 @@ let cos_down x = Mpqf.of_float (cos (Mpqf.to_float x))
 let sin_up x = Mpqf.of_float (sin (Mpqf.to_float x))
 let sin_down x = Mpqf.of_float (sin (Mpqf.to_float x))
 
+let tan_up x = Mpqf.of_float (tan (Mpqf.to_float x))
+let tan_down x = Mpqf.of_float (tan (Mpqf.to_float x))
+
+let acos_up x = Mpqf.of_float (acos (Mpqf.to_float x))
+let acos_down x = Mpqf.of_float (acos (Mpqf.to_float x))
+
+let asin_up x = Mpqf.of_float (asin (Mpqf.to_float x))
+let asin_down x = Mpqf.of_float (asin (Mpqf.to_float x))
+
+let atan_up x = Mpqf.of_float (atan (Mpqf.to_float x))
+let atan_down x = Mpqf.of_float (atan (Mpqf.to_float x))
+
+let exp_up x = Mpqf.of_float (exp (Mpqf.to_float x))
+let exp_down x = Mpqf.of_float (exp (Mpqf.to_float x))
+
+let log_up x = Mpqf.of_float (log (Mpqf.to_float x))
+let log_down x = Mpqf.of_float (log (Mpqf.to_float x))
+
 let floor x = Mpqf.of_float (floor (Mpqf.to_float x))
 let ceil x = Mpqf.of_float (ceil (Mpqf.to_float x))

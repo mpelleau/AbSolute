@@ -282,8 +282,99 @@ module Itv(B:BOUND) = (struct
     if B.sign h < 0 then Bot else
     let l = B.max l B.zero in
     Nb (B.sqrt_down l, B.sqrt_up h)
-      
+    
+  let pi_half = B.of_float_up 1.57079632679489661923
+  let pi = B.of_float_up 3.14159265358979323846
+  let two_pi = B.of_float_up 6.28318530717958647693
 
+  (* Returns the quadrant in which the bound is.
+   * value must be in [0, 2pi[ *)
+  let quadrant value =
+    if B.leq value pi_half then 1
+    else if B.leq value pi then 2
+    else if B.leq value (B.add_up pi pi_half) then 3
+    else 4
+
+  (* A bound is scaled to the range [0, 2pi[ *)
+  let scale_to_two_pi value =
+    let q = B.floor (B.div_up value two_pi) in
+    if B.leq q B.zero then B.add_up two_pi (B.sub_up value (B.mul_up pi q))
+    else B.sub_up value (B.mul_up two_pi q)
+
+  (* The interval is scaled to the range [0, 2pi[ *)
+  let scale_to_two_pi_itv ((l,h):t) =
+    if B.geq l B.zero && B.lt h two_pi then (l,h)
+    else of_bounds (scale_to_two_pi l) (scale_to_two_pi h)
+
+  (* interval sin *)
+  let sin (l,h) =
+    let diam = range (l,h) in
+    if B.leq diam two_pi then
+      minus_one_one
+    else
+      let (l',h') = scale_to_two_pi_itv (l,h) in
+      let  diam = range (l',h')
+      and q_inf = quadrant l'
+      and q_sup = quadrant h' in
+      if q_inf = q_sup && B.geq diam pi then
+        minus_one_one
+      else
+        match q_inf, q_sup with
+        | (1, 1 | 4, 1 | 4, 4) -> of_bounds (B.sin_down l') (B.sin_up h')
+        | (2, 2 | 2, 3 | 3, 3) -> of_bounds (B.sin_down h') (B.sin_up l')
+        | (3, 2 | 1, 4) -> minus_one_one
+        | (1, 2 | 4, 3) -> of_bounds (B.min (B.sin_down l') (B.sin_down h')) B.one
+        | (2, 1 | 3, 4) -> of_bounds B.minus_one (B.max (B.sin_up l') (B.sin_up h'))
+        | 1, 3 -> of_bounds (B.sin_down h') B.one
+        | 2, 4 -> of_bounds B.minus_one (B.sin_up l')
+        | 3, 1 -> of_bounds B.minus_one (B.sin_up h')
+        | 4, 2 -> of_bounds (B.sin_down l') B.one
+        | _ -> failwith ("Should not occur")
+
+  (* interval cos *)
+  let cos itv =
+    sin (add itv (pi_half, pi_half))
+
+  (* interval tan *)
+  let tan itv =
+    let diam = range itv in
+    if B.geq diam two_pi then
+      top
+    else
+      let (l',h') = scale_to_two_pi_itv itv in
+      let diam = range (l',h')
+      and q_inf = quadrant l'
+      and q_sup = quadrant h' in
+      if q_inf = q_sup && B.geq diam pi then
+        top
+      else
+        match q_inf, q_sup with
+        | (1, 1 | 2, 2 | 3, 3 | 4, 4 | 2, 3 | 4, 1) -> of_bounds (B.tan_down l') (B.tan_up h')
+        | (1 | 2 | 3 | 4), (1 | 2 | 3 | 4) -> top
+        | _ -> failwith ("Should not occur")
+
+  (* interval cot *)
+  let cot itv =
+    let itv' = tan (add itv (of_bounds pi_half pi_half)) in
+    neg itv'
+
+  (* interval arcsin *)
+  let asin (l,h) =
+    if B.lt l B.minus_one && B.gt h B.one then
+      failwith ("Interval out of range for arcsin")
+    else
+      of_bounds (B.asin_down l) (B.asin_up h)
+
+  (* interval acos *)
+  let acos (l,h) =
+    if B.lt l B.minus_one && B.gt h B.one then
+      failwith ("Interval out of range for arccos")
+    else
+      of_bounds (B.acos_down l) (B.acos_up h)
+
+  (* interval atan *)
+  let atan (l,h) =
+    of_bounds (B.atan_down l) (B.atan_up h)
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
