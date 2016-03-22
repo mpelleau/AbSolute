@@ -1,10 +1,3 @@
-(*
-  An abstract fixpoint solver based on Constraint Programming
-  
-  Author: Antoine Mine
-  Copyright 2015
-*)
-
 (* 
    Generic intervals.
 
