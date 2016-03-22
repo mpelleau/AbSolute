@@ -1,4 +1,4 @@
-*.cm[ioax]
+*.cm[ioaxt]
 *.o
 *.opt
 depend

@@ -18,7 +18,7 @@ module Solve(Abs : AbstractCP) =
 	  else `Maybe),abs'
 	  
     let draw abs info col vars =
-      if !Constant.visualization then 
+      if !Constant.visualization then
 	Vue.draw (Abs.points_to_draw abs vars) col info
 
     let explore abs env tab nb_steps nb_sol vars =
@@ -69,7 +69,6 @@ module Solve(Abs : AbstractCP) =
       !nb_steps,!nb_sol
 
     let solving env domains cons vars=
-      
       let abs = Abs.of_lincons_array env domains in
       printf "abs = %a@." Abstract1.print abs;
       let box = Abstract1.to_box man abs in

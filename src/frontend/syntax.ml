@@ -49,6 +49,15 @@ type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
+(* cmp operator negation *)
+let neg = function
+| EQ -> NEQ
+| LEQ ->GT
+| GEQ ->LT
+| NEQ ->EQ
+| GT -> LEQ
+| LT -> GEQ
+
 (* checks if a expression is linear *)
 let rec is_linear = function  
   | Unary (NEG,e) -> is_linear e
@@ -56,6 +65,7 @@ let rec is_linear = function
   | Var _ | Cst _ -> true
   | _ -> false
 
+(* checks if a constraints is linear *)
 let rec is_cons_linear = function
   | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
   | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2

@@ -30,10 +30,9 @@ module Itv(B:BOUND) = (struct
   (* not all pairs of rationals are valid intervals *)
   let validate ((l,h):t) : t =
     match B.classify l, B.classify h with
-    | B.INVALID,_ | _,B.INVALID  | B.MINF,_ | _,B.INF ->
-        invalid_arg "int.validate"
-    | _ -> 
-        if B.gt l h then invalid_arg "itv.validate" else l,h
+    | B.INVALID,_ | _,B.INVALID  | B.MINF,_ | _,B.INF 
+    | _ when  B.gt l h -> invalid_arg "int.validate"
+    | _ -> l,h
           
 
   (* maps empty intervals to explicit bottom *)
@@ -103,6 +102,8 @@ module Itv(B:BOUND) = (struct
   let sprint () x = to_string x
   let bprint b x = Buffer.add_string b (to_string x)
   let pp_print f x = Format.pp_print_string f (to_string x)
+  let print fmt ((l,h):t) =  
+    Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
       
 
 
