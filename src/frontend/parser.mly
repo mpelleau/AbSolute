@@ -65,14 +65,27 @@ open Syntax
 %%
 
 file:
-  TOK_ANNOT TOK_LBRACE annot TOK_RBRACE
-  TOK_INIT TOK_LBRACE decls TOK_RBRACE
-  TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE
+  annot
+  domains
+  constraints
   TOK_EOF
-  {{init=$7; constraints=$11;to_draw=$3}}
+  {{init=$2;
+    constraints=$3;
+    to_draw=$1}}
 
 annot:
+ | TOK_ANNOT TOK_LBRACE annot2 TOK_RBRACE {$3}
+ | {None}
+
+domains:
+ | TOK_INIT TOK_LBRACE decls TOK_RBRACE {$3}
+
+constraints:
+ | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
+
+annot2:
  | TOK_DRAW TOK_COLON TOK_id TOK_COMMA TOK_id {Some ($3,$5)}
+
 
 decls:
   | decl decls {$1::$2}

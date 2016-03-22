@@ -10,7 +10,8 @@ let kwd_table = Hashtbl.create 10
 let _ = 
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
-      "to_draw",        TOK_DRAW; 
+      "info",           TOK_ANNOT;
+      "draw",           TOK_DRAW; 
       "init",           TOK_INIT;
       "constraints",    TOK_CONSTR;
       "sqrt",           TOK_SQRT;
@@ -19,7 +20,7 @@ let _ =
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;
-      "-oo",            TOK_MINF
+      "-oo",             TOK_MINF
    ]
 
 (* (exact) parsing of decimal constants constants *)
@@ -45,7 +46,7 @@ let parse_const = float_of_string
 let space = [' ' '\t' '\r']+
 let newline = "\n" | "\r" | "\r\n"
 let digit = ['0'-'9']
-let const = (digit+ | "." digit+ | digit+ "." digit*)
+let const = ( digit+ | "." digit+ | digit+ "." digit* )
 
 rule token = parse
 
@@ -78,8 +79,7 @@ rule token = parse
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
 | "!"    { TOK_NOT }
-| "@"    { TOK_ANNOT }
-    
+| ":"    { TOK_COLON }   
 (* literals *)
 | const as c { TOK_const (float_of_string c) }
 
