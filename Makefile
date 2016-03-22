@@ -40,6 +40,7 @@ MLFILES = \
   src/domains/bound_float.ml \
   src/domains/bound_mpqf.ml \
   src/domains/itv.ml \
+  src/domains/box_float.ml \
   src/ADCP.ml \
   src/problems.ml \
   src/vue.ml \
@@ -51,9 +52,9 @@ MLFILES = \
 # MLIFILES = ADCP.mli
 
 # object files
+CMIFILES = $(MLIFILES:%.ml=%.cmi)
 CMOFILES = $(MLFILES:%.ml=%.cmo)
 CMXFILES = $(MLFILES:%.ml=%.cmx)
-CMIFILES = $(MLIFILES:%.ml=%.cmi)
 
 # rules
 all: $(TARGETS)
