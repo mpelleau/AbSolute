@@ -1,5 +1,3 @@
-open Mpqf
-
 type t = Mpqf.t
 
       
@@ -49,6 +47,7 @@ let pp_print f x = Format.pp_print_string f (to_string x)
 type kind = FINITE | MINF | INF | INVALID
   
 let classify (x:t) : kind =
+  let open Mpqf in
   let f = to_float x in
   if classify_float f = FP_nan then INVALID
   else if f = infinity then INF
@@ -63,9 +62,9 @@ let zero : t = Mpqf.of_int 0
 let one : t = Mpqf.of_int 1
 let two : t = Mpqf.of_int 2
 let minus_one : t = Mpqf.of_int (-1)
-let inf : t = Mpq.of_float infinity
-let minus_inf : t = Mpqf.of_float neg_infinity
-let nan : t = Mpqf.of_float nan
+(* let inf : t = Mpq.of_float infinity *)
+(* let minus_inf : t = Mpqf.of_float neg_infinity  *)
+(* let nan : t = Mpqf.of_float nan *)
     
 
 (* exact operators *)
@@ -87,8 +86,8 @@ let mul_down a b = Mpqf.mul a b
 let div_down a b = Mpqf.div a b
 
 (* TODO: improve and check soundness *)
-let sqrt_up x = Mpqf.of_float (sqrt (to_float x))
-let sqrt_down x = Mpqf.of_float (-. ((-. 1.) /. (sqrt (1. /. (to_float x)))))
+let sqrt_up x = Mpqf.of_float (sqrt (Mpqf.to_float x))
+let sqrt_down x = Mpqf.of_float (-. ((-. 1.) /. (sqrt (1. /. (Mpqf.to_float x)))))
 
 let cos_up x = Mpqf.of_float (cos (Mpqf.to_float x))
 let cos_down x = Mpqf.of_float (cos (Mpqf.to_float x))
