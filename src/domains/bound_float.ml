@@ -97,6 +97,27 @@ let cos_down = cos
 let sin_up = sin
 let sin_down = sin
 
+let tan_up = tan
+let tan_down = tan
+
+let acos_up = acos
+let acos_down = acos
+
+let asin_up = asin
+let asin_down = asin
+
+let atan_up = atan
+let atan_down = atan
+
+let exp_up = exp
+let exp_down = exp
+
+let log_up = log
+let log_down = log
+
+let log10_up = log10
+let log10_down = log10
+
 
 (* double-precision characteristics *)
 

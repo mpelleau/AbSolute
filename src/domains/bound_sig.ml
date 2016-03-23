@@ -120,6 +120,22 @@ module type BOUND = sig
   val cos_down: t -> t
   val sin_up: t -> t
   val sin_down: t -> t
+  val tan_up: t -> t
+  val tan_down: t -> t
+
+  val acos_up: t -> t
+  val acos_down: t -> t
+  val asin_up: t -> t
+  val asin_down: t -> t
+  val atan_up: t -> t
+  val atan_down: t -> t
+
+  val exp_up: t -> t
+  val exp_down: t -> t
+  val log_up: t -> t
+  val log_down: t -> t
+  val log10_up: t -> t
+  val log10_down: t -> t
 
   (* integer rounding *)
   val floor: t -> t
