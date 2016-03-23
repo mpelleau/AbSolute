@@ -3,27 +3,6 @@ open ADCP
 
 let solving = ref true 
 
-(*
-let get_solving_problem p =
-  match p with
-  | "gear4" -> Problems.gear4
-  | "st_miqp5" -> Problems.st_miqp5
-  | "nonlin1" -> Problems.nonlin1
-  | "nonlin2" -> Problems.nonlin2
-  | "lin1" -> Problems.lin1
-  | "lin2" -> Problems.lin2
-  | "two_circles" -> Problems.two_circles
-  | "one_circle" -> Problems.one_circle
-  | "cpr2" -> Problems.cpr2
-  | "octo_hole" -> Problems.octo_hole
-  | _ -> "solving problem undefined "^p |> failwith
-
-let get_minimization_problem p =
-  match p with
-  | "test" -> Problems.test
-  | _ -> "minimization problem undefined "^p |> failwith
-*)
-
 let get_variousDA_problem p =
   match p with
   | "test" -> Problems.test
@@ -54,9 +33,9 @@ let main =
     | "box" -> Solver.Box.solving prob
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
-    | "boxNoct" -> VariousDA.BoxNOct.solving prob
+    (*| "boxNoct" -> VariousDA.BoxNOct.solving prob
     | "boxNpoly" -> VariousDA.BoxNPoly.solving prob
-    | "octNpoly" -> VariousDA.OctNPoly.solving prob
+    | "octNpoly" -> VariousDA.OctNPoly.solving prob*)
     | _ -> "domain undefined"^(!domain_solving) |> failwith
   else(*
     match !domain_minimizing with

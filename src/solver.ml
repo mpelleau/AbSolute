@@ -6,45 +6,36 @@ open ADCP
 
 module Solve(Abs : AbstractCP) =
   struct
-    module T = Apron_domain.SyntaxTranslator(Abs)
-
-    let man = Abs.get_manager
 
     let consistency abs tab =
-      let abs' = Abstract1.meet_tcons_array man abs tab in
-      (if Abstract1.is_bottom man abs' then `Empty
-       else 
-	  if tcons_for_all (Abstract1.sat_tcons man abs') tab then `Full
-	  else `Maybe),abs'
-	  
+      let abs' = List.fold_left Abs.meet abs tab in
+      (if Abs.is_bottom abs' then `Empty 
+       else if List.for_all (Abs.sat_cons abs') tab then `Full
+       else `Maybe)
+       ,abs'
+	
     let draw abs info col vars =
       if !Constant.visualization then
 	Vue.draw (Abs.points_to_draw abs vars) col info
 
-    let explore abs env tab nb_steps nb_sol vars =
-      Format.printf "solving begins\n%!";
+    let explore abs constrs nb_steps nb_sol vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
-      Format.printf "points to draw done\n%!";
       draw abs info Graphics.yellow vars;
-      let rec aux abs env nb_steps nb_sol =
-	let cons,abs' = consistency abs tab in	
+      let rec aux abs nb_steps nb_sol =
+	let cons,abs' = consistency abs constrs in	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
-	| `Full -> 
-	  draw abs' info Graphics.blue vars; 
-	  (nb_steps, nb_sol+1)
+	| `Full ->  draw abs' info Graphics.blue vars; (nb_steps, nb_sol+1)
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
-	  | true,_ -> 
-	    draw abs' info Graphics.green vars;
-	    (nb_steps, nb_sol+1)
+	  | true,_ -> draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
 	  | _,exprs when nb_sol <= !Constant.max_sol ->
 	    draw abs' info Graphics.yellow vars;
             Abs.split abs' exprs |>
-            List.fold_left (fun (a, b) c -> aux c env (a+1) b) (nb_steps, nb_sol)
+            List.fold_left (fun (a, b) c -> aux c (a+1) b) (nb_steps, nb_sol)
 	  | _ -> (nb_steps, nb_sol)
 	  )
-      in aux abs env nb_steps nb_sol
+      in aux abs nb_steps nb_sol
 
     let explore_breath_first abs env tab nb_steps nb_sol vars=
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
@@ -68,17 +59,12 @@ module Solve(Abs : AbstractCP) =
       done;
       !nb_steps,!nb_sol
 
-    let solving env domains cons vars=
-      let abs = Abs.of_lincons_array env domains in
-      printf "abs = %a@." Abstract1.print abs;
-      let box = Abstract1.to_box man abs in
-      let tab = box.Abstract1.interval_array in
-      printf "box = %a@." (print_array Interval.print) tab;
-      let s = Manager.get_funopt man Manager.Funid_meet_tcons_array in
-      let s' = {s with Manager.algorithm = 100} in
-      Manager.set_funopt man Manager.Funid_meet_tcons_array s';
-      if not (Abstract1.is_bottom man abs) then
-        let (nb_steps, nb_sol) = explore abs env cons 1 0 vars in
+    let solving prob =
+      let open Syntax in
+      let abs = Abs.of_problem prob in
+      printf "abs = %a@." Abs.print abs;
+      if not (Abs.is_bottom abs) then
+        let (nb_steps, nb_sol) = explore abs prob.constraints 1 0 prob.to_draw in
 	Format.printf "solving ends\n%!";
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
@@ -87,10 +73,6 @@ module Solve(Abs : AbstractCP) =
       else
         printf "No Solutions - #created nodes: 0@."
 
-    let solving solving_problem =
-      let open Syntax in
-      let (env, domains, _, constraints, _, _) = T.to_apron solving_problem in
-      solving env domains constraints solving_problem.to_draw
   end
 
 module Box = Solve(BoxCP)

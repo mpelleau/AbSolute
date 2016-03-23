@@ -19,7 +19,7 @@ OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB)
 CLIBS = -lgmp -lxcb
 
 # targets
-TARGETS = minimizer.opt solver.opt variousDA.opt
+TARGETS = minimizer.opt solver.opt
 
 AUTOGEN =\
   src/frontend/parser.ml \
@@ -43,8 +43,6 @@ MLFILES = \
   src/ADCP.ml \
   src/problems.ml \
   src/vue.ml \
-  src/variousDA.ml \
-  src/minimizer.ml \
   src/solver.ml \
   src/main.ml
 
@@ -58,11 +56,7 @@ CMXFILES = $(MLFILES:%.ml=%.cmx)
 # rules
 all: $(TARGETS)
 
-variousDA.opt: $(CMXFILES)
-	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
-variousDA: $(CMOFILES)
-	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLLIBS) $+
 
 solver.opt: $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+

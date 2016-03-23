@@ -11,26 +11,6 @@ type solving =
 type minimization = 
   Environment.t * Lincons1.earray * Tcons1.t list list * Tcons1.earray * Texpr1.t
 
-module type H = sig
-  type t
-  val handle : t -> unit
-end
-module Handler (A:H)(Abs:ADCP.AbstractCP) = struct 
-  let man = Abs.get_manager
-
-  let consistency abs tab max_iter =
-    let rec cons_loop abs n =
-      if n >= max_iter || Abstract1.is_bottom man abs then abs
-      else(
-        let abs_tmp = Abstract1.copy man abs in
-        Abstract1.meet_tcons_array_with man abs tab;		
-        if Abstract1.is_eq man abs_tmp abs then abs
-        else cons_loop abs (n+1)
-      )
-    in cons_loop abs 0
-end
-
-
 
                 (*****************************)
                 (*    PROBLEMS INSTANCES     *)

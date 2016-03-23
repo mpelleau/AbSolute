@@ -10,14 +10,14 @@ open ADCP
 
 module type Reduction = 
   sig
-    module A:AbstractCP
-    module B:AbstractCP
-    val a_meet_b : A.t Abstract1.t -> B.t Abstract1.t -> B.t Abstract1.t
-    val b_meet_a : A.t Abstract1.t -> B.t Abstract1.t -> A.t Abstract1.t
-    val reduced_product : A.t Abstract1.t -> B.t Abstract1.t -> A.t Abstract1.t * B.t Abstract1.t
+    module A : AbstractCP
+    module B : AbstractCP
+    val a_meet_b : A.t -> B.t -> B.t 
+    val b_meet_a : A.t -> B.t -> A.t 
+    val reduced_product : A.t -> B.t -> A.t * B.t 
   end
 
-module BoxAndPoly : Reduction =
+(*module BoxAndPoly : Reduction =
   struct
 
     module A=BoxCP
@@ -382,3 +382,4 @@ let mixte =
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [["x*x-y=0"];["x*x+y-2=0"]] in
   (env, domains, cons)
  *)
+*)

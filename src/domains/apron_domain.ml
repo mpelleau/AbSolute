@@ -6,6 +6,8 @@ module type ADomain = sig
   val get_manager: t Manager.t 
 end
 
+
+(* Translation functor for syntax.prog to apron values*)
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.get_manager
 
@@ -57,7 +59,6 @@ module SyntaxTranslator (D:ADomain) = struct
     let a = Abstract1.top man env in
     let e = Texpr1.of_expr env (expr_to_apron a e) in
     let res = Tcons1.make e op in
-    Format.printf "%a\n" Tcons1.print res;
     res
          
   let rec bexpr_to_apron b env =
@@ -104,14 +105,10 @@ module SyntaxTranslator (D:ADomain) = struct
     let integers = List.map (fun (_,v,_) -> Var.of_string v) integers |> Array.of_list
     and reals = List.map (fun (_,v,_) -> Var.of_string v) reals |> Array.of_list in
     let env = Environment.make integers reals in
-    Format.printf "environnement: ";
     Environment.print Format.std_formatter env;
-    Format.printf "\n";
     let a = Abstract1.top man env in
-    Format.printf "top =%a@\n%!" Abstract1.print a; 
     let domains = List.map (fun (_,v,dom) -> abstract_of_dom a v dom) p.init in
     let abs = List.fold_left (Abstract1.meet man) (Abstract1.top man env) domains in
-    Format.printf "domain joined = %a@." Abstract1.print abs;
     let rec aux ((res_all, res_lin, res_nonlin) as res) constraints =
       match constraints with
       | [] -> res
@@ -131,4 +128,89 @@ module SyntaxTranslator (D:ADomain) = struct
      (Utils.tcons_list_to_earray all),
      (Utils.tcons_list_to_earray c_nl),
      (Utils.tcons_list_to_earray c_l))
+end
+
+
+(*****************************************************************)
+(* Some types and values that all the domains of apron can share *)
+(* These are generic and can be redefined in the actuals domains *)
+(*****************************************************************)
+module MAKE(AP:ADomain) = struct
+  type t = AP.t Abstract1.t
+
+  let man = AP.get_manager
+
+  type split = Linexpr1.t
+
+  module Translate = SyntaxTranslator(AP)
+
+  let of_problem p =
+    let (env,domains,_,_,_,_) = Translate.to_apron p in
+    Abstract1.of_lincons_array man env domains
+      
+  let is_bottom b = Abstract1.is_bottom man b
+    
+  let sat_cons b c =
+    let env = Abstract1.env b in
+    Translate.bexpr_to_apron c env |> Abstract1.sat_tcons man b
+	
+  let meet b c = 
+    let env = Abstract1.env b in
+    let c = Translate.bexpr_to_apron c env in
+    Abstract1.meet_tcons_array man b (Utils.tcons_list_to_earray [c])
+      
+  let print = Abstract1.print
+
+  let split abs list =
+    let meet_linexpr abs man env expr =
+      let cons = Lincons1.make expr Lincons1.SUPEQ in
+      let tab = Lincons1.array_make env 1 in
+      Lincons1.array_set tab 0 cons;
+      let abs' = Abstract1.meet_lincons_array man abs tab in
+      abs'
+    in
+    let env = Abstract1.env abs in
+    let abs1 = meet_linexpr abs man env (List.nth list 0) in
+    let abs2 = meet_linexpr abs man env (List.nth list 1) in
+    [abs1; abs2]    
+
+  let to_box abs = Abstract1.to_box man abs
+
+  let to_oct abs =
+    let env = Abstract1.env abs in
+    Abstract1.to_lincons_array man abs |>
+    Abstract1.of_lincons_array (Oct.manager_alloc ()) env
+
+  let to_poly abs =
+    let env = Abstract1.env abs in
+    Abstract1.to_lincons_array man abs |>
+    Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env
+
+  (* given two variables to draw, and an environnement, 
+     returns the two variables value in the environment.  
+  *)
+  let get_indexes env vars = 
+    let i1,i2 = match vars with
+      | None -> (0,1)
+      | Some (x,y) ->
+	(Environment.dim_of_var env (Var.of_string x)),
+	(Environment.dim_of_var env (Var.of_string y))
+    in i1,i2
+    
+  let points_to_draw abs vars =
+    let draw_pol pol =    
+      let env = Abstract1.env abs in
+      let i1,i2 = get_indexes env vars in
+      let x = Environment.var_of_dim env i1 
+      and y = Environment.var_of_dim env i2 in
+      let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in      
+      let gen' = Abstract1.to_generator_array (Polka.manager_alloc_strict ()) pol in
+      let v = Array.init (Generator1.array_length gen')
+	(fun i -> get_coord 
+	  (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
+	       |> Array.to_list
+      in 
+      List.map (fun(a,b)-> (Utils.coeff_to_float a, Utils.coeff_to_float b)) v
+    in 
+    draw_pol (to_poly abs) 
 end
