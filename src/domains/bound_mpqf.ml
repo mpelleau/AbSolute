@@ -114,5 +114,8 @@ let exp_down x = Mpqf.of_float (exp (Mpqf.to_float x))
 let log_up x = Mpqf.of_float (log (Mpqf.to_float x))
 let log_down x = Mpqf.of_float (log (Mpqf.to_float x))
 
+let log10_up x = Mpqf.of_float (log10 (Mpqf.to_float x))
+let log10_down x = Mpqf.of_float (log10 (Mpqf.to_float x))
+
 let floor x = Mpqf.of_float (floor (Mpqf.to_float x))
 let ceil x = Mpqf.of_float (ceil (Mpqf.to_float x))

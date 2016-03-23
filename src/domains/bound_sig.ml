@@ -134,6 +134,8 @@ module type BOUND = sig
   val exp_down: t -> t
   val log_up: t -> t
   val log_down: t -> t
+  val log10_up: t -> t
+  val log10_down: t -> t
 
   (* integer rounding *)
   val floor: t -> t

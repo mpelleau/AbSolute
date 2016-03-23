@@ -115,6 +115,9 @@ let exp_down = exp
 let log_up = log
 let log_down = log
 
+let log10_up = log10
+let log10_down = log10
+
 
 (* double-precision characteristics *)
 
