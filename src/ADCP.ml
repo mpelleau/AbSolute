@@ -301,7 +301,8 @@ module OctBoxCP =
       let get_manager =  Oct.manager_alloc ()
     end) 
 
-    let is_small octad prec =let env = Abstract1.env octad in
+    let is_small octad prec =
+      let env = Abstract1.env octad in
       let box = Abstract1.to_box man octad in
       let itv = box.Abstract1.interval_array in
       let (max, i_max) = largest itv 1 (diam_interval itv.(0)) 0 in

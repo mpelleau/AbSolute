@@ -61,9 +61,9 @@ let zero : t = Mpqf.of_int 0
 let one : t = Mpqf.of_int 1
 let two : t = Mpqf.of_int 2
 let minus_one : t = Mpqf.of_int (-1)
-(*let inf : t = Mpq.of_float infinity
-let minus_inf : t = Mpqf.of_float neg_infinity
-let nan : t = Mpqf.of_float nan*)
+(* let inf : t = Mpq.of_float infinity *)
+(* let minus_inf : t = Mpqf.of_float neg_infinity  *)
+(* let nan : t = Mpqf.of_float nan *)
     
 
 (* exact operators *)

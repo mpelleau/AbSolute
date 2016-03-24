@@ -285,10 +285,10 @@ module Itv(B:BOUND) = (struct
     Nb (B.sqrt_down l, B.sqrt_up h)
     
 
-  let pi_half = B.of_float_up 1.57079632679489661923
-  let pi = B.of_float_up 3.14159265358979323846
-  let two_pi = B.of_float_up 6.28318530717958647693
-  let ln10 = B.of_float_up 2.30258509299404568402
+  let pi_half = B.of_float_up 1.57079632
+  let pi = B.of_float_up 3.14159265
+  let two_pi = B.of_float_up 6.28318
+  let ln10 = B.of_float_up 2.3025850
 
   (* Returns the quadrant in which the bound is.
    * value must be in [0, 2pi[ *)

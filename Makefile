@@ -37,8 +37,8 @@ MLFILES = \
   src/domains/apron_domain.ml \
   src/domains/bot.ml \
   src/domains/bound_sig.ml \
-  src/domains/bound_float.ml \
   src/domains/bound_mpqf.ml \
+  src/domains/bound_float.ml \
   src/domains/itv.ml \
   src/domains/box_float.ml \
   src/ADCP.ml \
@@ -56,8 +56,6 @@ CMXFILES = $(MLFILES:%.ml=%.cmx)
 
 # rules
 all: $(TARGETS)
-
-
 
 solver.opt: $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
