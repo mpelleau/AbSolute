@@ -341,13 +341,14 @@ module Itv(B:BOUND) = (struct
   (* interval tan *)
   let tan itv =
     let diam = range itv in
-    if B.geq diam two_pi then
+    if B.geq diam pi then
       top
     else
       let (l',h') = scale_to_two_pi_itv itv in
       let diam = range (l',h')
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
+      Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup;
       if q_inf = q_sup && B.geq diam pi then
         top
       else
@@ -511,21 +512,14 @@ module Itv(B:BOUND) = (struct
     else meet i (B.minus_inf, snd rr)
 
   
-  let epsilon = B.of_float_up 0.001
-
   let compute_itv itv itv' i i' =
-    if i mod 2 = 0 then
-      let aux = add itv' (mul (of_bound pi) (of_int i)) in
-      let new_itv = meet itv aux in
-      match new_itv with
-      | Bot -> Bot
-      | Nb n -> Nb n
-    else
-      let aux = sub (mul (of_bound pi) (of_int i')) itv' in
-      let new_itv = meet itv aux in
-      match new_itv with
-      | Bot -> Bot
-      | Nb n -> Nb n
+    let aux = 
+      if i mod 2 = 0 then
+        add itv' (mul (of_bound pi) (of_int i))
+      else
+        sub (mul (of_bound pi) (of_int i')) itv'
+    in
+    meet itv aux
 
   (* r = sin i => i = arcsin r *)
   let filter_sin i r =
@@ -548,6 +542,55 @@ module Itv(B:BOUND) = (struct
         while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx !idx;
+        done;
+        Nb (Bot.join_bot2 join !itv !itv')
+
+  (* r = cos i => i = arccos r *)
+  let filter_cos i r =
+    let acos_r = acos r in
+    let (aux, _) = div i (of_bound pi) in
+    match (aux, acos_r) with
+    | Bot, _ | _, Bot -> Bot
+    | Nb (p1,p2), Nb ((l,h) as a_r) -> 
+      let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
+      let itv = ref (compute_itv i a_r !idx (!idx+1)) in
+      while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := compute_itv i a_r !idx (!idx+1);
+      done;
+      if (is_Bot !itv) then
+        Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
+        let itv' = ref (compute_itv i a_r !idx (!idx+1)) in
+        while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := compute_itv i a_r !idx (!idx+1);
+        done;
+        Nb (Bot.join_bot2 join !itv !itv')
+
+  (* r = tan i => i = arctan r *)
+  let filter_tan i r =
+    let atan_r = atan r in
+    let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
+    Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);
+    match aux with
+    | Bot -> Bot
+    | Nb (p1,p2) -> 
+      let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
+      let itv = ref (meet i (add atan_r (mul (of_bound pi) (of_int !idx)))) in
+      while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
+      done;
+      if (is_Bot !itv) then
+        Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
+        let itv' = ref (meet i (add atan_r (mul (of_bound pi) (of_int !idx)))) in
+        while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
         done;
         Nb (Bot.join_bot2 join !itv !itv')
 
