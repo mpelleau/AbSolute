@@ -510,7 +510,7 @@ module Itv(B:BOUND) = (struct
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
-  let epsilon = B.of_float_up 0.000001
+
 
   let compute_itv itv itv' i i' =
     if i mod 2 = 0 then
@@ -518,7 +518,7 @@ module Itv(B:BOUND) = (struct
       match new_itv with
       | Bot -> Bot
       | Nb n -> 
-        if range n > epsilon then
+        if B.lt (range n) (range itv') then
           new_itv
         else
           Bot
@@ -527,7 +527,7 @@ module Itv(B:BOUND) = (struct
       match new_itv with
       | Bot -> Bot
       | Nb n -> 
-        if range n > epsilon then
+        if B.lt (range n) (range itv') then
           new_itv
         else
           Bot
