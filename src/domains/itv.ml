@@ -510,55 +510,44 @@ module Itv(B:BOUND) = (struct
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
-
+  
+  let epsilon = B.of_float_up 0.001
 
   let compute_itv itv itv' i i' =
     if i mod 2 = 0 then
-      let new_itv = meet itv (add itv' (mul (of_bound pi) (of_int i))) in
+      let aux = add itv' (mul (of_bound pi) (of_int i)) in
+      let new_itv = meet itv aux in
       match new_itv with
       | Bot -> Bot
-      | Nb n -> 
-        if B.lt (range n) (range itv') then
-          new_itv
-        else
-          Bot
+      | Nb n -> Nb n
     else
-      let new_itv = meet itv (sub (mul (of_bound pi) (of_int i')) itv') in
+      let aux = sub (mul (of_bound pi) (of_int i')) itv' in
+      let new_itv = meet itv aux in
       match new_itv with
       | Bot -> Bot
-      | Nb n -> 
-        if B.lt (range n) (range itv') then
-          new_itv
-        else
-          Bot
+      | Nb n -> Nb n
 
   (* r = sin i => i = arcsin r *)
   let filter_sin i r =
     let asin_r = asin r in
-    (* Format.printf "arcsin = %s\n" (Bot.bot_to_string to_string asin_r); *)
     let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
-    (* Format.printf "periods = %s\n" (Bot.bot_to_string to_string aux); *)
     match (aux, asin_r) with
     | Bot, _ | _, Bot -> Bot
     | Nb (p1,p2), Nb ((l,h) as a_r) -> 
       let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
       let itv = ref (compute_itv i a_r !idx !idx) in
-      (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv); *)
       while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
         idx := !idx + 1;
         itv := compute_itv i a_r !idx !idx;
-        (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv); *)
       done;
       if (is_Bot !itv) then
         Bot
       else
         let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
         let itv' = ref (compute_itv i a_r !idx !idx) in
-        (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv'); *)
         while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx !idx;
-          (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv'); *)
         done;
         Nb (Bot.join_bot2 join !itv !itv')
 
