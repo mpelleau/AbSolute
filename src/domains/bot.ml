@@ -38,3 +38,7 @@ let rebot f x =
   try Nb (f x) with Bot_found -> Bot
 
 let bot_to_string f = function Bot -> "_|_" | Nb x -> f x
+
+let is_Bot = function
+  | Bot -> true
+  | _ -> false

@@ -1,5 +1,7 @@
 open Apron
 open ADCP
+open Itv
+open Bot
 
 let solving = ref true 
 
@@ -22,6 +24,43 @@ let parse_args () =
   Array.to_list Sys.argv |> List.tl |> doit
 
 let main =
+  let itv = ItvF.of_bounds (Bound_float.of_float_down 9.42477796076938) (Bound_float.of_float_up 15.70796326794897) in
+  let itv' = ItvF.sin itv in
+  let itv'' = ItvF.filter_sin itv (ItvF.of_ints 0 1) in
+  let itv''' = ItvF.filter_sin itv (ItvF.of_ints (-1) 0) in
+  Format.printf "%s ; %s ; " (ItvF.to_string itv) (ItvF.to_string itv');
+  match itv'' with
+  | Bot -> Format.printf "_|_ ; ";
+  | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x);
+  match itv''' with
+  | Bot -> Format.printf "_|_\n";
+  | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x);
+
+  let itv = ItvF.of_bounds (Bound_float.of_float_down 6.28318530717959) (Bound_float.of_float_up 15.70796326794897) in
+  let itv' = ItvF.sin itv in
+  let itv'' = ItvF.filter_sin itv (ItvF.of_ints 0 1) in
+  let itv''' = ItvF.filter_sin itv (ItvF.of_ints (-1) 0) in
+  Format.printf "%s ; %s ; " (ItvF.to_string itv) (ItvF.to_string itv');
+  match itv'' with
+  | Bot -> Format.printf "_|_ ; ";
+  | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x);
+  match itv''' with
+  | Bot -> Format.printf "_|_\n";
+  | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x);
+
+  let itv = ItvF.of_bounds (Bound_float.of_float_down 10.42477796076938) (Bound_float.of_float_up 12.70796326794897) in
+  let itv' = ItvF.sin itv in
+  let itv'' = ItvF.filter_sin itv (ItvF.of_ints 0 1) in
+  let itv''' = ItvF.filter_sin itv (ItvF.of_ints (-1) 0) in
+  Format.printf "%s ; %s ; " (ItvF.to_string itv) (ItvF.to_string itv');
+  match itv'' with
+  | Bot -> Format.printf "_|_ ; ";
+  | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x);
+  match itv''' with
+  | Bot -> Format.printf "_|_\n";
+  | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x);
+
+
   let open Constant in
   parse_args ();
   solving := !Constant.problem <> "test";

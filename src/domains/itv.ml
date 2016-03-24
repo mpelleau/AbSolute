@@ -312,7 +312,7 @@ module Itv(B:BOUND) = (struct
   (* interval sin *)
   let sin (l,h) =
     let diam = range (l,h) in
-    if B.leq diam two_pi then
+    if B.geq diam two_pi then
       minus_one_one
     else
       let (l',h') = scale_to_two_pi_itv (l,h) in
@@ -336,7 +336,7 @@ module Itv(B:BOUND) = (struct
 
   (* interval cos *)
   let cos itv =
-    sin (add itv (pi_half, pi_half))
+    sin (add itv (of_bound pi_half))
 
   (* interval tan *)
   let tan itv =
@@ -358,7 +358,7 @@ module Itv(B:BOUND) = (struct
 
   (* interval cot *)
   let cot itv =
-    let itv' = tan (add itv (pi_half,pi_half)) in
+    let itv' = tan (add itv (of_bound pi_half)) in
     neg itv'
 
   (* interval arcsin *)
@@ -393,7 +393,7 @@ module Itv(B:BOUND) = (struct
 
   (* interval acot *)
   let acot itv =
-    add (atan (neg itv)) (pi_half, pi_half)
+    add (atan (neg itv)) (of_bound pi_half)
 
   (* interval exp *)
   let exp (l,h) =
@@ -413,7 +413,7 @@ module Itv(B:BOUND) = (struct
     let itv' = log itv in
     match itv' with
     | Bot -> Bot
-    | Nb (l', h') -> fst (div (l',h') (ln10,ln10))
+    | Nb (l', h') -> fst (div (l',h') (of_bound ln10))
 
 
   (************************************************************************)
@@ -510,8 +510,65 @@ module Itv(B:BOUND) = (struct
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
-  (* r = sin i => i = arcsin r *
-  let filter_sin (il,ih) (rl,rh) =*)
+  let epsilon = B.of_float_up 0.000001
+
+  let compute_itv itv itv' i i' =
+    if i mod 2 = 0 then
+      let new_itv = meet itv (add itv' (mul (of_bound pi) (of_int i))) in
+      match new_itv with
+      | Bot -> Bot
+      | Nb n -> 
+        if range n > epsilon then
+          new_itv
+        else
+          Bot
+    else
+      let new_itv = meet itv (sub (mul (of_bound pi) (of_int i')) itv') in
+      match new_itv with
+      | Bot -> Bot
+      | Nb n -> 
+        if range n > epsilon then
+          new_itv
+        else
+          Bot
+
+  (* r = sin i => i = arcsin r *)
+  let filter_sin i r =
+    let asin_r = asin r in
+    (* Format.printf "arcsin = %s\n" (Bot.bot_to_string to_string asin_r); *)
+    let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
+    (* Format.printf "periods = %s\n" (Bot.bot_to_string to_string aux); *)
+    match (aux, asin_r) with
+    | Bot, _ | _, Bot -> Bot
+    | Nb (p1,p2), Nb ((l,h) as a_r) -> 
+      let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
+      let itv = ref (compute_itv i a_r !idx !idx) in
+      (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv); *)
+      while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := compute_itv i a_r !idx !idx;
+        (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv); *)
+      done;
+      if (is_Bot !itv) then
+        Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
+        let itv' = ref (compute_itv i a_r !idx !idx) in
+        (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv'); *)
+        while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := compute_itv i a_r !idx !idx;
+          (* Format.printf "%i : itv = %s\n" !idx (Bot.bot_to_string to_string !itv'); *)
+        done;
+        Nb (Bot.join_bot2 join !itv !itv')
+
+  (* r = exp i => i = log r *)
+  let filter_exp i r =
+    strict_bot log r
+
+  (* r = log i => i = exp r *)
+  let filter_log i r =
+    meet i (exp r)
     
 
 end)
