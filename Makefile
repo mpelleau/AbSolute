@@ -42,6 +42,7 @@ MLFILES = \
   src/domains/itv.ml \
   src/domains/box_float.ml \
   src/ADCP.ml \
+  src/variousDA.ml \
   src/problems.ml \
   src/vue.ml \
   src/solver.ml \

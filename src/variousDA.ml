@@ -17,7 +17,7 @@ module type Reduction =
     val reduced_product : A.t -> B.t -> A.t * B.t 
   end
 
-(*module BoxAndPoly : Reduction =
+module BoxAndPoly : Reduction =
   struct
 
     module A=BoxCP
@@ -26,12 +26,12 @@ module type Reduction =
     let a_meet_b box poly =
       let poly_env = Abstract1.env poly in
       let poly' = BoxCP.to_poly box poly_env in
-      Abstract1.meet PolyCP.get_manager poly poly'
+      Abstract1.meet PolyCP.man poly poly'
 
     let b_meet_a box poly = 
       let box_env = Abstract1.env box in
       let box' = PolyCP.to_box poly box_env in
-      Abstract1.meet BoxCP.get_manager box box'
+      Abstract1.meet BoxCP.man box box'
 
     let reduced_product box poly =
       let new_poly = a_meet_b box poly in
@@ -48,12 +48,12 @@ module BoxAndOct : Reduction =
     let a_meet_b box oct =
       let oct_env = Abstract1.env oct in
       let oct' = BoxCP.to_oct box oct_env in
-      Abstract1.meet OctBoxCP.get_manager oct oct'
+      Abstract1.meet OctBoxCP.man oct oct'
 
     let b_meet_a box oct = 
       let box_env = Abstract1.env box in
       let box' = OctBoxCP.to_box oct box_env in
-      Abstract1.meet BoxCP.get_manager box box'
+      Abstract1.meet BoxCP.man box box'
 
     let reduced_product box oct =
       let new_oct = a_meet_b box oct in
@@ -70,12 +70,12 @@ module OctAndPoly : Reduction =
     let a_meet_b oct poly =
       let poly_env = Abstract1.env poly in
       let poly' = OctBoxCP.to_poly oct poly_env in
-      Abstract1.meet PolyCP.get_manager poly poly'
+      Abstract1.meet PolyCP.man poly poly'
 
     let b_meet_a oct poly = 
       let oct_env = Abstract1.env oct in
       let oct' = PolyCP.to_oct poly oct_env in
-      Abstract1.meet OctBoxCP.get_manager oct oct'
+      Abstract1.meet OctBoxCP.man oct oct'
 
     let reduced_product oct poly =
       let new_poly = a_meet_b oct poly in
@@ -83,14 +83,62 @@ module OctAndPoly : Reduction =
       (new_oct, new_poly)
   end
 
-module Solve (Reduced : Reduction) =
+module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
   struct
 
-    module TA = Apron_domain.SyntaxTranslator(Reduced.A)
-    module TB = Apron_domain.SyntaxTranslator(Reduced.B)
+    type t = Reduced.A.t * Reduced.B.t
+    type split = Reduced.A.split
 
-    let man = Reduced.A.get_manager
-    let man' = Reduced.B.get_manager
+    let of_problem p =
+      let open Syntax in
+        let abs = Reduced.A.of_problem p
+        and tmp =  Reduced.B.of_problem p in
+        let cons_b = List.filter Syntax.is_cons_linear p.constraints in
+        let abs' = List.fold_left Reduced.B.meet tmp cons_b in
+        (abs,abs')
+    
+    let is_small ((abs, abs'):t) prec =
+      Reduced.A.is_small abs prec
+
+    let split ((abs, abs'):t) list = 
+      let split_a = Reduced.A.split abs list in
+      List.map (fun x -> (x, abs')) split_a
+
+    let points_to_draw ((abs, abs'):t) vars =
+      let abs_to_draw = Reduced.a_meet_b abs abs' in
+      Reduced.B.points_to_draw abs_to_draw vars
+
+    let is_bottom ((abs, _):t) =
+      Reduced.A.is_bottom abs
+
+    let sat_cons ((abs, _):t) cons =
+      Reduced.A.sat_cons abs cons
+
+    let meet ((abs, abs'):t) cons =
+      (Reduced.A.meet abs cons, abs')
+
+    let print fmt ((abs, abs'):t) =
+      Reduced.A.print fmt abs;
+      Reduced.B.print fmt abs';
+
+  end
+
+module BoxNOct = VariousDomain_MS(BoxAndOct)
+module BoxNPoly = VariousDomain_MS(BoxAndPoly)
+module OctNPoly = VariousDomain_MS(OctAndPoly)
+
+
+(*module Solve (Reduced : Reduction) =
+  struct
+
+    (* module TA = Apron_domain.SyntaxTranslator(Reduced.A) *)
+    (* module TB = Apron_domain.SyntaxTranslator(Reduced.B) *)
+
+    module TA = Reduced.A
+    module TB = Reduced.B
+
+    let man = TA.get_manager
+    let man' = TB.get_manager
 
     let consistency abs tab =
       let abs' = Abstract1.meet_tcons_array man abs tab in
@@ -382,4 +430,4 @@ let mixte =
   let cons = List.map (List.map (Parser.tcons1_of_string env)) [["x*x-y=0"];["x*x+y-2=0"]] in
   (env, domains, cons)
  *)
-*)
+ *)

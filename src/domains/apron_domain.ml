@@ -174,16 +174,19 @@ module MAKE(AP:ADomain) = struct
     let abs2 = meet_linexpr abs man env (List.nth list 1) in
     [abs1; abs2]    
 
-  let to_box abs = Abstract1.to_box man abs
+  let to_box abs env = 
+    let abs' = Abstract1.change_environment man abs env false in
+    Abstract1.to_lincons_array man abs' |>
+    Abstract1.of_lincons_array (Box.manager_alloc ()) env
 
-  let to_oct abs =
-    let env = Abstract1.env abs in
-    Abstract1.to_lincons_array man abs |>
+  let to_oct abs env =
+    let abs' = Abstract1.change_environment man abs env false in
+    Abstract1.to_lincons_array man abs' |>
     Abstract1.of_lincons_array (Oct.manager_alloc ()) env
 
-  let to_poly abs =
-    let env = Abstract1.env abs in
-    Abstract1.to_lincons_array man abs |>
+  let to_poly abs env =
+    let abs' = Abstract1.change_environment man abs env false in
+    Abstract1.to_lincons_array man abs' |>
     Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env
 
   (* given two variables to draw, and an environnement, 
@@ -198,8 +201,8 @@ module MAKE(AP:ADomain) = struct
     in i1,i2
     
   let points_to_draw abs vars =
-    let draw_pol pol =    
-      let env = Abstract1.env abs in
+    let env = Abstract1.env abs in
+    let draw_pol pol =
       let i1,i2 = get_indexes env vars in
       let x = Environment.var_of_dim env i1 
       and y = Environment.var_of_dim env i2 in
@@ -212,5 +215,5 @@ module MAKE(AP:ADomain) = struct
       in 
       List.map (fun(a,b)-> (Utils.coeff_to_float a, Utils.coeff_to_float b)) v
     in 
-    draw_pol (to_poly abs) 
+    draw_pol (to_poly abs env) 
 end

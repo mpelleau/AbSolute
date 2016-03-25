@@ -82,9 +82,9 @@ let main =
     | "box" -> Solver.Box.solving prob
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
-    (*| "boxNoct" -> VariousDA.BoxNOct.solving prob
-    | "boxNpoly" -> VariousDA.BoxNPoly.solving prob
-    | "octNpoly" -> VariousDA.OctNPoly.solving prob*)
+    | "boxNoct" -> Solver.BoxNOct.solving prob
+    | "boxNpoly" -> Solver.BoxNPoly.solving prob
+    | "octNpoly" -> Solver.OctNPoly.solving prob
     | _ -> "domain undefined"^(!domain_solving) |> failwith
   else(*
     match !domain_minimizing with

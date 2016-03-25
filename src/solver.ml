@@ -78,3 +78,7 @@ module Solve(Abs : AbstractCP) =
 module Box = Solve(BoxCP)
 module Oct = Solve(OctBoxCP)
 module Poly = Solve(PolyCP)
+
+module BoxNOct = Solve(VariousDA.BoxNOct)
+module BoxNPoly = Solve(VariousDA.BoxNPoly)
+module OctNPoly = Solve(VariousDA.OctNPoly)

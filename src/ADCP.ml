@@ -102,7 +102,7 @@ module BoxCP =
 (** 
  * Module for the Octagon Abstract Domains for Constraint Programming.
  *)
-module OctMinMinCP : AbstractCP =
+module OctMinMinCP =
   struct
 
     include Apron_domain.MAKE (struct
@@ -190,7 +190,7 @@ module OctMinMinCP : AbstractCP =
 (** 
  * Module for the Octagon Abstract Domains for Constraint Programming.
  *)
-module OctMinMaxCP : AbstractCP =
+module OctMinMaxCP =
   struct    
 
     include Apron_domain.MAKE (struct
@@ -344,5 +344,6 @@ module PolyCP = struct
     Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
     let linexp' = Linexpr1.make gen_env in
     Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
-    (dist_max <= prec, [linexp; linexp'])     
+    (dist_max <= prec, [linexp; linexp'])
+
 end
