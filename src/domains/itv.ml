@@ -594,6 +594,18 @@ module Itv(B:BOUND) = (struct
         done;
         Nb (Bot.join_bot2 join !itv !itv')
 
+  (* r = asin i => i = sin r *)
+  let filter_asin i r =
+    sin r
+
+  (* r = acos i => i = cos r *)
+  let filter_asin i r =
+    cos r
+
+  (* r = atan i => i = tan r *)
+  let filter_atan i r =
+    tan r
+
   (* r = exp i => i = log r *)
   let filter_exp i r =
     strict_bot log r
