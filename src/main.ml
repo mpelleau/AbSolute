@@ -79,7 +79,7 @@ let main =
   Syntax.print Format.std_formatter prob;
   if !solving then
     match !domain_solving with
-    | "box" -> Solver.Box.solving prob
+    (* | "box" -> Solver.Box.solving prob *)
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
     | "boxNoct" -> Solver.BoxNOct.solving prob

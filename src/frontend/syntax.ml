@@ -5,7 +5,7 @@ type var = string
 type i = float
 
 (* unary arithmetic operators *)
-type unop = NEG | SQRT | COS | SIN
+type unop = NEG | SQRT | ABS | COS | SIN
 
 (* binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
