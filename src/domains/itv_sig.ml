@@ -130,6 +130,9 @@ module type ITV = sig
 
   (* return valid values (possibly Bot) + possible division by zero *)
   val div: t -> t -> t bot * bool
+ 
+  (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)  
+  val pow: t -> t -> t
 
 
   (************************************************************************)

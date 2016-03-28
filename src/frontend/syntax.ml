@@ -49,6 +49,28 @@ type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
+(* power unrolling on exprs*)
+let rec power_unrolling expr : expr =
+  let rec doit res e1 i = 
+    match i with
+    | 0 -> Cst 1.
+    | 1 -> res
+    | _ -> doit (Binary(MUL,res,res)) e1 (i-1)
+  in
+  match expr with
+  | Binary (POW,e1,Cst x) when ceil x = x && x >= 0. -> doit e1 e1 (int_of_float x)
+  | Unary (u, e) -> Unary (u,(power_unrolling e))
+  | Binary (b,e1,e2) -> Binary(b,(power_unrolling e1), (power_unrolling e2))
+  | x -> x
+
+(* power unrolling on bexprs*)
+let rec power_unrolling_bexpr bexpr : bexpr =
+  match bexpr with
+  | Cmp (c,e1,e2) -> Cmp(c, (power_unrolling e1), (power_unrolling e2))
+  | And (b1,b2) -> And (power_unrolling_bexpr b1, power_unrolling_bexpr b2)
+  | Or  (b1,b2) -> Or (power_unrolling_bexpr b1, power_unrolling_bexpr b2)
+  | Not b -> Not (power_unrolling_bexpr b)
+
 (* cmp operator negation *)
 let neg = function
 | EQ -> NEQ
@@ -57,6 +79,13 @@ let neg = function
 | NEQ ->EQ
 | GT -> LEQ
 | LT -> GEQ
+
+(* constraint negation *)
+let rec neg_bexpr = function
+  | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
+  | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
+  | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
+  | Not b -> b
 
 (* checks if a expression is linear *)
 let rec is_linear = function  
@@ -82,6 +111,7 @@ let print_unop fmt = function
   | SQRT -> Format.fprintf fmt "sqrt"
   | COS -> Format.fprintf fmt "cos"
   | SIN -> Format.fprintf fmt "sin"
+  | ABS -> Format.fprintf fmt "abs"
 
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"

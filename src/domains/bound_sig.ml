@@ -27,6 +27,9 @@ module type BOUND = sig
   val gt: t -> t -> bool
   val neq: t -> t -> bool
 
+  val odd: t -> bool
+  val even: t -> bool
+
   val min: t -> t -> t
   val max: t -> t -> t
 

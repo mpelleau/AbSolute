@@ -27,7 +27,9 @@ module Box(I:ITV) = (struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
-  let dummy_bot = Env.add "dummy" (I.of_ints 10 0) Env.empty
+  let dummy_bot = 
+    let b1 = B.of_int_up 10 and b2 = B.of_int_down 0 in
+    Env.add "dummy" (b1,b2) Env.empty
 
   (* boxes split along variables *)
   type split = var
@@ -40,10 +42,9 @@ module Box(I:ITV) = (struct
   let print fmt a =
     let first = ref true in
     Env.iter
-      (fun v (t,i) ->
-	Format.fprintf fmt "%s%a %s:%a" 
+      (fun v i ->
+	Format.fprintf fmt "%s %s:%a" 
 	  (if !first then "" else " ") 
-	  Syntax.print_typ t 
 	  v
 	  I.print i;
 	first := false
@@ -63,18 +64,25 @@ module Box(I:ITV) = (struct
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
-
-
   (* NOTE: all binary operations assume that both boxes are defined on
      the same set of variables;
      otherwise, an Invalid_argument exception will be raised
-   *)       
-          
+   *)
+ 
+  let join (a:t) (b:t) : t = 
+    Env.map2z (fun _ x y -> I.join x y) a b
+ 
   (* predicates *)
   (* ---------- *)
 
-  let is_bottom (a:t) = 
-    Env.for_all (fun _ v -> I.check_bot v <> Bot.Bot) a
+  let is_bottom (a:t) =
+    let b = Env.for_all (fun _ v -> I.check_bot v <> Bot.Bot |> not) a in
+    (*if b then print_endline "is bot true"
+    else print_endline "is bot true";*)
+    b
+
+  let subseteq (a:t) (b:t) : bool =
+    Env.for_all2z (fun _ x y -> I.subseteq x y) a b
       
   (* mesure *)
   (* ------ *)
@@ -100,8 +108,6 @@ module Box(I:ITV) = (struct
   let is_integer var =
     var.[String.length var - 1] = '%'
           
-      
-
   (* split along a specified variable *)
   let split (a:t) (v:var) (b:bound list) : (t bot) list =
     let i = Env.find v a in
@@ -110,11 +116,16 @@ module Box(I:ITV) = (struct
     (*lift_bot (fun ii -> Env.add v ii a) i1,
     lift_bot (fun ii -> Env.add v ii a) i2*)
 
-  (* maximal range of variables *)
-  let size (a:t) : B.t =
-    Env.fold (fun _ i r -> B.max r (I.range i)) a B.zero
-      
-
+  let split (a:t) (vars:var list) : t list =
+    match vars with
+    | [v] ->
+      let i = Env.find v a in
+      let i_list = I.split i (I.mean i) in  
+      List.map (function
+      | Nb e -> Env.add v e a
+      | Bot -> dummy_bot
+      ) i_list
+    | _ -> failwith "split need to be done on one variable"   
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)
@@ -123,20 +134,7 @@ module Box(I:ITV) = (struct
 
   (* initial box: no variable at all *)
   let init : t = Env.empty
-      
-  let add_var (a:t) (v:var) (i:i) : t = Env.add v i a
-      
-  let get_var_range (a:t) (v:var) : i =
-    try Env.find v a
-    with Not_found -> failwith ("variable not found: "^v)
-
-  let set_var_range (a:t) (v:var) (i:i) : t =
-    Env.add v i a
-         
-  let get_variables (a:t) : var list =
-    List.rev (Env.fold (fun v _ acc -> v::acc) a [])
-  
-      
+          
   (* trees with nodes annotated with evaluation *)
   type bexpr =
     | BUnary of unop * bexpri
@@ -188,7 +186,7 @@ module Box(I:ITV) = (struct
               (* special case: squares are positive *)
               debot (I.meet r I.positive)
             else r
-	| POW -> failwith "power not implemented yet"
+	| POW -> I.pow i1 i2
         in
         BBinary (o,b1,b2), r
 
@@ -197,8 +195,7 @@ module Box(I:ITV) = (struct
      the evaluation is not in the interval;
      not all such points are removed, due to interval abstraction;
      iterating eval and refine can lead to better reults (but is more costly);
-     can raise Bot_found
-   *)
+     can raise Bot_found *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     match e with
     | BVar v -> 
@@ -225,14 +222,6 @@ module Box(I:ITV) = (struct
         refine (refine a e1 j1) e2 j2
           
 
-
-  (* assignment transfer function;
-     can return Bot, in case the expression only evaluates to error values
-   *)
-  let assign (a:t) (v:var) (e:expr) : t bot =
-    rebot (fun a -> Env.add v (snd (eval a e)) a) a
-
-
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
@@ -253,19 +242,34 @@ module Box(I:ITV) = (struct
         refine (refine a b1 j1) b2 j2
       ) a
 
-  let meet (a:t) (b:Syntax.bexpr) : t = 
-    let res = 
-      match b with
-      | Cmp (binop,e1,e2) -> test a e1 binop e2
-      | _ -> failwith "niy" 
-    in match res with
-    | Bot -> dummy_bot
-    | Nb e -> e
+  let rec meet (a:t) (b:Syntax.bexpr) : t = 
+    match b with
+    | And (b1,b2) -> meet (meet a b1) b2
+    | Or (b1,b2) -> join (meet a b1) (meet a b2)
+    | Not b -> meet a (neg_bexpr b)
+    | Cmp (binop,e1,e2) ->
+      (match test a e1 binop e2 with
+      | Bot -> dummy_bot
+      | Nb e -> e)
+	
+  let of_problem (p:Syntax.prog) =
+    print_endline "building problem with the intervals";
+    let open Syntax in
+    let interval_of_domain = function
+      | Finite(a,b) -> I.of_floats a b
+      | Minf i -> I.of_bounds B.minus_inf (B.of_float_up i)
+      | Inf i -> I.of_bounds (B.of_float_down i) B.inf
+      | Top -> I.of_bounds B.minus_inf B.inf 
+    in
+    List.fold_left (fun a (typ,var,dom) ->
+      Env.add var (interval_of_domain dom) a   
+    ) Env.empty p.init
 
-  let of_problem _ = failwith ""
-
-  let sat_cons _ = failwith ""
-
+  let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
+    let b = subseteq a (meet a constr) in
+    (*if b then print_endline "sat cons true"
+    else print_endline "sat cons true";*)
+    b
 end)
 
 

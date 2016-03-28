@@ -78,7 +78,7 @@ minimizer: $(CMOFILES)
 %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC) -c $*.ml
 
-%.cmi: %.mli
+%.cmi: %.mli %.ml
 	$(OCAMLC) $(OCAMLFLAGS) $(OCAMLINC) -c $*.mli
 
 %.cmo: %.ml

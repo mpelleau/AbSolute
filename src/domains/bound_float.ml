@@ -11,6 +11,9 @@ let lt (x:t) (y:t) : bool = x < y
 let gt (x:t) (y:t) : bool = x > y
 let neq (x:t) (y:t) : bool = x <> y
     
+let odd (x:t) : bool = ((int_of_float x) / 2) * 2 |> float = x 
+let even (x:t) : bool = ((int_of_float x) / 2) * 2 |> float <> x 
+
 let min (x:t) (y:t) : t = min x y
 let max (x:t) (y:t) : t = max x y
     

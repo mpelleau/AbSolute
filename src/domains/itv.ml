@@ -284,6 +284,20 @@ module Itv(B:BOUND) = (struct
     let l = B.max l B.zero in
     Nb (B.sqrt_down l, B.sqrt_up h)
     
+  (* powers *)
+  let pow (i1:t) ((l,h):t) = 
+    if l=h && B.floor l = l then
+      let p = B.to_float_down l |> int_of_float in
+      let rec aux i p =
+	match p with
+	| 0 -> one
+	| 1 -> i
+	| x when x > 1 -> aux (mul i i) (p-1)
+	| _ -> failwith "cant handle negatives powers"
+      in
+      if B.even l then abs (aux i1 p)
+      else (aux i1 p)
+    else failwith  "cant handle non_singleton powers"
 
   let pi_half = B.of_float_up 1.57079632
   let pi = B.of_float_up 3.14159265
@@ -511,6 +525,8 @@ module Itv(B:BOUND) = (struct
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
+  (* r = i1^i2 => ?*)
+  let filter_pow (i1:t) (i2:t) ((rl,rh):t) : t bot = failwith ""
   
   let compute_itv itv itv' i i' =
     let aux = 

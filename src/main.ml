@@ -12,16 +12,17 @@ let get_variousDA_problem p =
 
 let parse_args () =
   let rec doit args = match args with
-  | "-precision"::x::r -> Constant.precision := float_of_string x; doit r
+  | "-precision"::x::r 
+  | "-p"::x::r -> Constant.precision := float_of_string x; doit r
   | "-max_sol"::x::r -> Constant.max_sol := int_of_string x; doit r
   | "-max_iter"::x::r -> Constant.max_iter := int_of_string x; doit r
   | "-domain_s"::x::r -> Constant.domain_solving := x; doit r
   | "-domain_m"::x::r -> Constant.domain_minimizing:= x; doit r
-  | "-visualization"::r ->Constant.visualization:=true; doit r
+  | "-visualization"::r 
+  |"-v"::r ->Constant.visualization:=true; doit r
   | x::r -> Constant.problem:=x; doit r
   | [] -> ()
-  in
-  Array.to_list Sys.argv |> List.tl |> doit
+  in Array.to_list Sys.argv |> List.tl |> doit
 
 let main =
   (* let itv = ItvF.of_bounds (Bound_float.of_float_down 9.424778) (Bound_float.of_float_up 15.707963) in *)
@@ -76,10 +77,10 @@ let main =
   solving := !Constant.problem <> "test";
   if !Constant.visualization then Vue.create_window 800 800;
   let prob = File_parser.parse !problem in
-  Syntax.print Format.std_formatter prob;
+  (* Syntax.print Format.std_formatter prob; *)
   if !solving then
     match !domain_solving with
-    (* | "box" -> Solver.Box.solving prob *)
+    | "box" -> Solver.Box.solving prob
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
     | "boxNoct" -> Solver.BoxNOct.solving prob
