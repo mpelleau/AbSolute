@@ -45,7 +45,20 @@ let check_ast p =
 	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%f;%f]" var f1 f2))
       | _ -> ()
     in List.iter aux p.init
-  and check_constrs () = () in
+  and check_constrs () = 
+    let rec aux = function
+      | Var v -> if not (Hashtbl.mem h v) then raise (IllFormedAST (Format.sprintf "Illegal constraint using a non-declared variable %s" v))
+      | Unary(_,e) -> aux e
+      | Binary(_,e1,e2) -> aux e1; aux e2
+      | _ -> ()
+    in
+    let rec aux_constr = function
+      | Cmp(_,e1,e2) -> aux e1; aux e2
+      | Not c -> aux_constr c
+      | And (c1,c2) -> aux_constr c1;aux_constr c2
+      | Or (c1,c2) -> aux_constr c1;aux_constr c2
+    in List.iter aux_constr p.constraints
+  in
   check_vars ();
   check_dom ();
   check_draw ();
