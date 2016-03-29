@@ -23,8 +23,8 @@ let check_ast p =
     List.iter (fun (_,v,_) -> if Hashtbl.mem h v then 
 	raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
-    ) p.init 
-  and check_draw () = 
+    ) p.init
+  and check_draw () =
     match p.to_draw with
     | None -> ()
     | Some (v1,v2) -> 

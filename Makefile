@@ -4,6 +4,7 @@ OCAMLOPT  = ocamlopt.opt
 OCAMLDEP  = ocamldep
 OCAMLLEX  = ocamllex
 OCAMLYACC = ocamlyacc
+CC        = gcc
 
 # libraries
 OPAMDIR = $(HOME)/.opam/4.02.3/lib
@@ -17,9 +18,12 @@ CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
 OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB) 
 CLIBS = -lgmp -lxcb
+CFLAGS = -O3 -Wall
+OCAMLFLAGS = -g
+OCAMLOPTFLAGS =
 
 # targets
-TARGETS = minimizer.opt solver.opt
+TARGETS = solver.opt
 
 AUTOGEN =\
   src/frontend/parser.ml \
@@ -50,20 +54,24 @@ MLFILES = \
   src/solver.ml \
   src/main.ml
 
+CFILES = \
+  src/domains/ml_float.c
+
 # MLIFILES = ADCP.mli
 
 # object files
 CMIFILES = $(MLIFILES:%.ml=%.cmi)
 CMOFILES = $(MLFILES:%.ml=%.cmo)
 CMXFILES = $(MLFILES:%.ml=%.cmx)
+OFILES   = $(CFILES:%.c=%.o)
 
 # rules
 all: $(TARGETS)
 
-solver.opt: $(CMXFILES)
+solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
-solver: $(CMOFILES)
+solver:  $(OFILES) $(CMOFILES)
 	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLLIBS) $+
 
 minimizer.opt: $(CMXFILES)
@@ -92,6 +100,9 @@ minimizer: $(CMOFILES)
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $*.mly
+
+%.o: %.c
+	$(CC) -o $@ -c $(CFLAGS) $+
 
 clean:
 	rm -f depend $(TARGETS) $(AUTOGEN)

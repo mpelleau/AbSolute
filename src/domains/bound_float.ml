@@ -1,3 +1,7 @@
+(* sets FPU rounding mode towards +oo, once and for all *)
+external init: unit -> unit = "ml_float_init"
+let _ = init ()
+
 type t = float
 
       
