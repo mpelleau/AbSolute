@@ -73,6 +73,24 @@ module Solve(Abs : AbstractCP) =
       else
         printf "No Solutions - #created nodes: 0@."
 
+    let solving_various prob =
+      let open Syntax in
+      let abs = Abs.of_problem prob in
+      printf "abs = %a" Abs.print abs;
+      if not (Abs.is_bottom abs) then
+        let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in
+        Format.printf "\ncons = [";
+        List.iter (Format.printf "%a ;" (print_bexpr)) cons;
+        Format.printf "]\n";
+        let (nb_steps, nb_sol) = explore abs cons 1 0 prob.to_draw in
+	Format.printf "solving ends\n%!";
+	match nb_sol with
+	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
+	| 1 -> printf "Unique solution - #created nodes: %d@." nb_steps
+        | _ -> printf "#solutions: %d - #created nodes: %d@." nb_sol nb_steps
+      else
+        printf "No Solutions - #created nodes: 0@."
+
   end
 
 module Box = Solve(Abstract_box.BoxF)

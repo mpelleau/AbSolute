@@ -76,6 +76,10 @@ let parse (filename:string) : prog =
         (string_of_position lex.lex_start_p);
       failwith "Parse error"
 
-let parse fn =
+(*let parse fn =
   let p = parse fn in
+<<<<<<< HEAD
   {p with constraints = (*List.map power_unrolling_bexpr*) p.constraints}
+=======
+  {p with constraints = List.map power_unrolling_bexpr p.constraints}*)
+>>>>>>> e789d8007781558f5f2b642f22f1112b5b2b4591
