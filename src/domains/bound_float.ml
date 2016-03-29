@@ -11,8 +11,8 @@ let lt (x:t) (y:t) : bool = x < y
 let gt (x:t) (y:t) : bool = x > y
 let neq (x:t) (y:t) : bool = x <> y
     
-let odd (x:t) : bool = ((int_of_float x) / 2) * 2 |> float = x 
-let even (x:t) : bool = ((int_of_float x) / 2) * 2 |> float <> x 
+let odd (x:t) : bool = ((int_of_float x) / 2) * 2 |> float <> x 
+let even (x:t) : bool = ((int_of_float x) / 2) * 2 |> float = x 
 
 let min (x:t) (y:t) : t = min x y
 let max (x:t) (y:t) : t = max x y
@@ -94,6 +94,11 @@ let div_down a b = -. ((-. a) /. b)
 let sqrt_up x = sqrt x
 let sqrt_down x = div_down 1. (sqrt (div_up 1. x))
 
+let pow_up x n = x ** (float n) 
+let pow_down x n = div_down 1. ((div_up 1. x) ** (float n))
+let root_up x n = exp((log x) /. (float n))
+let root_down x n = exp((log x) /. (float n))
+
 let cos_up = cos
 let cos_down = cos
 
@@ -113,7 +118,7 @@ let atan_up = atan
 let atan_down = atan
 
 let exp_up = exp
-let exp_down = exp
+let exp_down x = div_down 1. (exp_up (-. x))
 
 let log_up = log
 let log_down = log

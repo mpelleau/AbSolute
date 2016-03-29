@@ -283,21 +283,8 @@ module Itv(B:BOUND) = (struct
     if B.sign h < 0 then Bot else
     let l = B.max l B.zero in
     Nb (B.sqrt_down l, B.sqrt_up h)
-    
-  (* powers *)
-  let pow (i1:t) ((l,h):t) = 
-    if l=h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      let rec aux i p =
-	match p with
-	| 0 -> one
-	| 1 -> i
-	| x when x > 1 -> aux (mul i i) (p-1)
-	| _ -> failwith "cant handle negatives powers"
-      in
-      if B.even l then abs (aux i1 p)
-      else (aux i1 p)
-    else failwith  "cant handle non_singleton powers"
+
+
 
   let pi_half = B.of_float_up 1.57079632
   let pi = B.of_float_up 3.14159265
@@ -429,7 +416,44 @@ module Itv(B:BOUND) = (struct
     match itv' with
     | Bot -> Bot
     | Nb (l', h') -> fst (div (l',h') (of_bound ln10))
+    
+  (* powers *)
+  let pow ((il,ih):t) ((l,h):t) = 
+    if l=h && B.floor l = l then
+      let p = B.to_float_down l |> int_of_float in
+      match p with
+      | 0 -> one
+      | 1 -> (il, ih)
+      | x when x > 1 && B.odd l ->
+        (B.pow_down il p, B.pow_up ih p)
+      | x when x > 1 && B.even l ->
+        if B.leq il B.zero && B.geq ih B.zero then
+          (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+        else if B.geq il B.zero then
+          (B.pow_down il p, B.pow_up ih p)
+        else
+          (B.pow_down ih p, B.pow_up il p)
+      | _ -> failwith "cant handle negatives powers"
+    else failwith  "cant handle non_singleton powers"
 
+  (* nth-root *)
+  let n_root ((il,ih):t) ((l,h):t) =
+    if l=h && B.floor l = l then
+      let p = B.to_float_down l |> int_of_float in
+      match p with
+      | 1 -> Nb (il, ih)
+      | x when x > 1 && B.odd l ->
+        Nb (B.root_down il p, B.root_up ih p)
+      | x when x > 1 && B.even l ->
+        if B.lt ih B.zero then
+          Bot
+        else if B.leq il B.zero then
+          Nb (B.neg (B.root_up ih p), B.root_up ih p)
+        else
+          Nb (B.root_down ih p, B.root_up il p)
+      | _ -> failwith "can only handle stricly positive roots"
+    else failwith  "cant handle non_singleton roots"
+    
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -612,23 +636,31 @@ module Itv(B:BOUND) = (struct
 
   (* r = asin i => i = sin r *)
   let filter_asin i r =
-    sin r
+    meet i (sin r)
 
   (* r = acos i => i = cos r *)
   let filter_asin i r =
-    cos r
+    meet i (cos r)
 
   (* r = atan i => i = tan r *)
   let filter_atan i r =
-    tan r
+    meet i (tan r)
 
   (* r = exp i => i = log r *)
   let filter_exp i r =
-    strict_bot log r
+    meet_bot2 meet i (log r)
 
   (* r = log i => i = exp r *)
   let filter_log i r =
     meet i (exp r)
+
+  (* r = i ** n => i = nroot i *)
+  let filter_pow (i:t) (r:t) n =
+    meet_bot meet i (n_root r n)
+
+  (* r = nroot i => i = r ** n *)
+  let filter_root i r n =
+    meet i (pow r n)
     
 
 end)

@@ -15,6 +15,8 @@ let min (x:t) (y:t) : t = if (Mpqf.cmp x y) <= 0 then x else y
 let max (x:t) (y:t) : t = if (Mpqf.cmp x y) >= 0 then x else y
     
 let sign (x:t) : int = Mpqf.sgn x
+let odd (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float <>  (Mpqf.to_float x)
+let even (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float =  (Mpqf.to_float x)
     
 (* conversion, printing *)
 
@@ -117,3 +119,8 @@ let log10_down x = Mpqf.of_float (log10 (Mpqf.to_float x))
 
 let floor x = Mpqf.of_float (floor (Mpqf.to_float x))
 let ceil x = Mpqf.of_float (ceil (Mpqf.to_float x))
+
+let pow_up x n = Mpqf.of_float ((Mpqf.to_float x) ** (float n)) 
+let pow_down x n =  Mpqf.of_float (-. ((-. (Mpqf.to_float x)) ** (float n)))
+let root_up x n =  Mpqf.of_float (exp((log (Mpqf.to_float x)) /. (float n)))
+let root_down x n =  Mpqf.of_float (exp((log (Mpqf.to_float x)) /. (float n)))

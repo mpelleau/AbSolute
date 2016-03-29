@@ -25,51 +25,24 @@ let parse_args () =
   in Array.to_list Sys.argv |> List.tl |> doit
 
 let main =
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 9.424778) (Bound_float.of_float_up 15.707963) in *)
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 7.853982) (Bound_float.of_float_up 10.424778) in *)
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 10.424778) (Bound_float.of_float_up 15.707963) in *)
-  (* let itv' = ItvF.tan itv in *)
-  (* let itv'' = ItvF.filter_tan itv (ItvF.of_floats 0. infinity) in *)
-  (* let itv''' = ItvF.filter_tan itv (ItvF.of_floats neg_infinity 0.) in *)
-  (* let itv'''' = ItvF.filter_tan itv (ItvF.of_ints 0 0) in *)
-  (* Format.printf "%s ; %s (%s, %s) ; " (ItvF.to_string itv) (ItvF.to_string itv') (Bound_float.to_string (fst itv')) (Bound_float.to_string (snd itv')); *)
+  (* let itv = ItvF.of_bounds (Bound_float.of_float_down (-2.5)) (Bound_float.of_float_up 5.0) in *)
+  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 2.5) (Bound_float.of_float_up 5.0) in *)
+  (* let itv = ItvF.of_bounds (Bound_float.of_float_down (-5.0)) (Bound_float.of_float_up (-2.5)) in *)
+  (* let itv' = ItvF.pow itv (ItvF.of_int 2) in *)
+  (* let itv2 = ItvF.pow itv (ItvF.of_int 3) in *)
+  (* let itv'' = ItvF.filter_pow itv (ItvF.of_floats 0. infinity) (ItvF.of_int 2) in *)
+  (* let itv''' = ItvF.filter_pow itv (ItvF.of_floats neg_infinity 0.) (ItvF.of_int 2) in *)
+  (* let itv'''' = ItvF.filter_pow itv (ItvF.of_ints 0 0) (ItvF.of_int 2) in *)
+  (* Format.printf "%s ; %s (%s, %s) ; %s (%s, %s) ; " (ItvF.to_string itv) (ItvF.to_string itv') (Bound_float.to_string (fst itv')) (Bound_float.to_string (snd itv')) (ItvF.to_string itv2) (Bound_float.to_string (fst itv2)) (Bound_float.to_string (snd itv2)); *)
   (* match itv'' with *)
   (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x); *)
+  (* | Nb x -> Format.printf "%s ; " (ItvF.to_string x); *)
   (* match itv''' with *)
   (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x); *)
+  (* | Nb x -> Format.printf "%s ; " (ItvF.to_string x); *)
   (* match itv'''' with *)
   (* | Bot -> Format.printf "_|_\n"; *)
-  (* | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x); *)
-
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 7.853982) (Bound_float.of_float_up 14.137166) in *)
-  (* let itv' = ItvF.cos itv in *)
-  (* let itv'' = ItvF.filter_cos itv (ItvF.of_ints 0 1) in *)
-  (* let itv''' = ItvF.filter_cos itv (ItvF.of_ints (-1) 0) in *)
-  (* let itv'''' = ItvF.filter_cos itv (ItvF.of_ints 0 0) in *)
-  (* Format.printf "%s ; %s ; " (ItvF.to_string itv) (ItvF.to_string itv'); *)
-  (* match itv'' with *)
-  (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x); *)
-  (* match itv''' with *)
-  (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x); *)
-  (* match itv'''' with *)
-  (* | Bot -> Format.printf "_|_\n"; *)
-  (* | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x); *)
-
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 10.424778) (Bound_float.of_float_up 12.707964) in *)
-  (* let itv' = ItvF.sin itv in *)
-  (* let itv'' = ItvF.filter_sin itv (ItvF.of_ints 0 1) in *)
-  (* let itv''' = ItvF.filter_sin itv (ItvF.of_ints (-1) 0) in *)
-  (* Format.printf "%s ; %s ; " (ItvF.to_string itv) (ItvF.to_string itv'); *)
-  (* match itv'' with *)
-  (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (Bot.bot_to_string ItvF.to_string x); *)
-  (* match itv''' with *)
-  (* | Bot -> Format.printf "_|_\n"; *)
-  (* | Nb x -> Format.printf "%s\n" (Bot.bot_to_string ItvF.to_string x); *)
+  (* | Nb x -> Format.printf "%s\n" (ItvF.to_string x); *)
 
 
   let open Constant in
@@ -81,6 +54,7 @@ let main =
   if !solving then
     match !domain_solving with
     | "box" -> Solver.Box.solving prob
+    | "boxCP" -> Solver.BoxCP.solving prob
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
     | "boxNoct" -> Solver.BoxNOct.solving prob

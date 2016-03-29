@@ -119,6 +119,11 @@ module type BOUND = sig
   val sqrt_up: t -> t
   val sqrt_down: t -> t
 
+  val pow_up: t -> int -> t
+  val pow_down: t -> int -> t
+  val root_up: t -> int -> t
+  val root_down: t -> int -> t
+
   val cos_up: t -> t
   val cos_down: t -> t
   val sin_up: t -> t

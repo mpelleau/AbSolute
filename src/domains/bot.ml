@@ -24,6 +24,12 @@ let merge_bot2 x y =
 let join_bot2 f x y = 
   match x,y with Bot,a | a,Bot -> a | Nb a,Nb b -> Nb (f a b)
 
+let meet_bot2 f x y =
+  match x,y with Bot, _ | _, Bot -> Bot | Nb a, Nb b -> Nb (f a b)
+
+let meet_bot f x y =
+  match y with Bot -> Bot | Nb a -> f x a
+
 
 let nobot = 
   function Nb x -> x | Bot -> failwith "unexpected bottom encountered"
