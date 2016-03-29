@@ -49,7 +49,7 @@ type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-(* power unrolling on exprs*)
+(* power unrolling on exprs *)
 let rec power_unrolling expr : expr =
   let rec doit res e1 i = 
     match i with
@@ -63,7 +63,7 @@ let rec power_unrolling expr : expr =
   | Binary (b,e1,e2) -> Binary(b,(power_unrolling e1), (power_unrolling e2))
   | x -> x
 
-(* power unrolling on bexprs*)
+(* power unrolling on bexprs *)
 let rec power_unrolling_bexpr bexpr : bexpr =
   match bexpr with
   | Cmp (c,e1,e2) -> Cmp(c, (power_unrolling e1), (power_unrolling e2))

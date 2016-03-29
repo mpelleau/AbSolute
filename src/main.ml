@@ -25,26 +25,6 @@ let parse_args () =
   in Array.to_list Sys.argv |> List.tl |> doit
 
 let main =
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down (-2.5)) (Bound_float.of_float_up 5.0) in *)
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down 2.5) (Bound_float.of_float_up 5.0) in *)
-  (* let itv = ItvF.of_bounds (Bound_float.of_float_down (-5.0)) (Bound_float.of_float_up (-2.5)) in *)
-  (* let itv' = ItvF.pow itv (ItvF.of_int 2) in *)
-  (* let itv2 = ItvF.pow itv (ItvF.of_int 3) in *)
-  (* let itv'' = ItvF.filter_pow itv (ItvF.of_floats 0. infinity) (ItvF.of_int 2) in *)
-  (* let itv''' = ItvF.filter_pow itv (ItvF.of_floats neg_infinity 0.) (ItvF.of_int 2) in *)
-  (* let itv'''' = ItvF.filter_pow itv (ItvF.of_ints 0 0) (ItvF.of_int 2) in *)
-  (* Format.printf "%s ; %s (%s, %s) ; %s (%s, %s) ; " (ItvF.to_string itv) (ItvF.to_string itv') (Bound_float.to_string (fst itv')) (Bound_float.to_string (snd itv')) (ItvF.to_string itv2) (Bound_float.to_string (fst itv2)) (Bound_float.to_string (snd itv2)); *)
-  (* match itv'' with *)
-  (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (ItvF.to_string x); *)
-  (* match itv''' with *)
-  (* | Bot -> Format.printf "_|_ ; "; *)
-  (* | Nb x -> Format.printf "%s ; " (ItvF.to_string x); *)
-  (* match itv'''' with *)
-  (* | Bot -> Format.printf "_|_\n"; *)
-  (* | Nb x -> Format.printf "%s\n" (ItvF.to_string x); *)
-
-
   let open Constant in
   parse_args ();
   solving := !Constant.problem <> "test";
@@ -57,9 +37,9 @@ let main =
     | "boxCP" -> Solver.BoxCP.solving prob
     | "oct" -> Solver.Oct.solving prob
     | "poly" -> Solver.Poly.solving prob 
-    | "boxNoct" -> Solver.BoxNOct.solving prob
-    | "boxNpoly" -> Solver.BoxNPoly.solving prob
-    | "octNpoly" -> Solver.OctNPoly.solving prob
+    | "boxNoct" -> Solver.BoxNOct.solving_various prob
+    | "boxNpoly" -> Solver.BoxNPoly.solving_various prob
+    | "octNpoly" -> Solver.OctNPoly.solving_various prob
     | _ -> "domain undefined"^(!domain_solving) |> failwith
   else(*
     match !domain_minimizing with
