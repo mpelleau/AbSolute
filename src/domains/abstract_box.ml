@@ -217,7 +217,7 @@ module Box(I:ITV) = (struct
         | SUB -> I.filter_sub i1 i2 x
         | MUL -> I.filter_mul i1 i2 x
         | DIV -> I.filter_div i1 i2 x
-	| POW -> failwith "power not implemented yet"
+	| POW -> I.filter_pow i1 i2 x (*failwith "power not implemented yet"*)
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2

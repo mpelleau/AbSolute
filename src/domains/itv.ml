@@ -438,7 +438,7 @@ module Itv(B:BOUND) = (struct
 
   (* nth-root *)
   let n_root ((il,ih):t) ((l,h):t) =
-    if l=h && B.floor l = l then
+    if B.equal l h && B.floor l = l then
       let p = B.to_float_down l |> int_of_float in
       match p with
       | 1 -> Nb (il, ih)
@@ -655,8 +655,9 @@ module Itv(B:BOUND) = (struct
     meet i (exp r)
 
   (* r = i ** n => i = nroot i *)
-  let filter_pow (i:t) (r:t) n =
-    meet_bot meet i (n_root r n)
+  let filter_pow (i:t) n (r:t) =
+    Format.printf "***** %s %s %s *****%!\n" (to_string i) (to_string r) (to_string n);
+    merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
 
   (* r = nroot i => i = r ** n *)
   let filter_root i r n =

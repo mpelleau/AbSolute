@@ -174,5 +174,7 @@ module type ITV = sig
   val filter_mul: t -> t -> t -> (t*t) bot
   val filter_div: t -> t -> t -> (t*t) bot
 
+  val filter_pow: t -> t -> t -> (t*t) bot
+
 
 end
