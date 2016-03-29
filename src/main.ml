@@ -19,7 +19,7 @@ let parse_args () =
   | "-domain_s"::x::r -> Constant.domain_solving := x; doit r
   | "-domain_m"::x::r -> Constant.domain_minimizing:= x; doit r
   | "-visualization"::r 
-  |"-v"::r ->Constant.visualization:=true; doit r
+  | "-v"::r ->Constant.visualization:=true; doit r
   | x::r -> Constant.problem:=x; doit r
   | [] -> ()
   in Array.to_list Sys.argv |> List.tl |> doit

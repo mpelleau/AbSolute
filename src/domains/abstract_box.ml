@@ -170,7 +170,8 @@ module Box(I:ITV) = (struct
         | NEG -> I.neg i1
 	| ABS -> I.abs i1
         | SQRT -> debot (I.sqrt i1)
-	| COS | SIN -> failwith "cos and sin not implemented yet"
+	| COS
+	| SIN -> failwith "cos and sin not implemented yet"
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
@@ -266,10 +267,8 @@ module Box(I:ITV) = (struct
     ) Env.empty p.init
 
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    let b = subseteq a (meet a constr) in
-    (*if b then print_endline "sat cons true"
-    else print_endline "sat cons true";*)
-    b
+    is_bottom (meet a (Syntax.Not constr))
+
 end)
 
 
