@@ -27,9 +27,9 @@ module Box(I:ITV) = (struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
-  let dummy_bot = 
+  let dummy_bot a = 
     let b1 = B.of_int_up 10 and b2 = B.of_int_down 0 in
-    Env.add "dummy" (b1,b2) Env.empty
+    Env.add "dummy" (b1,b2) a
 
   (* boxes split along variables *)
   type split = var
@@ -76,10 +76,7 @@ module Box(I:ITV) = (struct
   (* ---------- *)
 
   let is_bottom (a:t) =
-    let b = Env.for_all (fun _ v -> I.check_bot v <> Bot.Bot |> not) a in
-    (*if b then print_endline "is bot true"
-    else print_endline "is bot true";*)
-    b
+    Env.exists (fun _ v -> I.check_bot v = Bot.Bot) a
 
   let subseteq (a:t) (b:t) : bool =
     Env.for_all2z (fun _ x y -> I.subseteq x y) a b
@@ -123,18 +120,14 @@ module Box(I:ITV) = (struct
       let i_list = I.split i (I.mean i) in  
       List.map (function
       | Nb e -> Env.add v e a
-      | Bot -> dummy_bot
+      | Bot -> dummy_bot a
       ) i_list
     | _ -> failwith "split need to be done on one variable"   
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)
   (************************************************************************)
-
-
-  (* initial box: no variable at all *)
-  let init : t = Env.empty
-          
+        
   (* trees with nodes annotated with evaluation *)
   type bexpr =
     | BUnary of unop * bexpri
@@ -153,7 +146,7 @@ module Box(I:ITV) = (struct
      - we raies Bot_found in case the expression only evaluates to error values
      - otherwise, we return only the non-error values
    *)
-  let rec eval (a:t) (e:expr) : bexpri = 
+  let rec eval (a:t) (e:expr) : bexpri =
     match e with
     | Var v ->
         let r =
@@ -250,22 +243,26 @@ module Box(I:ITV) = (struct
     | Not b -> meet a (neg_bexpr b)
     | Cmp (binop,e1,e2) ->
       (match test a e1 binop e2 with
-      | Bot -> dummy_bot
+      | Bot -> dummy_bot a
       | Nb e -> e)
 	
   let of_problem (p:Syntax.prog) =
     print_endline "building problem with the intervals";
-    let open Syntax in
-    let interval_of_domain = function
+    let interval_of_domain dom =
+      let open Syntax in
+      match dom with
       | Finite(a,b) -> I.of_floats a b
       | Minf i -> I.of_bounds B.minus_inf (B.of_float_up i)
       | Inf i -> I.of_bounds (B.of_float_down i) B.inf
       | Top -> I.of_bounds B.minus_inf B.inf 
     in
-    List.fold_left (fun a (typ,var,dom) ->
-      Env.add var (interval_of_domain dom) a   
-    ) Env.empty p.init
-
+    let abs = 
+      List.fold_left (fun a (typ,var,dom) ->
+	Env.add var (interval_of_domain dom) a   
+      ) Env.empty p.init
+    in Format.printf "%a\n" print abs;
+    abs
+    
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
     is_bottom (meet a (Syntax.Not constr))
 

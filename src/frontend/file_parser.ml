@@ -78,4 +78,4 @@ let parse (filename:string) : prog =
 
 let parse fn =
   let p = parse fn in
-  {p with constraints = List.map power_unrolling_bexpr p.constraints}
+  {p with constraints = (*List.map power_unrolling_bexpr*) p.constraints}
