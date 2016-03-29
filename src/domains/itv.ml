@@ -450,7 +450,7 @@ module Itv(B:BOUND) = (struct
         else if B.leq il B.zero then
           Nb (B.neg (B.root_up ih p), B.root_up ih p)
         else
-          Nb (B.root_down ih p, B.root_up il p)
+          Nb (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
     
@@ -656,7 +656,9 @@ module Itv(B:BOUND) = (struct
 
   (* r = i ** n => i = nroot i *)
   let filter_pow (i:t) n (r:t) =
-    Format.printf "***** %s %s %s *****%!\n" (to_string i) (to_string r) (to_string n);
+    (* let nri = n_root r n in *)
+    (* let fnri = meet_bot meet i (n_root r n) in *)
+    (* Format.printf "%s %s %s => %s => %s%!\n" (to_string i) (to_string r) (to_string n) (Bot.bot_to_string to_string nri) (Bot.bot_to_string to_string fnri); *)
     merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
 
   (* r = nroot i => i = r ** n *)

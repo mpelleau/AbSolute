@@ -22,7 +22,8 @@ module Solve(Abs : AbstractCP) =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
       draw abs info Graphics.yellow vars;
       let rec aux abs nb_steps nb_sol =
-	let cons,abs' = consistency abs constrs in	
+	let cons,abs' = consistency abs constrs in
+        (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
 	| `Full ->  draw abs' info Graphics.blue vars; (nb_steps, nb_sol+1)
