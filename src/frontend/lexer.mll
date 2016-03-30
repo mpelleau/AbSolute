@@ -78,6 +78,7 @@ rule token = parse
 | "="    { TOK_ASSIGN }
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
+| "|"    { TOK_PIPE }
 | "!"    { TOK_NOT }
 | ":"    { TOK_COLON }   
 (* literals *)

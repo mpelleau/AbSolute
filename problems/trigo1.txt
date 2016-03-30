@@ -1,3 +1,6 @@
+/* parametric equation of a circle */
+
+
 info{
   draw:x,y
 }
