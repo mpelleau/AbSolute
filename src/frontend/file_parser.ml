@@ -28,36 +28,21 @@ let check_ast p =
     match p.to_draw with
     | None -> ()
     | Some (v1,v2) -> 
-      let rec aux acc1 acc2 = function
-	| [] when acc2 -> raise (IllFormedAST (illegal_var_draw v1))
-	| [] when acc1 -> raise (IllFormedAST (illegal_var_draw v2))
-	| [] -> raise(IllFormedAST (illegal_var_draw2 v1 v2))
-	| (_,v,_)::tl -> 
-	  let a1 = v=v1 and a2 = v=v2 in
-	  if a1 && a2 then ()
-	  else  aux (acc1 || a1) (acc2 || a2) tl
-      in
-      aux false false p.init;
+      if not (Hashtbl.mem h v1) then raise (IllFormedAST (illegal_var_draw v1));
+      if not (Hashtbl.mem h v2) then raise (IllFormedAST (illegal_var_draw v2))
   and check_dom () =
     let aux (_, var, d) =
       match d with 
-      | Finite (f1,f2) -> if f1 >= f2 then 
+      | Finite (f1,f2) -> if f1 > f2 then 
 	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%f;%f]" var f1 f2))
       | _ -> ()
     in List.iter aux p.init
   and check_constrs () = 
-    let rec aux = function
+    let check_v = function 
       | Var v -> if not (Hashtbl.mem h v) then raise (IllFormedAST (Format.sprintf "Illegal constraint using a non-declared variable %s" v))
-      | Unary(_,e) -> aux e
-      | Binary(_,e1,e2) -> aux e1; aux e2
       | _ -> ()
-    in
-    let rec aux_constr = function
-      | Cmp(_,e1,e2) -> aux e1; aux e2
-      | Not c -> aux_constr c
-      | And (c1,c2) -> aux_constr c1;aux_constr c2
-      | Or (c1,c2) -> aux_constr c1;aux_constr c2
-    in List.iter aux_constr p.constraints
+    in 
+    List.iter (iter_constr check_v (fun _ -> ())) p.constraints
   in
   check_vars ();
   check_dom ();
@@ -90,5 +75,6 @@ let parse (filename:string) : prog =
       failwith "Parse error"
 
 let parse fn =
-  let p = parse fn in 
+  let p = parse fn in
+  check_ast p;
   {p with constraints = (*List.map power_unrolling_bexpr*) p.constraints}

@@ -134,6 +134,8 @@ module type ITV = sig
   (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)  
   val pow: t -> t -> t
 
+  val cos: t -> t
+  val sin: t -> t
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -175,6 +177,9 @@ module type ITV = sig
   val filter_div: t -> t -> t -> (t*t) bot
 
   val filter_pow: t -> t -> t -> (t*t) bot
+
+  val filter_cos: t -> t -> t bot
+  val filter_sin: t -> t -> t bot
 
 
 end

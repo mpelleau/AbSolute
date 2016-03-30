@@ -28,8 +28,8 @@ let main =
   let open Constant in
   parse_args ();
   solving := !Constant.problem <> "test";
-  if !Constant.visualization then Vue.create_window 800 800;
   let prob = File_parser.parse !problem in
+  if !Constant.visualization then Vue.create_window 800 800;
   (* Syntax.print Format.std_formatter prob; *)
   if !solving then
     match !domain_solving with

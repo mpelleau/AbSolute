@@ -583,10 +583,10 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx !idx;
         done;
-        Nb (Bot.join_bot2 join !itv !itv')
+        (Bot.join_bot2 join !itv !itv')
 
   (* r = cos i => i = arccos r *)
-  let filter_cos i r =
+  let filter_cos (i:t) (r:t) : t bot =
     let acos_r = acos r in
     let (aux, _) = div i (of_bound pi) in
     match (aux, acos_r) with
@@ -607,7 +607,7 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx (!idx+1);
         done;
-        Nb (Bot.join_bot2 join !itv !itv')
+        (Bot.join_bot2 join !itv !itv')
 
   (* r = tan i => i = arctan r *)
   let filter_tan i r =

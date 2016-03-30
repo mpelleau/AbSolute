@@ -49,6 +49,19 @@ type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
+(* iter on expr*)
+let rec iter_expr f = function
+  | Binary (op,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
+  | Unary (uop,e) as u -> f u; iter_expr f e
+  | x -> f x
+
+(* iter on constraints *)
+let rec iter_constr f_expr f_constr = function
+  | Cmp (c,e1,e2) as constr -> f_constr constr; iter_expr f_expr e1; iter_expr f_expr e2
+  | And (b1,b2) as constr -> f_constr constr; iter_constr f_expr f_constr b1; iter_constr f_expr f_constr b2
+  | Or  (b1,b2) as constr -> f_constr constr; iter_constr f_expr f_constr b1; iter_constr f_expr f_constr b2
+  | Not b as constr -> f_constr constr; iter_constr f_expr f_constr b
+
 (* power unrolling on exprs *)
 let rec power_unrolling expr : expr =
   let rec doit res e1 i = 

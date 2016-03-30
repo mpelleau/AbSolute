@@ -10,6 +10,7 @@ open Syntax
 %token TOK_RBRACKET
 %token TOK_LPAREN
 %token TOK_RPAREN
+%token TOK_PIPE
 %token TOK_COMMA
 %token TOK_SEMICOLON
 %token TOK_COLON
@@ -128,10 +129,11 @@ expr:
   | TOK_COS       expr                  { Unary (COS, $2) }
   | TOK_SIN       expr                  { Unary (SIN, $2) }
   | TOK_SQRT      expr                  { Unary (SQRT,$2) }
+  | TOK_PIPE expr TOK_PIPE              { Unary (ABS, $2) }
   | leaf                                { $1 }
 
 leaf:
-  | TOK_const                           { Cst ($1) }
+  | TOK_const                           { Cst $1 }
   | TOK_id                              { Var $1 }
 
 binop_expr:

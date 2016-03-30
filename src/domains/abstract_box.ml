@@ -105,14 +105,6 @@ module Box(I:ITV) = (struct
   let is_integer var =
     var.[String.length var - 1] = '%'
           
-  (* split along a specified variable *)
-  let split (a:t) (v:var) (b:bound list) : (t bot) list =
-    let i = Env.find v a in
-    let i_list = (if is_integer v then I.split_integer else I.split) i b in
-    List.map (fun e -> lift_bot (fun ii -> Env.add v ii a) e) i_list
-    (*lift_bot (fun ii -> Env.add v ii a) i1,
-    lift_bot (fun ii -> Env.add v ii a) i2*)
-
   let split (a:t) (vars:var list) : t list =
     match vars with
     | [v] ->
@@ -136,7 +128,6 @@ module Box(I:ITV) = (struct
     | BCst of i
           
   and bexpri = bexpr * i
-
 
   (* interval evaluation of an expression;
      returns the interval result but also an expression tree annotated with
@@ -163,8 +154,8 @@ module Box(I:ITV) = (struct
         | NEG -> I.neg i1
 	| ABS -> I.abs i1
         | SQRT -> debot (I.sqrt i1)
-	| COS
-	| SIN -> failwith "cos and sin not implemented yet"
+	| COS -> I.cos i1
+	| SIN -> I.sin i1
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
@@ -201,7 +192,8 @@ module Box(I:ITV) = (struct
         | NEG -> I.filter_neg i1 x
         | ABS -> I.filter_abs i1 x
         | SQRT -> I.filter_sqrt i1 x
-	| COS | SIN -> failwith "cos and sin not implemented yet"
+	| COS -> I.filter_cos i1 x
+	| SIN -> I.filter_sin i1 x
         in
         refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->

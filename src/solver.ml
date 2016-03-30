@@ -38,14 +38,14 @@ module Solve(Abs : AbstractCP) =
 	  )
       in aux abs nb_steps nb_sol
 
-    let explore_breath_first abs env tab nb_steps nb_sol vars=
+    let explore_breath_first abs constrs nb_steps nb_sol vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
       let nb_steps = ref nb_steps and nb_sol = ref nb_sol in
       let queue = Queue.create () in
       draw abs info Graphics.yellow vars;
       Queue.add abs queue;
       while Queue.is_empty queue |> not do
-	let cons,abs' = consistency (Queue.take queue) tab in
+	let cons,abs' = consistency (Queue.take queue) constrs in
 	match cons with
 	| `Empty -> ()
 	| `Full -> draw abs' info Graphics.blue vars; incr nb_sol
@@ -83,7 +83,7 @@ module Solve(Abs : AbstractCP) =
         Format.printf "\ncons = [";
         List.iter (Format.printf "%a ;" (print_bexpr)) cons;
         Format.printf "]\n";
-        let (nb_steps, nb_sol) = explore abs cons 1 0 prob.to_draw in
+        let (nb_steps, nb_sol) = explore_breath_first abs cons 1 0 prob.to_draw in
 	Format.printf "solving ends\n%!";
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
