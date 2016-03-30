@@ -302,8 +302,8 @@ module Itv(B:BOUND) = (struct
   (* A bound is scaled to the range [0, 2pi[ *)
   let scale_to_two_pi value =
     let q = B.floor (B.div_up value two_pi) in
-    if B.leq q B.zero then B.add_up two_pi (B.sub_up value (B.mul_up pi q))
-    else B.sub_up value (B.mul_up two_pi q)
+    (* if B.leq q B.zero then B.add_up two_pi (B.sub_up value (B.mul_up pi q)) *)
+    (* else  *)B.sub_up value (B.mul_up two_pi q)
 
   (* The interval is scaled to the range [0, 2pi[ *)
   let scale_to_two_pi_itv ((l,h):t) =
@@ -313,27 +313,23 @@ module Itv(B:BOUND) = (struct
   (* interval sin *)
   let sin (l,h) =
     let diam = range (l,h) in
-    if B.geq diam two_pi then
-      minus_one_one
+    if B.geq diam two_pi then minus_one_one
     else
       let (l',h') = scale_to_two_pi_itv (l,h) in
       let  diam = range (l',h')
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
-      if q_inf = q_sup && B.geq diam pi then
-        minus_one_one
-      else
-        match q_inf, q_sup with
-        | (1, 1 | 4, 1 | 4, 4) -> (B.sin_down l',B.sin_up h')
-        | (2, 2 | 2, 3 | 3, 3) -> (B.sin_down h',B.sin_up l')
-        | (3, 2 | 1, 4) -> minus_one_one
-        | (1, 2 | 4, 3) -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
-        | (2, 1 | 3, 4) -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
-        | 1, 3 -> (B.sin_down h',B.one)
-        | 2, 4 -> (B.minus_one,B.sin_up l')
-        | 3, 1 -> (B.minus_one,B.sin_up h')
-        | 4, 2 -> (B.sin_down l',B.one)
-        | _ -> failwith ("Should not occur")
+      match q_inf, q_sup with
+      | (1, 1 | 4, 1 | 4, 4) -> (B.sin_down l',B.sin_up h')
+      | (2, 2 | 2, 3 | 3, 3) -> (B.sin_down h',B.sin_up l')
+      | (3, 2 | 1, 4) -> minus_one_one
+      | (1, 2 | 4, 3) -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
+      | (2, 1 | 3, 4) -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
+      | 1, 3 -> (B.sin_down h',B.one)
+      | 2, 4 -> (B.minus_one,B.sin_up l')
+      | 3, 1 -> (B.minus_one,B.sin_up h')
+      | 4, 2 -> (B.sin_down l',B.one)
+      | _ -> failwith ("Should not occur")
 
   (* interval cos *)
   let cos itv =

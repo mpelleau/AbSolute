@@ -97,7 +97,7 @@ module Box(I:ITV) = (struct
       
   let is_small (a:t) (f:float) : (bool * split list)=
     let (v,i) = max_range a in
-    (B.to_float_up (I.range i) < f),[v]
+    (B.to_float_up (I.range i) <= f), [v]
 
 
   (* split *)
@@ -114,7 +114,7 @@ module Box(I:ITV) = (struct
       | Nb e -> Env.add v e a
       | Bot -> dummy_bot a
       ) i_list
-    | _ -> failwith "split need to be done on one variable"   
+    | _ -> failwith "split need to be done on one variable"
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)

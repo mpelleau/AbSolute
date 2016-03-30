@@ -1,0 +1,11 @@
+/* simple example with sinus and cosinus */
+
+init{
+  real x = [-7;7];
+  real y = [-7;7];
+}
+
+constraints{
+  y < (sin x) + 1;
+  y > (cos x) - 1;
+}

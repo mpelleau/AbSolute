@@ -103,6 +103,30 @@ let pow_down x n = div_down 1. ((div_up 1. x) ** (float n))
 let root_up x n = exp((log x) /. (float n))
 let root_down x n = exp((log x) /. (float n))
 
+let pi = 3.141592653589793
+let twopi = 2.*.pi
+
+(* returns true is cos is monotonic and strictly decreasing around x; x in [0;2pi] *)
+let is_cos_decreasing x = x > 0. && x < pi
+
+let to_zero_twopi x = x -. ((x /. twopi) |> floor) *. twopi
+
+(* returns true is cos is monotonic and strictly decreasing around x*)
+let is_cos_decreasing x = is_cos_decreasing (to_zero_twopi x)
+
+let is_sin_decreasing x = is_cos_decreasing (x +. pi/.2.)
+
+(* let cos_up x = if is_cos_decreasing x then cos x else -.(cos (-.x)) *)
+
+(* let cos_down x =  *)
+(*   if is_cos_decreasing x then -. (cos (-.x)) else cos x *)
+
+(* let sin_up x =  *)
+(*   if is_sin_decreasing x then sin x else -.(sin (-.x)) *)
+
+(* let sin_down x =  *)
+(*   if is_sin_decreasing x then -.(sin (-.x)) else sin x *)
+
 let cos_up = cos
 let cos_down = cos
 
@@ -113,10 +137,10 @@ let tan_up = tan
 let tan_down = tan
 
 let acos_up = acos
-let acos_down = acos
+let acos_down x = acos x
 
 let asin_up = asin
-let asin_down = asin
+let asin_down x = asin x
 
 let atan_up = atan
 let atan_down = atan

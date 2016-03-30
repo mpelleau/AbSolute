@@ -8,11 +8,11 @@ info{
 init{
   real x = [-7;7];
   real y = [-7;7];
-  real t = [0;7];
+  real t = [0;6.4];
   int radius = [5;5];
 }
 
 constraints{
-  x <= radius * (cos t);
-  y <= radius * (sin t);
+  x = radius * (cos t);
+  y = radius * (sin t);
 }
