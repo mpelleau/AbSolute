@@ -316,9 +316,11 @@ module Itv(B:BOUND) = (struct
     if B.geq diam two_pi then minus_one_one
     else
       let (l',h') = scale_to_two_pi_itv (l,h) in
-      let  diam = range (l',h')
-      and q_inf = quadrant l'
-      and q_sup = quadrant h' in
+      let q_inf = quadrant l'
+      and q_sup = quadrant h'
+      and diam = range (l,h) in
+      if q_inf = q_sup && B.geq diam pi then minus_one_one
+      else
       match q_inf, q_sup with
       | (1, 1 | 4, 1 | 4, 4) -> (B.sin_down l',B.sin_up h')
       | (2, 2 | 2, 3 | 3, 3) -> (B.sin_down h',B.sin_up l')
@@ -342,10 +344,10 @@ module Itv(B:BOUND) = (struct
       top
     else
       let (l',h') = scale_to_two_pi_itv itv in
-      let diam = range (l',h')
+      let diam = range itv
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
-      Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup;
+      (* Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup; *)
       if q_inf = q_sup && B.geq diam pi then
         top
       else

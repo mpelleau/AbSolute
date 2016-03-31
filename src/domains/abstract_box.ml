@@ -54,6 +54,7 @@ module Box(I:ITV) = (struct
     let (l1,h1),(l2,h2) = Env.find v1 a, Env.find v2 a in
     let l1,h1 = B.to_float_down l1, B.to_float_up h1
     and l2,h2 = B.to_float_down l2, B.to_float_up h2 in
+    (* Format.printf "  \\filldraw[rose, fill opacity = 0.3] (%f, %f) -- (%f, %f) -- (%f, %f) -- (%f, %f) -- cycle;\n" l1 l2 h1 l2 h1 h2 l1 h2; *)
     [l1,l2; h1,l2; h1,h2; l1,h2]
 
   let points_to_draw a = function

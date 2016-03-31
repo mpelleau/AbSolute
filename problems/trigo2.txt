@@ -1,8 +1,8 @@
 /* simple example with sinus and cosinus */
 
 init{
-  real x = [-7;7];
-  real y = [-7;7];
+  real x = [-10;10];
+  real y = [-5;5];
 }
 
 constraints{
