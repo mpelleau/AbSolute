@@ -1,0 +1,11 @@
+/* Giant's belt */
+
+init{
+  real x=[-10;12];
+  real y=[-10;10];
+}
+
+constraints{
+  |sin x| * sqrt (cos x + 2) > y^2;
+  |sin x| * sqrt (cos x + 2) < y^4;
+}

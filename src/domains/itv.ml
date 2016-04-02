@@ -232,13 +232,11 @@ module Itv(B:BOUND) = (struct
     if contains (l,h) B.zero then B.zero, B.max (B.abs l) (B.abs h)
     else hull (B.abs l) (B.abs h)
         
-        
   let add ((l1,h1):t) ((l2,h2):t) : t =
     B.add_down l1 l2, B.add_up h1 h2
       
   let sub ((l1,h1):t) ((l2,h2):t) : t =
     B.sub_down l1 h2, B.sub_up h1 l2
-
       
   (* helper: oo * 0 = 0 when multiplying bounds *)
   let bound_mul f x y =
@@ -284,26 +282,65 @@ module Itv(B:BOUND) = (struct
     let l = B.max l B.zero in
     Nb (B.sqrt_down l, B.sqrt_up h)
 
+  (* useful operators on intervals *)
+  let ( +@ ) = add
+  let ( -@ ) = sub
+  let ( *@ ) = mul
+  let ( /@ ) = div
 
-
+  (* deprecated -> use the interval version instead*)
   let pi_half = B.of_float_up 1.57079632
   let pi = B.of_float_up 3.14159265
   let two_pi = B.of_float_up 6.28318
   let ln10 = B.of_float_up 2.3025850
 
-  (* Returns the quadrant in which the bound is.
-   * value must be in [0, 2pi[ *)
+  (*the two closest floating boundaries of pi*)
+  let pi_up = B.of_float_up 3.14159265358979356
+  let pi_down = B.of_float_down 3.14159265358979312
+
+  (* it improves soundness to use those *)
+  let i_pi:t= pi_up, pi_down
+  let i_pi_half = i_pi /@ (of_int 2) |> fst |> debot
+  let i_two_pi = i_pi +@ i_pi
+  let i_three_half_of_pi = (i_two_pi +@ i_pi) /@ (of_int 2) |> fst |> debot
+
+  type quadrant = One 
+		| Two 
+		| Three 
+		| Four 
+		| AroundPiHalf 
+		| AroundPi
+		| AroundThreePiHalf
+		| AroundTwoPi
+
+  let might_intersect a b = 
+    match a,b with
+    | x,y when x=y -> true
+    | AroundPiHalf,One | AroundPiHalf,Two
+    | AroundPi,Two | AroundPi,Three
+    | AroundThreePiHalf, Three | AroundThreePiHalf, Four
+    | AroundTwoPi, Four | AroundTwoPi, One
+    | One, AroundTwoPi | One,AroundPiHalf
+    | Two, AroundPiHalf | Two, AroundPi
+    | Three, AroundPi | Three, AroundThreePiHalf
+    | Four,AroundThreePiHalf | Four, AroundTwoPi -> true
+    | _ -> false 
+
+  (* Returns the quadrant in which the bound is. the value must be in [0, 2pi[ *)
   let quadrant value =
-    if B.leq value pi_half then 1
-    else if B.leq value pi then 2
-    else if B.leq value (B.add_up pi pi_half) then 3
-    else 4
+    if contains i_pi_half value then AroundPiHalf
+    else if contains i_pi value then AroundPi
+    else if contains i_three_half_of_pi value then AroundThreePiHalf
+    else if contains i_two_pi value then AroundTwoPi
+    else if B.leq value (fst i_pi_half) then One
+    else if B.leq value pi_down then Two
+    else if B.leq value (fst i_three_half_of_pi) then Three
+    else Four
 
   (* A bound is scaled to the range [0, 2pi[ *)
   let scale_to_two_pi value =
     let q = B.floor (B.div_up value two_pi) in
-    (* if B.leq q B.zero then B.add_up two_pi (B.sub_up value (B.mul_up pi q)) *)
-    (* else  *)B.sub_up value (B.mul_up two_pi q)
+    B.sub_up value (B.mul_up two_pi q)
 
   (* The interval is scaled to the range [0, 2pi[ *)
   let scale_to_two_pi_itv ((l,h):t) =
@@ -313,58 +350,54 @@ module Itv(B:BOUND) = (struct
   (* interval sin *)
   let sin (l,h) =
     let diam = range (l,h) in
-    if B.geq diam two_pi then minus_one_one
+    if B.geq diam (B.add_down pi_down pi_down) then minus_one_one
     else
       let (l',h') = scale_to_two_pi_itv (l,h) in
       let q_inf = quadrant l'
       and q_sup = quadrant h'
       and diam = range (l,h) in
-      if q_inf = q_sup && B.geq diam pi then minus_one_one
-      else
+      if might_intersect q_inf q_sup && B.geq diam pi then minus_one_one else
       match q_inf, q_sup with
-      | (1, 1 | 4, 1 | 4, 4) -> (B.sin_down l',B.sin_up h')
-      | (2, 2 | 2, 3 | 3, 3) -> (B.sin_down h',B.sin_up l')
-      | (3, 2 | 1, 4) -> minus_one_one
-      | (1, 2 | 4, 3) -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
-      | (2, 1 | 3, 4) -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
-      | 1, 3 -> (B.sin_down h',B.one)
-      | 2, 4 -> (B.minus_one,B.sin_up l')
-      | 3, 1 -> (B.minus_one,B.sin_up h')
-      | 4, 2 -> (B.sin_down l',B.one)
+      | One, One | Four, One | Four, Four | _,AroundPiHalf -> (B.sin_down l',B.sin_up h')
+      | Two, Two | Two, Three | Three, Three | AroundPiHalf,_ -> (B.sin_down h',B.sin_up l')
+      | Three, Two | One, Four -> minus_one_one
+      | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
+      | Two, One | Three, Four -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
+      | One, Three -> (B.sin_down h',B.one)
+      | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
+      | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
+      | Four, Two -> (B.sin_down l',B.one)
       | _ -> failwith ("Should not occur")
 
   (* interval cos *)
-  let cos itv =
-    sin (add itv (of_bound pi_half))
+  let cos itv = sin (itv +@ i_pi_half)
 
   (* interval tan *)
   let tan itv =
     let diam = range itv in
-    if B.geq diam pi then
-      top
+    if B.geq diam pi then top
     else
       let (l',h') = scale_to_two_pi_itv itv in
       let diam = range itv
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
       (* Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup; *)
-      if q_inf = q_sup && B.geq diam pi then
-        top
+      if q_inf = q_sup && B.geq diam pi then top
       else
         match q_inf, q_sup with
-        | 1,1 | 2,2 | 3,3 | 4,4 | 2,3 | 4,1 -> (B.tan_down l',B.tan_up h')
-        | (1 | 2 | 3 | 4), (1 | 2 | 3 | 4) -> top
+        | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One -> 
+	  (B.tan_down l',B.tan_up h')
+        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
         | _ -> failwith ("Should not occur")
 
   (* interval cot *)
   let cot itv =
-    let itv' = tan (add itv (of_bound pi_half)) in
+    let itv' = tan (itv +@ i_pi_half) in
     neg itv'
 
   (* interval arcsin *)
   let asin (l,h) =
-    if B.lt h B.minus_one || B.gt l B.one then
-      Bot
+    if B.lt h B.minus_one || B.gt l B.one then Bot
     else
       let is_minus_one = B.lt l B.minus_one
       and is_plus_one = B.gt h B.one in
@@ -376,8 +409,7 @@ module Itv(B:BOUND) = (struct
 
   (* interval acos *)
   let acos (l,h) =
-    if B.lt h B.minus_one || B.gt l B.one then
-      Bot
+    if B.lt h B.minus_one || B.gt l B.one then Bot
     else
       let is_minus_one = B.lt l B.minus_one
       and is_plus_one = B.gt h B.one in
@@ -392,12 +424,10 @@ module Itv(B:BOUND) = (struct
     (B.atan_down l,B.atan_up h)
 
   (* interval acot *)
-  let acot itv =
-    add (atan (neg itv)) (of_bound pi_half)
+  let acot itv = (atan (neg itv)) +@ (i_pi_half)
 
   (* interval exp *)
-  let exp (l,h) =
-    (B.exp_down l,B.exp_up h)
+  let exp (l,h) = (B.exp_down l,B.exp_up h)
 
   (* interval ln *)
   let log (l,h) =
@@ -547,9 +577,6 @@ module Itv(B:BOUND) = (struct
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
-  (* r = i1^i2 => ?*)
-  let filter_pow (i1:t) (i2:t) ((rl,rh):t) : t bot = failwith ""
-  
   let compute_itv itv itv' i i' =
     let aux = 
       if i mod 2 = 0 then
@@ -581,7 +608,8 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx !idx;
         done;
-        (Bot.join_bot2 join !itv !itv')
+        (Bot.join_bot2 join !itv !itv')   
+    
 
   (* r = cos i => i = arccos r *)
   let filter_cos (i:t) (r:t) : t bot =

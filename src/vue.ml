@@ -35,7 +35,31 @@ let graham_sort l =
     else -1
   in
   List.sort comp l
-    
+
+(* Useful fonctions *)
+let red rgb = rgb / (0xFFFF)
+let green rgb = (rgb / 255) mod 255
+let blue rgb = rgb mod 255
+
+let getcomp c = 
+  let r = red c |> float
+  and g = green c |> float
+  and b = blue c |> float in
+  (r,g,b)
+
+let draw draw_rect (x,y) w h col alpha =
+  for i=x to x+w do
+    for j=y to y+h do
+      let (o_r,o_g,o_b) = point_color i j |> getcomp
+      and (n_r,n_g,n_b) = getcomp col in
+      let r = (alpha *. n_r) +. (1. -. alpha) *. o_r |> int_of_float 
+      and g = (alpha *. n_g) +. (1. -. alpha) *. o_g |> int_of_float 
+      and b = (alpha *. n_b) +. (1. -. alpha) *. o_b |> int_of_float in
+      set_color (rgb r g b);
+      plot i j
+    done
+  done
+ 
 (* returns the bounds of a generator list *)
 let get_info l =
   match l with
