@@ -53,14 +53,65 @@ let projection (a,b) (c,d) n =
   (n-.a) *. r +. c
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
-  let padding = 150. and s_x = size_x() |> float and s_y = size_y() |> float in
+  let padding = 40. and s_x = size_x() |> float and s_y = size_y() |> float in
   let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
   and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
   in (int_of_float a, int_of_float b)
   
+let padding = 50.
+
+let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
+  let s_x = size_x() |> float and s_y = size_y() |> float in
+  let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
+  and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
+  in (int_of_float a, int_of_float b)
+
+let draw_line_x x col =
+  set_color col;
+  draw_segments [|(x, 0, x, size_y())|]
+
+let draw_line_y y col =
+  set_color col;
+  draw_segments [|(0, y, size_x(), y)|]
+
+let draw_string x y str col =
+  set_color col;
+  moveto x y; draw_string str
+
+let draw_end ((x_min,x_max),(y_min,y_max)) =
+  let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
+  let p = int_of_float padding and lg = rgb 200 200 200
+  and sx = size_x() and sy = size_y() in
+  let nb = 10 in
+  let rangex = x_max -. x_min and rangey = y_max -. y_min in
+  let stepx = rangex /. (float nb) and stepy = rangey /. (float nb) in
+  set_color (rgb 160 240 160);
+  for i = 0 to nb do
+    let x = x_min +. (float i) *. stepx
+    and y = y_min +. (float i) *. stepy in
+    let a,_ = f_coord (x,0.)
+    and c,_=f_coord (x, float sy) in
+    draw_segments [|(a,0,c,sy)|];
+    let _,b = f_coord (0.,y) 
+    and _,d = f_coord (float sx, y) in
+    draw_segments [|(0,b,sx,d)|]
+  done;
+  draw_line_x p lg;
+  draw_string p (p/2 - 5) (string_of_float x_min) black;
+  draw_line_x (sx-p) lg;
+  draw_string (sx-p) (p/2 - 5) (string_of_float x_max) black;
+  draw_line_y p lg;
+  draw_string (p/2 -5 ) (p+5) (string_of_float y_min) black;
+  draw_line_y (sy - p) lg;
+  draw_string (p/2-5) (sy-p+5) (string_of_float y_max) black;
+  let (a,b) = f_coord (0.,0.) in
+  draw_line_y a (rgb 255 160 30);
+  draw_line_x b (rgb 255 160 30)
+
 let draw dom col ((x_min,x_max),(y_min,y_max)) =
   let l = graham_sort dom in
-  let l = List.rev_map (to_coord (x_min,x_max) (y_min,y_max)) l in
+  let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
+  let l = List.rev_map f_coord l in
   set_color col; fill_poly (Array.of_list l);
   set_color black; draw_poly (Array.of_list l)
 

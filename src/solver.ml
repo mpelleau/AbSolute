@@ -26,7 +26,7 @@ module Solve(Abs : AbstractCP) =
         (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
-	| `Full -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info Graphics.blue vars; (nb_steps, nb_sol+1)
+	| `Full -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
 	  | true,_ -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
@@ -36,7 +36,9 @@ module Solve(Abs : AbstractCP) =
             List.fold_left (fun (a, b) c -> aux c (a+1) b) (nb_steps, nb_sol)
 	  | _ -> (nb_steps, nb_sol)
 	  )
-      in aux abs nb_steps nb_sol
+      in let res = aux abs nb_steps nb_sol in 
+	 if !Constant.visualization then Vue.draw_end info;
+	 res
 
     let explore_breath_first abs constrs nb_steps nb_sol vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
@@ -48,7 +50,7 @@ module Solve(Abs : AbstractCP) =
 	let cons,abs' = consistency (Queue.take queue) constrs in
 	match cons with
 	| `Empty -> ()
-	| `Full -> draw abs' info Graphics.blue vars; incr nb_sol
+	| `Full -> draw abs' info (Graphics.rgb 0 191 255) vars; incr nb_sol
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
 	  | true,_ -> draw abs' info Graphics.green vars; incr nb_sol
@@ -58,6 +60,7 @@ module Solve(Abs : AbstractCP) =
 	  | _ -> draw abs' info Graphics.green vars
 	  )
       done;
+      if !Constant.visualization then Vue.draw_end info;
       !nb_steps,!nb_sol
 
     let solving prob =
