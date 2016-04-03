@@ -36,9 +36,10 @@ module Solve(Abs : AbstractCP) =
             List.fold_left (fun (a, b) c -> aux c (a+1) b) (nb_steps, nb_sol)
 	  | _ -> (nb_steps, nb_sol)
 	  )
-      in let res = aux abs nb_steps nb_sol in 
-	 if !Constant.visualization then Vue.draw_end info;
-	 res
+      in 
+      let res = aux abs nb_steps nb_sol in 
+      if !Constant.visualization then Vue.draw_end info;
+      res
 
     let explore_breath_first abs constrs nb_steps nb_sol vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in

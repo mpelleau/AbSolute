@@ -6,9 +6,9 @@ info{
 }
 
 init{
-  real x = [-7;7];
-  real y = [-7;7];
-  real t = [0;6.4];
+  real x = [-10;10];
+  real y = [-10;10];
+  real t = [0;7];
   int radius = [5;5];
 }
 

@@ -202,11 +202,15 @@ module Itv(B:BOUND) = (struct
 
   (* splits in two, around m *)
   let split ((l,h):t) (m:bound list) : (t bot) list =
-    let to_pair = ref l in
-    let list = 
-      List.rev_map (fun e -> let res = (!to_pair,e) in to_pair := e; res) m
-    in 
-    List.rev_map check_bot ((!to_pair,h)::list)
+    let rec aux acc cur bounds =
+      match bounds with
+      |  hd::tl -> 
+	let itv = check_bot (cur,hd) in
+	aux (itv::acc) hd tl
+      | [] -> 
+	let itv = check_bot (cur,h) in
+	itv::acc
+    in aux [] l m 
 
   let split_integer ((l,h):t) (m:bound list) : (t bot) list =
     let to_pair = ref l in
