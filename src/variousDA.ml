@@ -95,7 +95,8 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
         and tmp =  Reduced.B.of_problem p in
         let cons_b = List.filter Syntax.is_cons_linear p.constraints in
         let abs' = List.fold_left Reduced.B.meet tmp cons_b in
-        (abs,abs')
+        Reduced.reduced_product abs abs'
+        (*(abs,abs')*)
     
     let is_small ((abs, abs'):t) prec =
       Reduced.A.is_small abs prec
