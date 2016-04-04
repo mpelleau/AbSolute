@@ -258,6 +258,10 @@ module Box(I:ITV) = (struct
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
     is_bottom (meet a (Syntax.Not constr))
 
+  let forward_eval abs cons =
+    let (_, bounds) = eval abs cons in
+    (B.to_float_down (fst bounds), B.to_float_up (snd bounds))
+
 end)
 
 

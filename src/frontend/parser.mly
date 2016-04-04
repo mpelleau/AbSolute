@@ -35,6 +35,7 @@ open Syntax
 %token TOK_SIN
 %token TOK_SQRT
 %token TOK_INIT
+%token TOK_OBJ
 %token TOK_CONSTR
 %token TOK_ANNOT
 %token TOK_DRAW
@@ -68,10 +69,12 @@ open Syntax
 file:
   annot
   domains
+  objective
   constraints
   TOK_EOF
   {{init=$2;
-    constraints=$3;
+    objective=$3;
+    constraints=$4;
     to_draw=$1}}
 
 annot:
@@ -80,6 +83,9 @@ annot:
 
 domains:
  | TOK_INIT TOK_LBRACE decls TOK_RBRACE {$3}
+
+objective:
+ | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}

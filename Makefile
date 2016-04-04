@@ -52,6 +52,7 @@ MLFILES = \
   src/problems.ml \
   src/vue.ml \
   src/solver.ml \
+  src/minimizer.ml \
   src/main.ml
 
 CFILES = \

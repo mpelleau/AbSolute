@@ -51,6 +51,7 @@ module type AbstractCP =
   val sat_cons : t -> Syntax.bexpr -> bool
   val meet : t -> Syntax.bexpr -> t
   val print : Format.formatter -> t -> unit
+  val forward_eval : t -> Syntax.expr -> (float * float)
  end
  
 (** 
@@ -318,7 +319,6 @@ module OctBoxCP =
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       (dim <= prec, [expr; expr'])
-
   end
 
 (** 
@@ -345,5 +345,4 @@ module PolyCP = struct
     let linexp' = Linexpr1.make gen_env in
     Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
     (dist_max <= prec, [linexp; linexp'])
-
 end

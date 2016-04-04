@@ -18,7 +18,7 @@ module Solve(Abs : AbstractCP) =
       if !Constant.visualization then
 	Vue.draw (Abs.points_to_draw abs vars) col info
 
-    let explore abs constrs nb_steps nb_sol vars =
+    let explore abs constrs vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
       draw abs info Graphics.yellow vars;
       let rec aux abs nb_steps nb_sol =
@@ -37,7 +37,7 @@ module Solve(Abs : AbstractCP) =
 	  | _ -> (nb_steps, nb_sol)
 	  )
       in 
-      let res = aux abs nb_steps nb_sol in 
+      let res = aux abs 1 0 in 
       if !Constant.visualization then Vue.draw_end info;
       res
 
@@ -69,7 +69,7 @@ module Solve(Abs : AbstractCP) =
       let abs = Abs.of_problem prob in
       printf "abs = %a@." Abs.print abs;
       if not (Abs.is_bottom abs) then
-        let (nb_steps, nb_sol) = explore abs prob.constraints 1 0 prob.to_draw in
+        let (nb_steps, nb_sol) = explore abs prob.constraints prob.to_draw in
 	Format.printf "solving ends\n%!";
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps
@@ -84,10 +84,10 @@ module Solve(Abs : AbstractCP) =
       printf "abs = %a" Abs.print abs;
       if not (Abs.is_bottom abs) then
         let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in
-        Format.printf "\ncons = [";
-        List.iter (Format.printf "%a ;" (print_bexpr)) cons;
-        Format.printf "]\n";
-        let (nb_steps, nb_sol) = explore_breath_first abs cons 1 0 prob.to_draw in
+        (* Format.printf "\ncons = ["; *)
+        (* List.iter (Format.printf "%a ;" (print_bexpr)) cons; *)
+        (* Format.printf "]\n"; *)
+        let (nb_steps, nb_sol) = explore abs cons prob.to_draw in
 	Format.printf "solving ends\n%!";
 	match nb_sol with
 	| 0 -> printf "No solutions - #created nodes: %d@." nb_steps

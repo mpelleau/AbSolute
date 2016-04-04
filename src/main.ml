@@ -5,11 +5,6 @@ open Bot
 
 let solving = ref true 
 
-let get_variousDA_problem p =
-  match p with
-  | "test" -> Problems.test
-  | _ -> "minimization problem undefined "^p |> failwith
-
 let parse_args () =
   let rec doit args = match args with
   | "-precision"::x::r 
@@ -27,7 +22,7 @@ let parse_args () =
 let main =
   let open Constant in
   parse_args ();
-  solving := !Constant.problem <> "test";
+  solving := false;(*Constant.problem <> "test";*)
   let prob = File_parser.parse !problem in
   if !Constant.visualization then Vue.create_window 800 800;
   (* Syntax.print Format.std_formatter prob; *)
@@ -41,11 +36,13 @@ let main =
     | "boxNpoly" -> Solver.BoxNPoly.solving_various prob
     | "octNpoly" -> Solver.OctNPoly.solving_various prob
     | _ -> "domain undefined"^(!domain_solving) |> failwith
-  else(*
+  else
     match !domain_minimizing with
-    | "octbox" -> Minimizer.OctBox.minimizing (get_minimization_problem !problem)
-    | "octminmax" -> Minimizer.OctMinMax.minimizing (get_minimization_problem !problem)
-    | "octminmin" -> Minimizer.OctMinMin.minimizing (get_minimization_problem !problem)
+    | "box" -> Minimizer.Box.minimizing prob
+    | "boxCP" -> Minimizer.BoxCP.minimizing prob
+    | "oct" -> Minimizer.Oct.minimizing prob
+    | "poly" -> Minimizer.Poly.minimizing prob 
+    | "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
+    | "boxNpoly" -> Minimizer.BoxNPoly.minimizing_various prob
+    | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob
     | _ -> "domain undefined"^(!domain_minimizing) |> failwith
-      *)
-    failwith "minimization not implemented yet"

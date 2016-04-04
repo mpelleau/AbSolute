@@ -4,7 +4,9 @@ init{
   real x = [0;5];
   real y = [0;5];
 }
-
+objective {
+  x + y
+}
 constraints{
   y >= 3 - x;
   x <= 4;

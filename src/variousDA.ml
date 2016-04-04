@@ -117,9 +117,13 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let meet ((abs, abs'):t) cons =
       (Reduced.A.meet abs cons, abs')
 
+    let forward_eval (abs, abs') cons = 
+      let abs_tmp = Reduced.a_meet_b abs abs' in
+      Reduced.B.forward_eval abs_tmp cons
+
     let print fmt ((abs, abs'):t) =
       Reduced.A.print fmt abs;
-      Reduced.B.print fmt abs';
+      Reduced.B.print fmt abs'
 
   end
 

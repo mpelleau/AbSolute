@@ -42,7 +42,7 @@ type decls =  assign list
 type constrs = bexpr list
 
 (* program *)
-type prog = { init: decls; constraints: constrs; to_draw : (var * var) option}
+type prog = { init: decls; objective : expr; constraints: constrs; to_draw : (var * var) option}
 
 
 (*****************************************)

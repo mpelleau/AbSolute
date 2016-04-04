@@ -28,7 +28,7 @@ module SyntaxTranslator (D:ADomain) = struct
       let r = match o with
 	| NEG -> Texpr1.Neg
 	| SQRT -> Texpr1.Sqrt
-	| COS | SIN -> failwith "COS and SIN unsupported with apron"
+	| COS | SIN | ABS -> failwith "COS and SIN unsupported with apron"
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
@@ -216,4 +216,12 @@ module MAKE(AP:ADomain) = struct
       List.map (fun(a,b)-> (Utils.coeff_to_float a, Utils.coeff_to_float b)) v
     in 
     draw_pol (to_poly abs env) 
+
+
+    let forward_eval abs cons = 
+      let obj_itv = Abstract1.bound_texpr man abs (Texpr1.of_expr (Abstract1.env abs) (Translate.expr_to_apron abs cons)) in
+      let obj_inf = obj_itv.Interval.inf
+      and obj_sup = obj_itv.Interval.sup in
+      let open Utils in
+      (scalar_to_float obj_inf, scalar_to_float obj_sup)
 end
