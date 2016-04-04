@@ -13,8 +13,14 @@ module Minimize(Abs : AbstractCP) =
        else if List.for_all (Abs.sat_cons abs') tab then `Full
        else `Maybe)
        ,abs'
+	
+    let draw abs info col vars =
+      if !Constant.visualization then
+	Vue.draw (Abs.points_to_draw abs vars) col info
 
-    let explore abs constrs obj =
+    let explore abs constrs obj vars =
+      let info = Vue.get_info (Abs.points_to_draw abs vars) in
+      draw abs info Graphics.yellow vars;
       let rec aux abs best_value nb_steps sols =
 	let cons,abs' = consistency abs constrs in
 	match cons with
@@ -23,14 +29,18 @@ module Minimize(Abs : AbstractCP) =
           let (obj_value, _) = Abs.forward_eval abs' obj in
           if obj_value > best_value then
             (* There's no point in keep on searching in this branch *)
-            (nb_steps, best_value, sols)
+	     (draw abs' info Graphics.yellow vars;
+            (nb_steps, best_value, sols))
           else
             (match (Abs.is_small abs' !Constant.precision) with
 	    | true,_ ->
               if obj_value < best_value then
-                (nb_steps, obj_value, [abs'])
+		(List.iter (fun a -> draw a info Graphics.yellow vars) sols;
+	        draw abs' info (Graphics.rgb 0 191 255) vars;
+                (nb_steps, obj_value, [abs']))
               else
-                (nb_steps, obj_value, abs'::sols)
+		(draw abs' info (Graphics.rgb 0 191 255) vars;
+                (nb_steps, obj_value, abs'::sols))
 	    | _,exprs when (List.length sols) <= !Constant.max_sol ->
               Abs.split abs' exprs |>
               List.fold_left (fun (a, b, c) d -> aux d b (a+1) c) (nb_steps, best_value, sols)
@@ -38,7 +48,8 @@ module Minimize(Abs : AbstractCP) =
 	)
       in 
       let (_, obj_sup) = Abs.forward_eval abs obj in
-      let res = aux abs obj_sup 1 [] in 
+      let res = aux abs obj_sup 1 [] in
+      if !Constant.visualization then Vue.draw_end info;
       res
 
     let minimizing prob =
@@ -46,7 +57,7 @@ module Minimize(Abs : AbstractCP) =
       let abs = Abs.of_problem prob in
       printf "abs = %a@." Abs.print abs;
       if not (Abs.is_bottom abs) then
-        let (nb_steps, best_value, sols) = explore abs prob.constraints prob.objective in
+        let (nb_steps, best_value, sols) = explore abs prob.constraints prob.objective prob.to_draw in
 	Format.printf "solving ends\n%!";
         let nb_sol = List.length sols in
 	match nb_sol with
@@ -65,7 +76,7 @@ module Minimize(Abs : AbstractCP) =
         (* Format.printf "\ncons = ["; *)
         (* List.iter (Format.printf "%a ;" (print_bexpr)) cons; *)
         (* Format.printf "]\n"; *)
-        let (nb_steps, best_value, sols) = explore abs cons prob.objective in
+        let (nb_steps, best_value, sols) = explore abs cons prob.objective prob.to_draw in
 	Format.printf "solving ends\n%!";
         let nb_sol = List.length sols in
 	match nb_sol with

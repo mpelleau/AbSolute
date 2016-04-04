@@ -86,6 +86,7 @@ domains:
 
 objective:
  | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
+ | {Cst(0.)}
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
