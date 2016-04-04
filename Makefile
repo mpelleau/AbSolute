@@ -7,7 +7,7 @@ OCAMLYACC = ocamlyacc
 CC        = gcc
 
 # libraries
-OPAMDIR = $(HOME)/.opam/4.02.3/lib
+OPAMDIR = `opam config var lib`
 APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
@@ -18,7 +18,7 @@ CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
 OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB) 
 CLIBS = -lgmp -lxcb
-CFLAGS = -O3 -Wall
+CFLAGS = -O3 -Wall -I $(OPAMDIR)/ocaml
 OCAMLFLAGS = -g
 OCAMLOPTFLAGS =
 
