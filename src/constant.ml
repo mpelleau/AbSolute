@@ -5,3 +5,4 @@ let problem = ref "problems/one_circle.txt"
 let domain = ref "box"
 let minimizing = ref false
 let visualization = ref false
+let obj = ref false

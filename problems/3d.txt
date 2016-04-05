@@ -1,0 +1,12 @@
+/* a simple 3d example */
+
+init {
+  real x = [0;10];
+  real y = [0;10];
+  real z = [0;10];
+}
+
+constraints {
+  (x-20)^2 + (y-20)^2 + (z-20)^2 <= 400;
+  (x-20)^2 + (y-20)^2 + (z-20)^2 >= 100;
+}

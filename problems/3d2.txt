@@ -1,0 +1,14 @@
+/* One circle */
+
+init{
+  real x = [-20;20];
+  real y = [-20;20];
+  real z = [-20;20];
+}
+
+constraints{
+  x^2 + y^2 +z^2 <= 100;
+  (sin x)^2+(sin y)^2+(sin z)^2 <= 0.9;
+}
+
+

@@ -51,6 +51,7 @@ MLFILES = \
   src/variousDA.ml \
   src/problems.ml \
   src/vue.ml \
+  src/objgen.ml \
   src/solver.ml \
   src/minimizer.ml \
   src/main.ml
@@ -111,6 +112,7 @@ clean:
 	rm -f `find . -name "*.a"`
 	rm -f `find . -name "*.cm*"`
 	rm -f `find . -name "*~"`
+	rm -f out/*
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
