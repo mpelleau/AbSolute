@@ -230,8 +230,15 @@ module Box(I:ITV) = (struct
 
   let rec meet (a:t) (b:Syntax.bexpr) : t = 
     match b with
-    | And (b1,b2) -> meet (meet a b1) b2
-    | Or (b1,b2) -> join (meet a b1) (meet a b2)
+    | And (b1,b2) -> 
+      let a1 = meet a b1 in
+      if is_bottom a1 then a1 
+      else meet a1 b2
+    | Or (b1,b2) ->
+      let abs1 = meet a b1 and abs2 = meet a b2 in
+      if is_bottom abs1 then abs2
+      else if is_bottom abs2 then abs1
+      else join (meet a b1) (meet a b2)
     | Not b -> meet a (neg_bexpr b)
     | Cmp (binop,e1,e2) ->
       (match test a e1 binop e2 with
