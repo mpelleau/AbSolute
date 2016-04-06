@@ -1,0 +1,11 @@
+/* the bottom of my heart */
+
+init {
+  real x = [-2;2];
+  real y = [-2;2];
+  real z = [-2;2];
+}
+
+constraints {
+  (x^2 + 2.25*y^2 + z^2 - 1)^3 - (x^2)*(z^3) - 0.1125*(y^2)*(z^3) = 0;
+}

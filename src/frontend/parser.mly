@@ -142,6 +142,8 @@ expr:
 leaf:
   | TOK_const                           { Cst $1 }
   | TOK_id                              { Var $1 }
+  /* | TOK_const TOK_id                    {Binary(MUL,(Cst $1),(Var $2))} */
+  /* | TOK_id TOK_const                    {Binary(MUL,(Var $1),(Cst $2))} */
 
 binop_expr:
   | expr TOK_POW expr  {Binary (POW,$1,$3)}

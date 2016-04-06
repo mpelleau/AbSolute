@@ -23,8 +23,7 @@ let max (x:t) (y:t) : t = max x y
     
 let sign (x:t) : int =
   if x > 0. then 1 else
-  if x < 0. then -1 else
-  0
+  if x < 0. then -1 else 0
     
 (* conversion, printing *)
 
@@ -100,8 +99,14 @@ let sqrt_down x = div_down 1. (sqrt (div_up 1. x))
 
 let pow_up x n = x ** (float n) 
 let pow_down x n = div_down 1. ((div_up 1. x) ** (float n))
-let root_up x n = exp((log x) /. (float n))
-let root_down x n = exp((log x) /. (float n))
+
+let root_up x n = 
+  if x<0. && n mod 2 = 1 then -. (exp((log (-.x)) /. (float n)))
+  else exp((log x) /. (float n))
+
+let root_down x n =
+  if x<0. && n mod 2 = 1 then -. (exp((log (-.x)) /. (float n)))
+  else exp((log x) /. (float n))
 
 let pi = 3.141592653589793
 let twopi = 2.*.pi

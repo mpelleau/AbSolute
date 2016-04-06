@@ -202,7 +202,7 @@ module Box(I:ITV) = (struct
         | SUB -> I.filter_sub i1 i2 x
         | MUL -> I.filter_mul i1 i2 x
         | DIV -> I.filter_div i1 i2 x
-	| POW -> I.filter_pow i1 i2 x (*failwith "power not implemented yet"*)
+	| POW -> I.filter_pow i1 i2 x
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2
@@ -239,7 +239,6 @@ module Box(I:ITV) = (struct
       | Nb e -> e)
 	
   let of_problem (p:Syntax.prog) =
-    print_endline "building problem with the intervals";
     let interval_of_domain dom =
       let open Syntax in
       match dom with
