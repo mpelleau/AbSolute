@@ -1,0 +1,17 @@
+/* brown 5d */
+
+init {
+  real x1 = [-1 ; 1];
+  real x2 = [-1 ; 1];
+  real x3 = [-1 ; 1];
+  real x4 = [-1 ; 1];
+  real x5 = [-1 ; 1];
+}
+
+constraints {
+  2 * x1 + x2 + x3 + x4 + x5 = 6;
+  x1 + 2 * x2 + x3 + x4 + x5 = 6;
+  x1 + x2 + 2 * x3 + x4 + x5 = 6;
+  x1 + x2 + x3 + 2 * x4 + x5 = 6;
+  x1 * x2 * x3 * x4 * x5 = 1;
+}
