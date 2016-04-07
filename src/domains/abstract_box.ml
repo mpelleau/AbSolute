@@ -33,6 +33,10 @@ module Box(I:ITV) = (struct
 
   (* boxes split along variables *)
   type split = var
+
+  let find v a =
+    try (Env.find v a, v) with
+      Not_found -> (Env.find (v^"%") a, v^"%")
         
       
   (************************************************************************)
@@ -43,15 +47,15 @@ module Box(I:ITV) = (struct
     let first = ref true in
     Env.iter
       (fun v i ->
-	Format.fprintf fmt "%s %s:%a" 
+	Format.fprintf fmt "%s%s:%a" 
 	  (if !first then "" else " ") 
 	  v
 	  I.print i;
 	first := false
-      ) a  
+      ) a
 
   let to_polygon a v1 v2 =
-    let (l1,h1),(l2,h2) = Env.find v1 a, Env.find v2 a in
+    let ((l1,h1), _),((l2,h2), _) = find v1 a, find v2 a in
     let l1,h1 = B.to_float_down l1, B.to_float_up h1
     and l2,h2 = B.to_float_down l2, B.to_float_up h2 in
     [l1,l2; h1,l2; h1,h2; l1,h2]
@@ -104,12 +108,55 @@ module Box(I:ITV) = (struct
   (* ----- *)
   let is_integer var =
     var.[String.length var - 1] = '%'
-          
+
+  let filter_bounds (a:t) : t =
+    let is_bot = ref false in
+    let b = Env.mapi (fun v i -> 
+		      if is_integer v then 
+			match I.filter_bounds i with
+			| Bot -> is_bot := true; i
+			| Nb e -> e
+		      else 
+			i
+		     ) a in
+    if !is_bot then 
+      dummy_bot b
+    else
+      b
+
+  let to_bot (a:I.t bot Env.t) : t bot =
+    let is_bot = Env.exists (fun v i -> is_Bot i) a in
+    if is_bot then 
+      Bot
+    else
+      Nb (Env.map (fun v -> match v with
+      			    | Nb e -> e
+      			    | _ -> failwith "should not occur"
+      		  ) a)
+      
+
+  let filter_bounds_bot (a:t bot) : t bot =
+    match a with
+    | Bot -> Bot
+    | Nb e -> Env.mapi (fun v i ->
+			if is_integer v then
+			  I.filter_bounds i
+			else
+			  Nb i
+		       ) e
+	      |> to_bot
+	      
+
   let split (a:t) (vars:var list) : t list =
     match vars with
     | [v] ->
-      let i = Env.find v a in
-      let i_list = I.split i (I.mean i) in  
+      let (i, _) = find v a in
+      let i_list = 
+        if is_integer v then
+          I.split_integer i (I.mean i) 
+        else
+	  I.split i (I.mean i) 
+      in
       List.map (function
       | Nb e -> Env.add v e a
       | Bot -> dummy_bot a
@@ -140,11 +187,11 @@ module Box(I:ITV) = (struct
   let rec eval (a:t) (e:expr) : bexpri =
     match e with
     | Var v ->
-        let r =
-          try Env.find v a
+        let (r, n) =
+          try find v a
           with Not_found -> failwith ("variable not found: "^v)
         in
-        BVar v, r
+        BVar n, r
     | Cst c ->
         let r = I.of_float c in
         BCst r, r
@@ -184,7 +231,7 @@ module Box(I:ITV) = (struct
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     match e with
     | BVar v -> 
-        (try Env.add v (debot (I.meet x (Env.find v a))) a
+        (try Env.add v (debot (I.meet x (fst (find v a)))) a
         with Not_found -> failwith ("variable not found: "^v))
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
@@ -222,11 +269,13 @@ module Box(I:ITV) = (struct
     | LT -> I.filter_lt i1 i2
     (*| LT_INT -> I.filter_lt_int i1 i2*)
     in
-    rebot 
+    let aux = rebot 
       (fun a ->
         let j1,j2 = debot j in
         refine (refine a b1 j1) b2 j2
       ) a
+    in
+    filter_bounds_bot aux
 
   let rec meet (a:t) (b:Syntax.bexpr) : t = 
     match b with
@@ -250,13 +299,20 @@ module Box(I:ITV) = (struct
     in
     let abs = 
       List.fold_left (fun a (typ,var,dom) ->
-	Env.add var (interval_of_domain dom) a   
+        match typ with
+	| INT -> Env.add (var^"%") (interval_of_domain dom) a
+	| REAL -> Env.add var (interval_of_domain dom) a 
       ) Env.empty p.init
     in Format.printf "%a\n" print abs;
     abs
+
+  let is_enumerated a =
+    let int_vars = Env.filter (fun v i -> is_integer v) a in
+    let is_e = Env.for_all (fun v i -> I.is_singleton i) int_vars in
+    Env.cardinal int_vars = 0 || is_e
     
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    is_bottom (meet a (Syntax.Not constr))
+    is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in

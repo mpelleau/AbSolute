@@ -149,10 +149,23 @@ module MAKE(AP:ADomain) = struct
     Abstract1.of_lincons_array man env domains
       
   let is_bottom b = Abstract1.is_bottom man b
+
+  let is_singleton b v =
+    let man = Abstract1.manager b in
+    if Abstract1.is_bottom man b then true
+    else 
+      let itv = Abstract1.bound_variable man b v  in
+      Utils.diam_interval itv |> Mpqf.to_float = 0.
+
+  let is_enumerated abs =
+    let int_vars = Environment.vars (Abstract1.env abs) |> fst in
+    if (Array.length int_vars) = 0 then true
+    else
+       Array.fold_right (fun v b -> if b then (is_singleton abs v) else b) int_vars true
     
   let sat_cons b c =
     let env = Abstract1.env b in
-    Translate.bexpr_to_apron c env |> Abstract1.sat_tcons man b
+    (Translate.bexpr_to_apron c env |> Abstract1.sat_tcons man b) && is_enumerated b
 	
   let meet b c = 
     let env = Abstract1.env b in

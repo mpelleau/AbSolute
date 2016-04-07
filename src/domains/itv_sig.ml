@@ -59,7 +59,6 @@ module type ITV = sig
   val hull: bound -> bound -> t
   (* [min a b, max a b] *)
 
-
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
@@ -114,7 +113,6 @@ module type ITV = sig
   val mean: t -> bound list
   val split: t -> bound list -> (t bot) list
   val split_integer: t -> bound list -> (t bot) list
-      
 
   (************************************************************************)
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
@@ -181,5 +179,7 @@ module type ITV = sig
   val filter_cos: t -> t -> t bot
   val filter_sin: t -> t -> t bot
 
+
+  val filter_bounds: t -> t bot
 
 end

@@ -1,11 +1,11 @@
 /* One circle */
 
 init{
-  int x = [0;20];
-  real y = [0;20];
+  int x = [0;2];
+  real y = [0;2];
 }
 
 constraints{
-  (x-20)^2 + (y-20)^2 <= 400;
+  (x-1)^2 + (y-1)^2 <= 1;
 }
 

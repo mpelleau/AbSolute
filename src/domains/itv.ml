@@ -216,7 +216,13 @@ module Itv(B:BOUND) = (struct
     let to_pair = ref l in
     let list = 
       List.rev_map (fun e ->
-	let ll,hh = B.floor e, B.ceil e in
+	let ll,hh = 
+          let a, b = B.floor e, B.ceil e in
+          if B.equal a b then
+	    a, B.add_up b B.one
+	  else
+	    a, b
+        in
 	let res = (!to_pair,ll) in to_pair := hh ; res) 
 	m
     in
@@ -505,8 +511,9 @@ module Itv(B:BOUND) = (struct
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
     else filter_leq i1 i2
         
-  let filter_gt ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
+  let filter_gt ((l1,h1) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
+    else if B.leq h1 l2 then Bot
     else filter_geq i1 i2
         
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
@@ -694,6 +701,12 @@ module Itv(B:BOUND) = (struct
   (* r = nroot i => i = r ** n *)
   let filter_root i r n =
     meet i (pow r n)
+  
+
+  let filter_bounds (l,h) =
+    let inf = B.ceil l
+    and sup = B.floor h in
+    check_bot (inf, sup)
     
 
 end)
