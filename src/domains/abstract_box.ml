@@ -27,10 +27,6 @@ module Box(I:ITV) = (struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
-  let dummy_bot a = 
-    let b1 = B.of_int_up 10 and b2 = B.of_int_down 0 in
-    Env.add "dummy" (b1,b2) a
-
   (* boxes split along variables *)
   type split = var
 
@@ -110,19 +106,15 @@ module Box(I:ITV) = (struct
     var.[String.length var - 1] = '%'
 
   let filter_bounds (a:t) : t =
-    let is_bot = ref false in
     let b = Env.mapi (fun v i -> 
 		      if is_integer v then 
 			match I.filter_bounds i with
-			| Bot -> is_bot := true; i
+			| Bot -> raise Bot_found
 			| Nb e -> e
 		      else 
 			i
 		     ) a in
-    if !is_bot then 
-      dummy_bot b
-    else
-      b
+    b
 
   let to_bot (a:I.t bot Env.t) : t bot =
     let is_bot = Env.exists (fun v i -> is_Bot i) a in
@@ -152,15 +144,14 @@ module Box(I:ITV) = (struct
     | [v] ->
       let (i, _) = find v a in
       let i_list = 
-        if is_integer v then
-          I.split_integer i (I.mean i) 
-        else
-	  I.split i (I.mean i) 
+        if is_integer v then I.split_integer i (I.mean i) 
+        else I.split i (I.mean i) 
       in
-      List.map (function
-      | Nb e -> Env.add v e a
-      | Bot -> dummy_bot a
-      ) i_list
+      List.fold_left (fun acc b -> 
+	match b with
+	| Nb e -> (Env.add v e a)::acc
+	| Bot -> acc
+      ) [] i_list
     | _ -> failwith "split need to be done on one variable"
 
   (************************************************************************)
@@ -291,7 +282,7 @@ module Box(I:ITV) = (struct
     | Not b -> meet a (neg_bexpr b)
     | Cmp (binop,e1,e2) ->
       (match test a e1 binop e2 with
-      | Bot -> dummy_bot a
+      | Bot -> raise Bot_found
       | Nb e -> e)
 	
   let of_problem (p:Syntax.prog) =

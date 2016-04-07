@@ -8,11 +8,13 @@ module Solve(Abs : AbstractCP) =
   struct
 
     let consistency abs tab =
-      let abs' = List.fold_left Abs.meet abs tab in
-      (if Abs.is_bottom abs' then `Empty 
-       else if List.for_all (Abs.sat_cons abs') tab then `Full
-       else `Maybe)
-       ,abs'
+      try
+	let abs' = List.fold_left Abs.meet abs tab in
+	(if Abs.is_bottom abs' then `Empty 
+	 else if List.for_all (Abs.sat_cons abs') tab then `Full
+	 else `Maybe)
+	  ,abs'
+      with Bot.Bot_found -> `Empty,abs
 	
     let draw abs info col vars =
       if !Constant.visualization then
@@ -22,7 +24,7 @@ module Solve(Abs : AbstractCP) =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
       draw abs info Graphics.yellow vars;
       let rec aux abs nb_steps nb_sol =
-	let cons,abs' = consistency abs constrs in
+	let cons,abs' =  consistency abs constrs in
         (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)

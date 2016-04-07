@@ -69,6 +69,7 @@ OFILES   = $(CFILES:%.c=%.o)
 
 # rules
 all: $(TARGETS)
+	mkdir out
 
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
@@ -113,6 +114,7 @@ clean:
 	rm -f `find . -name "*.cm*"`
 	rm -f `find . -name "*~"`
 	rm -f out/*
+	rm -f -R out
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
