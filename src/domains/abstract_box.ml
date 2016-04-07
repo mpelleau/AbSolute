@@ -118,26 +118,20 @@ module Box(I:ITV) = (struct
 
   let to_bot (a:I.t bot Env.t) : t bot =
     let is_bot = Env.exists (fun v i -> is_Bot i) a in
-    if is_bot then 
-      Bot
-    else
-      Nb (Env.map (fun v -> match v with
-      			    | Nb e -> e
-      			    | _ -> failwith "should not occur"
-      		  ) a)
+    if is_bot then Bot
+    else Nb (Env.map (fun v -> match v with
+    | Nb e -> e
+    | _ -> failwith "should not occur"
+    ) a)
       
-
   let filter_bounds_bot (a:t bot) : t bot =
     match a with
     | Bot -> Bot
     | Nb e -> Env.mapi (fun v i ->
-			if is_integer v then
-			  I.filter_bounds i
-			else
-			  Nb i
-		       ) e
-	      |> to_bot
-	      
+      if is_integer v then I.filter_bounds i
+      else Nb i
+    ) e
+    |> to_bot	      
 
   let split (a:t) (vars:var list) : t list =
     match vars with
@@ -270,15 +264,14 @@ module Box(I:ITV) = (struct
 
   let rec meet (a:t) (b:Syntax.bexpr) : t = 
     match b with
-    | And (b1,b2) -> 
-      let a1 = meet a b1 in
-      if is_bottom a1 then a1 
-      else meet a1 b2
+    | And (b1,b2) -> meet (meet a b2) b1
     | Or (b1,b2) ->
-      let abs1 = meet a b1 and abs2 = meet a b2 in
-      if is_bottom abs1 then abs2
-      else if is_bottom abs2 then abs1
-      else join (meet a b1) (meet a b2)
+      let a1 = try Some(meet a b1) with Bot.Bot_found -> None
+      and a2 = try Some(meet a b2) with Bot.Bot_found -> None in
+      (match (a1,a2) with
+      | (Some a1),(Some a2) -> join a1 a2
+      | None, (Some x) | (Some x), None -> x
+      | _ -> raise Bot.Bot_found)
     | Not b -> meet a (neg_bexpr b)
     | Cmp (binop,e1,e2) ->
       (match test a e1 binop e2 with
