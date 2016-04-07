@@ -1,0 +1,10 @@
+init {
+  real x = [-20;20];
+  real y = [-5;5];
+  real z = [-5;5];
+}
+
+constraints{
+  x^2 - y^2 - z^3=0;
+}
+

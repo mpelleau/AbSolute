@@ -1,8 +1,8 @@
 /* One circle */
 
 init{
-  real x = [0;40];
-  real y = [0;40];
+  int x = [0;40];
+  int y = [0;40];
 }
 
 constraints{

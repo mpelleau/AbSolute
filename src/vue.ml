@@ -133,11 +133,19 @@ let draw_end ((x_min,x_max),(y_min,y_max)) =
   draw_line_x b (rgb 255 160 30)
 
 let draw dom col ((x_min,x_max),(y_min,y_max)) =
-  let l = graham_sort dom in
-  let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
-  let l = List.rev_map f_coord l in
-  set_color col; fill_poly (Array.of_list l);
-  set_color black; draw_poly (Array.of_list l)
+  set_color col;
+  let ((f1,f2) as a) = List.hd dom in
+  if List.for_all (( = ) a) dom then
+    let (a,b) = to_coord (x_min,x_max) (y_min,y_max) (f1,f2) in
+    fill_circle a b 2
+  else begin
+    let l = graham_sort dom in
+    let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
+    let l = List.rev_map f_coord l in
+    fill_poly (Array.of_list l);
+    set_color black;
+    draw_poly (Array.of_list l)
+  end
 
 let clear dom ((x_min,x_max),(y_min,y_max)) =
   set_color (white);

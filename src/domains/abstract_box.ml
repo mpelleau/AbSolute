@@ -14,7 +14,6 @@ module Box(I:ITV) = (struct
   (* TYPES *)
   (************************************************************************)
 
-
   (* interval and bound inheritance *)
   module I = I
   module B = I.B
@@ -107,13 +106,11 @@ module Box(I:ITV) = (struct
 
   let filter_bounds (a:t) : t =
     let b = Env.mapi (fun v i -> 
-		      if is_integer v then 
-			match I.filter_bounds i with
-			| Bot -> raise Bot_found
-			| Nb e -> e
-		      else 
-			i
-		     ) a in
+      if is_integer v then 
+	match I.filter_bounds i with
+	| Bot -> raise Bot_found
+	| Nb e -> e
+      else i) a in
     b
 
   let to_bot (a:I.t bot Env.t) : t bot =
@@ -302,8 +299,8 @@ module Box(I:ITV) = (struct
     Env.cardinal int_vars = 0 || is_e
     
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    try is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
-    with Bot.Bot_found -> true
+    try is_bottom (meet a (Syntax.Not constr))
+    with Bot.Bot_found -> is_enumerated a
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in

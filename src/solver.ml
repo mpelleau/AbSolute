@@ -10,10 +10,9 @@ module Solve(Abs : AbstractCP) =
     let consistency abs tab =
       try
 	let abs' = List.fold_left Abs.meet abs tab in
-	(if Abs.is_bottom abs' then `Empty 
-	 else if List.for_all (Abs.sat_cons abs') tab then `Full
-	 else `Maybe)
-	  ,abs'
+	(if List.for_all (Abs.sat_cons abs') tab then `Full
+	 else if Abs.is_bottom abs' then `Empty 
+	 else `Maybe),abs'
       with Bot.Bot_found -> `Empty,abs
 	
     let draw abs info col vars =
@@ -43,9 +42,9 @@ module Solve(Abs : AbstractCP) =
       if !Constant.visualization then Vue.draw_end info;
       res
 
-    let explore_breath_first abs constrs nb_steps nb_sol vars =
+    let explore_breath_first abs constrs vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
-      let nb_steps = ref nb_steps and nb_sol = ref nb_sol in
+      let nb_steps = ref 1 and nb_sol = ref 0 in
       let queue = Queue.create () in
       draw abs info Graphics.yellow vars;
       Queue.add abs queue;
