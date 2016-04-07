@@ -69,7 +69,7 @@ OFILES   = $(CFILES:%.c=%.o)
 
 # rules
 all: $(TARGETS)
-	mkdir out
+	mkdir -p out
 
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
