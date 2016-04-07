@@ -1,18 +1,12 @@
 /* parametric equation of a circle */
 
-
-info{
-  draw:x,y
-}
-
 init{
   real x = [-10;10];
   real y = [-10;10];
-  real t = [0;7];
-  int radius = [5;5];
+  real t = [0;10];
 }
 
 constraints{
-  x = radius * (cos t);
-  y = radius * (sin t);
+  x = (cos t);
+  y = (sin t);
 }

@@ -249,7 +249,7 @@ module Box(I:ITV) = (struct
         | SUB -> I.filter_sub i1 i2 x
         | MUL -> I.filter_mul i1 i2 x
         | DIV -> I.filter_div i1 i2 x
-	| POW -> I.filter_pow i1 i2 x (*failwith "power not implemented yet"*)
+	| POW -> I.filter_pow i1 i2 x
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2
@@ -279,8 +279,15 @@ module Box(I:ITV) = (struct
 
   let rec meet (a:t) (b:Syntax.bexpr) : t = 
     match b with
-    | And (b1,b2) -> meet (meet a b1) b2
-    | Or (b1,b2) -> join (meet a b1) (meet a b2)
+    | And (b1,b2) -> 
+      let a1 = meet a b1 in
+      if is_bottom a1 then a1 
+      else meet a1 b2
+    | Or (b1,b2) ->
+      let abs1 = meet a b1 and abs2 = meet a b2 in
+      if is_bottom abs1 then abs2
+      else if is_bottom abs2 then abs1
+      else join (meet a b1) (meet a b2)
     | Not b -> meet a (neg_bexpr b)
     | Cmp (binop,e1,e2) ->
       (match test a e1 binop e2 with
@@ -288,7 +295,6 @@ module Box(I:ITV) = (struct
       | Nb e -> e)
 	
   let of_problem (p:Syntax.prog) =
-    print_endline "building problem with the intervals";
     let interval_of_domain dom =
       let open Syntax in
       match dom with

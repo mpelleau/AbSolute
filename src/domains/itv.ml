@@ -26,7 +26,6 @@ module Itv(B:BOUND) = (struct
    *) 
   type t = bound * bound
 
-
   (* not all pairs of rationals are valid intervals *)
   let validate ((l,h):t) : t =
     match B.classify l, B.classify h with
@@ -39,7 +38,6 @@ module Itv(B:BOUND) = (struct
   let check_bot ((l,h):t) : t bot =
     if B.leq l h then Nb (l,h) else Bot
       
-
 
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
@@ -102,9 +100,13 @@ module Itv(B:BOUND) = (struct
   let sprint () x = to_string x
   let bprint b x = Buffer.add_string b (to_string x)
   let pp_print f x = Format.pp_print_string f (to_string x)
-  let print fmt ((l,h):t) =  
-    Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
-      
+  let print fmt ((l,h):t) = 
+    match (B.ceil l = l),(B.ceil h = h) with
+    | true,true -> Format.fprintf fmt "[%0F;%0F]" (B.to_float_down l) (B.to_float_up h)
+    | false,true -> Format.fprintf fmt "[%f;%0F]" (B.to_float_down l) (B.to_float_up h)
+    | true,false -> Format.fprintf fmt "[%0F;%f]" (B.to_float_down l) (B.to_float_up h)
+    | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
+
 
 
   (************************************************************************)
@@ -441,12 +443,9 @@ module Itv(B:BOUND) = (struct
 
   (* interval ln *)
   let log (l,h) =
-    if B.leq h B.zero then
-      Bot
-    else if B.leq l B.zero then
-      Nb (B.minus_inf,B.log_up h)
-    else
-      Nb (B.log_down l,B.log_up h)
+    if B.leq h B.zero then Bot
+    else if B.leq l B.zero then Nb (B.minus_inf,B.log_up h)
+    else Nb (B.log_down l,B.log_up h)
 
   (* interval log10 *)
   let log10 itv =
@@ -462,15 +461,13 @@ module Itv(B:BOUND) = (struct
       match p with
       | 0 -> one
       | 1 -> (il, ih)
-      | x when x > 1 && B.odd l ->
-        (B.pow_down il p, B.pow_up ih p)
+      | x when x > 1 && B.odd l -> (B.pow_down il p, B.pow_up ih p)
       | x when x > 1 && B.even l ->
-        if B.leq il B.zero && B.geq ih B.zero then
-          (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
-        else if B.geq il B.zero then
-          (B.pow_down il p, B.pow_up ih p)
-        else
-          (B.pow_down ih p, B.pow_up il p)
+        if B.leq il B.zero && B.geq ih B.zero then 
+	  (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+        else if B.geq il B.zero then 
+	  (B.pow_down il p, B.pow_up ih p)
+        else (B.pow_down ih p, B.pow_up il p)
       | _ -> failwith "cant handle negatives powers"
     else failwith  "cant handle non_singleton powers"
 
@@ -481,12 +478,10 @@ module Itv(B:BOUND) = (struct
       match p with
       | 1 -> Nb (il, ih)
       | x when x > 1 && B.odd l ->
-        Nb (B.root_down il p, B.root_up ih p)
+	Nb (B.root_down il p, B.root_up ih p)
       | x when x > 1 && B.even l ->
-        if B.lt ih B.zero then
-          Bot
-        else if B.leq il B.zero then
-          Nb (B.neg (B.root_up ih p), B.root_up ih p)
+        if B.lt ih B.zero then Bot
+        else if B.leq il B.zero then Nb (B.neg (B.root_up ih p), B.root_up ih p)
         else
           Nb (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
       | _ -> failwith "can only handle stricly positive roots"
@@ -590,12 +585,9 @@ module Itv(B:BOUND) = (struct
 
   let compute_itv itv itv' i i' =
     let aux = 
-      if i mod 2 = 0 then
-        add itv' (mul (of_bound pi) (of_int i))
-      else
-        sub (mul (of_bound pi) (of_int i')) itv'
-    in
-    meet itv aux
+      if i mod 2 = 0 then add itv' (mul (of_bound pi) (of_int i))
+      else sub (mul (of_bound pi) (of_int i')) itv'
+    in meet itv aux
 
   (* r = sin i => i = arcsin r *)
   let filter_sin i r =
@@ -610,9 +602,8 @@ module Itv(B:BOUND) = (struct
         idx := !idx + 1;
         itv := compute_itv i a_r !idx !idx;
       done;
-      if (is_Bot !itv) then
-        Bot
-      else
+      if (is_Bot !itv) then Bot
+      else 
         let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
         let itv' = ref (compute_itv i a_r !idx !idx) in
         while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
@@ -676,7 +667,7 @@ module Itv(B:BOUND) = (struct
     meet i (sin r)
 
   (* r = acos i => i = cos r *)
-  let filter_asin i r =
+  let filter_acos i r =
     meet i (cos r)
 
   (* r = atan i => i = tan r *)

@@ -24,38 +24,66 @@ let print fmt ((vl,fl):obj) =
   List.iter (print_face fmt) fl
 
 (* an origin, width, height and depth *)
-type cube = point3d * float * float * float 
+type cube = point3d * float * float * float
 
-let build_cube_list (cubes: cube list) = 
-  let v_id = ref 0 in
-  let gen_vert_id () = incr v_id; !v_id in
+let of_triangle_list tris : obj = 
+  let v_id = ref 0 in let gen_vert_id () = incr v_id; !v_id in
   let queue = Queue.create () in
-  let tri a b c = (a,b,c) in
-  let square a b c d = (tri a b c),(tri a c d) in
+  (* removes useless vertices *)
+  let h_v = Hashtbl.create 10000 in
+  let id p = 
+    try Hashtbl.find h_v p
+    with Not_found -> (
+      let id = gen_vert_id() in 
+      Hashtbl.add h_v p id;
+      Queue.add p queue; id
+    )
+  in  
+  (* removes useless faces *)
+  let h_f = Hashtbl.create 1000 in
+  let sort (a,b,c) = 
+    match List.sort compare [a;b;c] with [a;b;c] -> (a,b,c) | _ -> assert false
+  in
+  let rec aux acc t_list =  
+    match t_list with
+    | [] -> acc
+    | (p1,p2,p3)::tl ->
+      let i1 = id p1 and i2 = id p2 and i3 = id p3 in
+      let acc = 
+	if Hashtbl.mem h_f (i1,i2,i3) then acc
+	else begin
+	  let norm = sort (i1,i2,i3) in
+	  Hashtbl.add h_f norm norm; norm::acc end
+      in aux acc tl
+  in queue,(aux [] tris) 
+
+(* assuming the points are sorted in direct order *)
+let triangles_of_convex_face face = 
+  let rec aux acc pivot cur vertices =
+    match vertices with
+    | h::tl -> aux ((pivot,cur,h)::acc) pivot h tl
+    | [] -> acc
+  in
+  match face with
+  | a::b::c -> aux [] a b c
+  | _ -> []
+  
+let build_cube_list (cubes: cube list) = 
+  let square a b c d = (a,b,c),(a,c,d) in
   let rec aux acc c_list = 
-    let add p = Queue.add p queue; gen_vert_id() in
     match c_list with
     | [] -> acc
     | (((x0,y0,z0) as p0),x,y,z)::tl ->
-      let p1 = p0 @> (x,0.,0.)
-      and p2 = p0 @> (x,y,0.)
-      and p3 = p0 @> (0.,y,0.) in
-      let up = (0.,0.,z) in
-      let p4 = p0 @> up
-      and p5 = p1 @> up
-      and p6 = p2 @> up
-      and p7 = p3 @> up in
-      let i0 = add p0 and i1 = add p1 and i2 = add p2 and i3 = add p3
-      and i4 = add p4 and i5 = add p5 and i6 = add p6 and i7 = add p7 in
-      let f1,f2 = square i0 i1 i2 i3
-      and f3,f4 = square i4 i5 i6 i7
-      and f5,f6 = square i0 i1 i5 i4
-      and f7,f8 = square i2 i3 i7 i6
-      and f9,f10 = square i0 i3 i7 i4
-      and f11,f12 = square i1 i2 i6 i5 in
-      let faces = f12::f11::f10::f9::f8::f7::f6::f5::f4::f3::f2::f1::acc in
+      let p0 = p0              and p1 = p0 @> (x,0.,0.)
+      and p2 = p0 @> (x,y,0.)  and p3 = p0 @> (0.,y,0.) in
+      let p4 = p0 @> (0.,0.,z) and p5 = p1 @> (0.,0.,z)
+      and p6 = p2 @> (0.,0.,z) and p7 = p3 @> (0.,0.,z) in
+      let t1,t2 = square p0 p1 p2 p3  and t3,t4 = square p4 p5 p6 p7
+      and t5,t6 = square p0 p1 p5 p4  and t7,t8 = square p2 p3 p7 p6
+      and t9,t10 = square p0 p3 p7 p4 and t11,t12 = square p1 p2 p6 p5 in
+      let faces = t12::t11::t10::t9::t8::t7::t6::t5::t4::t3::t2::t1::acc in
       aux faces tl
-  in queue,(aux [] cubes)
+  in (aux [] cubes) |> of_triangle_list
 
 let print_to_file fn cubelist = 
   let oc = open_out fn in
@@ -71,10 +99,6 @@ let consistency abs tab =
    else if List.for_all (Abs.sat_cons abs') tab then `Full
    else `Maybe)
     ,abs'
-      
-let draw abs info col vars =
-  if !Constant.visualization then
-    Vue.draw (Abs.points_to_draw abs vars) col info
       
 let get_cube abs vars =
   let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
