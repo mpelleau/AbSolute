@@ -302,7 +302,8 @@ module Box(I:ITV) = (struct
     Env.cardinal int_vars = 0 || is_e
     
   let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
+    try is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
+    with Bot.Bot_found -> true
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in

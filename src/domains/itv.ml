@@ -504,12 +504,12 @@ module Itv(B:BOUND) = (struct
       
   let filter_lt ((l1,_) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else if B.leq h2 l1 then Bot
+    (* else if B.leq h2 l1 then Bot *)
     else filter_leq i1 i2
         
   let filter_gt ((l1,h1) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else if B.leq h1 l2 then Bot
+    (* else if B.leq h1 l2 then Bot *)
     else filter_geq i1 i2
         
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
