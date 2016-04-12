@@ -257,7 +257,7 @@ module Itv(B:BOUND) = (struct
   let bound_mul_up   = bound_mul B.mul_up
   let bound_mul_down = bound_mul B.mul_down
       
-  let mix4 up down ((l1,h1):t) ((l2,h2):t) =
+  let mix4 up down ((l1,h1):t) ((l2,h2):t) : t =
     B.min (B.min (down l1 l2) (down l1 h2)) (B.min (down h1 l2) (down h1 h2)),
     B.max (B.max (up   l1 l2) (up   l1 h2)) (B.max (up   h1 l2) (up   h1 h2))
       
@@ -287,6 +287,26 @@ module Itv(B:BOUND) = (struct
     (* joins the result *)
     join_bot2 join pos neg,
     contains i2 B.zero
+
+  let div2 ((l1,h1) as i1:t) ((l2,h2) as i2:t) : t list bot =
+    if not (contains i2 B.zero) then
+      Nb [mul i1 (B.div_down B.one h2, B.div_up B.one l2)]
+    else if contains i1 B.zero && contains i2 B.zero then
+      Nb [top]
+    else if B.lt h1 B.zero && B.lt l2 h2 && B.equal h2 B.zero then
+      Nb [(B.div_down h1 l2,B.inf)]
+    else if B.lt h1 B.zero && B.lt l2 B.zero && B.lt B.zero h2 then
+      Nb [(B.minus_inf,B.div_up h1 h2);(B.div_down h1 l2,B.inf)]
+    else if B.lt h1 B.zero && B.equal B.zero l2 && B.lt l2 h2 then
+      Nb [(B.minus_inf,B.div_up h1 h2)]
+    else if B.lt B.zero l1 && B.lt l2 h2 && B.equal h2 B.zero then
+      Nb [(B.minus_inf,B.div_up l1 l2)]
+    else if B.lt B.zero l1 && B.lt l2 B.zero && B.lt B.zero h2 then
+      Nb [(B.minus_inf,B.div_up l1 l2);(B.div_down l1 h2,B.inf)]
+    else if B.lt B.zero l1 && B.equal B.zero l2 && B.lt l2 h2 then
+      Nb [(B.div_down l1 h2,B.inf)]
+    else
+      Bot
         
   (* interval square root *)
   let sqrt ((l,h):t) : t bot =
@@ -611,7 +631,7 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx !idx;
         done;
-        (Bot.join_bot2 join !itv !itv')   
+        join_bot2 join !itv !itv'  
     
 
   (* r = cos i => i = arccos r *)
@@ -636,10 +656,10 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := compute_itv i a_r !idx (!idx+1);
         done;
-        (Bot.join_bot2 join !itv !itv')
+        join_bot2 join !itv !itv'
 
   (* r = tan i => i = arctan r *)
-  let filter_tan i r =
+  let filter_tan (i:t) (r:t) : t bot =
     let atan_r = atan r in
     let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
     Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);
@@ -661,7 +681,7 @@ module Itv(B:BOUND) = (struct
           idx := !idx - 1;
           itv' := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
         done;
-        Nb (Bot.join_bot2 join !itv !itv')
+        join_bot2 join !itv !itv'
 
   (* r = asin i => i = sin r *)
   let filter_asin i r =
@@ -676,8 +696,11 @@ module Itv(B:BOUND) = (struct
     meet i (tan r)
 
   (* r = exp i => i = log r *)
-  let filter_exp i r =
-    meet_bot2 meet i (log r)
+  let filter_exp (i:t) (r:t) : t bot =
+    let r' = log r in
+    match r' with
+    | Bot -> Bot
+    | Nb a -> meet a i
 
   (* r = log i => i = exp r *)
   let filter_log i r =

@@ -20,6 +20,12 @@ module Solve(Abs : AbstractCP) =
       if !Constant.visualization then
 	Vue.draw (Abs.points_to_draw abs vars) col info
 
+    let print_sol_for_latex abs vars =
+      let points = Abs.points_to_draw abs vars in
+      Format.printf "  \\filldraw[rose, fill_opacity = 0.3] ";
+      List.iter (fun (x,y) -> Format.printf "(%f, %f) -- " x y) points;
+      Format.printf "cycle;\n";;
+
     let explore abs constrs vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
       draw abs info Graphics.yellow vars;
@@ -28,10 +34,10 @@ module Solve(Abs : AbstractCP) =
         (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
-	| `Full -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
+	| `Full -> print_sol_for_latex abs' vars ; draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
-	  | true,_ -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
+	  | true,_ -> print_sol_for_latex abs' vars ; draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
 	  | _,exprs when nb_sol <= !Constant.max_sol ->
 	    draw abs' info Graphics.yellow vars;
             Abs.split abs' exprs |>

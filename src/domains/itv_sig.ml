@@ -128,12 +128,25 @@ module type ITV = sig
 
   (* return valid values (possibly Bot) + possible division by zero *)
   val div: t -> t -> t bot * bool
+  val div2: t -> t -> t list bot
  
   (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)  
   val pow: t -> t -> t
+  val n_root: t -> t -> t bot
 
   val cos: t -> t
   val sin: t -> t
+  val tan: t -> t
+  val cot: t -> t
+
+  val acos: t -> t bot
+  val asin: t -> t bot
+  val atan: t -> t
+  val acot: t -> t
+
+  val exp: t -> t
+  val log: t -> t bot
+  val log10: t -> t bot
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -178,6 +191,13 @@ module type ITV = sig
 
   val filter_cos: t -> t -> t bot
   val filter_sin: t -> t -> t bot
+  val filter_tan: t -> t -> t bot
+  val filter_asin: t -> t -> t bot
+  val filter_acos: t -> t -> t bot
+  val filter_atan: t -> t -> t bot
+  val filter_exp: t -> t -> t bot
+  val filter_log: t -> t -> t bot
+  val filter_root: t -> t -> t -> t bot
 
 
   val filter_bounds: t -> t bot

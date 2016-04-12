@@ -11,555 +11,263 @@ open Itv_sig
 
 
 module Union_Itv(I:ITV) = (struct
-    
-  (************************************************************************)
-  (* TYPES *)
-  (************************************************************************)
+
+  include I
 
 
-  (* interval bound (possibly -oo or +oo *)
-  module B = I.B
-  type bound = B.t
+  let check_bot2 (l:t bot list) : t list bot =
+    let no_bot = List.filter (fun i -> not (is_Bot i)) l in
+    if List.length no_bot = 0 then Bot
+    else Nb (List.map (fun i -> debot i) no_bot)
 
-  (* an interval is a pair of bounds (lower,upper);
-     intervals are always non-empty: lower <= upper;
-     functions that can return an empty interval return it as Bot
-   *) 
-  type t = I.t list
-
-
-  (************************************************************************)
-  (* CONSTRUCTORS AND CONSTANTS *)
-  (************************************************************************)
-
-    
-  let of_bound (x:B.t) : t = [I.of_bound x]
-      
-  let zero : t = of_bound B.zero
-      
-  let one : t = of_bound B.one
-      
-  let minus_one : t = of_bound B.minus_one
-
-  let of_itv itv : t = [itv]
-      
-  let top : t = of_itv I.top
-      
-  let zero_one : t = of_itv I.zero_one
-      
-  let minus_one_zero : t = of_itv I.minus_one_zero
-      
-  let minus_one_one : t = of_itv I.minus_one_one
-      
-  let positive : t = of_itv I.positive
-      
-  let negative : t = of_itv I.negative
-
-  let of_bounds (l:bound) (h:bound) = of_itv (I.of_bounds l h)
-      
-  let of_ints (l:int) (h:int) : t = of_bounds (B.of_int_down l) (B.of_int_up h)
-      
-  let of_int (x:int) = of_ints x x
-      
-  let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
-      
-  let of_float (x:float) = of_floats x x
-      
-  let hull (x:B.t) (y:B.t) = of_bounds (B.min x y) (B.max x y)
-
-
-  (************************************************************************)
-  (* PRINTING *)
-  (************************************************************************)
-
-  let to_string (l:t) : string = 
-    List.fold_right (fun i sep -> Printf.sprintf "%s %s " (I.to_string i) sep) l "U"
-
-  (* printing *)
-  let output chan x = output_string chan (to_string x)
-  let sprint () x = to_string x
-  let bprint b x = Buffer.add_string b (to_string x)
-  let pp_print f x = Format.pp_print_string f (to_string x)
-  let print fmt x =  
-    Format.fprintf fmt "%s" (to_string x)
-
+  let check_bot3 (l:t list) : t list bot =
+    let no_bot = List.filter (fun (il,ih) -> B.leq il ih) l in
+    if List.length no_bot = 0 then Bot
+    else Nb no_bot
 
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
 
-
   (* operations *)
   (* ---------- *)
 
+  let join_il (i:t) (l:t list) : t list =
+    if List.length l = 0 then [i]
+    else 
+      let (inter, not_inter) = List.partition (fun e -> I.intersect i e) l in
+      if List.length inter = 0 then
+	(i::l)
+      else
+	let final_itv = List.fold_left (fun a b -> I.join a b) i inter in
+	(final_itv::not_inter)
+	
 
-  let join (l1:t) (l2:t) : t =
+  let join (l1:t list) (l2:t list) : t list =
     if List.length l1 = 1 && List.length l2 = 1 then
       [I.join (List.hd l1) (List.hd l2)]
     else 
-      l1
+      List.fold_left (fun a b -> join_il b a) l2 l1
 
   (* returns None if the set-union cannot be exactly represented *)
-  let union ((l1,h1):t) ((l2,h2):t) : t option =
-    if B.leq l1 h2 && B.leq l2 h1 then Some (B.min l1 l2, B.max h1 h2)
-    else None
+  let union (l1:t list) (l2:t list) : t list option =
+    if List.exists (fun i1 -> List.exists (fun i2 -> I.intersect i1 i2) l2) l1 
+    then None
+    else Some (join l1 l2)
         
-  let meet ((l1,h1):t) ((l2,h2):t) : t bot =
-    check_bot (B.max l1 l2, B.min h1 h2)
-      
+  let meet_il (i:t) (l:t list bot) : t list bot =
+    match l with
+    | Bot -> Bot
+    | Nb l -> 
+       let (inter, not_inter) = List.partition (fun e -> I.intersect i e) l in
+       if List.length inter = 0 then
+	 Bot
+       else
+	 check_bot2 (List.map (fun a -> I.meet a i) inter)
+
+  let meet (l1:t list) (l2:t list) : t list bot =
+    if List.length l1 = 1 && List.length l2 = 1 then
+      check_bot2 [I.meet (List.hd l1) (List.hd l2)]
+    else 
+      List.fold_left (fun a b -> meet_il b a) (Nb l2) l1
+
+  let min_max (l:t list) : bound * bound =
+    List.fold_left (fun (min, max) (lv,lh) -> 
+		    match (B.leq lv min, B.geq lh max) with
+		    | (true, true) -> (lv, lh)
+		    | (true, false) -> (lv, max)
+		    | (false, true) -> (min, lh)
+		    | (false, false) -> (min, max)
+		   ) (List.hd l) l
+
+  let to_hull (l:t list) : t = min_max l
+
 
   (* predicates *)
   (* ---------- *)
 
+  let equal (l1:t list) (l2:t list) : bool =
+    List.length l1 = List.length l2 && List.for_all (fun i1 -> List.exists (fun i2 -> I.equal i1 i2) l2) l1
+      
+  let subseteq (l1:t list) (l2:t list) : bool =
+    List.for_all (fun i1 -> List.exists (fun i2 -> I.subseteq i1 i2) l2) l1
+      
+  let contains (l:t list) (x:bound) : bool =
+    List.exists (fun i -> I.contains i x) l
+      
+  let intersect (l1:t list) (l2:t list) : bool =
+    List.exists (fun i1 -> List.exists (fun i2 -> I.intersect i1 i2) l2) l1
+      
+  let is_bounded (l:t list) =
+    List.for_all (fun i -> I.is_bounded i) l
+      
+  let is_singleton (l:t list) : bool =
+    List.for_all (fun i -> I.is_singleton i) l   
 
-  let equal ((l1,h1):t) ((l2,h2):t) : bool =
-    B.equal l1 l2 && B.equal h1 h2
-      
-  let subseteq ((l1,h1):t) ((l2,h2):t) : bool =
-    B.geq l1 l2 && B.leq h1 h2
-      
-  let contains ((l,h):t) (x:B.t) : bool =
-    B.leq l x && B.leq x h
-      
-  let intersect ((l1,h1):t) ((l2,h2):t) : bool =
-    B.leq l1 h2 && B.leq l2 h1
-
-
-  let is_finite x =
-    B.classify x = B.FINITE
-      
-  let is_bounded ((l,h):t) =
-    is_finite l && is_finite h
-      
-  let is_singleton ((l,h):t) : bool =
-    is_finite l && B.equal l h
-      
+  let simplify (l:t list) : t list =
+    let rec aux n l =
+      if n > List.length l then
+	l
+      else
+	let i = List.nth l n in
+	let r = join_il i l in
+	if equal r l then
+	  aux (n+1) l
+	else
+	  aux 0 r
+    in
+    aux 0 l
 
   (* mesure *)
-  (* ------ *)
+  (* ------ *
 
+  let overlap_i (i:t) (l:t list) : bound =
+    let inter = List.filter (fun v -> I.intersect v i) l in
+    List.fold_left (fun s v -> B.add_up s (I.overlap v i)) B.zero inter
 
   (* length of the intersection (>= 0) *)
-  let overlap ((l1,h1):t) ((l2,h2):t) : B.t  =
-    B.max B.zero (B.sub_up (B.min h1 h2) (B.max l1 l2))
-      
-  let range ((l,h):t) : B.t = 
-    B.sub_up h l
-      
-  let magnitude ((l,h):t) : B.t =
-    B.max (B.abs l) (B.abs h)
-      
+  let overlap (l1:t list) (l2:t list) : bound  =
+    if List.length l1 = 1 && List.length l2 = 1 then 
+      I.overlap (List.hd l1) (List.hd l2)
+    else
+      List.fold_left (fun s v -> B.add_up s (overlap_i v l2)) B.zero l1
 
-
+  let range (l:t list) : bound = 
+    let (min,max) = min_max l in
+    B.sub_up max min
+      
+  let magnitude (l:t list) : bound =
+    let (min,max) = min_max l in
+    B.max (B.abs min) (B.abs max)
+      
+    *)
   (* split *)
   (* ----- *)
-
 
   (* find the mean of the interval;
      when a bound is infinite, then "mean" is some value strictly inside the
      interval
    *)
-  let mean ((l,h):t) : B.t list =
-    let res =
-    match is_finite l, is_finite h with
-    | true,true -> 
-      (* finite bounds: returns the actual mean *)
-      B.div_up (B.add_up l h) B.two
-    | true,false -> 
-      (* [l,+oo] *)
-      if B.sign l < 0 then B.zero      (* cut at 0 if [l,+oo] contains 0 *)
-      else if B.sign l = 0 then B.one  (* cut at 1 if [l,+oo] touches 0 *)
-      else B.mul_up l B.two            (* cut at 2l if [l,+oo] is positive *)
-    | false,true ->
-        (* [-oo,h]: similar to [l,+oo] *)
-        if B.sign h > 0 then B.zero
-        else if B.sign h = 0 then B.minus_one
-        else B.mul_down h B.two
-    | false,false -> 
-        (* the mean of [-oo,+oo] is 0 *)
-      B.zero
-    in [res]
+  let mean_list (l:t list) : bound list =
+    let itv = to_hull l in
+    I.mean itv
+
+  let split_i ((l,h):t) (b:bound) : t list =
+    [(l,b);(b,h)]
+
+  let split_int ((l,h):t) (b:bound) : t list =
+    let ll, hh = B.floor b, B.ceil b in
+    if ll = hh then [(l,ll);((B.add_up hh B.one),h)]
+    else [(l,ll);(hh,h)]
+
+  let split_b f (l:t list) (b:bound) : t list =
+    let (inter, not_inter) = List.partition (fun i -> I.contains i b) l in
+    let new_itv = List.fold_left (fun ls i -> List.append ls (f i b)) [] inter in
+    List.append new_itv not_inter
 
   (* splits in two, around m *)
-  let split ((l,h):t) (m:bound list) : (t bot) list =
-    let rec aux acc cur bounds =
-      match bounds with
-      |  hd::tl -> 
-	let itv = check_bot (cur,hd) in
-	aux (itv::acc) hd tl
-      | [] -> 
-	let itv = check_bot (cur,h) in
-	itv::acc
-    in aux [] l m 
-
-  let split_integer ((l,h):t) (m:bound list) : (t bot) list =
-    let to_pair = ref l in
-    let list = 
-      List.rev_map (fun e ->
-	let ll,hh = B.floor e, B.ceil e in
-	let res = (!to_pair,ll) in to_pair := hh ; res) 
-	m
-    in
-    List.rev_map check_bot ((!to_pair,h)::list)
-   
-
-
-  (************************************************************************)
-  (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
-  (************************************************************************)
-
-
-  let neg ((l,h):t) : t =
-    B.neg h, B.neg l
-      
-  let abs ((l,h):t) : t =
-    if contains (l,h) B.zero then B.zero, B.max (B.abs l) (B.abs h)
-    else hull (B.abs l) (B.abs h)
-        
-  let add ((l1,h1):t) ((l2,h2):t) : t =
-    B.add_down l1 l2, B.add_up h1 h2
-      
-  let sub ((l1,h1):t) ((l2,h2):t) : t =
-    B.sub_down l1 h2, B.sub_up h1 l2
-      
-  (* helper: oo * 0 = 0 when multiplying bounds *)
-  let bound_mul f x y =
-    if B.sign x = 0 || B.sign y = 0 then B.zero else f x y
-      
-  let bound_mul_up   = bound_mul B.mul_up
-  let bound_mul_down = bound_mul B.mul_down
-      
-  let mix4 up down ((l1,h1):t) ((l2,h2):t) =
-    B.min (B.min (down l1 l2) (down l1 h2)) (B.min (down h1 l2) (down h1 h2)),
-    B.max (B.max (up   l1 l2) (up   l1 h2)) (B.max (up   h1 l2) (up   h1 h2))
-      
-  let mul =
-    mix4 bound_mul_up bound_mul_down
-      
-  (* helper: 0/0 = 0, x/0 = sign(x) oo *)
-  let bound_div f x y =
-    match B.sign x, B.sign y with
-    |  0,_ -> B.zero
-    |  1,0 -> B.inf
-    | -1,0 -> B.minus_inf
-    | _ -> f x y
-          
-  let bound_div_up   = bound_div B.div_up
-  let bound_div_down = bound_div B.div_down
-      
-  (* helper: assumes i2 has constant sign *) 
-  let div_sign =
-    mix4 bound_div_up bound_div_down
-
-  (* return valid values (possibly Bot) + possible division by zero *)
-  let div (i1:t) (i2:t) : t bot * bool =
-    (* split into positive and negative dividends *)
-    let pos = (lift_bot (div_sign i1)) (meet i2 positive)
-    and neg = (lift_bot (div_sign i1)) (meet i2 negative) in
-    (* joins the result *)
-    join_bot2 join pos neg,
-    contains i2 B.zero
-        
-  (* interval square root *)
-  let sqrt ((l,h):t) : t bot =
-    if B.sign h < 0 then Bot else
-    let l = B.max l B.zero in
-    Nb (B.sqrt_down l, B.sqrt_up h)
-
-  (* useful operators on intervals *)
-  let ( +@ ) = add
-  let ( -@ ) = sub
-  let ( *@ ) = mul
-  let ( /@ ) = div
-
-  (* deprecated -> use the interval version instead*)
-  let pi_half = B.of_float_up 1.57079632
-  let pi = B.of_float_up 3.14159265
-  let two_pi = B.of_float_up 6.28318
-  let ln10 = B.of_float_up 2.3025850
-
-  (*the two closest floating boundaries of pi*)
-  let pi_up = B.of_float_up 3.14159265358979356
-  let pi_down = B.of_float_down 3.14159265358979312
-
-  (* it improves soundness to use those *)
-  let i_pi:t= pi_up, pi_down
-  let i_pi_half = i_pi /@ (of_int 2) |> fst |> debot
-  let i_two_pi = i_pi +@ i_pi
-  let i_three_half_of_pi = (i_two_pi +@ i_pi) /@ (of_int 2) |> fst |> debot
-
-  type quadrant = One 
-		| Two 
-		| Three 
-		| Four 
-		| AroundPiHalf 
-		| AroundPi
-		| AroundThreePiHalf
-		| AroundTwoPi
-
-  let might_intersect a b = 
-    match a,b with
-    | x,y when x=y -> true
-    | AroundPiHalf,One | AroundPiHalf,Two
-    | AroundPi,Two | AroundPi,Three
-    | AroundThreePiHalf, Three | AroundThreePiHalf, Four
-    | AroundTwoPi, Four | AroundTwoPi, One
-    | One, AroundTwoPi | One,AroundPiHalf
-    | Two, AroundPiHalf | Two, AroundPi
-    | Three, AroundPi | Three, AroundThreePiHalf
-    | Four,AroundThreePiHalf | Four, AroundTwoPi -> true
-    | _ -> false 
-
-  (* Returns the quadrant in which the bound is. the value must be in [0, 2pi[ *)
-  let quadrant value =
-    if contains i_pi_half value then AroundPiHalf
-    else if contains i_pi value then AroundPi
-    else if contains i_three_half_of_pi value then AroundThreePiHalf
-    else if contains i_two_pi value then AroundTwoPi
-    else if B.leq value (fst i_pi_half) then One
-    else if B.leq value pi_down then Two
-    else if B.leq value (fst i_three_half_of_pi) then Three
-    else Four
-
-  (* A bound is scaled to the range [0, 2pi[ *)
-  let scale_to_two_pi value =
-    let q = B.floor (B.div_up value two_pi) in
-    B.sub_up value (B.mul_up two_pi q)
-
-  (* The interval is scaled to the range [0, 2pi[ *)
-  let scale_to_two_pi_itv ((l,h):t) =
-    if B.geq l B.zero && B.lt h two_pi then (l,h)
-    else (scale_to_two_pi l, scale_to_two_pi h)
-
-  (* interval sin *)
-  let sin (l,h) =
-    let diam = range (l,h) in
-    if B.geq diam (B.add_down pi_down pi_down) then minus_one_one
+  let split_list (l:t list) (m:bound list) : t list bot =
+    if List.length l = 1 then
+      check_bot2 (I.split (List.hd l) m)
     else
-      let (l',h') = scale_to_two_pi_itv (l,h) in
-      let q_inf = quadrant l'
-      and q_sup = quadrant h'
-      and diam = range (l,h) in
-      if might_intersect q_inf q_sup && B.geq diam pi then minus_one_one else
-      match q_inf, q_sup with
-      | One, One | Four, One | Four, Four | _,AroundPiHalf -> (B.sin_down l',B.sin_up h')
-      | Two, Two | Two, Three | Three, Three | AroundPiHalf,_ -> (B.sin_down h',B.sin_up l')
-      | Three, Two | One, Four -> minus_one_one
-      | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
-      | Two, One | Three, Four -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
-      | One, Three -> (B.sin_down h',B.one)
-      | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
-      | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
-      | Four, Two -> (B.sin_down l',B.one)
-      | _ -> failwith ("Should not occur")
+      check_bot3 (List.fold_left (fun ls b -> split_b split_i ls b) l m)
 
-  (* interval cos *)
-  let cos itv = sin (itv +@ i_pi_half)
-
-  (* interval tan *)
-  let tan itv =
-    let diam = range itv in
-    if B.geq diam pi then top
+  let split_list_integer (l:t list) (m:bound list) : t list bot =
+    if List.length l = 1 then
+      check_bot2 (I.split_integer (List.hd l) m)
     else
-      let (l',h') = scale_to_two_pi_itv itv in
-      let diam = range itv
-      and q_inf = quadrant l'
-      and q_sup = quadrant h' in
-      (* Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup; *)
-      if q_inf = q_sup && B.geq diam pi then top
-      else
-        match q_inf, q_sup with
-        | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One -> 
-	  (B.tan_down l',B.tan_up h')
-        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
-        | _ -> failwith ("Should not occur")
+      check_bot3 (List.fold_left (fun ls b -> split_b split_int ls b) l m)
 
-  (* interval cot *)
-  let cot itv =
-    let itv' = tan (itv +@ i_pi_half) in
-    neg itv'
-
-  (* interval arcsin *)
-  let asin (l,h) =
-    if B.lt h B.minus_one || B.gt l B.one then Bot
-    else
-      let is_minus_one = B.lt l B.minus_one
-      and is_plus_one = B.gt h B.one in
-      match (is_minus_one, is_plus_one) with
-      | true, true -> Nb ((B.neg pi_half), pi_half)
-      | true, false -> Nb ((B.neg pi_half), (B.asin_up h))
-      | false, true -> Nb ((B.asin_down l), pi_half)
-      | false, false -> Nb ((B.asin_down l), (B.asin_up h))
-
-  (* interval acos *)
-  let acos (l,h) =
-    if B.lt h B.minus_one || B.gt l B.one then Bot
-    else
-      let is_minus_one = B.lt l B.minus_one
-      and is_plus_one = B.gt h B.one in
-      match (is_minus_one, is_plus_one) with
-      | true, true -> Nb (B.zero, pi)
-      | true, false -> Nb ((B.acos_down h), pi)
-      | false, true -> Nb (B.zero, (B.acos_up l))
-      | false, false -> Nb ((B.acos_down h), (B.acos_up l))
-
-  (* interval atan *)
-  let atan (l,h) =
-    (B.atan_down l,B.atan_up h)
-
-  (* interval acot *)
-  let acot itv = (atan (neg itv)) +@ (i_pi_half)
-
-  (* interval exp *)
-  let exp (l,h) = (B.exp_down l,B.exp_up h)
-
-  (* interval ln *)
-  let log (l,h) =
-    if B.leq h B.zero then
-      Bot
-    else if B.leq l B.zero then
-      Nb (B.minus_inf,B.log_up h)
-    else
-      Nb (B.log_down l,B.log_up h)
-
-  (* interval log10 *)
-  let log10 itv =
-    let itv' = log itv in
-    match itv' with
-    | Bot -> Bot
-    | Nb (l', h') -> fst (div (l',h') (of_bound ln10))
-    
-  (* powers *)
-  let pow ((il,ih):t) ((l,h):t) = 
-    if l=h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      match p with
-      | 0 -> one
-      | 1 -> (il, ih)
-      | x when x > 1 && B.odd l ->
-        (B.pow_down il p, B.pow_up ih p)
-      | x when x > 1 && B.even l ->
-        if B.leq il B.zero && B.geq ih B.zero then
-          (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
-        else if B.geq il B.zero then
-          (B.pow_down il p, B.pow_up ih p)
-        else
-          (B.pow_down ih p, B.pow_up il p)
-      | _ -> failwith "cant handle negatives powers"
-    else failwith  "cant handle non_singleton powers"
-
-  (* nth-root *)
-  let n_root ((il,ih):t) ((l,h):t) =
-    if B.equal l h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      match p with
-      | 1 -> Nb (il, ih)
-      | x when x > 1 && B.odd l ->
-        Nb (B.root_down il p, B.root_up ih p)
-      | x when x > 1 && B.even l ->
-        if B.lt ih B.zero then
-          Bot
-        else if B.leq il B.zero then
-          Nb (B.neg (B.root_up ih p), B.root_up ih p)
-        else
-          Nb (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
-      | _ -> failwith "can only handle stricly positive roots"
-    else failwith  "cant handle non_singleton roots"
-    
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
   (************************************************************************)
 
+  let apply f (l:t list) : t list =
+    if List.length l = 1 then
+      [f (List.hd l)]
+    else
+      List.fold_left (fun lres i -> (f i::lres)) [] l
 
-  (* tests *)
-  (* ----- *)
+  let apply_il f (i:t) (l:t list) : t list =
+    if List.length l = 1 then
+      [f i (List.hd l)]
+    else
+      List.fold_left (fun lres il -> (f i il::lres)) [] l
 
-  let filter_leq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2 (check_bot (l1, B.min h1 h2)) (check_bot (B.max l1 l2, h2))
-      
-  let filter_geq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2 (check_bot (B.max l1 l2, h1)) (check_bot (l2, B.min h1 h2))
-      
-  let filter_lt ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else filter_leq i1 i2
-        
-  let filter_gt ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else filter_geq i1 i2
-        
-  let filter_eq (i1:t) (i2:t) : (t*t) bot =
-    lift_bot (fun x -> x,x) (meet i1 i2)
-      
-  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else Nb (i1,i2)
+  let apply_ll f (l1:t list) (l2:t list) : t list =
+    let res = List.fold_left (fun a b -> List.append a (apply_il f b l2)) [] l1 in
+    List.filter (fun (il, ih) -> B.geq il ih) res
 
-  let filter_lt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2
-      (check_bot (l1, B.min h1 (B.sub_up h2 B.one)))
-      (check_bot (B.max (B.add_down l1 B.one) l2, h2))
+  let apply_il2 f (i:t) (l:t list) : t bot list =
+    if List.length l = 1 then
+      [f i (List.hd l)]
+    else
+      List.fold_left (fun lres il -> (f i il::lres)) [] l
 
-  let filter_gt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2
-      (check_bot (B.max l1 (B.add_down l2 B.one), h1))
-      (check_bot (l2, B.min (B.sub_up h1 B.one) h2))
-      
-  let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    match is_singleton (l1,h1), is_singleton (l2,h2) with
-    | true, true when B.equal l1 l2 -> Bot
-    | true, false when B.equal l1 l2 ->
-        merge_bot2 (Nb (l1,l2)) (check_bot (B.add_down l2 B.one, h2))
-    | true, false when B.equal l1 h2 ->
-        merge_bot2 (Nb (l1,l2)) (check_bot (l2, B.sub_up h2 B.one))
-    | false, true when B.equal l1 l2 ->
-        merge_bot2 (check_bot (B.add_down l1 B.one, h1)) (Nb (l2,h2))
-    | false, true when B.equal h1 l2 ->
-        merge_bot2 (check_bot (l1, B.sub_up h1 B.one)) (Nb (l2,h2))
-    | _ -> Nb ((l1,h1),(l2,h2))
-    
+  let apply_ll2 f (l1:t list) (l2:t list) : t list =
+    let res = List.fold_left (fun a b -> List.append a (apply_il2 f b l2)) [] l1 in
+    let tmp = List.filter (fun i -> not(is_Bot i)) res in
+    List.map (fun i -> debot i) tmp
+
+  let div_il (i:t) (l:t list) : t bot list =
+    if List.length l = 1 then
+      div2 i (List.hd l)
+    else
+      List.fold_left (fun lres il -> List.append lres (div2 i il)) [] l
+
+  let div_ll (l1:t list) (l2:t list) : t list bot =
+    let res = List.fold_left (fun a b -> List.append a (div_il b l2)) [] l1 in
+    let tmp = List.filter (fun i -> not(is_Bot i)) res in
+    if List.length tmp = 0 then Bot
+    else Nb (List.map (fun i -> debot i) tmp)
  
   (* arithmetic *)
-  (* --------- *)
+  (* ---------- *)
 
   (* r = -i => i = -r *)
-  let filter_neg (i:t) (r:t) : t bot =
-    meet i (neg r)
-      
-  let filter_abs ((il,ih) as i:t) ((rl,rh) as r:t) : t bot =
-    if B.sign il >= 0 then meet i r
-    else if B.sign ih <= 0 then meet i (neg r)
-    else meet i (B.neg rh, rh)
+  let filter_neg (i:t list) (r:t list) : t list bot =
+    meet i (apply neg r)
+
+  let filter_abs (i:t list) (r:t list) : t list bot =
+    let aux ((l,h):t) : t list =
+      if B.leq l B.zero && B.geq h B.zero then [(B.neg h, h)]
+      else if B.gt l B.zero && B.gt h B.zero then [(B.neg h,B.neg l);(l,h)]
+      else []
+    in
+    let r' = List.flatten (List.map (fun a -> aux a) r) in
+    meet i r'
         
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
-  let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
-      
+  let filter_add (i1:t list) (i2:t list) (r:t list) : (t list * t list) bot =
+    merge_bot2 (meet i1 (apply_ll sub r i2)) (meet i2 (apply_ll sub r i1))
+
   (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
-  let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+  let filter_sub (i1:t list) (i2:t list) (r:t list) : (t list * t list) bot =
+    merge_bot2 (meet i1 (apply_ll add i2 r)) (meet i2 (apply_ll sub i1 r))
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
-  let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
+  let filter_mul (i1:t list) (i2:t list) (r:t list) : (t list * t list) bot =
     merge_bot2
       (if contains r B.zero && contains i2 B.zero then Nb i1
-      else match fst (div r i2) with Bot -> Bot | Nb x -> meet i1 x)
+      else match (div_ll r i2) with Bot -> Bot | Nb x -> meet i1 x)
       (if contains r B.zero && contains i1 B.zero then Nb i2
-      else match fst (div r i1) with Bot -> Bot | Nb x -> meet i2 x)
-      
+      else match (div_ll r i1) with Bot -> Bot | Nb x -> meet i2 x)
+
   (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
-  let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
+  let filter_div (i1:t list) (i2:t list) (r:t list) : (t list * t list) bot =
     merge_bot2
-      (meet i1 (mul i2 r))
+      (meet i1 (apply_ll mul i2 r))
       (if contains r B.zero && contains i1 B.zero then Nb i2
-      else match fst (div i1 r) with Bot -> Bot | Nb x -> meet i2 x)
-      
+      else match (div_ll i1 r) with Bot -> Bot | Nb x -> meet i2 x)
+
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt ((il,ih) as i:t) ((rl,rh):t) : t bot =
-    let rr = B.mul_down rl rl, B.mul_up rh rh in
-    if B.sign il >= 0 then meet i rr
-    else meet i (B.minus_inf, snd rr)
+  let filter_sqrt (i:t list) (r:t list) : t list bot =
+    let r2 = List.map (fun itv -> I.pow itv (I.of_int 2)) r in
+    let tmp = meet i r2 in
+    match tmp with
+    | Bot -> Bot
+    | Nb l -> Nb (List.map (fun (il,ih) -> if B.sign il < 0 then (B.minus_inf, ih) else (il,ih)) l)
 
   let compute_itv itv itv' i i' =
     let aux = 
@@ -593,8 +301,8 @@ module Union_Itv(I:ITV) = (struct
           itv' := compute_itv i a_r !idx !idx;
         done;
         (Bot.join_bot2 join !itv !itv')   
-    
 
+(*
   (* r = cos i => i = arccos r *)
   let filter_cos (i:t) (r:t) : t bot =
     let acos_r = acos r in
@@ -674,7 +382,7 @@ module Union_Itv(I:ITV) = (struct
   (* r = nroot i => i = r ** n *)
   let filter_root i r n =
     meet i (pow r n)
-    
+ *)
 
 end)
     
