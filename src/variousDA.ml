@@ -14,7 +14,6 @@ module type Reduction =
     module B : AbstractCP
     val a_meet_b : A.t -> B.t -> B.t 
     val b_meet_a : A.t -> B.t -> A.t 
-    val reduced_product : A.t -> B.t -> A.t * B.t 
   end
 
 module BoxAndPoly : Reduction =
@@ -33,10 +32,6 @@ module BoxAndPoly : Reduction =
       let box' = PolyCP.to_box poly box_env in
       Abstract1.meet BoxCP.man box box'
 
-    let reduced_product box poly =
-      let new_poly = a_meet_b box poly in
-      let new_box = b_meet_a box poly in
-      (new_box, new_poly)
   end
 
 module BoxAndOct : Reduction =
@@ -55,10 +50,6 @@ module BoxAndOct : Reduction =
       let box' = OctBoxCP.to_box oct box_env in
       Abstract1.meet BoxCP.man box box'
 
-    let reduced_product box oct =
-      let new_oct = a_meet_b box oct in
-      let new_box = b_meet_a box oct in
-      (new_box, new_oct)
   end
 
 module OctAndPoly : Reduction =
@@ -77,54 +68,56 @@ module OctAndPoly : Reduction =
       let oct' = PolyCP.to_oct poly oct_env in
       Abstract1.meet OctBoxCP.man oct oct'
 
-    let reduced_product oct poly =
-      let new_poly = a_meet_b oct poly in
-      let new_oct = b_meet_a oct poly in
-      (new_oct, new_poly)
   end
 
 module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
   struct
 
-    type t = Reduced.A.t * Reduced.B.t
-    type split = Reduced.A.split
+    include Reduced
+
+    type t = A.t * B.t
+    type split = A.split
+
+    let reduced_product a b = 
+      let new_a = b_meet_a a b in
+      let new_b = a_meet_b a b in
+      (new_a, new_b)
 
     let of_problem p =
       let open Syntax in
-        let abs = Reduced.A.of_problem p
-        and tmp =  Reduced.B.of_problem p in
+        let abs = A.of_problem p
+        and tmp =  B.of_problem p in
         let cons_b = List.filter Syntax.is_cons_linear p.constraints in
-        let abs' = List.fold_left Reduced.B.meet tmp cons_b in
-        Reduced.reduced_product abs abs'
-        (*(abs,abs')*)
+        let abs' = List.fold_left B.meet tmp cons_b in
+        reduced_product abs abs'
     
     let is_small ((abs, abs'):t) prec =
-      Reduced.A.is_small abs prec
+      A.is_small abs prec
 
     let split ((abs, abs'):t) list = 
-      let split_a = Reduced.A.split abs list in
+      let split_a = A.split abs list in
       List.map (fun x -> (x, abs')) split_a
 
     let points_to_draw ((abs, abs'):t) vars =
-      let abs_to_draw = Reduced.a_meet_b abs abs' in
-      Reduced.B.points_to_draw abs_to_draw vars
+      let abs_to_draw = a_meet_b abs abs' in
+      B.points_to_draw abs_to_draw vars
 
     let is_bottom ((abs, _):t) =
-      Reduced.A.is_bottom abs
+      A.is_bottom abs
 
     let sat_cons ((abs, _):t) cons =
-      Reduced.A.sat_cons abs cons
+      A.sat_cons abs cons
 
     let meet ((abs, abs'):t) cons =
-      (Reduced.A.meet abs cons, abs')
+      (A.meet abs cons, abs')
 
     let forward_eval (abs, abs') cons = 
-      let abs_tmp = Reduced.a_meet_b abs abs' in
-      Reduced.B.forward_eval abs_tmp cons
+      let abs_tmp = a_meet_b abs abs' in
+      B.forward_eval abs_tmp cons
 
     let print fmt ((abs, abs'):t) =
-      Reduced.A.print fmt abs;
-      Reduced.B.print fmt abs'
+      A.print fmt abs;
+      B.print fmt abs'
 
   end
 
