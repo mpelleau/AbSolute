@@ -66,68 +66,24 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cmp (cmp, e1, e2) -> cmp_expr_to_apron (e1,cmp,e2) env
     | _ -> failwith "NOT, OR and AND are not implemented yet"
     
-  let abstract_of_finite a v (l,h) =
-    let env = Abstract1.env a in
-    let v = Var.of_string v in
-    let ar = Lincons1.array_make env 2 in
-    if l <> neg_infinity then (
-      let c1 = Lincons1.make (Linexpr1.make env) Lincons1.SUPEQ in
-      Lincons1.set_list c1 [Coeff.s_of_float 1., v] (Some (Coeff.s_of_float (-. l)));
-      Lincons1.array_set ar 0 c1
-    );
-    if h <> infinity then (
-      let c2 = Lincons1.make( Linexpr1.make env) Lincons1.SUPEQ in
-      Lincons1.set_list c2 [Coeff.s_of_float (-1.), v] (Some (Coeff.s_of_float h));
-      Lincons1.array_set ar 1 c2
-    );
-    Abstract1.meet_lincons_array man a ar
+   let interval_of_dom env t v = function
+    | Finite (l,h) -> Interval.of_float l h
+    | Top -> Interval.top
+    | Minf i -> Interval.of_scalar (Scalar.of_infty (-1)) (Scalar.of_float i)
+    | Inf i -> Interval.of_scalar (Scalar.of_float i) (Scalar.of_infty 1)
 
-  let abstract_of_dom a v = function
-    | Finite (l,h) -> abstract_of_finite a v (l,h)
-    | Top -> Abstract1.(top man a.env)
-    | Minf i ->
-      let v = Var.of_string v in
-      let ar = Lincons1.array_make a.Abstract1.env 1 in
-      let c2 = Lincons1.make( Linexpr1.make a.Abstract1.env) Lincons1.SUPEQ in
-      Lincons1.set_list c2 [Coeff.s_of_float (-1.), v] (Some (Coeff.s_of_float i));
-      Lincons1.array_set ar 0 c2;
-      Abstract1.meet_lincons_array man a ar
-    | Inf i ->      
-      let v = Var.of_string v in
-      let ar = Lincons1.array_make a.Abstract1.env 1 in
-      let c1 = Lincons1.make( Linexpr1.make a.Abstract1.env) Lincons1.SUPEQ in
-      Lincons1.set_list c1 [Coeff.s_of_float 1., v] (Some (Coeff.s_of_float (-. i)));
-      Lincons1.array_set ar 0 c1;
-      Abstract1.meet_lincons_array man a ar
-
-  let to_apron p =
+  let domain_to_apron p =
     let integers,reals = List.partition (fun (a,_,_) -> a = INT) p.init in
     let integers = List.map (fun (_,v,_) -> Var.of_string v) integers |> Array.of_list
     and reals = List.map (fun (_,v,_) -> Var.of_string v) reals |> Array.of_list in
     let env = Environment.make integers reals in
-    Environment.print Format.std_formatter env;
-    let a = Abstract1.top man env in
-    let domains = List.map (fun (_,v,dom) -> abstract_of_dom a v dom) p.init in
-    let abs = List.fold_left (Abstract1.meet man) (Abstract1.top man env) domains in
-    let rec aux ((res_all, res_lin, res_nonlin) as res) constraints =
-      match constraints with
-      | [] -> res
-      | h::tl when is_cons_linear h -> 
-	let ap_cons = bexpr_to_apron h env in
-	aux ((ap_cons::res_all), (ap_cons::res_lin), (res_nonlin)) tl
-      | h::tl -> 
-	let ap_cons = bexpr_to_apron h env in
-	aux ((ap_cons::res_all), (res_lin), (ap_cons::res_nonlin)) tl
-    in 
-    let all,c_l,c_nl = aux ([],[],[]) p.constraints in
-    let (domains:Lincons1.earray) = Abstract1.to_lincons_array man abs      
-    in
-    (env,
-     domains,
-     [all],
-     (Utils.tcons_list_to_earray all),
-     (Utils.tcons_list_to_earray c_nl),
-     (Utils.tcons_list_to_earray c_l))
+    let var_array = List.map (fun (_,v,_) -> Var.of_string v) p.init |> Array.of_list in
+    let i_array = Array.make (List.length p.init) (Interval.of_int 0 0) in
+    List.iteri (fun i (t,v,dom) ->
+      let itv = interval_of_dom env t v dom in
+      i_array.(i) <- itv
+    ) p.init;
+    Abstract1.of_box man env var_array i_array
 end
 
 
@@ -144,9 +100,7 @@ module MAKE(AP:ADomain) = struct
 
   module Translate = SyntaxTranslator(AP)
 
-  let of_problem p =
-    let (env,domains,_,_,_,_) = Translate.to_apron p in
-    Abstract1.of_lincons_array man env domains
+  let of_problem p = Translate.domain_to_apron p
       
   let is_bottom b = Abstract1.is_bottom man b
 
