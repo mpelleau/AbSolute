@@ -103,7 +103,7 @@ let rec neg_bexpr = function
 (* checks if an expression contains a variable *)
 let rec has_variable = function  
   | Unary (u, e) -> has_variable e
-  | Binary(b, e1, e2) -> has_variable e1 && has_variable e2
+  | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
   | Cst _ -> false
 
@@ -125,7 +125,6 @@ let rec is_cons_linear = function
   | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
-
 
 (*************************************************************)
 (*                    PRINTING UTILITIES                     *)

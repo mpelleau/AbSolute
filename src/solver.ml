@@ -17,7 +17,16 @@ module Solve(Abs : AbstractCP) =
 	
     let draw abs info col vars =
       if !Constant.visualization then
-	Vue.draw (Abs.points_to_draw abs vars) col info
+	let points = Abs.points_to_draw abs vars in
+	if List.length points > 0 then Vue.draw points col info
+
+    let print_sol_for_latex abs vars =
+      let points = Abs.points_to_draw abs vars in
+      if List.length points > 0 then (
+	Format.printf "  \\filldraw[rose, fill opacity = 0.3] ";
+	List.iter (fun (x,y) -> Format.printf "(%f, %f) -- " x y) (Vue.graham_sort points);
+	Format.printf "cycle;@.";
+      );;
 
     let explore abs constrs vars =
       let info = Vue.get_info (Abs.points_to_draw abs vars) in
@@ -27,10 +36,10 @@ module Solve(Abs : AbstractCP) =
         (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
-	| `Full -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
+	| `Full -> print_sol_for_latex abs' vars; draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
-	  | true,_ -> (* Format.printf "%a@." Abs.print abs'; *) draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
+	  | true,_ -> print_sol_for_latex abs' vars; draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
 	  | _,exprs when nb_sol <= !Constant.max_sol ->
 	    draw abs' info Graphics.yellow vars;
             Abs.split abs' exprs |>
@@ -85,9 +94,12 @@ module Solve(Abs : AbstractCP) =
       printf "abs = %a" Abs.print abs;
       if not (Abs.is_bottom abs) then
         let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in
-        (* Format.printf "\ncons = ["; *)
-        (* List.iter (Format.printf "%a ;" (print_bexpr)) cons; *)
-        (* Format.printf "]\n"; *)
+        Format.printf "\nconstraints = [";
+        List.iter (Format.printf "%a ;" (print_bexpr)) prob.constraints;
+        Format.printf "]@.";
+        Format.printf "non linear constraints = [";
+        List.iter (Format.printf "%a ;" (print_bexpr)) cons;
+        Format.printf "]@.";
         let (nb_steps, nb_sol) = explore abs cons prob.to_draw in
 	Format.printf "solving ends\n%!";
 	match nb_sol with
