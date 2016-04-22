@@ -15,8 +15,10 @@ make
 ```
 
 ###### options
-  -p v : change the precision to "v". default is 0.001\s\s
-  -v : with visualization\s\s
+  -p v : change the precision to "v". default is 0.001
+
+  -v : with visualization
+
   -domain d : change the domain to "d". default is "box"
 
 
