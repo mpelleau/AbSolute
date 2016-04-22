@@ -110,12 +110,11 @@ let rec has_variable = function
 (* checks if an expression is linear *)
 let rec is_linear = function  
   | Unary (NEG,e) -> is_linear e
-  | Binary(ADD, e1, e2) | Binary(SUB, e1, e2)
-    -> is_linear e1 && is_linear e2
   | Binary(MUL, e1, e2) | Binary(DIV, e1, e2)
-    -> not (has_variable e1 && has_variable e2)
+    -> not (has_variable e1 && has_variable e2) && is_linear e1 && is_linear e2
   | Binary(POW, e1, e2)
     -> not (has_variable e1 || has_variable e2)
+  | Binary(_, e1, e2) -> is_linear e1 && is_linear e2
   | Var _ | Cst _ -> true
   | _ -> false
 
