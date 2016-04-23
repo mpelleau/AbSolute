@@ -16,8 +16,7 @@ constraints{
   y > (cos x) - 1;
 }
 ```
-
-![t2](imgs/t2.png =100x100)
+<img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="100" height="100">
 
 
 You can see other examples of problems in the **problem** directory
