@@ -17,7 +17,7 @@ constraints{
 }
 ```
 
-![t2](imgs/t2.png)
+![t2](imgs/t2.png =100x100)
 
 
 You can see other examples of problems in the **problem** directory
