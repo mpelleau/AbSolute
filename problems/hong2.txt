@@ -1,0 +1,11 @@
+/* From Coco */
+init{
+real x = [ -1000; 1000];
+real y = [ -1000; 1000];
+real z = [ -1000; 1000];
+}
+constraints{
+  x^2 + y^2 + z^2 = 1;
+  x^2 + z^2 = y;
+  x = z;
+}

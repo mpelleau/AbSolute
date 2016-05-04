@@ -1,0 +1,12 @@
+init{
+  real x2 = [0;10];
+  real objvar = [-1000;10];
+  int i3 = [0;10];
+
+
+}
+constraints{
+  /*0.7*x2 + i3 <= 7;
+  2.5*x2 + i3 <= 19;*/
+  1.1 * (sqrt (2*x2 - 10) + sqrt(i3 - 5)) + sin(sqrt(2*x2 - 10) + sqrt(i3 - 5)) - objvar >= 0;
+}

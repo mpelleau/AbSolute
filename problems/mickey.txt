@@ -1,0 +1,11 @@
+/* Coconut mickey */
+
+init{
+  real x = [-10;10];
+  real y = [-10;10];
+}
+
+constraints{
+  x^2 + 4*y^2 - 4 <= 0;
+  2*(y^2) - x <= 0;
+}

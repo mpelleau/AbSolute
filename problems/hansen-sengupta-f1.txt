@@ -1,0 +1,11 @@
+/* From coco */
+
+init {
+  real x1 = [-2 ; 3];
+  real x2 = [-2 ; 3];
+}
+
+constraints {
+  12*x2-6*x1 = 0;
+  6*x1^5-25.2*x1^3+24*x1-6*x2 = 0;
+}
