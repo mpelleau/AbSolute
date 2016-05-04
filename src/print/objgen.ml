@@ -126,29 +126,6 @@ let get_cube abs vars =
     | _ -> failwith "need at least 1 var")
   | _ -> failwith "niy"
 
-let explore_3d abs constrs vars_3d =
-  let nb_sol = ref 0 and nb_steps = ref 1 in 
-  let cubes : cube list ref = ref [] in
-  let add abs = cubes:=(get_cube abs vars_3d)::!cubes in
-  let queue = Queue.create () in
-  Queue.add abs queue;
-  while Queue.is_empty queue |> not do
-    let cons,abs' = consistency (Queue.take queue) constrs in
-    match cons with
-    | `Empty -> ()
-    | `Full -> add abs'; incr nb_sol
-    | `Maybe  ->
-      (match (Abs.is_small abs' !Constant.precision) with
-      | true,_ -> add abs'; incr nb_sol
-      | _,exprs when !nb_sol < !Constant.max_sol ->
-        Abs.split abs' exprs |> List.iter (fun e -> incr nb_steps; Queue.add e queue)
-      | _ -> add abs'
-      )
-  done;
-  !cubes
-
-let solve_3d prob out = 
-  let open Syntax in
-  let abs = Abs.of_problem prob in
-  let cubes = explore_3d abs prob.constraints prob.to_draw in
-  print_to_file out cubes
+let doit out values vars=
+  List.rev_map (fun (e,_) -> get_cube e vars) values 
+  |> print_to_file out

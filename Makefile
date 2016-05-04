@@ -12,7 +12,7 @@ APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
 CAMLIDLDIR = $(OPAMDIR)/camlidl
-OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/domains -I src/frontend
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/domains -I src/frontend -I src/print
 LIBS = bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
 CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
@@ -49,8 +49,9 @@ MLFILES = \
   src/domains/abstract_box.ml \
   src/ADCP.ml \
   src/variousDA.ml \
-  src/vue.ml \
-  src/objgen.ml \
+  src/print/vue.ml \
+  src/print/objgen.ml \
+  src/print/out.ml \
   src/solver.ml \
   src/minimizer.ml \
   src/main.ml

@@ -4,56 +4,55 @@ open Format
 open Utils
 open ADCP
 
-module Minimize(Abs : AbstractCP) =
-  struct
+module Minimize(Abs : AbstractCP) = struct
 
-    let consistency abs tab =
-      let abs' = List.fold_left Abs.meet abs tab in
-      (if Abs.is_bottom abs' then `Empty 
-       else if List.for_all (Abs.sat_cons abs') tab then `Full
-       else `Maybe)
-       ,abs'
+  let consistency abs tab =
+    let abs' = List.fold_left Abs.meet abs tab in
+    (if Abs.is_bottom abs' then `Empty 
+     else if List.for_all (Abs.sat_cons abs') tab then `Full
+     else `Maybe)
+      ,abs'
 	
-    let draw abs info col vars =
-      if !Constant.visualization then
-	Vue.draw (Abs.points_to_draw abs vars) col info
+  let draw abs info col vars =
+    if !Constant.visualization then
+      Vue.draw (Abs.points_to_draw abs vars) col info
 
-    let explore abs constrs obj vars =
-      let info = Vue.get_info (Abs.points_to_draw abs vars) in
-      draw abs info Graphics.yellow vars;
-      let rec aux abs best_value nb_steps sols =
-	let cons,abs' = consistency abs constrs in
-	match cons with
-	| `Empty -> (nb_steps, best_value, sols)
-	| `Full | `Maybe  ->
-          let (obj_value, _) = Abs.forward_eval abs' obj in
-          if obj_value > best_value then
-            (* There's no point in keep on searching in this branch *)
-	     (draw abs' info Graphics.yellow vars;
-            (nb_steps, best_value, sols))
-          else
-            (match (Abs.is_small abs' !Constant.precision) with
-	    | true,_ ->
-              if obj_value < best_value then
-		(List.iter (fun a -> draw a info Graphics.yellow vars) sols;
-	        draw abs' info (Graphics.rgb 0 191 255) vars;
-                (nb_steps, obj_value, [abs']))
-              else
-		(draw abs' info (Graphics.rgb 0 191 255) vars;
-                (nb_steps, obj_value, abs'::sols))
-	    | _,exprs when (List.length sols) <= !Constant.max_sol ->
-              Abs.split abs' exprs |>
-              List.fold_left (fun (a, b, c) d -> aux d b (a+1) c) (nb_steps, best_value, sols)
-        | _ -> (nb_steps, best_value, sols)
-	)
-      in 
-      let (_, obj_sup) = Abs.forward_eval abs obj in
-      let res = aux abs obj_sup 1 [] in
-      if !Constant.visualization then Vue.draw_end info;
-      res
-
-    let minimizing prob =
-      let open Syntax in
+  let explore abs constrs obj vars =
+    let info = Vue.get_info (Abs.points_to_draw abs vars) in
+    draw abs info Graphics.yellow vars;
+    let rec aux abs best_value nb_steps sols =
+      let cons,abs' = consistency abs constrs in
+      match cons with
+      | `Empty -> (nb_steps, best_value, sols)
+      | `Full | `Maybe  ->
+        let (obj_value, _) = Abs.forward_eval abs' obj in
+        if obj_value > best_value then
+          (* There's no point in keep on searching in this branch *)
+	  (draw abs' info Graphics.yellow vars;
+           (nb_steps, best_value, sols))
+        else
+          (match (Abs.is_small abs' !Constant.precision) with
+	  | true,_ ->
+            if obj_value < best_value then
+	      (List.iter (fun a -> draw a info Graphics.yellow vars) sols;
+	       draw abs' info (Graphics.rgb 0 191 255) vars;
+               (nb_steps, obj_value, [abs']))
+            else
+	      (draw abs' info (Graphics.rgb 0 191 255) vars;
+               (nb_steps, obj_value, abs'::sols))
+	  | _,exprs when (List.length sols) <= !Constant.max_sol ->
+            Abs.split abs' exprs |>
+		List.fold_left (fun (a, b, c) d -> aux d b (a+1) c) (nb_steps, best_value, sols)
+          | _ -> (nb_steps, best_value, sols)
+	  )
+    in 
+    let (_, obj_sup) = Abs.forward_eval abs obj in
+    let res = aux abs obj_sup 1 [] in
+    if !Constant.visualization then Vue.draw_end info;
+    res
+      
+  let minimizing prob =
+    let open Syntax in
       let abs = Abs.of_problem prob in
       printf "abs = %a@." Abs.print abs;
       if not (Abs.is_bottom abs) then
@@ -66,7 +65,7 @@ module Minimize(Abs : AbstractCP) =
         | _ -> printf "#solutions: %d - #created nodes: %d - best_value = %f@." nb_sol nb_steps best_value
       else
         printf "No Solutions - #created nodes: 0@."
-
+	  
     let minimizing_various prob =
       let open Syntax in
       let abs = Abs.of_problem prob in
@@ -85,8 +84,8 @@ module Minimize(Abs : AbstractCP) =
         | _ -> printf "#solutions: %d - #created nodes: %d - best_value = %f@." nb_sol nb_steps best_value
       else
         printf "No Solutions - #created nodes: 0@."
-  end
-
+end
+  
 module Box = Minimize(Abstract_box.BoxF)
 module BoxCP = Minimize(BoxCP)
 module Oct = Minimize(OctBoxCP)
@@ -95,4 +94,3 @@ module Poly = Minimize(PolyCP)
 module BoxNOct = Minimize(VariousDA.BoxNOct)
 module BoxNPoly = Minimize(VariousDA.BoxNPoly)
 module OctNPoly = Minimize(VariousDA.OctNPoly)
-

@@ -1,5 +1,9 @@
 PKG apron
-S src/*
-B src/*
+S src/domains/
+B src/domains/
+S src/frontend/
+B src/frontend/
+S src/print/
+B src/print/
 S src
 B src

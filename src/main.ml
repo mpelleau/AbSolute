@@ -26,12 +26,6 @@ let main =
   let open Constant in
   parse_args ();
   let prob = File_parser.parse !problem in
-  if !visualization then Vue.create_window 800 800;
-  if !Constant.obj then begin 
-    let out = Filename.basename !problem in
-    let out = ("out/"^(Filename.chop_extension out)^".obj") in
-    Objgen.solve_3d prob out
-  end;
   (* Syntax.print Format.std_formatter prob; *)
   if !minimizing then
     match !domain with
