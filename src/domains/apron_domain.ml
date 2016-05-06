@@ -1,5 +1,6 @@
 open Apron
 open Syntax
+open Utils
 
 module type ADomain = sig 
   type t
@@ -191,4 +192,37 @@ module MAKE(AP:ADomain) = struct
       and obj_sup = obj_itv.Interval.sup in
       let open Utils in
       (scalar_to_float obj_inf, scalar_to_float obj_sup)
+
+     (* utilties for splitting *)
+
+    let rec largest tab i max i_max =
+      if i>=Array.length tab then (max, i_max) 
+      else
+	let dim = diam_interval (tab.(i)) in
+	if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
+	else largest tab (i+1) max i_max
+	  
+    (* Compute the minimal and the maximal diameter of an array on intervals *)
+    let rec minmax tab i max i_max min i_min =
+      if i>=Array.length tab then  (max, i_max, min, i_min)
+      else
+	let dim = diam_interval (tab.(i)) in
+	if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
+	else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
+	else minmax tab (i+1) max i_max min i_min
+
+    (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
+     * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line 
+     * to the vector p1p2 passing by the center of the vector has for equation:
+     * (p21-p11)(x1-b1) + (p22-p12)(x2-b2) + ... + (p2n-p1n)(xn-bn) = 0
+     * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
+    let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
+      if i >= size then (list1, list2, cst) else
+	let ci = p2.(i) -. p1.(i) in
+	let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
+	let ci' = 2. *. ci in
+	let coeffi = Coeff.Scalar (Scalar.of_float ci') in
+	let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
+	let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
+	genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 end

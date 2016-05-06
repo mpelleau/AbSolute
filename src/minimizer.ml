@@ -6,13 +6,9 @@ open ADCP
 
 module Minimize(Abs : AbstractCP) = struct
 
-  let consistency abs tab =
-    let abs' = List.fold_left Abs.meet abs tab in
-    (if Abs.is_bottom abs' then `Empty 
-     else if List.for_all (Abs.sat_cons abs') tab then `Full
-     else `Maybe)
-      ,abs'
-	
+  include Splitter.Make(Abs)
+  module Printer = Out.Make(Abs)
+
   let draw abs info col vars =
     if !Constant.visualization then
       Vue.draw (Abs.points_to_draw abs vars) col info
@@ -21,27 +17,26 @@ module Minimize(Abs : AbstractCP) = struct
     let info = Vue.get_info (Abs.points_to_draw abs vars) in
     draw abs info Graphics.yellow vars;
     let rec aux abs best_value nb_steps sols =
-      let cons,abs' = consistency abs constrs in
-      match cons with
-      | `Empty -> (nb_steps, best_value, sols)
-      | `Full | `Maybe  ->
-        let (obj_value, _) = Abs.forward_eval abs' obj in
+      match consistency abs constrs with
+      | Empty -> (nb_steps, best_value, sols)
+      | Full a | Maybe (a,_)->
+        let (obj_value, _) = Abs.forward_eval a obj in
         if obj_value > best_value then
           (* There's no point in keep on searching in this branch *)
-	  (draw abs' info Graphics.yellow vars;
+	  (draw a info Graphics.yellow vars;
            (nb_steps, best_value, sols))
         else
-          (match (Abs.is_small abs' !Constant.precision) with
+          (match (Abs.is_small a !Constant.precision) with
 	  | true,_ ->
             if obj_value < best_value then
 	      (List.iter (fun a -> draw a info Graphics.yellow vars) sols;
-	       draw abs' info (Graphics.rgb 0 191 255) vars;
-               (nb_steps, obj_value, [abs']))
+	       draw a info (Graphics.rgb 0 191 255) vars;
+               (nb_steps, obj_value, [a]))
             else
-	      (draw abs' info (Graphics.rgb 0 191 255) vars;
-               (nb_steps, obj_value, abs'::sols))
+	      (draw a info (Graphics.rgb 0 191 255) vars;
+               (nb_steps, obj_value, a::sols))
 	  | _,exprs when (List.length sols) <= !Constant.max_sol ->
-            Abs.split abs' exprs |>
+            Abs.split a exprs |>
 		List.fold_left (fun (a, b, c) d -> aux d b (a+1) c) (nb_steps, best_value, sols)
           | _ -> (nb_steps, best_value, sols)
 	  )

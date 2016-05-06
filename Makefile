@@ -52,6 +52,7 @@ MLFILES = \
   src/print/vue.ml \
   src/print/objgen.ml \
   src/print/out.ml \
+  src/splitter.ml \
   src/solver.ml \
   src/minimizer.ml \
   src/main.ml

@@ -1,34 +1,15 @@
-open Apron
-open Mpqf
 open Format
 open Utils
 open ADCP
 
-(* Splitting strategy handler *)
-module Splitter (Abs : AbstractCP) = struct
-  type consistency = Full of Abs.t 
-		   | Maybe of Abs.t * Syntax.bexpr list
-		   | Empty
-
-  let consistency abs constrs : consistency =
-    try
-      let abs' = List.fold_left Abs.meet abs constrs in
-      let unsat = List.filter (fun c -> not (Abs.sat_cons abs' c)) constrs in
-      match unsat with
-      | [] -> Full abs'
-      | _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
-    with Bot.Bot_found -> Empty
-	
-  let split abs expr = Abs.split abs expr
-end
-
 (* Solver *)
 module Solve(Abs : AbstractCP) = struct
 
-  include Splitter(Abs)
+  include Splitter.Make(Abs)
+  module Printer = Out.Make(Abs)
 
   type result = {
-    values : (Abs.t * bool) list;  (* the abstract values. true for full, false otherwise *) 
+    values : (Abs.t * bool) list;  (* the abstract values. true for full, false for maybe *) 
     nb_sols : int;                 (* number of solutions *)
     nb_steps : int                 (* number of steps of the solving process *)
   }
@@ -39,7 +20,7 @@ module Solve(Abs : AbstractCP) = struct
     let rec aux abs cstrs res =
       match consistency abs cstrs with
       | Empty -> res
-      | Full abs' -> {res with values=((abs',true)::res.values); nb_sols=res.nb_sols+1}	
+      | Full abs' -> {res with values=((abs',true)::res.values); nb_sols=res.nb_sols+1}
       | Maybe(abs',cstrs)  ->
 	let (small,expr) = is_small abs' in
 	if small then {res with values=((abs',false)::res.values); nb_sols=res.nb_sols+1}
@@ -48,10 +29,8 @@ module Solve(Abs : AbstractCP) = struct
 	    aux elem cstrs {res with nb_steps=res.nb_steps+1}
 	  ) res (split abs' expr)
         else res
-    in aux abs constrs {values=[];nb_sols=0;nb_steps=0}
+    in aux abs constrs {values=[]; nb_sols=0; nb_steps=0}
 
-  module Printer = Out.Make(Abs)
-      
   let solving prob =
     let open Syntax in
     let abs = Abs.of_problem prob in
@@ -89,11 +68,15 @@ module Solve(Abs : AbstractCP) = struct
       printf "No Solutions - #created nodes: 0@."
 end
 
+(************ INSTANCES ************)
+
+(* single domain *)
 module Box = Solve(Abstract_box.BoxF)
 module BoxCP = Solve(BoxCP)
 module Oct = Solve(OctBoxCP)
 module Poly = Solve(PolyCP)
 
+(* reduced product *)
 module BoxNOct = Solve(VariousDA.BoxNOct)
 module BoxNPoly = Solve(VariousDA.BoxNPoly)
 module OctNPoly = Solve(VariousDA.OctNPoly)
