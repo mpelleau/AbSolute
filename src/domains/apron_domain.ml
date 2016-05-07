@@ -61,11 +61,6 @@ module SyntaxTranslator (D:ADomain) = struct
     let e = Texpr1.of_expr env (expr_to_apron a e) in
     let res = Tcons1.make e op in
     res
-         
-  let rec bexpr_to_apron b env =
-    match b with
-    | Cmp (cmp, e1, e2) -> cmp_expr_to_apron (e1,cmp,e2) env
-    | _ -> failwith "NOT, OR and AND are not implemented yet"
     
    let interval_of_dom env t v = function
     | Finite (l,h) -> Interval.of_float l h
@@ -114,17 +109,16 @@ module MAKE(AP:ADomain) = struct
 
   let is_enumerated abs =
     let int_vars = Environment.vars (Abstract1.env abs) |> fst in
-    if (Array.length int_vars) = 0 then true
-    else
-       Array.fold_right (fun v b -> if b then (is_singleton abs v) else b) int_vars true
+    try 
+      Array.iter (fun v -> if (is_singleton abs v) |> not then raise Exit) int_vars;
+      true
+    with Exit -> false
+
+  let join a b = Abstract1.join man a b
     
-  let sat_cons b c =
+  let filter b (e1,c,e2) = 
     let env = Abstract1.env b in
-    (Translate.bexpr_to_apron c env |> Abstract1.sat_tcons man b) && is_enumerated b
-	
-  let meet b c = 
-    let env = Abstract1.env b in
-    let c = Translate.bexpr_to_apron c env in
+    let c = Translate.cmp_expr_to_apron (e1,c,e2) env in
     Abstract1.meet_tcons_array man b (Utils.tcons_list_to_earray [c])
       
   let print = Abstract1.print

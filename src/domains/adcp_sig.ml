@@ -22,17 +22,17 @@ module type AbstractCP = sig
 
    val is_bottom : t -> bool
 
-   val sat_cons : t -> Syntax.bexpr -> bool
+   val is_enumerated : t -> bool
 
    (*** OPERATIONS ***)
+   val join: t -> t -> t
+
    (* split an abstract element according to the split list *)
    val split : t -> split list -> t list
 
-   val meet : t -> Syntax.bexpr -> t
+   val filter : t -> (Syntax.expr * Syntax.cmpop * Syntax.expr) -> t
 
    val forward_eval : t -> Syntax.expr -> (float * float)
-
-
 
    (*** DRAWING AND PRINTING ***)
    (* drawing *)

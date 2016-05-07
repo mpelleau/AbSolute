@@ -1,0 +1,9 @@
+init{
+  real x = [-5;5];
+  real y = [-5;5];
+}
+
+constraints{
+  y<x || y>-x;
+}
+

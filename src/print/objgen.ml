@@ -92,16 +92,7 @@ let print_to_file fn cubelist =
   Format.fprintf fmt "%a" print o
 
 module Abs = Abstract_box.BoxF
-
-let consistency abs tab =
-  try 
-    let abs' = List.fold_left Abs.meet abs tab in
-    (if Abs.is_bottom abs' then `Empty 
-     else if List.for_all (Abs.sat_cons abs') tab then `Full
-     else `Maybe)
-      ,abs'
-  with Bot.Bot_found -> `Empty,abs
-      
+    
 let get_cube abs vars =
   let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
   let open Abs in

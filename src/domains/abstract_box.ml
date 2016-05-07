@@ -7,7 +7,7 @@ open Syntax
 (* GENERIC FUNCTOR *)
 (*******************)
   
-module Box(I:ITV) = (struct
+module Box (I:ITV) = struct
 
 
   (************************************************************************)
@@ -259,21 +259,10 @@ module Box(I:ITV) = (struct
     in
     filter_bounds_bot aux
 
-  let rec meet (a:t) (b:Syntax.bexpr) : t = 
-    match b with
-    | And (b1,b2) -> meet (meet a b2) b1
-    | Or (b1,b2) ->
-      let a1 = try Some(meet a b1) with Bot.Bot_found -> None
-      and a2 = try Some(meet a b2) with Bot.Bot_found -> None in
-      (match (a1,a2) with
-      | (Some a1),(Some a2) -> join a1 a2
-      | None, (Some x) | (Some x), None -> x
-      | _ -> raise Bot.Bot_found)
-    | Not b -> meet a (neg_bexpr b)
-    | Cmp (binop,e1,e2) ->
-      (match test a e1 binop e2 with
-      | Bot -> raise Bot_found
-      | Nb e -> e)
+  let filter (a:t) (e1,binop,e2) : t = 
+    match test a e1 binop e2 with
+    | Bot -> raise Bot_found
+    | Nb e -> e
 	
   let of_problem (p:Syntax.prog) =
     let interval_of_domain dom =
@@ -294,21 +283,13 @@ module Box(I:ITV) = (struct
     abs
 
   let is_enumerated a =
-    let int_vars = Env.filter (fun v i -> is_integer v) a in
-    let is_e = Env.for_all (fun v i -> I.is_singleton i) int_vars in
-    Env.cardinal int_vars = 0 || is_e
+    Env.for_all (fun v i -> (is_integer v |> not) || I.is_singleton i) a
     
-  let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    try is_bottom (meet a (Syntax.Not constr))
-    with Bot.Bot_found -> is_enumerated a
-
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
     (B.to_float_down (fst bounds), B.to_float_up (snd bounds))
 
-end)
-
-
+end
     
 (*************)
 (* INSTANCES *)

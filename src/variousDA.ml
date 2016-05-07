@@ -85,9 +85,9 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
       let open Syntax in
         let abs = A.of_problem p
         and tmp =  B.of_problem p in
-        let cons_b = List.filter Syntax.is_cons_linear p.constraints in
-        let abs' = List.fold_left B.meet tmp cons_b in
-        reduced_product abs abs'
+        (* let cons_b = List.filter Syntax.is_cons_linear p.constraints in *)
+        (* let abs' = List.fold_left B.filter tmp cons_b in *)
+        reduced_product abs tmp
     
     let is_small ((abs, abs'):t) prec =
       A.is_small abs prec
@@ -100,14 +100,15 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
       let abs_to_draw = a_meet_b abs abs' in
       B.points_to_draw abs_to_draw vars
 
-    let is_bottom ((abs, _):t) =
-      A.is_bottom abs
+    let is_bottom ((abs, _):t) = A.is_bottom abs
 
-    let sat_cons ((abs, _):t) cons =
-      A.sat_cons abs cons
+    let is_enumerated (abs, abs') =
+      A.is_enumerated abs && B.is_enumerated abs'
 
-    let meet ((abs, abs'):t) cons =
-      (A.meet abs cons, abs')
+    let join (a,a') (b,b') = (A.join a b), (B.join a' b')
+
+    let filter ((abs, abs'):t) cons =
+      (A.filter abs cons, abs')
 
     let forward_eval (abs, abs') cons = 
       let abs_tmp = a_meet_b abs abs' in
