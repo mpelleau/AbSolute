@@ -1,4 +1,4 @@
-open ADCP 
+open Adcp_sig
 
 module Make(Abs:AbstractCP) = struct
 

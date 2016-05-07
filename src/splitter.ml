@@ -1,4 +1,4 @@
-open ADCP
+open Adcp_sig
 
 (* Consistency computation and splitting strategy handling *)
 module Make (Abs : AbstractCP) = struct

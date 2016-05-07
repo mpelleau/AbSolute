@@ -47,6 +47,7 @@ MLFILES = \
   src/domains/itv_sig.ml \
   src/domains/itv.ml \
   src/domains/abstract_box.ml \
+  src/domains/adcp_sig.ml \
   src/ADCP.ml \
   src/variousDA.ml \
   src/print/vue.ml \

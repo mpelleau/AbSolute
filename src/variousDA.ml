@@ -1,11 +1,9 @@
-(** 
- * This is an implementation of a CP solver using APRON.
- *)
+(* Reduced product of domains *)
 
 open Apron
-open Mpqf
 open Format
 open Utils
+open Adcp_sig
 open ADCP
 
 module type Reduction = 

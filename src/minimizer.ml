@@ -1,8 +1,7 @@
-open Apron
-open Mpqf
 open Format
 open Utils
 open ADCP
+open Adcp_sig
 
 module Minimize(Abs : AbstractCP) = struct
 

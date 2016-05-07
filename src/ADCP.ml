@@ -4,25 +4,6 @@ open Format
 open Utils
       
 (** 
- * Module for Abstract Domains for Constraint Programming.
- * These are abstract domains with consistency, split and precision operators.
- *)
-module type AbstractCP =
- sig
-  type t
-  type split
-  val of_problem : Syntax.prog -> t
-  val is_small : t -> float -> (bool * split list)
-  val split : t -> split list -> t list
-  val points_to_draw : t -> (string * string) option-> (float * float) list
-  val is_bottom : t -> bool
-  val sat_cons : t -> Syntax.bexpr -> bool
-  val meet : t -> Syntax.bexpr -> t
-  val print : Format.formatter -> t -> unit
-  val forward_eval : t -> Syntax.expr -> (float * float)
- end
- 
-(** 
  * Module for the Box Abstract Domains for Constraint Programming.
  *)
 module BoxCP =
