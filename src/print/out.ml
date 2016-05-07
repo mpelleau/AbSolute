@@ -26,16 +26,21 @@ module Make(Abs:AbstractCP) = struct
       let draw abs info col vars =
 	let points = Abs.points_to_draw abs vars in
 	if points <> [] then Vue.draw points col info
-      
-      and get_info abs = Vue.get_info (Abs.points_to_draw abs vars)     
-  
+        
       and join_info ((min_x,max_x),(min_y,max_y)) ((min_x',max_x'),(min_y',max_y')) = 
 	let min_x = min min_x min_x' and max_x = max max_x max_x'
 	and min_y = min min_y min_y' and max_y = max max_y max_y' in
 	(min_x,max_x),(min_y,max_y)
       in 
       
-      let info = List.fold_left (fun a (b,_) -> join_info a (get_info b)) (get_info h) tl in
+      let info = List.fold_left 
+	(fun a (b,_) ->
+	  let pts = Abs.points_to_draw b vars in
+	  if pts <> [] then join_info a (Vue.get_info pts) else a
+	) 
+	(Vue.get_info (Abs.points_to_draw h vars)) 
+	tl 
+      in
       List.iter (fun (a,b) -> 
 	draw a info (if b then color_full else color_maybe) vars
       ) res;
