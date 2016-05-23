@@ -1,9 +1,9 @@
-# tools
-OCAMLC    = ocamlc.opt
-OCAMLOPT  = ocamlopt.opt
-OCAMLDEP  = ocamldep
-OCAMLLEX  = ocamllex
-OCAMLYACC = ocamlyacc
+OPAMBIN = `opam config var bin`
+OCAMLC    = $(OPAMBIN)/ocamlc.opt
+OCAMLOPT  = $(OPAMBIN)/ocamlopt.opt
+OCAMLDEP  = $(OPAMBIN)/ocamldep
+OCAMLLEX  = $(OPAMBIN)/ocamllex
+OCAMLYACC = $(OPAMBIN)/ocamlyacc
 CC        = gcc
 
 # libraries

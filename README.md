@@ -21,10 +21,10 @@ constraints{
 You can see other examples of problems in the **problem** directory
 
 ### Build 
-- The solver: 
-```sh 
-make
-```
+A simple **make** will do the job. 
+##### warning:
+For some reason, having both packages **libapron** and **libapron-dev** installed will make the building of absolute fail.
+Therefore, the easiest way to deal with apron is to install it with **and only with** opam : https://opam.ocaml.org/packages/
 
 ### Use
 ```sh 
