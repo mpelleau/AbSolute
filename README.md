@@ -40,7 +40,7 @@ make
 - OCaml > 4.01 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
 - Zarith : https://forge.ocamlcore.org/projects/zarith
-- 
+
 ### Current
 AbSolute is currently still in developpement, and have not been tested.
 Feel free to contact any member of the developpement team if you want to report a bug or suggest a feature
