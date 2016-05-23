@@ -16,9 +16,6 @@ constraints{
   y > (cos x) - 1;
 }
 ```
-<img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="400" height="400">
-
-
 You can see other examples of problems in the **problem** directory
 
 ### Build 
@@ -33,18 +30,17 @@ make
 ```
 
 ###### options
-  -p v : change the precision to "v". default is 0.001
-  
-  -v : with visualization
-  
-  -domain d : change the domain to "d". default is "box"
+  - p v : change the precision to "v". default is 0.001
+  - v : with visualization
+  - domain d : change the domain to "d". default is "box"
 
 
 ### Requirements
-- An ANSI C compiler (only gcc with ansi option has been tested)
-- Ocaml > 4.01
+- An ANSI C compiler
+- OCaml > 4.01 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
-
+- Zarith : https://forge.ocamlcore.org/projects/zarith
+- 
 ### Current
 AbSolute is currently still in developpement, and have not been tested.
-Feel free to contact any member of the developpement team if you want to suggest 
+Feel free to contact any member of the developpement team if you want to report a bug or suggest a feature
