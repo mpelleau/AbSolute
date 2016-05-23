@@ -16,6 +16,8 @@ constraints{
   y > (cos x) - 1;
 }
 ```
+<img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="400" height="400">
+
 You can see other examples of problems in the **problem** directory
 
 ### Build 
