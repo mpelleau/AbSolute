@@ -47,6 +47,9 @@ MLFILES = \
   src/domains/itv_sig.ml \
   src/domains/itv.ml \
   src/domains/abstract_box.ml \
+  src/domains/union_itv_sig.ml \
+  src/domains/union_itv.ml \
+  src/domains/abstract_union_box.ml \
   src/ADCP.ml \
   src/variousDA.ml \
   src/problems.ml \

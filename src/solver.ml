@@ -34,10 +34,10 @@ module Solve(Abs : AbstractCP) =
         (* Format.printf "%a => %a%!\n" Abs.print abs Abs.print abs'; *)	
 	match cons with
 	| `Empty -> (nb_steps, nb_sol)
-	| `Full -> print_sol_for_latex abs' vars ; draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1)
+	| `Full (* -> print_sol_for_latex abs' vars ; draw abs' info (Graphics.rgb 0 191 255) vars; (nb_steps, nb_sol+1) *)
 	| `Maybe  ->
 	  (match (Abs.is_small abs' !Constant.precision) with
-	  | true,_ -> print_sol_for_latex abs' vars ; draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
+	  | true,_ -> Format.printf "%a\n" Abs.print abs' ; draw abs' info Graphics.green vars; (nb_steps, nb_sol+1)
 	  | _,exprs when nb_sol <= !Constant.max_sol ->
 	    draw abs' info Graphics.yellow vars;
             Abs.split abs' exprs |>

@@ -263,7 +263,8 @@ module Box(I:ITV) = (struct
     filter_bounds_bot aux
 
   let rec meet (a:t) (b:Syntax.bexpr) : t = 
-    match b with
+    (* Format.printf "%a meet %a\n" print a Syntax.print_bexpr b; *)
+    let a' = match b with
     | And (b1,b2) -> meet (meet a b2) b1
     | Or (b1,b2) ->
       let a1 = try Some(meet a b1) with Bot.Bot_found -> None
@@ -277,6 +278,9 @@ module Box(I:ITV) = (struct
       (match test a e1 binop e2 with
       | Bot -> raise Bot_found
       | Nb e -> e)
+    in
+    (* Format.printf "%a\n" print a'; *)
+    a'
 	
   let of_problem (p:Syntax.prog) =
     let interval_of_domain dom =
@@ -301,9 +305,13 @@ module Box(I:ITV) = (struct
     let is_e = Env.for_all (fun v i -> I.is_singleton i) int_vars in
     Env.cardinal int_vars = 0 || is_e
     
-  let sat_cons (a:t) (constr:Syntax.bexpr) : bool =
-    try is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
-    with Bot.Bot_found -> true
+  let rec sat_cons (a:t) (constr:Syntax.bexpr) : bool =
+    match constr with
+    | Cmp (EQ, e1, e2) -> 
+      sat_cons a (Cmp (LEQ, e1, e2)) && sat_cons a (Cmp (GEQ, e1, e2))
+    | _ -> 
+      try is_bottom (meet a (Syntax.Not constr)) && is_enumerated a
+      with Bot.Bot_found -> true
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in

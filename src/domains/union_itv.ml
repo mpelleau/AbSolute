@@ -13,7 +13,7 @@ open Itv_sig
 module Union_Itv(I:ITV) = (struct
 
   include I
-
+  module I = I
 
   let check_bot2 (l:t bot list) : t list bot =
     let no_bot = List.filter (fun i -> not (is_Bot i)) l in
@@ -24,6 +24,22 @@ module Union_Itv(I:ITV) = (struct
     let no_bot = List.filter (fun (il,ih) -> B.leq il ih) l in
     if List.length no_bot = 0 then Bot
     else Nb no_bot
+
+  let rec enumerate l min max =
+    if min = max then
+      (max::l)
+    else
+      enumerate (min::l) (min+1) max
+
+  let remove_bot (l:t list bot) : t list =
+    match l with
+    | Bot -> []
+    | Nb (l) -> l
+
+  let remove_bot2 (l:t bot list) : t list =
+    let no_bot = List.filter (fun i -> not (is_Bot i)) l in
+    if List.length no_bot = 0 then []
+    else List.map (fun i -> debot i) no_bot
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -210,17 +226,30 @@ module Union_Itv(I:ITV) = (struct
     let tmp = List.filter (fun i -> not(is_Bot i)) res in
     List.map (fun i -> debot i) tmp
 
-  let div_il (i:t) (l:t list) : t bot list =
+  let div_il (i:t) (l:t list) : t list bot =
     if List.length l = 1 then
       div2 i (List.hd l)
     else
-      List.fold_left (fun lres il -> List.append lres (div2 i il)) [] l
+      let res = List.fold_left (fun lres il -> List.append 
+						 lres 
+						 (match (div2 i il) with
+						  | Bot -> []
+						  | Nb list -> list
+						 )
+			       ) [] l 
+      in
+      if List.length res = 0 then Bot else Nb res
 
   let div_ll (l1:t list) (l2:t list) : t list bot =
-    let res = List.fold_left (fun a b -> List.append a (div_il b l2)) [] l1 in
-    let tmp = List.filter (fun i -> not(is_Bot i)) res in
-    if List.length tmp = 0 then Bot
-    else Nb (List.map (fun i -> debot i) tmp)
+    let res = List.fold_left (fun a b -> List.append 
+					   a 
+					   (match (div_il b l2) with
+					    | Bot -> []
+					    | Nb list -> list
+					   )
+			     ) [] l1 in
+    if List.length res = 0 then Bot
+    else Nb res
  
   (* arithmetic *)
   (* ---------- *)
@@ -269,64 +298,68 @@ module Union_Itv(I:ITV) = (struct
     | Bot -> Bot
     | Nb l -> Nb (List.map (fun (il,ih) -> if B.sign il < 0 then (B.minus_inf, ih) else (il,ih)) l)
 
-  let compute_itv itv itv' i i' =
+
+  (*the two closest floating boundaries of pi*)
+  let pi_up = B.of_float_up 3.14159265358979356
+  let pi_down = B.of_float_down 3.14159265358979312
+
+  (* it improves soundness to use those *)
+  let i_pi:t= pi_up, pi_down
+  let i_pi_half = div i_pi (of_int 2) |> fst |> debot
+  let i_two_pi = add i_pi i_pi
+  let i_three_half_of_pi = div (add i_two_pi i_pi) (of_int 2) |> fst |> debot
+
+  let compute_itv (itv:t) (itv':t) i i' =
     let aux = 
       if i mod 2 = 0 then
-        add itv' (mul (of_bound pi) (of_int i))
+        add itv' (mul i_pi (of_int i))
       else
-        sub (mul (of_bound pi) (of_int i')) itv'
+        sub (mul i_pi (of_int i')) itv'
     in
-    meet itv aux
+    I.meet itv aux
+
+  let applyf f (l1:t list) (l2:t list) : t list bot =
+    let res = List.fold_left 
+		(fun acc itv -> List.append acc 
+					    (List.fold_left 
+					       (fun acci ri -> 
+						List.append acci 
+						  (f itv ri))
+					    [] l2)
+		) [] l1 in
+    if List.length res = 0 then Bot
+    else Nb (res)
+
+  let filter_sin_itv (i:t) (r:t) : t list =
+    let asin_r = asin r in
+    let (aux, _) = div (add i i_pi_half) i_pi in
+    match (aux, asin_r) with
+    | Bot, _ | _, Bot -> []
+    | Nb (p1,p2), Nb (a_r) -> 
+      let i1 = int_of_float (B.to_float_up (B.floor p1)) in
+      let i2 = int_of_float (B.to_float_up (B.floor p2)) in
+      let values = enumerate [] i1 i2 in
+      List.map (fun v -> compute_itv i a_r v v) values |> remove_bot2
 
   (* r = sin i => i = arcsin r *)
-  let filter_sin i r =
-    let asin_r = asin r in
-    let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
-    match (aux, asin_r) with
-    | Bot, _ | _, Bot -> Bot
-    | Nb (p1,p2), Nb ((l,h) as a_r) -> 
-      let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
-      let itv = ref (compute_itv i a_r !idx !idx) in
-      while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
-        idx := !idx + 1;
-        itv := compute_itv i a_r !idx !idx;
-      done;
-      if (is_Bot !itv) then
-        Bot
-      else
-        let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
-        let itv' = ref (compute_itv i a_r !idx !idx) in
-        while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
-          idx := !idx - 1;
-          itv' := compute_itv i a_r !idx !idx;
-        done;
-        (Bot.join_bot2 join !itv !itv')   
+  let filter_sin (i:t list) (r:t list) : t list bot =
+    applyf filter_sin_itv i r
 
-(*
-  (* r = cos i => i = arccos r *)
-  let filter_cos (i:t) (r:t) : t bot =
+  let filter_cos_itv (i:t) (r:t) : t list =
     let acos_r = acos r in
-    let (aux, _) = div i (of_bound pi) in
+    let (aux, _) = div i i_pi in
     match (aux, acos_r) with
-    | Bot, _ | _, Bot -> Bot
-    | Nb (p1,p2), Nb ((l,h) as a_r) -> 
-      let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
-      let itv = ref (compute_itv i a_r !idx (!idx+1)) in
-      while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
-        idx := !idx + 1;
-        itv := compute_itv i a_r !idx (!idx+1);
-      done;
-      if (is_Bot !itv) then
-        Bot
-      else
-        let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
-        let itv' = ref (compute_itv i a_r !idx (!idx+1)) in
-        while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
-          idx := !idx - 1;
-          itv' := compute_itv i a_r !idx (!idx+1);
-        done;
-        (Bot.join_bot2 join !itv !itv')
+    | Bot, _ | _, Bot -> []
+    | Nb (p1,p2), Nb (a_r) -> 
+      let i1 = int_of_float (B.to_float_up (B.floor p1)) in
+      let i2 = int_of_float (B.to_float_up (B.floor p2)) in
+      let values = enumerate [] i1 i2 in
+      List.map (fun v -> compute_itv i a_r v (v+1)) values |> remove_bot2
 
+  (* r = cos i => i = arccos r *)
+  let filter_cos (i:t list) (r:t list) : t list bot =
+    applyf filter_cos_itv i r
+(*
   (* r = tan i => i = arctan r *)
   let filter_tan i r =
     let atan_r = atan r in
