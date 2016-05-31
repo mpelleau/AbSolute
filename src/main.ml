@@ -14,10 +14,12 @@ let parse_args () =
   | "-domain"::x::r -> Constant.domain := x; doit r
   | "-minimize"::r 
   | "-m"::r -> Constant.minimizing:= true; doit r
+  | "-trace"::r 
+  | "-t"::r -> Constant.trace := true; doit r
   | "-visualization"::r 
   | "-v"::r ->Constant.visualization:=true; doit r
   | "-obj"::r ->Constant.obj:=true; doit r
-  | "-tex"::r ->Constant.tex:=true; doit r
+  | "-tex"::r -> Constant.tex:=true; doit r
   | x::r -> Constant.problem:=x; doit r
   | [] -> ()
   in Array.to_list Sys.argv |> List.tl |> doit

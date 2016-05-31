@@ -21,10 +21,20 @@ module Solve(Abs : AbstractCP) = struct
     let rec aux abs cstrs res =
       match consistency abs cstrs with
       | Empty -> res
-      | Full abs' -> {res with values=((abs',true)::res.values); nb_sols=res.nb_sols+1}
+      | Full abs' -> 
+	 (
+	   if !Constant.trace then
+	     printf "abs = %a@." Abs.print abs';
+	   {res with values=((abs',true)::res.values); nb_sols=res.nb_sols+1}
+	 )
       | Maybe(abs',cstrs)  ->
 	let (small,expr) = is_small abs' in
-	if small then {res with values=((abs',false)::res.values); nb_sols=res.nb_sols+1}
+	if small then 
+	  (
+	    if !Constant.trace then
+	      printf "abs = %a@." Abs.print abs';
+	    {res with values=((abs',false)::res.values); nb_sols=res.nb_sols+1}
+	  )
 	else if res.nb_sols <= !Constant.max_sol then
           List.fold_left (fun res elem -> 
 	    aux elem cstrs {res with nb_steps=res.nb_steps+1}

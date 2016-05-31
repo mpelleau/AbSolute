@@ -7,3 +7,4 @@ let minimizing = ref false
 let visualization = ref false
 let obj = ref false
 let tex = ref false
+let trace = ref false
