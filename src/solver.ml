@@ -46,8 +46,10 @@ module Solve(Abs : AbstractCP) = struct
     let open Syntax in
     let abs = Abs.of_problem prob in
     printf "abs = %a@." Abs.print abs;
+    if !Constant.trace then
+      printf "\nSolutions:\n";
     let res =  explore abs prob.constraints in
-    Format.printf "solving ends\n%!";
+    printf "\nsolving ends\n%!";
     if not (Abs.is_bottom abs) then
       match res.nb_sols with
       | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
@@ -62,15 +64,15 @@ module Solve(Abs : AbstractCP) = struct
     printf "abs = %a" Abs.print abs;
     if not (Abs.is_bottom abs) then
       let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in
-      Format.printf "\nconstraints = [";
+      printf "\nconstraints = [";
       List.iter (Format.printf "%a ;" (print_bexpr)) prob.constraints;
-      Format.printf "]@.";
-      Format.printf "non linear constraints = [";
+      printf "]@.";
+      printf "non linear constraints = [";
       List.iter (Format.printf "%a ;" (print_bexpr)) cons;
-      Format.printf "]@.";
+      printf "]@.";
       let res = explore abs cons in
       Printer.out res.values prob.to_draw;
-      Format.printf "solving ends\n%!";
+      printf "solving ends\n%!";
       match res.nb_sols with
       | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
       | 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
