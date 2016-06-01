@@ -10,7 +10,8 @@ module Solve(Abs : AbstractCP) = struct
   module Printer = Out.Make(Abs)
 
   type result = {
-    values : (Abs.t * bool) list;  (* the abstract values. true for full, false for maybe *) 
+    sure : Abs.t list;             (* abstract elements that satisfy the constraints *)
+    unsure : Abs.t list;           (* abstract elements that MAY satisfy the constraints *) 
     nb_sols : int;                 (* number of solutions *)
     nb_steps : int                 (* number of steps of the solving process *)
   }
@@ -21,33 +22,21 @@ module Solve(Abs : AbstractCP) = struct
     let rec aux abs cstrs res =
       match consistency abs cstrs with
       | Empty -> res
-      | Full abs' -> 
-	 (
-	   if !Constant.trace then
-	     printf "abs = %a@." Abs.print abs';
-	   {res with values=((abs',true)::res.values); nb_sols=res.nb_sols+1}
-	 )
+      | Full abs' -> {res with sure=(abs'::res.sure); nb_sols=res.nb_sols+1}
       | Maybe(abs',cstrs)  ->
 	let (small,expr) = is_small abs' in
-	if small then 
-	  (
-	    if !Constant.trace then
-	      printf "abs = %a@." Abs.print abs';
-	    {res with values=((abs',false)::res.values); nb_sols=res.nb_sols+1}
-	  )
+	if small then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
 	else if res.nb_sols <= !Constant.max_sol then
           List.fold_left (fun res elem -> 
 	    aux elem cstrs {res with nb_steps=res.nb_steps+1}
 	  ) res (split abs' expr)
         else res
-    in aux abs constrs {values=[]; nb_sols=0; nb_steps=0}
+    in aux abs constrs {sure=[]; unsure=[]; nb_sols=0; nb_steps=0}
 
   let solving prob =
     let open Syntax in
     let abs = Abs.of_problem prob in
     printf "abs = %a@." Abs.print abs;
-    if !Constant.trace then
-      printf "\nSolutions:\n";
     let res =  explore abs prob.constraints in
     printf "\nsolving ends\n%!";
     if not (Abs.is_bottom abs) then
@@ -56,7 +45,7 @@ module Solve(Abs : AbstractCP) = struct
       | 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
       | _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
     else printf "No Solutions - #created nodes: 0@.";
-    Printer.out res.values prob.to_draw
+    Printer.out res.sure res.unsure prob.to_draw
 	
   let solving_various prob =
     let open Syntax in
@@ -71,7 +60,7 @@ module Solve(Abs : AbstractCP) = struct
       List.iter (Format.printf "%a ;" (print_bexpr)) cons;
       printf "]@.";
       let res = explore abs cons in
-      Printer.out res.values prob.to_draw;
+      Printer.out res.sure res.unsure prob.to_draw;
       printf "solving ends\n%!";
       match res.nb_sols with
       | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
