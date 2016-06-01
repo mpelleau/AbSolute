@@ -65,13 +65,10 @@ let parse (filename:string) : prog =
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
     Parser.file Lexer.token lex
   with
-  | Failure "lexing: empty token" ->
-      Printf.eprintf "Parse error (invalid token) near %s\n" 
-        (string_of_position lex.lex_start_p);
-      failwith "Parse error"
-  | _ ->
-      Printf.eprintf "Parse error (invalid syntax) near %s\n" 
-        (string_of_position lex.lex_start_p);
+  | Failure s ->
+      Printf.eprintf "Error near %s\n%s\n"
+        (string_of_position lex.lex_start_p)
+	s;
       failwith "Parse error"
 
 let parse fn =

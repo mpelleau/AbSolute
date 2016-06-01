@@ -16,9 +16,15 @@ module Boolean (Abs:AbstractCP) = struct
     | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
 
   
-  let sat_cons (a:Abs.t) (constr:Syntax.bexpr) : bool =
-    try Abs.is_bottom (filter a (Syntax.Not constr))
-    with Bot.Bot_found -> Abs.is_enumerated a
+  let rec sat_cons (a:Abs.t) (constr:Syntax.bexpr) : bool =
+    let open Syntax in
+    match constr with
+    | Or (b1,b2) -> sat_cons a b1 || sat_cons a b2
+    | And (b1,b2) -> sat_cons a b1 && sat_cons a b2
+    | Not b -> sat_cons a (Syntax.neg_bexpr b)
+    | _ -> 
+      try Abs.is_bottom (filter a (neg_bexpr constr))
+      with Bot.Bot_found -> Abs.is_enumerated a
 end
 
 (* Consistency computation and splitting strategy handling *)
