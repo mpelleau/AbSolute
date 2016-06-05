@@ -16,7 +16,12 @@ module Solve(Abs : AbstractCP) = struct
     nb_steps : int                 (* number of steps of the solving process *)
   }
 
-  let is_small abs = Abs.is_small abs
+
+  (* tests if a result can't be splitted anymore *)
+  let stop res abs =  
+    Abs.is_small abs 
+    || res.nb_sols > !Constant.max_sol
+    || res.nb_steps > !Constant.max_iter
 
   let explore (abs:Abs.t) (constrs:Syntax.constrs) : result =
     let rec aux abs cstrs res =
@@ -24,7 +29,7 @@ module Solve(Abs : AbstractCP) = struct
       | Empty -> res
       | Full abs' -> {res with sure=(abs'::res.sure); nb_sols=res.nb_sols+1}
       | Maybe(abs',cstrs)  ->
-	if is_small abs' then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
+	if stop res abs' then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
 	else if res.nb_sols <= !Constant.max_sol then
           List.fold_left (fun res elem -> 
 	    aux elem cstrs {res with nb_steps=res.nb_steps+1}
@@ -32,11 +37,30 @@ module Solve(Abs : AbstractCP) = struct
         else res
     in aux abs constrs {sure=[]; unsure=[]; nb_sols=0; nb_steps=0}
 
+  let explore_with_pruning (abs:Abs.t) (constrs:Syntax.constrs) : result =
+    let add_to add base = List.fold_left (fun a b -> b::a) base add in
+    let rec aux abs cstrs res =
+      match consistency abs cstrs with
+      | Empty -> res
+      | Full abs' -> {res with sure=(abs'::res.sure); nb_sols=res.nb_sols+1}
+      | Maybe(abs',cstrs')  ->
+	if stop res abs' then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
+	else
+	  let ls,lu = prune abs' cstrs' in
+	  let res = {res with sure = add_to ls res.sure} in
+	  List.fold_left (fun res x ->
+            List.fold_left (fun res elem -> 
+	      aux elem cstrs' {res with nb_steps=res.nb_steps+1}
+	    ) res (split x cstrs')
+	  ) res lu
+    in aux abs constrs {sure=[]; unsure=[]; nb_sols=0; nb_steps=0}
+
   let solving prob =
     let open Syntax in
     let abs = Abs.of_problem prob in
     printf "abs = %a@." Abs.print abs;
-    let res =  explore abs prob.constraints in
+    let exp = if !Constant.pruning |> not then explore else explore_with_pruning in
+    let res =  exp abs prob.constraints in
     printf "\nsolving ends\n%!";
     if not (Abs.is_bottom abs) then
       match res.nb_sols with

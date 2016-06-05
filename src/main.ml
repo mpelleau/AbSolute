@@ -18,6 +18,7 @@ let parse_args () =
   | "-t"::r -> Constant.trace := true; doit r
   | "-visualization"::r 
   | "-v"::r ->Constant.visualization:=true; doit r
+  | "-pruning"::r -> Constant.pruning:=true; doit r
   | "-obj"::r ->Constant.obj:=true; doit r
   | "-tex"::r -> Constant.tex:=true; doit r
   | x::r -> Constant.problem:=x; doit r

@@ -46,6 +46,25 @@ module Make (Abs : AbstractCP) = struct
 	| _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
     with Bot.Bot_found -> Empty
 
+  let prune (abs:Abs.t) (constrs:Syntax.constrs) =
+    let sures = Queue.create () and unsures = Queue.create () in
+    let add_to q = fun e -> Queue.push e q in
+    let rec aux abs c_list is_sure =
+      match c_list with
+      | [] -> if is_sure then add_to sures abs else add_to unsures abs
+      | h::tl ->
+	try
+	  let neg = Syntax.neg_bexpr h |> filter abs in
+	  let s,u = Abs.prune abs neg in
+	  List.iter (fun elm -> aux elm tl is_sure) s;
+	  aux u tl false
+	with Bot.Bot_found -> aux abs tl is_sure
+    in
+    aux abs constrs true;
+    let ls = Queue.fold (fun a b -> b::a) [] sures 
+    and lu = Queue.fold (fun a b -> b::a) [] unsures in
+    ls,lu
+
   let split abs cstrs = Abs.split abs
     (* TODO: add other splits *)
 end
