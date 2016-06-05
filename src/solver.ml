@@ -16,7 +16,7 @@ module Solve(Abs : AbstractCP) = struct
     nb_steps : int                 (* number of steps of the solving process *)
   }
 
-  let is_small abs = Abs.is_small abs !Constant.precision
+  let is_small abs = Abs.is_small abs
 
   let explore (abs:Abs.t) (constrs:Syntax.constrs) : result =
     let rec aux abs cstrs res =
@@ -24,12 +24,11 @@ module Solve(Abs : AbstractCP) = struct
       | Empty -> res
       | Full abs' -> {res with sure=(abs'::res.sure); nb_sols=res.nb_sols+1}
       | Maybe(abs',cstrs)  ->
-	let (small,expr) = is_small abs' in
-	if small then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
+	if is_small abs' then {res with unsure=(abs'::res.unsure); nb_sols=res.nb_sols+1}
 	else if res.nb_sols <= !Constant.max_sol then
           List.fold_left (fun res elem -> 
 	    aux elem cstrs {res with nb_steps=res.nb_steps+1}
-	  ) res (split abs' expr)
+	  ) res (split abs' cstrs)
         else res
     in aux abs constrs {sure=[]; unsure=[]; nb_sols=0; nb_steps=0}
 

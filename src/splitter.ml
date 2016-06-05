@@ -39,12 +39,13 @@ module Make (Abs : AbstractCP) = struct
   let consistency abs constrs : consistency =
     try
       let abs' = List.fold_left filter abs constrs in
-      let unsat = List.filter (fun c -> not (sat_cons abs' c)) constrs in
-      match unsat with
-      | [] -> Full abs'
-      | _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
+      if Abs.is_bottom abs' then Empty else
+	let unsat = List.filter (fun c -> not (sat_cons abs' c)) constrs in
+	match unsat with
+	| [] -> Full abs'
+	| _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
     with Bot.Bot_found -> Empty
 
-  let split abs expr = Abs.split abs expr
+  let split abs cstrs = Abs.split abs
     (* TODO: add other splits *)
 end

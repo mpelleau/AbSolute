@@ -74,7 +74,6 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     include Reduced
 
     type t = A.t * B.t
-    type split = A.split
 
     let reduced_product a b = 
       let new_a = b_meet_a a b in
@@ -89,11 +88,10 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
         (* let abs' = List.fold_left B.filter tmp cons_b in *)
         reduced_product abs tmp
     
-    let is_small ((abs, abs'):t) prec =
-      A.is_small abs prec
+    let is_small ((abs, abs'):t) = A.is_small abs
 
-    let split ((abs, abs'):t) list = 
-      let split_a = A.split abs list in
+    let split ((abs, abs'):t) = 
+      let split_a = A.split abs in
       List.map (fun x -> (x, abs')) split_a
 
     let points_to_draw ((abs, abs'):t) vars =

@@ -25,8 +25,8 @@ module Minimize(Abs : AbstractCP) = struct
 	  (draw a info Graphics.yellow vars;
            (nb_steps, best_value, sols))
         else
-          (match (Abs.is_small a !Constant.precision) with
-	  | true,_ ->
+          (match (Abs.is_small a) with
+	  | true ->
             if obj_value < best_value then
 	      (List.iter (fun a -> draw a info Graphics.yellow vars) sols;
 	       draw a info (Graphics.rgb 0 191 255) vars;
@@ -34,8 +34,8 @@ module Minimize(Abs : AbstractCP) = struct
             else
 	      (draw a info (Graphics.rgb 0 191 255) vars;
                (nb_steps, obj_value, a::sols))
-	  | _,exprs when (List.length sols) <= !Constant.max_sol ->
-            Abs.split a exprs |>
+	  | _ when (List.length sols) <= !Constant.max_sol ->
+            Abs.split a |>
 		List.fold_left (fun (a, b, c) d -> aux d b (a+1) c) (nb_steps, best_value, sols)
           | _ -> (nb_steps, best_value, sols)
 	  )

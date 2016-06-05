@@ -14,14 +14,15 @@ module BoxCP =
       let get_manager =  Box.manager_alloc ()
     end)
 
-    let is_small boxad prec =
-      let env = Abstract1.env boxad in
-      let box = Abstract1.to_box man boxad in
-      let itv = box.Abstract1.interval_array in
-      let (max, i_max) = largest itv 1 (diam_interval itv.(0)) 0 in
+    let is_small boxad : bool =
+      let (_, _, max) = largest boxad in
       let dim = Mpqf.to_float max in
-      let mid = mid_interval itv.(i_max) in
-      let var = Environment.var_of_dim env i_max in
+      (dim <= !Constant.precision)
+
+  let split abs =
+      let env = Abstract1.env abs in
+      let (var, itv, size) = largest abs in
+      let mid = mid_interval itv in
       let value = match Environment.typ_of_var env var with
 	| Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf 
 	| _ -> mid
@@ -32,8 +33,8 @@ module BoxCP =
       (* var >= value*)
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      (dim <= prec, [expr; expr'])
-
+      split abs [expr;expr']
+	
     (* More efficient implementation of points to draw *)
     let points_to_draw box vars =
       let env = Abstract1.env box in
@@ -61,7 +62,7 @@ module OctMinMinCP =
       let get_manager =  Oct.manager_alloc ()
     end)
 
-    let is_small octad prec =
+    let is_small octad =
       (*printf "oct = %a@." Abstract1.print octad;*)
       let env = Abstract1.env octad in
       let dim = Environment.size env in
@@ -130,12 +131,77 @@ module OctMinMinCP =
       let expr2 = Linexpr1.make env in
       Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
       let mmin' = Scalar.of_mpqf mmin in
-      let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in    
-      let sca_cst = scalar_plus_mpqf cst split_prec_mpqf in
-      Linexpr1.set_cst linexpr1 (Coeff.Scalar (Scalar.neg sca_cst));
-      Linexpr1.set_cst linexpr2 (Coeff.Scalar sca_cst);      
+      let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in 
       let max = scalar_to_float max in
-      (max <= prec, [linexpr1; linexpr2])
+      (max <= !Constant.precision)
+
+    let split octad =
+      let env = Abstract1.env octad in
+      let dim = Environment.size env in
+      let coeff1 = Coeff.s_of_int 1 in
+      let coeff_1 = Coeff.s_of_int (-1) in
+      
+      (* Compute the max and the min for the basis Bij *)
+      let minmax_bij var_i var_j =
+        let expr1 = Linexpr1.make env in
+        Linexpr1.set_list expr1 [(coeff1, var_i) ; (coeff1, var_j)] None;
+        let expr2 = Linexpr1.make env in
+        Linexpr1.set_list expr2 [(coeff1, var_i) ; (coeff_1, var_j)] None;
+        
+        let expr1' = Linexpr1.make env in
+        Linexpr1.set_list expr1' [(coeff_1, var_i) ; (coeff_1, var_j)] None;
+        let expr2' = Linexpr1.make env in
+        Linexpr1.set_list expr2' [(coeff_1, var_i) ; (coeff1, var_j)] None;
+        
+        (* Get the interval for the expression "vi + vj" and "vi -vj" *)
+        let itv1 = Abstract1.bound_linexpr man octad expr1 in
+        let diam1 = Scalar.of_mpqf (diam_interval itv1) in
+        let itv2 = Abstract1.bound_linexpr man octad expr2 in
+        let diam2 = Scalar.of_mpqf (diam_interval itv2) in
+        
+        let cond = (Scalar.cmp diam1 diam2 > 0) in
+        let diam_max = if cond then (scalar_mul_sqrt2 diam1) else (scalar_mul_sqrt2 diam2) in
+        let expr_max = if cond then expr1 else expr2 in
+        let expr_max' = if cond then expr1' else expr2' in
+        let itv_max = if cond then itv1 else itv2 in
+        let diam_min = if cond then (scalar_mul_sqrt2 diam2) else (scalar_mul_sqrt2 diam1) in
+        (*printf "      min = %f, max = %f@." (scalar_to_float diam_min) (scalar_to_float diam_max);*)
+        (expr_max, expr_max', itv_max, diam_max, diam_min)
+      in
+      
+      (* For a given i, compute the min of all the min for the basis Bij 
+       * and the corresopnding max.
+       * min_{j \in \{i+1...n\}} (min Bij) *)
+      let rec minmax_bi var_i j min max cst linexpr1 linexpr2 =
+        if j >= dim then (linexpr1, linexpr2, cst, max, min)
+        else 
+	  let var_j = Environment.var_of_dim env j in
+          let (expr_max, expr_max', itv_max, diam_max, diam_min) = minmax_bij var_i var_j in
+          if Scalar.cmp diam_min min < 0 then
+            minmax_bi var_i (j+1) diam_min diam_max (mid_interval itv_max) expr_max expr_max'
+          else
+            minmax_bi var_i (j+1) min max cst linexpr1 linexpr2
+      in
+      let rec minmax_b i min max cst linexpr1 linexpr2 =
+        if i >= dim-1 then (linexpr1, linexpr2, cst, max, min)
+        else
+          let var_i = Environment.var_of_dim env i in
+          let (linexpr1', linexpr2', cst', max', min') = minmax_bi var_i (i+1) min max cst linexpr1 linexpr2 in
+          if Scalar.cmp min' min < 0 then minmax_b (i+1) min' max' cst' linexpr1' linexpr2'
+          else minmax_b (i+1) min max cst linexpr1 linexpr2
+      in
+      
+      let box = Abstract1.to_box man octad in
+      let tab = box.Abstract1.interval_array in
+      let (mmax, i_max, mmin, i_min) = minmax tab 1 (diam_interval tab.(0)) 0 (diam_interval tab.(0)) 0 in  
+      let mmax' = Scalar.of_mpqf mmax in
+      let expr1 = Linexpr1.make env in
+      Linexpr1.set_list expr1 [(coeff1, Environment.var_of_dim env i_max)] None;
+      let expr2 = Linexpr1.make env in
+      Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
+      let mmin' = Scalar.of_mpqf mmin in
+      let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in 
+      split octad [linexpr1;linexpr2]
   end
 
 (** 
@@ -149,7 +215,7 @@ module OctMinMaxCP =
       let get_manager =  Oct.manager_alloc ()
     end)
 
-    let is_small octad prec =
+    let is_small octad =
       (*printf "oct = %a@." Abstract1.print octad;*)
       let env = Abstract1.env octad in
       let dim = Environment.size env in
@@ -220,16 +286,14 @@ module OctMinMaxCP =
           )
       in
       
-      let box = Abstract1.to_box man octad in
-      let tab = box.Abstract1.interval_array in
       (*printf "box = %a@." (print_array Interval.print) tab;*)
-      let (mmax, i_max) = largest tab 1 (diam_interval tab.(0)) 0 in
+      let (var, itv, mmax) = largest octad in
       let mmax' = Scalar.of_mpqf mmax in
       let expr1 = Linexpr1.make env in
-      Linexpr1.set_list expr1 [(coeff1, Environment.var_of_dim env i_max)] None;
+      Linexpr1.set_list expr1 [(coeff1, var)] None;
       let expr2 = Linexpr1.make env in
-      Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
-      let (linexpr1, linexpr2, cst, min_max) = max 0 mmax' (mid_interval tab.(i_max)) expr1 expr2 in
+      Linexpr1.set_list expr2 [(coeff_1, var)] None;
+      let (linexpr1, linexpr2, cst, min_max) = max 0 mmax' (mid_interval itv) expr1 expr2 in
       
       let sca_cst = scalar_plus_mpqf cst split_prec_mpqf in
       Linexpr1.set_cst linexpr1 (Coeff.Scalar (Scalar.neg sca_cst));
@@ -237,10 +301,14 @@ module OctMinMaxCP =
       
       let max = scalar_to_float min_max in
       (*printf "max = %f@.split = [%a, %a]@." max Linexpr1.print linexpr1 Linexpr1.print linexpr2;*)
-      (max <= prec, [linexpr1; linexpr2])
+      (max <= !Constant.precision)
+	
+    let split octad = 
+      let env = Abstract1.env octad in
+      let poly = to_poly octad env in
+      split octad (get_expr (Polka.manager_alloc_strict()) poly)
   end
 
- 
 (** 
  * Module for the Octagon Abstract Domains for Constraint Programming.
  *)
@@ -252,14 +320,15 @@ module OctBoxCP =
       let get_manager =  Oct.manager_alloc ()
     end) 
 
-    let is_small octad prec =
-      let env = Abstract1.env octad in
-      let box = Abstract1.to_box man octad in
-      let itv = box.Abstract1.interval_array in
-      let (max, i_max) = largest itv 1 (diam_interval itv.(0)) 0 in
+    let is_small octad =
+      let (_, _,max) = largest octad in
       let dim = Mpqf.to_float max in
-      let mid = mid_interval itv.(i_max) in
-      let var = Environment.var_of_dim env i_max in
+      (dim <= !Constant.precision)
+
+    let split octad =
+      let env = Abstract1.env octad in
+      let (var, itv, size) = largest octad in
+      let mid = mid_interval itv in
       let typ_var = Environment.typ_of_var env var in
       let value = if typ_var == Environment.INT then (scalar_plus_mpqf mid split_prec_mpqf) else mid in
       (* var <= mid*)
@@ -268,7 +337,7 @@ module OctBoxCP =
       (* var >= value*)
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      (dim <= prec, [expr; expr'])
+      split octad [expr; expr']
   end
 
 (** 
@@ -280,19 +349,7 @@ module PolyCP = struct
     let get_manager = Polka.manager_alloc_strict()
   end)
       
-  let is_small polyad prec =
-    let poly = Abstract1.to_generator_array man polyad in 
-    let gen_env = poly.Generator1.array_env in
-    (*print_gen gens gen_env;*)
-    let size = Environment.size gen_env in
-    let gen_float_array = gen_to_array poly size in
-    let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
-    let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
-    let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
-    let cst_sca2 = Scalar.of_float (cst +. split_prec) in
-    let linexp = Linexpr1.make gen_env in
-    Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
-    let linexp' = Linexpr1.make gen_env in
-    Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
-    (dist_max <= prec, [linexp; linexp'])
+  let is_small poly = is_small man poly
+
+  let split poly = split poly (get_expr (Polka.manager_alloc_strict()) poly)
 end
