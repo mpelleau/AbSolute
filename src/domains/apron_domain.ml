@@ -92,8 +92,6 @@ module MAKE(AP:ADomain) = struct
 
   let man = AP.get_manager
 
-  type split = Linexpr1.t
-
   module Translate = SyntaxTranslator(AP)
 
   let of_problem p = Translate.domain_to_apron p
@@ -116,25 +114,14 @@ module MAKE(AP:ADomain) = struct
 
   let join a b = Abstract1.join man a b
     
+  let prune a b = [],a
+
   let filter b (e1,c,e2) = 
     let env = Abstract1.env b in
     let c = Translate.cmp_expr_to_apron (e1,c,e2) env in
     Abstract1.meet_tcons_array man b (Utils.tcons_list_to_earray [c])
       
   let print = Abstract1.print
-
-  let split abs list =
-    let meet_linexpr abs man env expr =
-      let cons = Lincons1.make expr Lincons1.SUPEQ in
-      let tab = Lincons1.array_make env 1 in
-      Lincons1.array_set tab 0 cons;
-      let abs' = Abstract1.meet_lincons_array man abs tab in
-      abs'
-    in
-    let env = Abstract1.env abs in
-    let abs1 = meet_linexpr abs man env (List.nth list 0) in
-    let abs2 = meet_linexpr abs man env (List.nth list 1) in
-    [abs1; abs2]    
 
   let to_box abs env = 
     let abs' = Abstract1.change_environment man abs env false in
@@ -187,7 +174,7 @@ module MAKE(AP:ADomain) = struct
       let open Utils in
       (scalar_to_float obj_inf, scalar_to_float obj_sup)
 
-     (* utilties for splitting *)
+    (* utilties for splitting *)
 
     let rec largest tab i max i_max =
       if i>=Array.length tab then (max, i_max) 
@@ -195,7 +182,22 @@ module MAKE(AP:ADomain) = struct
 	let dim = diam_interval (tab.(i)) in
 	if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
 	else largest tab (i+1) max i_max
-	  
+
+    let largest abs : (Var.t * Interval.t * Mpqf.t) =
+      let env = Abstract1.env abs in
+      let box = Abstract1.to_box man abs in
+      let tab = box.Abstract1.interval_array in
+      let rec aux cur i_max diam_max itv_max =
+	if cur>=Array.length tab then (i_max, diam_max, itv_max) 
+	else  
+	  let e = tab.(cur) in
+	  let diam = diam_interval e in
+	  if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
+	  else aux (cur+1) i_max diam_max itv_max
+      in 
+      let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
+      ((Environment.var_of_dim env a),c,b)
+      
     (* Compute the minimal and the maximal diameter of an array on intervals *)
     let rec minmax tab i max i_max min i_min =
       if i>=Array.length tab then  (max, i_max, min, i_min)
@@ -219,4 +221,46 @@ module MAKE(AP:ADomain) = struct
 	let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
 	let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
 	genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
+
+ let split abs list =
+    let meet_linexpr abs man env expr =
+      let cons = Lincons1.make expr Lincons1.SUPEQ in
+      let tab = Lincons1.array_make env 1 in
+      Lincons1.array_set tab 0 cons;
+      let abs' = Abstract1.meet_lincons_array man abs tab in
+      abs'
+    in
+    let env = Abstract1.env abs in
+    let abs1 = meet_linexpr abs man env (List.nth list 0) in
+    let abs2 = meet_linexpr abs man env (List.nth list 1) in
+    [abs1; abs2] 
+
+  (************************************************)
+  (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)
+  (************************************************)
+
+  let get_expr man polyad = 
+    let poly = Abstract1.to_generator_array man polyad in 
+    let gen_env = poly.Generator1.array_env in
+    (*print_gen gens gen_env;*)
+    let size = Environment.size gen_env in
+    let gen_float_array = gen_to_array poly size in
+    let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
+    let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
+    let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
+    let cst_sca2 = Scalar.of_float (cst +. split_prec) in
+    let linexp = Linexpr1.make gen_env in
+    Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
+    let linexp' = Linexpr1.make gen_env in
+    Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
+    [linexp; linexp']
+
+  let is_small man polyad = 
+    let poly = Abstract1.to_generator_array man polyad in 
+    let gen_env = poly.Generator1.array_env in
+    (*print_gen gens gen_env;*)
+    let size = Environment.size gen_env in
+    let gen_float_array = gen_to_array poly size in
+    let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
+    (dist_max <= !Constant.precision)
 end

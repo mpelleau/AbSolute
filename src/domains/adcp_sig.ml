@@ -9,16 +9,13 @@ module type AbstractCP = sig
   (* abstract elements *)
   type t
   
-  (* values used to split an abstract element *)
-  type split
-
   (*** INSTANCIATION ***)
    (* instanciation of an abstract element with the domains of the variables of a problem *)
    val of_problem : Syntax.prog -> t
 
    (*** PREDICATES ***)
    (* tests if an abstract element is too small to be cut *)
-   val is_small : t -> float -> (bool * split list)
+   val is_small : t -> bool
 
    val is_bottom : t -> bool
 
@@ -27,8 +24,11 @@ module type AbstractCP = sig
    (*** OPERATIONS ***)
    val join: t -> t -> t
 
-   (* split an abstract element according to the split list *)
-   val split : t -> split list -> t list
+   (* pruning *)
+   val prune : t -> t -> t list * t
+
+   (* split an abstract element *)
+   val split : t -> t list
 
    val filter : t -> (Syntax.expr * Syntax.cmpop * Syntax.expr) -> t
 

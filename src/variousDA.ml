@@ -90,6 +90,11 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     
     let is_small ((abs, abs'):t) = A.is_small abs
 
+    let prune (a,a') (b,b') = 
+      let la,ua = A.prune a b
+      and lb,ub = B.prune a' b' in
+      [],(a,a')
+
     let split ((abs, abs'):t) = 
       let split_a = A.split abs in
       List.map (fun x -> (x, abs')) split_a

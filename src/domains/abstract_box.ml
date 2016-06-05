@@ -26,9 +26,6 @@ module Box (I:ITV) = struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
-  (* boxes split along variables *)
-  type split = var
-
   let find v a =
     try (Env.find v a, v) with
       Not_found -> (Env.find (v^"%") a, v^"%")
@@ -94,9 +91,9 @@ module Box (I:ITV) = struct
         if B.geq (I.range i) (I.range io) then v,i else vo,io
       ) a (Env.min_binding a)
       
-  let is_small (a:t) (f:float) : (bool * split list)=
+  let is_small (a:t) : bool =
     let (v,i) = max_range a in
-    (B.to_float_up (I.range i) <= f), [v]
+    (B.to_float_up (I.range i) <= !Constant.precision)
 
 
   (* split *)
@@ -128,22 +125,52 @@ module Box (I:ITV) = struct
       if is_integer v then I.filter_bounds i
       else Nb i
     ) e
-    |> to_bot	      
+    |> to_bot
 
-  let split (a:t) (vars:var list) : t list =
-    match vars with
-    | [v] ->
-      let (i, _) = find v a in
-      let i_list = 
-        if is_integer v then I.split_integer i (I.mean i) 
-        else I.split i (I.mean i) 
-      in
-      List.fold_left (fun acc b -> 
-	match b with
-	| Nb e -> (Env.add v e a)::acc
-	| Bot -> acc
-      ) [] i_list
-    | _ -> failwith "split need to be done on one variable"
+let split_along (a:t) (v:var) : t list =    
+    let i = Env.find v a in
+    let i_list = 
+      if is_integer v then I.split_integer i (I.mean i) 
+      else I.split i (I.mean i)
+    in
+    List.fold_left (fun acc b -> 
+      match b with
+      | Nb e -> (Env.add v e a)::acc
+      | Bot -> acc
+    ) [] i_list
+
+  let split (a:t) : t list =
+    let (v,_) = max_range a in
+    split_along a v
+
+  let prune (a:t) (b:t) : t list * t = 
+    let epsilon = B.of_float_up min_float in
+    let itv_prune (l,h) (l',h') = 
+      let h'_eps = B.add_up h' epsilon 
+      and l'_eps = B.sub_down l' epsilon 
+      and step = B.div_up (I.range (l,h)) (B.of_int_up 6) in
+      let h_step = B.add_up h' step and l_step = B.sub_down l' step in
+      match (B.lt h_step h),(B.gt l_step l) with
+      | true , true  -> `Both((l,l'_eps),(l'_eps,h'_eps),(h'_eps,h))
+      | false,true  -> `Low ((l,l'_eps),(l'_eps,h))
+      | true ,false -> `High((l,h'_eps),(h'_eps,h))
+      | false, false -> `None
+    in
+    let rec aux a good = function
+      | [] -> good,a
+      | (v, i_b)::tl ->
+	let add = fun i -> (Env.add v i a) in
+	let i_a = Env.find v a in
+	match itv_prune i_a i_b with
+	| `Both(low, mid, high) ->
+	  aux (add mid) ((add low)::(add high)::good) tl
+	| `Low (low, high) ->
+	  aux (add high) ((add low)::good) tl
+	| `High(low, high) ->
+	  aux (add low) ((add high)::good) tl
+	| `None -> aux a good tl
+    in aux a [] (Env.bindings b)
+
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)

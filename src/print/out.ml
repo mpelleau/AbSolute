@@ -72,7 +72,6 @@ module Make(Abs:AbstractCP) = struct
   let out sure unsure vars =
     if !Constant.visualization then draw2d sure unsure vars;
     if !Constant.tex then print_latex sure unsure vars;
-    if !Constant.visualization then draw2d sure unsure vars;
     if !Constant.trace then trace sure unsure
     (* if !Constant.obj then draw3d values vars *)
 
