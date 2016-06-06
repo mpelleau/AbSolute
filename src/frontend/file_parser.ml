@@ -58,7 +58,12 @@ let string_of_position p =
   Printf.sprintf "%s:%i:%i" p.pos_fname p.pos_lnum (p.pos_cnum - p.pos_bol)
    
 (* open a file and parse it *)
-let parse (filename:string) : prog =
+let parse (filename:string option) : prog =
+  let filename = 
+    match filename with
+    | None -> failwith "you must specify a filename"
+    | Some s -> s
+  in
   let f = open_in filename in
   let lex = from_channel f in
   try

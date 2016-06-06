@@ -60,9 +60,12 @@ module Make(Abs:AbstractCP) = struct
 
   let draw3d values vars =
     if !Constant.domain = "box" then
-      let out = Filename.basename !Constant.problem in
-      let out = ("out/"^(Filename.chop_extension out)^".obj") in
-      Objgen.doit out values vars
+      match !Constant.problem with
+      | None -> assert false
+      | Some s ->
+	let out = Filename.basename s in
+	let out = ("out/"^(Filename.chop_extension out)^".obj") in
+	Objgen.doit out values vars
     else Format.printf "obj generation only available with interval domain for now\n"
 
   let trace sure unsure = 
