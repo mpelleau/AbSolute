@@ -32,9 +32,7 @@ Therefore, the easiest way to deal with apron is to install it with **and only w
 ```
 
 ###### options
-  - p v : change the precision to "v". default is 0.001
-  - v : with visualization
-  - domain d : change the domain to "d". default is "box"
+to display the list of options, type: **./solver.opt -help** or **./solver.opt --help**
 
 
 ### Requirements

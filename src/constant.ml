@@ -1,5 +1,5 @@
-let precision       = ref 0.01
-let max_iter        = ref 1000000000
+let precision       = ref 0.001
+let max_iter        = ref 10000000
 let max_sol         = ref 1000000
 let problem         = ref "problems/one_circle.txt"
 let domain          = ref "box"
