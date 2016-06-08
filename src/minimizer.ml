@@ -68,7 +68,7 @@ module Minimize(Abs : AbstractCP) = struct
       | 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
       | _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
     else printf "No Solutions - #created nodes: 0@.";
-    Printer.out res.sure res.unsure prob.to_draw
+    Printer.out_min res.sure res.unsure res.best_value prob.to_draw
 	  
     let minimizing_various prob =
     let open Syntax in
@@ -83,7 +83,7 @@ module Minimize(Abs : AbstractCP) = struct
       List.iter (Format.printf "%a ;" (print_bexpr)) cons;
       printf "]@.";
       let res = explore abs cons prob.objective in
-      Printer.out res.sure res.unsure prob.to_draw;
+      Printer.out_min res.sure res.unsure res.best_value prob.to_draw;
       printf "solving ends\n%!";
       match res.nb_sols with
       | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
