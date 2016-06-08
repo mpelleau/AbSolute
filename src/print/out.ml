@@ -78,4 +78,16 @@ module Make(Abs:AbstractCP) = struct
     if !Constant.trace then trace sure unsure
     (* if !Constant.obj then draw3d values vars *)
 
+
+  let trace_min sure unsure value = 
+    Format.printf "best value:%f\n%!" value;
+    List.iter (Format.printf "sure:%a\n%!" Abs.print) sure;
+    List.iter (Format.printf "unsure:%a\n%!" Abs.print) unsure
+
+  let out_min sure unsure value vars =
+    if !Constant.visualization then draw2d sure unsure vars;
+    if !Constant.tex then print_latex sure unsure vars;
+    if !Constant.trace then trace_min sure unsure value
+    (* if !Constant.obj then draw3d values vars *)
+
 end
