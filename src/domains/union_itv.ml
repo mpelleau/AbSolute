@@ -15,6 +15,8 @@ module Union_Itv(I:ITV) = (struct
   include I
   module I = I
 
+  let check_bot l = if List.length l = 0 then Bot else Nb l
+
   let check_bot2 (l:t bot list) : t list bot =
     let no_bot = List.filter (fun i -> not (is_Bot i)) l in
     if List.length no_bot = 0 then Bot
@@ -226,6 +228,17 @@ module Union_Itv(I:ITV) = (struct
     let tmp = List.filter (fun i -> not(is_Bot i)) res in
     List.map (fun i -> debot i) tmp
 
+  let apply_test_il f (i:t) (l:t list) : ((t*t) bot) list =
+    if List.length l = 1 then
+      [f i (List.hd l)]
+    else
+      List.fold_left (fun lres il -> (f i il::lres)) [] l
+
+  let apply_test_ll f (l1:t list) (l2:t list) : (t*t) list =
+    let res = List.fold_left (fun a b -> List.append a (apply_test_il f b l2)) [] l1 in
+    let tmp = List.filter (fun i -> not(is_Bot i)) res in
+    List.map (fun i -> debot i) tmp
+
   let div_il (i:t) (l:t list) : t list bot =
     if List.length l = 1 then
       div2 i (List.hd l)
@@ -240,7 +253,7 @@ module Union_Itv(I:ITV) = (struct
       in
       if List.length res = 0 then Bot else Nb res
 
-  let div_ll (l1:t list) (l2:t list) : t list bot =
+  let div_ll (l1:t list) (l2:t list) : (t list) bot =
     let res = List.fold_left (fun a b -> List.append 
 					   a 
 					   (match (div_il b l2) with
@@ -250,7 +263,37 @@ module Union_Itv(I:ITV) = (struct
 			     ) [] l1 in
     if List.length res = 0 then Bot
     else Nb res
- 
+
+  (* tests *)
+  (* ----- *)
+
+  let filter_leq (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_leq l1 l2)
+      
+  let filter_geq (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_geq l1 l2)
+      
+  let filter_lt (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_lt l1 l2)
+      
+  let filter_gt (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_gt l1 l2)
+      
+  let filter_eq (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_eq l1 l2)
+      
+  let filter_neq (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_neq l1 l2)
+      
+  let filter_lt_int (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_lt_int l1 l2)
+      
+  let filter_gt_int (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_gt_int l1 l2)
+      
+  let filter_neq_int (l1:t list) (l2:t list) : ((t*t) list) bot =
+    check_bot (apply_test_ll I.filter_neq_int l1 l2)
+
   (* arithmetic *)
   (* ---------- *)
 
