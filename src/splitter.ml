@@ -32,6 +32,13 @@ module Make (Abs : AbstractCP) = struct
 
   include Boolean(Abs)
 
+  let init (problem:Syntax.prog) : Abs.t =
+    Syntax.(List.fold_left (fun abs (t,v,d) -> 
+      let c1,c2 = domain_to_constraints (t,v,d) in
+      let abs = Abs.add_var abs (t,v) in
+      Abs.filter (Abs.filter abs c1) c2
+    )  Abs.empty problem.init)
+
   type consistency = Full of Abs.t 
 		     | Maybe of Abs.t * Syntax.bexpr list
 		     | Empty

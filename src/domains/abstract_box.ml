@@ -290,24 +290,11 @@ let split_along (a:t) (v:var) : t list =
     match test a e1 binop e2 with
     | Bot -> raise Bot_found
     | Nb e -> e
-	
-  let of_problem (p:Syntax.prog) =
-    let interval_of_domain dom =
-      let open Syntax in
-      match dom with
-      | Finite(a,b) -> I.of_floats a b
-      | Minf i -> I.of_bounds B.minus_inf (B.of_float_up i)
-      | Inf i -> I.of_bounds (B.of_float_down i) B.inf
-      | Top -> I.of_bounds B.minus_inf B.inf 
-    in
-    let abs = 
-      List.fold_left (fun a (typ,var,dom) ->
-        match typ with
-	| INT -> Env.add (var^"%") (interval_of_domain dom) a
-	| REAL -> Env.add var (interval_of_domain dom) a 
-      ) Env.empty p.init
-    in Format.printf "%a\n" print abs;
-    abs
+
+  let empty : t = Env.empty
+
+  let add_var abs (typ,var) : t = 
+    Env.add (if typ = Syntax.INT then (var^"%") else var) I.top abs
 
   let is_enumerated a =
     Env.for_all (fun v i -> (is_integer v |> not) || I.is_singleton i) a

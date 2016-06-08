@@ -7,14 +7,9 @@ module type ADomain = sig
   val get_manager: t Manager.t 
 end
 
-
 (* Translation functor for syntax.prog to apron values*)
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.get_manager
-
-  let type_to_apron = function
-    | REAL -> Texpr1.Real
-    | INT -> Texpr1.Int
 
   let rec expr_to_apron a (e:expr) : Texpr1.expr =
     let env = Abstract1.env a in
@@ -61,25 +56,6 @@ module SyntaxTranslator (D:ADomain) = struct
     let e = Texpr1.of_expr env (expr_to_apron a e) in
     let res = Tcons1.make e op in
     res
-    
-   let interval_of_dom env t v = function
-    | Finite (l,h) -> Interval.of_float l h
-    | Top -> Interval.top
-    | Minf i -> Interval.of_scalar (Scalar.of_infty (-1)) (Scalar.of_float i)
-    | Inf i -> Interval.of_scalar (Scalar.of_float i) (Scalar.of_infty 1)
-
-  let domain_to_apron p =
-    let integers,reals = List.partition (fun (a,_,_) -> a = INT) p.init in
-    let integers = List.map (fun (_,v,_) -> Var.of_string v) integers |> Array.of_list
-    and reals = List.map (fun (_,v,_) -> Var.of_string v) reals |> Array.of_list in
-    let env = Environment.make integers reals in
-    let var_array = List.map (fun (_,v,_) -> Var.of_string v) p.init |> Array.of_list in
-    let i_array = Array.make (List.length p.init) (Interval.of_int 0 0) in
-    List.iteri (fun i (t,v,dom) ->
-      let itv = interval_of_dom env t v dom in
-      i_array.(i) <- itv
-    ) p.init;
-    Abstract1.of_box man env var_array i_array
 end
 
 
@@ -94,8 +70,14 @@ module MAKE(AP:ADomain) = struct
 
   module Translate = SyntaxTranslator(AP)
 
-  let of_problem p = Translate.domain_to_apron p
-      
+  let empty = Abstract1.top man (Environment.make [||] [||])
+
+  let add_var abs (typ,v) =
+    let e = Abstract1.env abs in
+    let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
+    let env = Environment.add e ints reals in
+    Abstract1.change_environment man abs env false
+
   let is_bottom b = Abstract1.is_bottom man b
 
   let is_singleton b v =

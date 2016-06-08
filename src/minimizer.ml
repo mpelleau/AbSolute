@@ -47,7 +47,7 @@ module Minimize(Abs : AbstractCP) = struct
       
   let minimizing prob =
     let open Syntax in
-      let abs = Abs.of_problem prob in
+      let abs = init prob in
       printf "abs = %a@." Abs.print abs;
       if not (Abs.is_bottom abs) then
         let (nb_steps, best_value, sols) = explore abs prob.constraints prob.objective prob.to_draw in
@@ -62,7 +62,7 @@ module Minimize(Abs : AbstractCP) = struct
 	  
     let minimizing_various prob =
       let open Syntax in
-      let abs = Abs.of_problem prob in
+      let abs = init prob in
       printf "abs = %a" Abs.print abs;
       if not (Abs.is_bottom abs) then
         let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in

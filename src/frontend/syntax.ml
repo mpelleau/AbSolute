@@ -49,6 +49,12 @@ type prog = { init: decls; objective : expr; constraints: constrs; to_draw : (va
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
+let domain_to_constraints (_,v,d)  = 
+  match d with
+  | Finite (l,h) -> 
+    let c1 = (Var v, GEQ, Cst l) and c2 = (Var v, LEQ, Cst h) in c1,c2
+  | _ -> failwith "cant handle non-finite domains"
+
 (* iter on expr*)
 let rec iter_expr f = function
   | Binary (op,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
@@ -99,6 +105,11 @@ let rec neg_bexpr = function
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
+
+
+(*************************************************************)
+(*                         PREDICATES                        *)
+(*************************************************************)
 
 (* checks if an expression contains a variable *)
 let rec has_variable = function  

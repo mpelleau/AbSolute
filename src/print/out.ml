@@ -55,8 +55,8 @@ module Make(Abs:AbstractCP) = struct
     ) sure;
     List.iter (fun a -> 
       draw a info_all color_maybe vars
-    ) unsure;
-    Vue.draw_end info_all
+    ) unsure(* ; *)
+    (* Vue.draw_end info_all *)
 
   let draw3d values vars =
     if !Constant.domain = "box" then

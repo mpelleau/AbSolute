@@ -16,7 +16,6 @@ module Solve(Abs : AbstractCP) = struct
     nb_steps : int                 (* number of steps of the solving process *)
   }
 
-
   (* tests if a result can't be splitted anymore *)
   let stop res abs =  
     Abs.is_small abs 
@@ -57,7 +56,7 @@ module Solve(Abs : AbstractCP) = struct
 
   let solving prob =
     let open Syntax in
-    let abs = Abs.of_problem prob in
+    let abs = init prob in
     printf "abs = %a@." Abs.print abs;
     let exp = if !Constant.pruning |> not then explore else explore_with_pruning in
     let res =  exp abs prob.constraints in
@@ -72,7 +71,7 @@ module Solve(Abs : AbstractCP) = struct
 	
   let solving_various prob =
     let open Syntax in
-    let abs = Abs.of_problem prob in
+    let abs = init prob in
     printf "abs = %a" Abs.print abs;
     if not (Abs.is_bottom abs) then
       let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in

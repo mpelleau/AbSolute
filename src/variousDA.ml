@@ -80,13 +80,9 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
       let new_b = a_meet_b a b in
       (new_a, new_b)
 
-    let of_problem p =
-      let open Syntax in
-        let abs = A.of_problem p
-        and tmp =  B.of_problem p in
-        (* let cons_b = List.filter Syntax.is_cons_linear p.constraints in *)
-        (* let abs' = List.fold_left B.filter tmp cons_b in *)
-        reduced_product abs tmp
+    let empty = A.empty,B.empty
+
+    let add_var (abs,abs') v = (A.add_var abs v),(B.add_var abs' v)
     
     let is_small ((abs, abs'):t) = A.is_small abs
 
