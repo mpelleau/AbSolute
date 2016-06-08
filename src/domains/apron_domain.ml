@@ -96,7 +96,25 @@ module MAKE(AP:ADomain) = struct
 
   let join a b = Abstract1.join man a b
     
-  let prune a b = [],a
+  let prune a b =
+    let env = Abstract1.env a in
+    let constr_to_earray c = 
+      let ear = Lincons1.array_make env 1 in
+      Lincons1.array_set ear 0 c;
+      ear
+    in
+    let rec aux a sures = function
+      | [] -> sures
+      | h::tl ->
+	let neg_h = neg_lincons h in
+	let neg_earray = constr_to_earray neg_h and h_earray = constr_to_earray h in
+	let a = Abstract1.meet_lincons_array man a h_earray
+	and s = Abstract1.meet_lincons_array man a neg_earray in
+	if is_bottom s then aux a sures tl
+	else aux a (s::sures) tl
+    in 
+    let sures = aux a [] (Abstract1.to_lincons_array man b |> lincons_earray_to_list) in
+    sures,b
 
   let filter b (e1,c,e2) = 
     let env = Abstract1.env b in

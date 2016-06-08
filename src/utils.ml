@@ -59,14 +59,37 @@ let tcons_for_all pred tcons =
 
 let tcons_list_to_earray tcl =
   let open Tcons1 in
-  if tcl = [] then array_make empty_env 0
-  else
-    let size = List.length tcl
-    and env = (List.hd tcl).env in
-    let ear = array_make env size in
-    List.iteri (fun i b -> array_set ear i b) tcl;
-    ear
+  let size = List.length tcl
+  and env = (List.hd tcl).env in
+  let ear = array_make env size in
+  List.iteri (fun i b -> array_set ear i b) tcl;
+  ear
+  
+let earray_to_list get length tcl = 
+  let l = ref [] in
+  for i = 0 to (length tcl) - 1 do
+    l:=(get tcl i)::!l
+  done;
+  !l
 
+let lincons_earray_to_list = earray_to_list Lincons1.array_get Lincons1.array_length
+
+let tcons_earray_to_list = earray_to_list Tcons1.array_get Tcons1.array_length
+
+let neg_typ = let open Lincons1 in function
+  | EQ -> DISEQ
+  | SUP -> SUPEQ
+  | SUPEQ -> SUP
+  | DISEQ -> EQ
+  | _ -> assert false
+ 
+(* constructs a new contraint in opposite direction *)
+  let neg_lincons (d:Lincons1.t) : Lincons1.t =
+    let d = Lincons1.copy d in
+    Lincons1.set_cst d (Coeff.neg (Lincons1.get_cst d));
+    Lincons1.iter (fun c v -> Lincons1.set_coeff d v (Coeff.neg c)) d;
+    Lincons1.set_typ d (Lincons1.get_typ d |> neg_typ);
+    d
 
 (******************************************************************)
 (*********************** Various operators ************************)
