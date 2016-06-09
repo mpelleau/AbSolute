@@ -9,6 +9,7 @@ let obj             = ref false
 let tex             = ref false
 let trace           = ref false
 let pruning         = ref false
+let sure            = ref false
 
 let set_prec p = 
   if p > 0. then precision := p

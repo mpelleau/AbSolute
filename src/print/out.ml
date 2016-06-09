@@ -53,7 +53,7 @@ module Make(Abs:AbstractCP) = struct
     List.iter (fun a -> 
       draw a info_all color_full vars
     ) sure;
-    List.iter (fun a -> 
+    if !Constant.sure |> not then List.iter (fun a -> 
       draw a info_all color_maybe vars
     ) unsure(* ; *)
     (* Vue.draw_end info_all *)
@@ -75,7 +75,9 @@ module Make(Abs:AbstractCP) = struct
   let out sure unsure vars =
     if !Constant.visualization then draw2d sure unsure vars;
     if !Constant.tex then print_latex sure unsure vars;
-    if !Constant.trace then trace sure unsure
+    if !Constant.trace then 
+      if !Constant.sure then trace sure []
+			else trace sure unsure
     (* if !Constant.obj then draw3d values vars *)
 
 
@@ -87,7 +89,9 @@ module Make(Abs:AbstractCP) = struct
   let out_min sure unsure value vars =
     if !Constant.visualization then draw2d sure unsure vars;
     if !Constant.tex then print_latex sure unsure vars;
-    if !Constant.trace then trace_min sure unsure value
+    if !Constant.trace then 
+      if !Constant.sure then trace_min sure [] value
+			else trace_min sure unsure value
     (* if !Constant.obj then draw3d values vars *)
 
 end

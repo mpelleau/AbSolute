@@ -62,10 +62,16 @@ module Solve(Abs : AbstractCP) = struct
     let res =  exp abs prob.constraints in
     printf "\nsolving ends\n%!";
     if not (Abs.is_bottom abs) then
-      match res.nb_sols with
-      | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
-      | 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
-      | _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
+      if !Constant.sure then
+	match List.length res.sure with
+	| 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
+	| 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
+	| _ -> printf "#solutions: %d - #created nodes: %d@." (List.length res.sure) res.nb_steps
+      else
+	match List.length res.sure with
+	| 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
+	| 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
+	| _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
     else printf "No Solutions - #created nodes: 0@.";
     Printer.out res.sure res.unsure prob.to_draw
 	
@@ -84,10 +90,16 @@ module Solve(Abs : AbstractCP) = struct
       let res = explore abs cons in
       Printer.out res.sure res.unsure prob.to_draw;
       printf "solving ends\n%!";
-      match res.nb_sols with
-      | 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
-      | 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
-      | _ -> printf "#solutions: %d - #created nodes: %d@." res.nb_sols res.nb_steps
+      if !Constant.sure then
+	match List.length res.sure with
+	| 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
+	| 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
+	| _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
+      else
+	match List.length res.sure with
+	| 0 -> printf "No solutions - #created nodes: %d@." res.nb_steps
+	| 1 -> printf "Unique solution - #created nodes: %d@." res.nb_steps
+	| _ -> printf "#solutions: %d - #created nodes: %d@."res.nb_sols res.nb_steps
     else
       printf "No Solutions - #created nodes: 0@."
 end

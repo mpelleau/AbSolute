@@ -17,10 +17,12 @@ let speclist =
   ("-tex"          , Arg.Set tex          , "Prints the solutions in latex format on stadard output");
   ("-pruning"      , Arg.Set pruning      , "Enables the \"pruning\" during the solving process");
   ("-trace"        , Arg.Set trace        , "Prints the solutions on standard output");
+  ("-sure"         , Arg.Set sure         , "Keeps only the sure solutions");
   ("-minimize"     , Arg.Set minimizing   , "Specify that the problem is a minimization problem");
   (*********************************************** ALIASES ********************************************************)
   ("-m"            , Arg.Set minimizing   , "Alias for -minimize");
   ("-t"            , Arg.Set trace        , "Alias for -trace");
+  ("-s"            , Arg.Set sure         , "Alias for -sure");
   ("-v"            , Arg.Set visualization, "Alias for -visualization");
   ("-p"            , Arg.Float set_prec   , "Alias for -precision");
   ("-d"            , Arg.String set_domain, "Alias for -domain");
