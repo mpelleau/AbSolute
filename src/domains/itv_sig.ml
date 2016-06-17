@@ -114,6 +114,10 @@ module type ITV = sig
   val split: t -> bound list -> (t bot) list
   val split_integer: t -> bound list -> (t bot) list
 
+  (* pruning *)
+  (* ------- *)
+  val prune : t -> t -> t list * t
+
   (************************************************************************)
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
   (************************************************************************)

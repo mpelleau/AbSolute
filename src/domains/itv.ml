@@ -229,8 +229,19 @@ module Itv(B:BOUND) = (struct
 	m
     in
     List.rev_map check_bot ((!to_pair,h)::list)
-   
 
+
+  let prune ((l,h):t) ((l',h'):t) : t list * t  =   
+    let epsilon = B.of_float_up 0.000001 in
+    let h'_eps = B.add_up h' epsilon and l'_eps = B.add_down l' (B.neg epsilon) in
+    (* It may not be worth to use the pruning to win a very small step *)
+    let step = B.of_float_up 0.1 in
+    let h_step = B.add_up h'_eps step and l_step = B.sub_down l'_eps step in
+    match (B.gt l_step l),(B.lt h_step h) with
+    | true , true  -> [(l,l'_eps);(h'_eps,h)],(l'_eps,h'_eps)
+    | true , false -> [(l,l'_eps)],(l'_eps,h)
+    | false, true  -> [(h'_eps,h)],(l,h'_eps)
+    | false, false -> [],(l,h)
 
   (************************************************************************)
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)

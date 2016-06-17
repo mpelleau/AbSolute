@@ -143,32 +143,14 @@ let split_along (a:t) (v:var) : t list =
     let (v,_) = max_range a in
     split_along a v
 
-  let prune (a:t) (b:t) : t list * t = 
-    let epsilon = B.of_float_up min_float in
-    let itv_prune (l,h) (l',h') = 
-      let h'_eps = B.add_up h' epsilon 
-      and l'_eps = B.sub_down l' epsilon 
-      and step = B.div_up (I.range (l,h)) (B.of_int_up 6) in
-      let h_step = B.add_up h' step and l_step = B.sub_down l' step in
-      match (B.lt h_step h),(B.gt l_step l) with
-      | true , true  -> `Both((l,l'_eps),(l'_eps,h'_eps),(h'_eps,h))
-      | false,true  -> `Low ((l,l'_eps),(l'_eps,h))
-      | true ,false -> `High((l,h'_eps),(h'_eps,h))
-      | false, false -> `None
-    in
+  let prune (a:t) (b:t) : t list * t =
     let rec aux a good = function
       | [] -> good,a
       | (v, i_b)::tl ->
 	let add = fun i -> (Env.add v i a) in
 	let i_a = Env.find v a in
-	match itv_prune i_a i_b with
-	| `Both(low, mid, high) ->
-	  aux (add mid) ((add low)::(add high)::good) tl
-	| `Low (low, high) ->
-	  aux (add high) ((add low)::good) tl
-	| `High(low, high) ->
-	  aux (add low) ((add high)::good) tl
-	| `None -> aux a good tl
+	let sures,unsure = I.prune i_a i_b in
+	aux (add unsure) (List.rev_append (List.rev_map add sures) good) tl
     in aux a [] (Env.bindings b)
 
 
