@@ -5,32 +5,32 @@ open Utils
 
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
-    
-let bas_gauche l = 
-  let rec aux (best_x,best_y) l = 
+
+let bas_gauche l =
+  let rec aux (best_x,best_y) l =
     match l with
     | [] -> best_x,best_y
-    | (x,y)::b -> 
+    | (x,y)::b ->
       if best_y > y || best_y = y && x < best_x then
 	aux (x,y) b
       else aux (best_x,best_y) b
-  in aux (List.hd l) (List.tl l) 
-  
+  in aux (List.hd l) (List.tl l)
+
 let angle (ax,ay) (bx,by) =
   let (ax,ay) = (bx -. ax), (by -. ay)
-  and (bx,by) = (1.,0.) in 
+  and (bx,by) = (1.,0.) in
   let na = sqrt (ax *. ax +. ay *. ay)
   and nb = sqrt (bx *. bx +. by *. by) in
   let c = (ax *. bx +. ay *. by)/.(na*.nb)
   and s = (ax *. by -. ay *. bx) in
   (signF s)*.(acos c)
-    
+
 let graham_sort l =
   let p = bas_gauche l in
   let comp p1 p2 =
     if p1 = p then 1
     else if p2 = p then -1
-    else if angle p p1 < angle p p2 then 1 
+    else if angle p p1 < angle p p2 then 1
     else if angle p p1 = angle p p2 then 0
     else -1
   in
@@ -41,7 +41,7 @@ let red rgb = rgb / (0xFFFF)
 let green rgb = (rgb / 255) mod 255
 let blue rgb = rgb mod 255
 
-let getcomp c = 
+let getcomp c =
   let r = red c |> float
   and g = green c |> float
   and b = blue c |> float in
@@ -52,14 +52,14 @@ let draw draw_rect (x,y) w h col alpha =
     for j=y to y+h do
       let (o_r,o_g,o_b) = point_color i j |> getcomp
       and (n_r,n_g,n_b) = getcomp col in
-      let r = (alpha *. n_r) +. (1. -. alpha) *. o_r |> int_of_float 
-      and g = (alpha *. n_g) +. (1. -. alpha) *. o_g |> int_of_float 
+      let r = (alpha *. n_r) +. (1. -. alpha) *. o_r |> int_of_float
+      and g = (alpha *. n_g) +. (1. -. alpha) *. o_g |> int_of_float
       and b = (alpha *. n_b) +. (1. -. alpha) *. o_b |> int_of_float in
       set_color (rgb r g b);
       plot i j
     done
   done
- 
+
 (* returns the bounds of a generator list *)
 let get_info l =
   match l with
@@ -71,7 +71,7 @@ let get_info l =
       (min_x,max_x),(min_y,max_y)
     ) ((min_x,max_x),(min_y,max_y)) l
   | _ -> assert false
-  
+
 let projection (a,b) (c,d) n =
   let r = (d-.c)/.(b-.a) in
   (n-.a) *. r +. c
@@ -81,7 +81,7 @@ let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
   let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
   and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
   in (int_of_float a, int_of_float b)
-  
+
 let padding = 50.
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
@@ -116,7 +116,7 @@ let draw_end ((x_min,x_max),(y_min,y_max)) =
     let a,_ = f_coord (x,0.)
     and c,_=f_coord (x, float sy) in
     draw_segments [|(a,0,c,sy)|];
-    let _,b = f_coord (0.,y) 
+    let _,b = f_coord (0.,y)
     and _,d = f_coord (float sx, y) in
     draw_segments [|(0,b,sx,d)|]
   done;
@@ -152,7 +152,7 @@ let clear dom ((x_min,x_max),(y_min,y_max)) =
   let l = List.rev_map (to_coord (x_min,x_max) (y_min,y_max)) dom in
   fill_poly (Array.of_list l)
 
-let loop state = 
+let loop state =
   loop_at_exit [] (fun _ -> ())
 
 let create_window width height =
