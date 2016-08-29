@@ -1,4 +1,4 @@
-open Syntax
+open Csp
 open Lexing
 
 (*****************************************)
@@ -7,41 +7,41 @@ open Lexing
 
 exception IllFormedAST of string
 
-let illegal_var_draw v = 
+let illegal_var_draw v =
   Format.sprintf
-    "Illegal variable to draw:%s don't belong to the variables of the problem" 
+    "Illegal variable to draw:%s don't belong to the variables of the problem"
     v
 
-let illegal_var_draw2 v1 v2 = 
+let illegal_var_draw2 v1 v2 =
   Format.sprintf
-    "Illegal variable to draw:%s and %s don't belong to the variables of the problem" 
+    "Illegal variable to draw:%s and %s don't belong to the variables of the problem"
     v1 v2
 
 let check_ast p =
   let h = Hashtbl.create 10 in
   let check_vars () =
-    List.iter (fun (_,v,_) -> if Hashtbl.mem h v then 
+    List.iter (fun (_,v,_) -> if Hashtbl.mem h v then
 	raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
     ) p.init
   and check_draw () =
     match p.to_draw with
-    | None -> ()
-    | Some (v1,v2) -> 
-      if not (Hashtbl.mem h v1) then raise (IllFormedAST (illegal_var_draw v1));
-      if not (Hashtbl.mem h v2) then raise (IllFormedAST (illegal_var_draw v2))
+    | [] -> ()
+    | l -> List.iter (fun v ->
+      if not (Hashtbl.mem h v) then raise (IllFormedAST (illegal_var_draw v))) l
+
   and check_dom () =
     let aux (_, var, d) =
-      match d with 
-      | Finite (f1,f2) -> if f1 > f2 then 
+      match d with
+      | Finite (f1,f2) -> if f1 > f2 then
 	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%f;%f]" var f1 f2))
       | _ -> ()
     in List.iter aux p.init
-  and check_constrs () = 
-    let check_v = function 
+  and check_constrs () =
+    let check_v = function
       | Var v -> if not (Hashtbl.mem h v) then raise (IllFormedAST (Format.sprintf "Illegal constraint using a non-declared variable %s" v))
       | _ -> ()
-    in 
+    in
     List.iter (iter_constr check_v (fun _ -> ())) p.constraints
   in
   check_vars ();
@@ -56,10 +56,10 @@ let check_ast p =
 
 let string_of_position p =
   Printf.sprintf "%s:%i:%i" p.pos_fname p.pos_lnum (p.pos_cnum - p.pos_bol)
-   
+
 (* open a file and parse it *)
 let parse (filename:string option) : prog =
-  let filename = 
+  let filename =
     match filename with
     | None -> failwith "you must specify a filename"
     | Some s -> s

@@ -11,16 +11,12 @@ OPAMDIR = `opam config var lib`
 APRONDIR = $(OPAMDIR)/apron
 ZARITHDIR = $(OPAMDIR)/zarith
 GMPDIR = $(OPAMDIR)/gmp
-CAMLIDLDIR = $(OPAMDIR)/camlidl
-OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) -I $(CAMLIDLDIR) -I src -I src/domains -I src/frontend -I src/print
+OCAMLINC = -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) \
+           -I src -I src/lib -I src/domains -I src/frontend -I src/print \
+           -I src/solver
 LIBS = bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
-CCLIB = -cclib "-L $(ZARITHDIR) -L $(APRONDIR) -L $(GMPDIR) -L $(CAMLIDLDIR)"
 OCAMLLIBS = $(LIBS:%=%.cma) $(CCLIB)
-OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB) 
-CLIBS = -lgmp -lxcb
-CFLAGS = -O3 -Wall -I $(OPAMDIR)/ocaml
-OCAMLFLAGS = -g
-OCAMLOPTFLAGS =
+OCAMLOPTLIBS = $(LIBS:%=%.cmxa) $(CCLIB)
 
 # targets
 TARGETS = solver.opt
@@ -32,34 +28,35 @@ AUTOGEN =\
 
 # source files
 MLFILES = \
-  src/frontend/syntax.ml \
+  src/frontend/csp.ml \
   src/frontend/parser.ml \
   src/frontend/lexer.ml \
   src/frontend/file_parser.ml \
-  src/constant.ml \
-  src/utils.ml \
+  src/lib/constant.ml \
+  src/lib/apron_utils.ml \
+  src/lib/bot.ml \
+  src/lib/mapext.ml \
+  src/lib/bound_sig.ml \
+  src/lib/bound_mpqf.ml \
+  src/lib/bound_float.ml \
+  src/lib/itv_sig.ml \
+  src/lib/itv.ml \
   src/domains/apron_domain.ml \
-  src/domains/bot.ml \
-  src/domains/mapext.ml \
-  src/domains/bound_sig.ml \
-  src/domains/bound_mpqf.ml \
-  src/domains/bound_float.ml \
-  src/domains/itv_sig.ml \
-  src/domains/itv.ml \
   src/domains/abstract_box.ml \
   src/domains/adcp_sig.ml \
-  src/ADCP.ml \
-  src/variousDA.ml \
-  src/print/vue.ml \
+  src/domains/ADCP.ml \
+  src/domains/variousDA.ml \
+  src/solver/result.ml \
+  src/solver/splitter.ml \
+  src/solver/solver.ml \
+  src/solver/minimizer.ml \
+  src/print/view.ml \
   src/print/objgen.ml \
   src/print/out.ml \
-  src/splitter.ml \
-  src/solver.ml \
-  src/minimizer.ml \
-  src/main.ml
+	src/main.ml
 
 CFILES = \
-  src/domains/ml_float.c
+  src/lib/ml_float.c
 
 # MLIFILES = ADCP.mli
 
@@ -74,10 +71,10 @@ all: $(TARGETS)
 	mkdir -p out
 
 solver.opt: $(OFILES) $(CMXFILES)
-	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
+	$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
 solver:  $(OFILES) $(CMOFILES)
-	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLLIBS) $+
+	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) $(OCAMLLIBS) $+
 
 minimizer.opt: $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+

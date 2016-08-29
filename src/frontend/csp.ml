@@ -42,16 +42,19 @@ type decls =  assign list
 type constrs = bexpr list
 
 (* program *)
-type prog = { init: decls; objective : expr; constraints: constrs; to_draw : (var * var) option}
+type prog = { init: decls; objective : expr; constraints: constrs; to_draw : var list}
 
 
 (*****************************************)
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-let domain_to_constraints (_,v,d)  = 
+let get_vars p =
+  List.map (fun (_,v,_) -> v) p.init
+
+let domain_to_constraints (_,v,d)  =
   match d with
-  | Finite (l,h) -> 
+  | Finite (l,h) ->
     let c1 = (Var v, GEQ, Cst l) and c2 = (Var v, LEQ, Cst h) in c1,c2
   | _ -> failwith "cant handle non-finite domains"
 
@@ -70,7 +73,7 @@ let rec iter_constr f_expr f_constr = function
 
 (* power unrolling on exprs *)
 let rec power_unrolling expr : expr =
-  let rec doit res e1 i = 
+  let rec doit res e1 i =
     match i with
     | 0 -> Cst 1.
     | 1 -> res
@@ -112,14 +115,14 @@ let rec neg_bexpr = function
 (*************************************************************)
 
 (* checks if an expression contains a variable *)
-let rec has_variable = function  
+let rec has_variable = function
   | Unary (u, e) -> has_variable e
   | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
   | Cst _ -> false
 
 (* checks if an expression is linear *)
-let rec is_linear = function  
+let rec is_linear = function
   | Unary (NEG,e) -> is_linear e
   | Binary(MUL, e1, e2) | Binary(DIV, e1, e2)
     -> not (has_variable e1 && has_variable e2) && is_linear e1 && is_linear e2
@@ -155,7 +158,7 @@ let print_binop fmt = function
   | POW -> Format.fprintf fmt "^"
 
 let print_cmpop fmt = function
-  | EQ -> Format.fprintf fmt "=" 
+  | EQ -> Format.fprintf fmt "="
   | LEQ -> Format.fprintf fmt "<="
   | GEQ -> Format.fprintf fmt ">="
   | NEQ -> Format.fprintf fmt "<>"
@@ -174,21 +177,21 @@ let print_dom fmt = function
   | Inf i -> Format.fprintf fmt "[%.2f; 00]" i
   | Top -> Format.fprintf fmt "[-oo; 00]"
 
-let print_assign fmt (a,b,c) = 
+let print_assign fmt (a,b,c) =
   Format.fprintf fmt "%a %a=%a" print_typ a print_var b print_dom c
 
-let rec print_expr fmt = function  
-  | Unary (NEG, e) -> 
+let rec print_expr fmt = function
+  | Unary (NEG, e) ->
     Format.fprintf fmt "(- %a)" print_expr e
-  | Unary (u, e) -> 
+  | Unary (u, e) ->
     Format.fprintf fmt "%a %a" print_unop u print_expr e
-  | Binary (b, e1 , e2) -> 
+  | Binary (b, e1 , e2) ->
     Format.fprintf fmt "%a %a %a" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
   | Cst c -> Format.fprintf fmt "%.2f" c
 
 let rec print_bexpr fmt = function
-  | Cmp (c,e1,e2) -> 
+  | Cmp (c,e1,e2) ->
     Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
   | And (b1,b2) ->
     Format.fprintf fmt "%a && %a" print_bexpr b1 print_bexpr b2
@@ -196,11 +199,11 @@ let rec print_bexpr fmt = function
     Format.fprintf fmt "%a || %a" print_bexpr b1 print_bexpr b2
   | Not b -> Format.fprintf fmt "not %a" print_bexpr b
 
-let print fmt prog = 
+let print fmt prog =
   let rec aux f = function
   | [] -> ()
   | a::tl -> Format.fprintf fmt "%a;\n" f a; aux f tl
-  in 
+  in
   aux print_assign prog.init;
   Format.fprintf fmt "\n";
   aux print_bexpr prog.constraints

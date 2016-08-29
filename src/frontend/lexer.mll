@@ -1,19 +1,19 @@
 
 {
  open Lexing
- open Syntax
+ open Csp
  open Parser
 
 
 (* keyword table *)
 let kwd_table = Hashtbl.create 10
-let _ = 
+let _ =
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
       "info",           TOK_ANNOT;
-      "draw",           TOK_DRAW; 
+      "draw",           TOK_DRAW;
       "init",           TOK_INIT;
-      "objective", 	TOK_OBJ;
+      "objective", 	    TOK_OBJ;
       "constraints",    TOK_CONSTR;
       "sqrt",           TOK_SQRT;
       "cos",            TOK_COS;
@@ -21,7 +21,7 @@ let _ =
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;
-      "-oo",             TOK_MINF
+      "-oo",            TOK_MINF
    ]
 
 (* (exact) parsing of decimal constants constants *)
@@ -81,7 +81,7 @@ rule token = parse
 | "||"   { TOK_OR }
 | "|"    { TOK_PIPE }
 | "!"    { TOK_NOT }
-| ":"    { TOK_COLON }   
+| ":"    { TOK_COLON }
 (* literals *)
 | const as c { TOK_const (float_of_string c) }
 

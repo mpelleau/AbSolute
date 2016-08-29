@@ -1,5 +1,5 @@
 %{
-open Syntax
+open Csp
 %}
 
 
@@ -59,7 +59,7 @@ open Syntax
 %type <dom> init
 %type <assign> decl
 %type <bexpr> bexpr
-%type <Syntax.prog> file
+%type <Csp.prog> file
 
 /* entry point */
 %start file
@@ -79,7 +79,7 @@ file:
 
 annot:
  | TOK_ANNOT TOK_LBRACE annot2 TOK_RBRACE {$3}
- | {None}
+ | {[]}
 
 domains:
  | TOK_INIT TOK_LBRACE decls TOK_RBRACE {$3}
@@ -92,8 +92,11 @@ constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
 
 annot2:
- | TOK_DRAW TOK_COLON TOK_id TOK_COMMA TOK_id {Some ($3,$5)}
+ | TOK_DRAW TOK_COLON varlist {$3}
 
+varlist:
+  | TOK_id varlist {$1::$2}
+  | {[]}
 
 decls:
   | decl decls {$1::$2}
@@ -161,7 +164,7 @@ binop_expr3:
 cmp:
   | TOK_LESS                    { LT }
   | TOK_GREATER                 { GT }
-  | TOK_LESS_EQUAL              { LEQ } 
+  | TOK_LESS_EQUAL              { LEQ }
   | TOK_GREATER_EQUAL           { GEQ }
   | TOK_ASSIGN                  { EQ }
   | TOK_NOT_EQUAL               { NEQ }

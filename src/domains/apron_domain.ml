@@ -1,10 +1,10 @@
 open Apron
-open Syntax
-open Utils
+open Csp
+open Apron_utils
 
-module type ADomain = sig 
+module type ADomain = sig
   type t
-  val get_manager: t Manager.t 
+  val get_manager: t Manager.t
 end
 
 (* Translation functor for syntax.prog to apron values*)
@@ -20,7 +20,7 @@ module SyntaxTranslator (D:ADomain) = struct
       then failwith ("variable not found: "^v);
       Texpr1.Var var
     | Cst c -> Texpr1.Cst (Coeff.s_of_float c)
-    | Unary (o,e1) -> 
+    | Unary (o,e1) ->
       let r = match o with
 	| NEG -> Texpr1.Neg
 	| SQRT -> Texpr1.Sqrt
@@ -36,12 +36,12 @@ module SyntaxTranslator (D:ADomain) = struct
 	| MUL -> Texpr1.Mul
 	| POW -> Texpr1.Pow
       in
-      let e1 = expr_to_apron a e1 
+      let e1 = expr_to_apron a e1
       and e2 = expr_to_apron a e2 in
       Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
-	
+
   let cmp_expr_to_apron b env =
-    let cmp_to_apron (e1,op,e2) = 
+    let cmp_to_apron (e1,op,e2) =
       match op with
       | EQ  -> e1, e2, Tcons1.EQ
       | NEQ -> e1, e2, Tcons1.DISEQ
@@ -64,41 +64,44 @@ end
 (* These are generic and can be redefined in the actuals domains *)
 (*****************************************************************)
 module MAKE(AP:ADomain) = struct
-  type t = AP.t Abstract1.t
+
+  module A = Abstract1
+
+  type t = AP.t A.t
 
   let man = AP.get_manager
 
-  module Translate = SyntaxTranslator(AP)
+  module T = SyntaxTranslator(AP)
 
-  let empty = Abstract1.top man (Environment.make [||] [||])
+  let empty = A.top man (Environment.make [||] [||])
 
   let add_var abs (typ,v) =
-    let e = Abstract1.env abs in
+    let e = A.env abs in
     let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
     let env = Environment.add e ints reals in
-    Abstract1.change_environment man abs env false
+    A.change_environment man abs env false
 
-  let is_bottom b = Abstract1.is_bottom man b
+  let is_bottom b = A.is_bottom man b
 
   let is_singleton b v =
-    let man = Abstract1.manager b in
-    if Abstract1.is_bottom man b then true
-    else 
-      let itv = Abstract1.bound_variable man b v  in
-      Utils.diam_interval itv |> Mpqf.to_float = 0.
+    let man = A.manager b in
+    if A.is_bottom man b then true
+    else
+      let itv = A.bound_variable man b v  in
+      diam_interval itv |> Mpqf.to_float = 0.
 
   let is_enumerated abs =
-    let int_vars = Environment.vars (Abstract1.env abs) |> fst in
-    try 
+    let int_vars = Environment.vars (A.env abs) |> fst in
+    try
       Array.iter (fun v -> if (is_singleton abs v) |> not then raise Exit) int_vars;
       true
     with Exit -> false
 
-  let join a b = Abstract1.join man a b
-    
+  let join a b = A.join man a b
+
   let prune a b =
-    let env = Abstract1.env a in
-    let constr_to_earray c = 
+    let env = A.env a in
+    let constr_to_earray c =
       let ear = Lincons1.array_make env 1 in
       Lincons1.array_set ear 0 c;
       ear
@@ -108,96 +111,93 @@ module MAKE(AP:ADomain) = struct
       | h::tl ->
 	let neg_h = neg_lincons h in
 	let neg_earray = constr_to_earray neg_h and h_earray = constr_to_earray h in
-	let a = Abstract1.meet_lincons_array man a h_earray
-	and s = Abstract1.meet_lincons_array man a neg_earray in
+	let a = A.meet_lincons_array man a h_earray
+	and s = A.meet_lincons_array man a neg_earray in
 	if is_bottom s then aux a sures tl
 	else aux a (s::sures) tl
-    in 
-    let sures = aux a [] (Abstract1.to_lincons_array man b |> lincons_earray_to_list) in
+    in
+    let sures = aux a [] (A.to_lincons_array man b |> lincons_earray_to_list) in
     sures,b
 
-  let filter b (e1,c,e2) = 
-    let env = Abstract1.env b in
-    let c = Translate.cmp_expr_to_apron (e1,c,e2) env in
-    Abstract1.meet_tcons_array man b (Utils.tcons_list_to_earray [c])
-      
-  let print = Abstract1.print
+  let filter b (e1,c,e2) =
+    let env = A.env b in
+    let c = T.cmp_expr_to_apron (e1,c,e2) env in
+    A.meet_tcons_array man b (tcons_list_to_earray [c])
 
-  let to_box abs env = 
-    let abs' = Abstract1.change_environment man abs env false in
-    Abstract1.to_lincons_array man abs' |>
-    Abstract1.of_lincons_array (Box.manager_alloc ()) env
+  let print = A.print
+
+  let to_box abs env =
+    let abs' = A.change_environment man abs env false in
+    A.to_lincons_array man abs' |>
+    A.of_lincons_array (Box.manager_alloc ()) env
 
   let to_oct abs env =
-    let abs' = Abstract1.change_environment man abs env false in
-    Abstract1.to_lincons_array man abs' |>
-    Abstract1.of_lincons_array (Oct.manager_alloc ()) env
+    let abs' = A.change_environment man abs env false in
+    A.to_lincons_array man abs' |>
+    A.of_lincons_array (Oct.manager_alloc ()) env
 
   let to_poly abs env =
-    let abs' = Abstract1.change_environment man abs env false in
-    Abstract1.to_lincons_array man abs' |>
-    Abstract1.of_lincons_array (Polka.manager_alloc_strict ()) env
+    let abs' = A.change_environment man abs env false in
+    A.to_lincons_array man abs' |>
+    A.of_lincons_array (Polka.manager_alloc_strict ()) env
 
-  (* given two variables to draw, and an environnement, 
-     returns the two variables value in the environment.  
+  (* given two variables to draw, and an environnement,
+     returns the two variables value in the environment.
   *)
-  let get_indexes env vars = 
-    let i1,i2 = match vars with
-      | None -> (0,1)
-      | Some (x,y) ->
-	(Environment.dim_of_var env (Var.of_string x)),
-	(Environment.dim_of_var env (Var.of_string y))
-    in i1,i2
-    
-  let points_to_draw abs vars =
-    let env = Abstract1.env abs in
+  let get_indexes env (x,y) =
+	  (Environment.dim_of_var env (Var.of_string x)),
+	  (Environment.dim_of_var env (Var.of_string y))
+
+  let vertices2d abs (v1,v2) =
+    let env = A.env abs in
     let draw_pol pol =
-      let i1,i2 = get_indexes env vars in
-      let x = Environment.var_of_dim env i1 
+      let i1,i2 = get_indexes env (v1,v2) in
+      let x = Environment.var_of_dim env i1
       and y = Environment.var_of_dim env i2 in
-      let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in      
-      let gen' = Abstract1.to_generator_array (Polka.manager_alloc_strict ()) pol in
+      let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in
+      let gen' = A.to_generator_array (Polka.manager_alloc_strict ()) pol in
       let v = Array.init (Generator1.array_length gen')
-	(fun i -> get_coord 
+	(fun i -> get_coord
 	  (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
 	       |> Array.to_list
-      in 
-      List.map (fun(a,b)-> (Utils.coeff_to_float a, Utils.coeff_to_float b)) v
-    in 
-    draw_pol (to_poly abs env) 
+      in
+      List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
+    in
+    draw_pol (to_poly abs env)
 
+  let vertices3d abs (v1,v2,v3) = failwith "no 3d generation for apron modules for now"
 
-    let forward_eval abs cons = 
-      let obj_itv = Abstract1.bound_texpr man abs (Texpr1.of_expr (Abstract1.env abs) (Translate.expr_to_apron abs cons)) in
-      let obj_inf = obj_itv.Interval.inf
-      and obj_sup = obj_itv.Interval.sup in
-      let open Utils in
-      (scalar_to_float obj_inf, scalar_to_float obj_sup)
+  let forward_eval abs cons =
+    let ap_expr = T.expr_to_apron abs cons |> Texpr1.of_expr (A.env abs) in
+    let obj_itv = A.bound_texpr man abs ap_expr in
+    let obj_inf = obj_itv.Interval.inf
+    and obj_sup = obj_itv.Interval.sup in
+    (scalar_to_float obj_inf, scalar_to_float obj_sup)
 
     (* utilties for splitting *)
 
-    let rec largest tab i max i_max =
-      if i>=Array.length tab then (max, i_max) 
-      else
-	let dim = diam_interval (tab.(i)) in
-	if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
-	else largest tab (i+1) max i_max
+  let rec largest tab i max i_max =
+    if i>=Array.length tab then (max, i_max)
+    else
+	    let dim = diam_interval (tab.(i)) in
+	    if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
+	    else largest tab (i+1) max i_max
 
-    let largest abs : (Var.t * Interval.t * Mpqf.t) =
-      let env = Abstract1.env abs in
-      let box = Abstract1.to_box man abs in
-      let tab = box.Abstract1.interval_array in
+  let largest abs : (Var.t * Interval.t * Mpqf.t) =
+      let env = A.env abs in
+      let box = A.to_box man abs in
+      let tab = box.A.interval_array in
       let rec aux cur i_max diam_max itv_max =
-	if cur>=Array.length tab then (i_max, diam_max, itv_max) 
-	else  
-	  let e = tab.(cur) in
-	  let diam = diam_interval e in
-	  if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
-	  else aux (cur+1) i_max diam_max itv_max
-      in 
+	      if cur>=Array.length tab then (i_max, diam_max, itv_max)
+	      else
+	        let e = tab.(cur) in
+	        let diam = diam_interval e in
+	        if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
+	        else aux (cur+1) i_max diam_max itv_max
+      in
       let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
       ((Environment.var_of_dim env a),c,b)
-      
+
     (* Compute the minimal and the maximal diameter of an array on intervals *)
     let rec minmax tab i max i_max min i_min =
       if i>=Array.length tab then  (max, i_max, min, i_min)
@@ -208,7 +208,7 @@ module MAKE(AP:ADomain) = struct
 	else minmax tab (i+1) max i_max min i_min
 
     (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
-     * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line 
+     * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line
      * to the vector p1p2 passing by the center of the vector has for equation:
      * (p21-p11)(x1-b1) + (p22-p12)(x2-b2) + ... + (p2n-p1n)(xn-bn) = 0
      * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
@@ -227,20 +227,20 @@ module MAKE(AP:ADomain) = struct
       let cons = Lincons1.make expr Lincons1.SUPEQ in
       let tab = Lincons1.array_make env 1 in
       Lincons1.array_set tab 0 cons;
-      let abs' = Abstract1.meet_lincons_array man abs tab in
+      let abs' = A.meet_lincons_array man abs tab in
       abs'
     in
-    let env = Abstract1.env abs in
+    let env = A.env abs in
     let abs1 = meet_linexpr abs man env (List.nth list 0) in
     let abs2 = meet_linexpr abs man env (List.nth list 1) in
-    [abs1; abs2] 
+    [abs1; abs2]
 
   (************************************************)
   (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)
   (************************************************)
 
-  let get_expr man polyad = 
-    let poly = Abstract1.to_generator_array man polyad in 
+  let get_expr man polyad =
+    let poly = A.to_generator_array man polyad in
     let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)
     let size = Environment.size gen_env in
@@ -255,8 +255,8 @@ module MAKE(AP:ADomain) = struct
     Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
     [linexp; linexp']
 
-  let is_small man polyad = 
-    let poly = Abstract1.to_generator_array man polyad in 
+  let is_small man polyad =
+    let poly = A.to_generator_array man polyad in
     let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)
     let size = Environment.size gen_env in

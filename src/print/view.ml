@@ -1,7 +1,6 @@
 open Graphics
-open Format
-open Apron
-open Utils
+
+let padding = 40.
 
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
@@ -73,22 +72,15 @@ let get_info l =
   | _ -> assert false
 
 let projection (a,b) (c,d) n =
-  let r = (d-.c)/.(b-.a) in
-  (n-.a) *. r +. c
-
-let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
-  let padding = 40. and s_x = size_x() |> float and s_y = size_y() |> float in
-  let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
-  and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
-  in (int_of_float a, int_of_float b)
-
-let padding = 50.
+  if b = a then a
+  else let r = (d-.c)/.(b-.a) in (n-.a) *. r +. c
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
   let s_x = size_x() |> float and s_y = size_y() |> float in
   let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
   and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
   in (int_of_float a, int_of_float b)
+
 
 let draw_line_x x col =
   set_color col;

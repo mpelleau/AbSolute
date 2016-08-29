@@ -1,12 +1,12 @@
 open Bot
 open Bound_sig
 open Itv_sig
-open Syntax
-    
+open Csp
+
 (*******************)
 (* GENERIC FUNCTOR *)
 (*******************)
-  
+
 module Box (I:ITV) = struct
 
 
@@ -22,15 +22,15 @@ module Box (I:ITV) = struct
 
   (* maps from variables *)
   module Env = Mapext.Make(struct type t=var let compare=compare end)
-      
+
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
   let find v a =
     try (Env.find v a, v) with
       Not_found -> (Env.find (v^"%") a, v^"%")
-        
-      
+
+
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
@@ -39,24 +39,32 @@ module Box (I:ITV) = struct
     let first = ref true in
     Env.iter
       (fun v i ->
-	Format.fprintf fmt "%s%s:%a" 
-	  (if !first then "" else " ") 
+	Format.fprintf fmt "%s%s:%a"
+	  (if !first then "" else " ")
 	  v
 	  I.print i;
 	first := false
       ) a
 
-  let to_polygon a v1 v2 =
-    let ((l1,h1), _),((l2,h2), _) = find v1 a, find v2 a in
-    let l1,h1 = B.to_float_down l1, B.to_float_up h1
-    and l2,h2 = B.to_float_down l2, B.to_float_up h2 in
-    [l1,l2; h1,l2; h1,h2; l1,h2]
+  let float_bounds a v =
+    let ((l,h), _) = find v a in
+    (B.to_float_down l),(B.to_float_up h)
 
-  let points_to_draw a = function
-    | None -> to_polygon a (Env.min_binding a |> fst) (Env.max_binding a |> fst)
-    | Some (v1,v2) -> to_polygon a v1 v2
-        
-      
+  let vertices2d a (v1,v2) =
+    let (l1,h1) = float_bounds a v1
+    and (l2,h2) = float_bounds a v2
+    in [l1,l2; h1,l2; h1,h2; l1,h2]
+
+  let vertices3d a (v1,v2,v3) =
+    let (l3,h3) = float_bounds a v3 in
+    let rec aux acc = function
+      | [] -> acc
+      | (x,y)::tl ->
+         let p1 = (x,y,l3) and p2 = (x,y,h3) in
+         aux (p1::p2::acc) tl
+    in aux [] (vertices2d a (v1,v2))
+
+
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
@@ -64,10 +72,10 @@ module Box (I:ITV) = struct
      the same set of variables;
      otherwise, an Invalid_argument exception will be raised
    *)
- 
-  let join (a:t) (b:t) : t = 
+
+  let join (a:t) (b:t) : t =
     Env.map2z (fun _ x y -> I.join x y) a b
- 
+
   (* predicates *)
   (* ---------- *)
 
@@ -76,10 +84,10 @@ module Box (I:ITV) = struct
 
   let subseteq (a:t) (b:t) : bool =
     Env.for_all2z (fun _ x y -> I.subseteq x y) a b
-      
+
   (* mesure *)
   (* ------ *)
-      
+
   (* diameter *)
   let diameter (a:t) : bound =
     Env.fold (fun _ x v -> B.max (I.range x) v) a B.zero
@@ -87,10 +95,10 @@ module Box (I:ITV) = struct
   (* variable with maximal range *)
   let max_range (a:t) : var * i =
     Env.fold
-      (fun v i (vo,io) -> 
+      (fun v i (vo,io) ->
         if B.geq (I.range i) (I.range io) then v,i else vo,io
       ) a (Env.min_binding a)
-      
+
   let is_small (a:t) : bool =
     let (v,i) = max_range a in
     (B.to_float_up (I.range i) <= !Constant.precision)
@@ -102,8 +110,8 @@ module Box (I:ITV) = struct
     var.[String.length var - 1] = '%'
 
   let filter_bounds (a:t) : t =
-    let b = Env.mapi (fun v i -> 
-      if is_integer v then 
+    let b = Env.mapi (fun v i ->
+      if is_integer v then
 	match I.filter_bounds i with
 	| Bot -> raise Bot_found
 	| Nb e -> e
@@ -117,7 +125,7 @@ module Box (I:ITV) = struct
     | Nb e -> e
     | _ -> failwith "should not occur"
     ) a)
-      
+
   let filter_bounds_bot (a:t bot) : t bot =
     match a with
     | Bot -> Bot
@@ -127,13 +135,13 @@ module Box (I:ITV) = struct
     ) e
     |> to_bot
 
-let split_along (a:t) (v:var) : t list =    
+let split_along (a:t) (v:var) : t list =
     let i = Env.find v a in
-    let i_list = 
-      if is_integer v then I.split_integer i (I.mean i) 
+    let i_list =
+      if is_integer v then I.split_integer i (I.mean i)
       else I.split i (I.mean i)
     in
-    List.fold_left (fun acc b -> 
+    List.fold_left (fun acc b ->
       match b with
       | Nb e -> (Env.add v e a)::acc
       | Bot -> acc
@@ -157,20 +165,20 @@ let split_along (a:t) (v:var) : t list =
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)
   (************************************************************************)
-        
+
   (* trees with nodes annotated with evaluation *)
   type bexpr =
     | BUnary of unop * bexpri
     | BBinary of binop * bexpri * bexpri
     | BVar of var
     | BCst of i
-          
+
   and bexpri = bexpr * i
 
   (* interval evaluation of an expression;
      returns the interval result but also an expression tree annotated with
      intermediate results (useful for test transfer functions
-     
+
      errors (e.g. division by zero) return no result, so:
      - we raies Bot_found in case the expression only evaluates to error values
      - otherwise, we return only the non-error values
@@ -186,7 +194,7 @@ let split_along (a:t) (v:var) : t list =
     | Cst c ->
         let r = I.of_float c in
         BCst r, r
-    | Unary (o,e1) -> 
+    | Unary (o,e1) ->
         let _,i1 as b1 = eval a e1 in
         let r = match o with
         | NEG -> I.neg i1
@@ -203,7 +211,7 @@ let split_along (a:t) (v:var) : t list =
         | ADD -> I.add i1 i2
         | SUB -> I.sub i1 i2
         | DIV -> debot (fst (I.div i1 i2))
-        | MUL -> 
+        | MUL ->
             let r = I.mul i1 i2 in
             if e1=e2 then
               (* special case: squares are positive *)
@@ -221,7 +229,7 @@ let split_along (a:t) (v:var) : t list =
      can raise Bot_found *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     match e with
-    | BVar v -> 
+    | BVar v ->
         (try Env.add v (debot (I.meet x (fst (find v a)))) a
         with Not_found -> failwith ("variable not found: "^v))
     | BCst i -> ignore (debot (I.meet x i)); a
@@ -244,7 +252,7 @@ let split_along (a:t) (v:var) : t list =
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2
-          
+
 
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
@@ -255,12 +263,12 @@ let split_along (a:t) (v:var) : t list =
     | GEQ -> I.filter_geq i1 i2
     | NEQ -> I.filter_neq i1 i2
     (*| NEQ_INT -> I.filter_neq_int i1 i2*)
-    | GT -> I.filter_gt i1 i2 
-    (*| GT_INT -> I.filter_gt_int i1 i2*) 
+    | GT -> I.filter_gt i1 i2
+    (*| GT_INT -> I.filter_gt_int i1 i2*)
     | LT -> I.filter_lt i1 i2
     (*| LT_INT -> I.filter_lt_int i1 i2*)
     in
-    let aux = rebot 
+    let aux = rebot
       (fun a ->
         let j1,j2 = debot j in
         refine (refine a b1 j1) b2 j2
@@ -268,27 +276,27 @@ let split_along (a:t) (v:var) : t list =
     in
     filter_bounds_bot aux
 
-  let filter (a:t) (e1,binop,e2) : t = 
+  let filter (a:t) (e1,binop,e2) : t =
     match test a e1 binop e2 with
     | Bot -> raise Bot_found
     | Nb e -> e
 
   let empty : t = Env.empty
 
-  let add_var abs (typ,var) : t = 
-    Env.add (if typ = Syntax.INT then (var^"%") else var) I.top abs
+  let add_var abs (typ,var) : t =
+    Env.add (if typ = INT then (var^"%") else var) I.top abs
 
   let is_enumerated a =
     Env.for_all (fun v i -> (is_integer v |> not) || I.is_singleton i) a
-    
+
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
     (B.to_float_down (fst bounds), B.to_float_up (snd bounds))
 
 end
-    
+
 (*************)
 (* INSTANCES *)
 (*************)
-    
+
 module BoxF = Box(Itv.ItvF)

@@ -2,16 +2,16 @@
 
 open Apron
 open Format
-open Utils
+open Apron_utils
 open Adcp_sig
 open ADCP
 
-module type Reduction = 
+module type Reduction =
   sig
     module A : AbstractCP
     module B : AbstractCP
-    val a_meet_b : A.t -> B.t -> B.t 
-    val b_meet_a : A.t -> B.t -> A.t 
+    val a_meet_b : A.t -> B.t -> B.t
+    val b_meet_a : A.t -> B.t -> A.t
   end
 
 module BoxAndPoly : Reduction =
@@ -25,7 +25,7 @@ module BoxAndPoly : Reduction =
       let poly' = BoxCP.to_poly box poly_env in
       Abstract1.meet PolyCP.man poly poly'
 
-    let b_meet_a box poly = 
+    let b_meet_a box poly =
       let box_env = Abstract1.env box in
       let box' = PolyCP.to_box poly box_env in
       Abstract1.meet BoxCP.man box box'
@@ -43,7 +43,7 @@ module BoxAndOct : Reduction =
       let oct' = BoxCP.to_oct box oct_env in
       Abstract1.meet OctBoxCP.man oct oct'
 
-    let b_meet_a box oct = 
+    let b_meet_a box oct =
       let box_env = Abstract1.env box in
       let box' = OctBoxCP.to_box oct box_env in
       Abstract1.meet BoxCP.man box box'
@@ -61,7 +61,7 @@ module OctAndPoly : Reduction =
       let poly' = OctBoxCP.to_poly oct poly_env in
       Abstract1.meet PolyCP.man poly poly'
 
-    let b_meet_a oct poly = 
+    let b_meet_a oct poly =
       let oct_env = Abstract1.env oct in
       let oct' = PolyCP.to_oct poly oct_env in
       Abstract1.meet OctBoxCP.man oct oct'
@@ -75,7 +75,7 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
 
     type t = A.t * B.t
 
-    let reduced_product a b = 
+    let reduced_product a b =
       let new_a = b_meet_a a b in
       let new_b = a_meet_b a b in
       (new_a, new_b)
@@ -83,21 +83,17 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let empty = A.empty,B.empty
 
     let add_var (abs,abs') v = (A.add_var abs v),(B.add_var abs' v)
-    
+
     let is_small ((abs, abs'):t) = A.is_small abs
 
-    let prune (a,a') (b,b') = 
-      let la,ua = A.prune a b
-      and lb,ub = B.prune a' b' in
+    let prune (a,a') (b,b') =
+      (* let la,ua = A.prune a b *)
+      (* and lb,ub = B.prune a' b' in *)
       [],(a,a')
 
-    let split ((abs, abs'):t) = 
+    let split ((abs, abs'):t) =
       let split_a = A.split abs in
       List.map (fun x -> (x, abs')) split_a
-
-    let points_to_draw ((abs, abs'):t) vars =
-      let abs_to_draw = a_meet_b abs abs' in
-      B.points_to_draw abs_to_draw vars
 
     let is_bottom ((abs, _):t) = A.is_bottom abs
 
@@ -109,9 +105,15 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let filter ((abs, abs'):t) cons =
       (A.filter abs cons, abs')
 
-    let forward_eval (abs, abs') cons = 
+    let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in
       B.forward_eval abs_tmp cons
+
+    let vertices2d ((abs, abs'):t) =
+      A.vertices2d abs
+
+    let vertices3d ((abs, abs'):t) =
+      A.vertices3d abs
 
     let print fmt ((abs, abs'):t) =
       A.print fmt abs;
@@ -176,14 +178,14 @@ let abs_meet_abs man abs abs' =
  * orthogonal vector of v.
  *)
 let barycenter man abs =
-  let gens = Abstract1.to_generator_array man abs in  
+  let gens = Abstract1.to_generator_array man abs in
   let gen_env = gens.Generator1.array_env in
   (*print_gen gens gen_env;*)
 
   let size = Environment.size gen_env in
   let gen_float_array = gen_to_array gens size in
   let length = Array.length gen_float_array in
-  
+
   (* Compute the barycenter *)
   let bary_tab = Array.make size 0. in
   let bary_tab' = Array.make size 0. in
@@ -197,7 +199,7 @@ let barycenter man abs =
     bary_tab'.(j) <- bary_tab.(j);
     bary_tab.(j) <- bary_tab.(j) /. float_of_int length
   done;
-  
+
   (* Get the farthest vertex from the barycenter wrt. the euclidian distance. *)
   let rec farthest i point_max i_max dist_max =
     if i >= length then
@@ -209,12 +211,12 @@ let barycenter man abs =
       else
         farthest (i+1) point_max i_max dist_max
   in
-  
+
   let (point_max, i_max, dist_max) = farthest 1 gen_float_array.(0) 0 (dist gen_float_array.(0) bary_tab) in
   let m = float_of_int length in
-  
+
   (* let b = (b1, b2, ..., bn) the barycenter and p = (p1, p2, ..., pn) the farthest
-   * point of b. The vector bp = (p1-b1, p2-b2, ..., pn-bn) and the orthogonal line 
+   * point of b. The vector bp = (p1-b1, p2-b2, ..., pn-bn) and the orthogonal line
    * to the vector bp passing by b has for equation:
    * (p1-b1)(x1-b1) + (p2-b2)(x2-b2) + ... + (pn-bn)(xn-bn) = 0
    *)
@@ -228,11 +230,11 @@ let barycenter man abs =
       let list' = List.append list [(Coeff.Scalar (Scalar.of_float ci'), Environment.var_of_dim gen_env i)] in
       genere_linexpr (i+1) list' cst'
   in
-  
+
   let (list, cst) = genere_linexpr 0 [] 0. in
   let cst_sca = Scalar.of_float (-1. *.(cst +. split_prec)) in
   let linexp = Linexpr1.make gen_env in
   Linexpr1.set_list linexp list (Some (Coeff.Scalar cst_sca));
-   
+
   linexp
  *)

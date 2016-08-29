@@ -1,11 +1,21 @@
-open Apron
-open ADCP
-open Itv
-open Bot
+module GoS (Abs:Adcp_sig.AbstractCP) = struct
+  module Sol = Solver.Solve(Abs)
+  module Print = Out.Make(Abs)
+  let go prob =
+    let res = Sol.solving prob in
+    Print.out prob res
+end
 
-let solving = ref true 
+module SBox      = GoS (Abstract_box.BoxF)
+module SBoxCP    = GoS (ADCP.BoxCP)
+module SOctCP    = GoS (ADCP.OctBoxCP)
+module SPolyCP   = GoS (ADCP.PolyCP)
+module SBoxNOct  = GoS (VariousDA.BoxNOct)
+module SBoxNPoly = GoS (VariousDA.BoxNPoly)
+module SOctNPoly = GoS (VariousDA.OctNPoly)
 
-let speclist = 
+
+let speclist =
   let open Constant in
   [
   ("-visualization", Arg.Set visualization, "Enables visualization mode");
@@ -32,28 +42,28 @@ let anonymous_arg = Constant.set_prob
 
 let parse_args () = Arg.parse speclist anonymous_arg ""
 
-let main =
+let _ =
   let open Constant in
   parse_args ();
   let prob = File_parser.parse !problem in
-  (* Syntax.print Format.std_formatter prob; *)
+  if !trace then Format.printf "%a" Csp.print prob;
   if !minimizing then
     match !domain with
     | "box" -> Minimizer.Box.minimizing prob
     | "boxCP" -> Minimizer.BoxCP.minimizing prob
     | "oct" -> Minimizer.Oct.minimizing prob
-    | "poly" -> Minimizer.Poly.minimizing prob 
+    | "poly" -> Minimizer.Poly.minimizing prob
     | "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
     | "boxNpoly" -> Minimizer.BoxNPoly.minimizing_various prob
     | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob
     | _ -> "domain undefined "^(!domain) |> failwith
   else
     match !domain with
-    | "box" -> Solver.Box.solving prob
-    | "boxCP" -> Solver.BoxCP.solving prob
-    | "oct" -> Solver.Oct.solving prob
-    | "poly" -> Solver.Poly.solving prob 
-    | "boxNoct" -> Solver.BoxNOct.solving_various prob
-    | "boxNpoly" -> Solver.BoxNPoly.solving_various prob
-    | "octNpoly" -> Solver.OctNPoly.solving_various prob
+    | "box" -> SBox.go prob
+    | "boxCP" -> SBoxCP.go prob
+    | "oct" -> SOctCP.go prob
+    | "poly" -> SPolyCP.go prob
+    | "boxNoct" -> SBoxNOct.go prob
+    | "boxNpoly" -> SBoxNPoly.go prob
+    | "octNpoly" -> SOctNPoly.go prob
     | _ -> "domain undefined "^(!domain) |> failwith
