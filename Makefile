@@ -77,26 +77,14 @@ all: $(TARGETS)
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
-solver:  $(OFILES) $(CMOFILES)
-	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) $(OCAMLLIBS) $+
-
 minimizer.opt: $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
-
-minimizer: $(CMOFILES)
-	$(OCAMLC) -custom -o $@ $(OCAMLFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLLIBS) $+
-
-%.cmo: %.ml %.cmi
-	$(OCAMLC) $(OCAMLFLAGS) $(OCAMLINC) -c $*.ml
 
 %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC) -c $*.ml
 
 %.cmi: %.mli %.ml
 	$(OCAMLC) $(OCAMLFLAGS) $(OCAMLINC) -c $*.mli
-
-%.cmo: %.ml
-	$(OCAMLC) $(OCAMLFLAGS) $(OCAMLINC)  -c $*.ml
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC)  -c $*.ml
