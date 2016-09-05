@@ -45,6 +45,7 @@ MLFILES = \
   src/lib/bound_float.ml \
   src/lib/itv_sig.ml \
   src/lib/itv.ml \
+	src/lib/newitv.ml \
   src/domains/apron_domain.ml \
   src/domains/abstract_box.ml \
   src/domains/adcp_sig.ml \

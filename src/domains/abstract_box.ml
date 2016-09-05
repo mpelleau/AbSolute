@@ -50,13 +50,13 @@ module Box (I:ITV) = struct
     let ((l,h), _) = find v a in
     (B.to_float_down l),(B.to_float_up h)
 
-  let vertices2d a (v1,v2) =
-    let (l1,h1) = float_bounds a v1
-    and (l2,h2) = float_bounds a v2
+  let vertices2d (a:t) (v1,v2) =
+    let (l1,h1) = find v1 a |> fst |> I.to_float_range
+    and (l2,h2) = find v2 a |> fst |> I.to_float_range
     in [l1,l2; h1,l2; h1,h2; l1,h2]
 
   let vertices3d a (v1,v2,v3) =
-    let (l3,h3) = float_bounds a v3 in
+    let (l3,h3) = find v3 a |> fst |> I.to_float_range in
     let rec aux acc = function
       | [] -> acc
       | (x,y)::tl ->
@@ -300,3 +300,4 @@ end
 (*************)
 
 module BoxF = Box(Itv.ItvF)
+(* module BoxF = Box(Newitv.Test) *)
