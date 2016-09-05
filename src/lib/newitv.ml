@@ -4,6 +4,8 @@ open Bound_sig
 
 module Make(B:BOUND) = struct
 
+  module B = B
+
   type bound = B.t
 
   type kind = Strict | Large
@@ -14,25 +16,32 @@ module Make(B:BOUND) = struct
 
   type real_bound = kind * bound
 
-  let ( +@ ) ((k1,b1):real_bound) ((k2,b2):real_bound) =
-    (match k1,k2 with
-    | Large,Large -> Large
-    | _ -> Strict),(B.add_up b1 b2)
+  module Op = struct
+    let ( <> ) a b = (Large,a),(Large,b)
+    let ( << ) a b = (Large,a),(Strict,b)
+    let ( >> ) a b = (Strict,a),(Large,b)
+    let ( >< ) a b = (Strict,a),(Strict,b)
+  end
 
-  let ( +$ ) ((k1,b1):real_bound) ((k2,b2):real_bound) =
-    (match k1,k2 with
+  let mix k1 k2 =
+    match k1,k2 with
     | Large,Large -> Large
-    | _ -> Strict),(B.add_down b1 b2)
+    | _ -> Strict
 
-  let ( -@ ) ((k1,b1):real_bound) ((k2,b2):real_bound) =
-    (match k1,k2 with
-    | Large,Large -> Large
-    | _ -> Strict),(B.sub_up b1 b2)
+  let bound_arith ((k1,b1):real_bound) ((k2,b2):real_bound) f =
+    (mix k1 k2),(f b1 b2)
 
-  let ( -$ ) ((k1,b1):real_bound) ((k2,b2):real_bound) =
-    (match k1,k2 with
-    | Large,Large -> Large
-    | _ -> Strict),(B.sub_down b1 b2)
+  let ( +@ ) rb1 rb2 = bound_arith rb1 rb2 B.add_up
+
+  let ( +$ ) rb1 rb2 = bound_arith rb1 rb2 B.add_down
+
+  let ( -@ ) rb1 rb2 = bound_arith rb1 rb2 B.sub_up
+
+  let ( -$ ) rb1 rb2 = bound_arith rb1 rb2 B.sub_down
+
+  let ( *@ ) rb1 rb2 = bound_arith rb1 rb2 B.mul_up
+
+  let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 B.mul_down
 
   type t = real_bound * real_bound
 
@@ -80,7 +89,7 @@ module Make(B:BOUND) = struct
   let min_up u1 u2 = if cmp_up u1 u2 = 1 then u2 else u1
 
   (* returns the higher bound two high bounds *)
-  let max_up u1 u2 = if cmp_up u1 u2 = 1 then u2 else u1
+  let max_up u1 u2 = if cmp_up u1 u2 = 1 then u1 else u2
 
   (* maps empty intervals to explicit bottom *)
   let check_bot ((((_,l) as b1),((_,h)as b2)) as itv) : t bot =
@@ -267,42 +276,51 @@ module Make(B:BOUND) = struct
 
   let neg (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
 
-  let abs (((kl,l),(kh,h)):t) : t = failwith "todo"
+  let abs (((kl,l),(kh,h)):t) : t = failwith "todo abs"
 
   let add ((l1,h1):t) ((l2,h2):t) : t = l1 +$ l2, h1 +@ h2
 
   let sub ((l1,h1):t) ((l2,h2):t) : t = l1 -$ h2, h1 +@ l2
 
-  let mul = failwith " todo "
+  let mul a b = failwith " todo mul"
 
-  let div (i1:t) (i2:t) : t bot * bool = failwith "todo"
+  let div (i1:t) (i2:t) : t bot * bool = failwith "todo div"
 
-  let sqrt ((l,h):t) : t bot = failwith "todo"
+  let sqrt ((l,h):t) : t bot = failwith "todo sqrt"
 
-  let pow (i1:t) (i2:t) : t bot * bool = failwith "todo"
+  let pow (i1:t) (i2:t) = failwith "todo pow"
+
+  (* nth-root *)
+  let n_root ((il,ih):t) ((l,h):t) = failwith "todo n_root"
 
   let cos (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
 
   let sin (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
 
+  let tan ((l,h):t) = failwith "todo tan"
+
+  let log ((l,h):t) = failwith "todo log"
+
+  let exp ((l,h):t) = failwith "todo exp"
+
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
   (************************************************************************)
 
-  let bobot a b c d =
+  let merge_check a b c d =
     merge_bot2 (check_bot (a,b)) (check_bot (c,d))
 
   let filter_leq ((l1,h1):t) ((l2,h2):t) : (t * t) bot =
-    bobot l1 (min_up h1 h2) (max_low l1 l2) h2
+    merge_check l1 (min_up h1 h2) (max_low l1 l2) h2
 
   let filter_geq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    bobot (max_low l1 l2) h1 l2 (min_up h1 h2)
+    merge_check (max_low l1 l2) h1 l2 (min_up h1 h2)
 
   let filter_lt ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    bobot l1 (min_up h1 (sym h2)) (max_low (sym l1) l2) h2
+    merge_check l1 (min_up h1 (sym h2)) (max_low (sym l1) l2) h2
 
   let filter_gt  ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    bobot (max_low l1 (sym l2)) h1 l2 (min_up (sym h1) h2)
+    merge_check (max_low l1 (sym l2)) h1 l2 (min_up (sym h1) h2)
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     lift_bot (fun x -> x,x) (meet i1 i2)
@@ -312,17 +330,91 @@ module Make(B:BOUND) = struct
     else Nb (i1,i2)
 
   let filter_lt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    bobot
+    merge_check
       l1
       (min_up h1 (h2 +@ (Large,B.one)))
       (max_low (l1 +$ (Large,B.one)) l2)
       h2
 
   let filter_gt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    bobot
+    merge_check
       (max_low l1 (l2 +$ (Large,B.one))) h1
       l2 (min_up (h1 -@ (Large,B.one)) h2)
 
   let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     failwith "todo"
+
+  (* arithmetic *)
+  (* --------- *)
+
+  (* r = -i => i = -r *)
+  let filter_neg (i:t) (r:t) : t bot =
+    meet i (neg r)
+
+  let filter_abs (((_,il),(_,ih)) as i:t) ((rl,(s,rh)) as r:t) : t bot =
+    if B.sign il >= 0 then meet i r
+    else if B.sign ih <= 0 then meet i (neg r)
+    else meet i ((s,B.neg rh), (s,rh))
+
+  (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
+  let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
+    merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
+
+  (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
+  let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
+    merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+
+  (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
+  let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
+    merge_bot2
+      (if contains r B.zero && contains i2 B.zero then Nb i1
+      else match fst (div r i2) with Bot -> Bot | Nb x -> meet i1 x)
+      (if contains r B.zero && contains i1 B.zero then Nb i2
+       else match fst (div r i1) with Bot -> Bot | Nb x -> meet i2 x)
+
+   (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
+  let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
+    merge_bot2
+      (meet i1 (mul i2 r))
+      (if contains r B.zero && contains i1 B.zero then Nb i2
+      else match fst (div i1 r) with Bot -> Bot | Nb x -> meet i2 x)
+
+  (* r = sqrt i => i = r*r or i < 0 *)
+  let filter_sqrt (((k_il,il),ih) as i:t) ((rl,rh):t) : t bot =
+    let rr = rl *$ rl, rh *@ rh in
+    if B.sign il > 0 || (B.sign il = 0 && k_il = Large)
+    then meet i rr
+    else meet i ((Strict,B.minus_inf), snd rr)
+
+  (* r = sin i => i = arcsin r *)
+  let filter_sin i r = failwith "todo filter_sin"
+
+  (* r = cos i => i = arccos r *)
+  let filter_cos i r = failwith "todo filter_cos"
+
+  (* r = asin i => i = sin r *)
+  let filter_asin i r = meet i (sin r)
+
+  (* r = acos i => i = cos r *)
+  let filter_acos i r = meet i (cos r)
+
+  (* r = atan i => i = tan r *)
+  let filter_atan i r = meet i (tan r)
+
+  (* r = exp i => i = log r *)
+  let filter_exp i r = meet_bot2 meet i (log r)
+
+  (* r = log i => i = exp r *)
+  let filter_log i r = meet i (exp r)
+
+  (* r = i ** n => i = nroot i *)
+  let filter_pow (i:t) n (r:t) =
+    merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
+
+  let filter_bounds (l,h) = failwith "todo filter_bounds"
+
+  let to_float_range ((_,l),(_,h)) = (B.to_float_down l),(B.to_float_up h)
+
 end
+
+module Test:Itv_sig.ITV = Make(Bound_float)

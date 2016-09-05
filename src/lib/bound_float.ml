@@ -1,10 +1,10 @@
-(* sets FPU rounding mode towards +oo, once and for all *)
-external init: unit -> unit = "ml_float_init"
-let _ = init ()
+(* (\* sets FPU rounding mode towards +oo, once and for all *\) *)
+(* external init: unit -> unit = "ml_float_init" *)
+(* let _ = init () *)
 
 type t = float
 
-      
+
 (* ordering *)
 
 let compare (a:t) (b:t) = compare a b
@@ -14,17 +14,17 @@ let geq (x:t) (y:t) : bool = x >= y
 let lt (x:t) (y:t) : bool = x < y
 let gt (x:t) (y:t) : bool = x > y
 let neq (x:t) (y:t) : bool = x <> y
-    
-let odd (x:t) : bool = ((int_of_float x) / 2) * 2 |> float <> x 
-let even (x:t) : bool = ((int_of_float x) / 2) * 2 |> float = x 
+
+let odd (x:t) : bool = ((int_of_float x) / 2) * 2 |> float <> x
+let even (x:t) : bool = ((int_of_float x) / 2) * 2 |> float = x
 
 let min (x:t) (y:t) : t = min x y
 let max (x:t) (y:t) : t = max x y
-    
+
 let sign (x:t) : int =
   if x > 0. then 1 else
   if x < 0. then -1 else 0
-    
+
 (* conversion, printing *)
 
 let of_int_up a = float_of_int a
@@ -35,16 +35,16 @@ let of_float_down a : t = a
 let of_string x =
   float_of_string x
 
-(* TODO *)    
+(* TODO *)
 let of_string_up = of_string
 let of_string_down = of_string
-    
+
 (* Note: adds 0. to favor positive 0 *)
 let to_string x = string_of_float (x+.0.)
 
 let to_float_up x : float = x
 let to_float_down x : float = x
-    
+
 (* printing *)
 let output chan x = output_string chan (to_string x)
 let sprint () x = to_string x
@@ -52,19 +52,19 @@ let bprint b x = Buffer.add_string b (to_string x)
 let pp_print f x = Format.pp_print_string f (to_string x)
 
 
-(* classification *)    
-      
+(* classification *)
+
 type kind = FINITE | MINF | INF | INVALID
-  
+
 let classify (x:t) : kind =
   if classify_float x = FP_nan then INVALID
   else if x = infinity then INF
   else if x = neg_infinity then MINF
   else FINITE
-      
 
 
-(* useful constants *)        
+
+(* useful constants *)
 
 let zero : t = 0.
 let one : t = 1.
@@ -73,7 +73,7 @@ let minus_one : t = -1.
 let inf : t = infinity
 let minus_inf : t = neg_infinity
 let nan : t = nan
-    
+
 
 (* exact operators *)
 
@@ -81,7 +81,7 @@ let neg x = -. x
 let abs x = abs_float x
 
 
-(* operators with rounding *)    
+(* operators with rounding *)
 
 let add_up a b = a +. b
 let sub_up a b = a -. b
@@ -97,10 +97,10 @@ let div_down a b = -. ((-. a) /. b)
 let sqrt_up x = sqrt x
 let sqrt_down x = div_down 1. (sqrt (div_up 1. x))
 
-let pow_up x n = x ** (float n) 
+let pow_up x n = x ** (float n)
 let pow_down x n = div_down 1. ((div_up 1. x) ** (float n))
 
-let root_up x n = 
+let root_up x n =
   if x<0. && n mod 2 = 1 then -. (exp((log (-.x)) /. (float n)))
   else exp((log x) /. (float n))
 

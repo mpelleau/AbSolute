@@ -291,7 +291,7 @@ let split_along (a:t) (v:var) : t list =
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
-    (B.to_float_down (fst bounds), B.to_float_up (snd bounds))
+    I.to_float_range bounds
 
 end
 

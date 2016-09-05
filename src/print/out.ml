@@ -99,7 +99,7 @@ module Make (Abs:AbstractCP) = struct
       draw2d res.sure unsure (vars2D prob);
     (* if !Constant.tex then print_latex res.sure unsure prob.to_draw; *)
     if !Constant.trace then trace res.sure unsure
-    (* if !Constant.obj then draw3d values vars *)
+    (* if !Constant.obj then draw3d res.sure vars *)
 
 
   let trace_min sure unsure value =

@@ -9,7 +9,7 @@ open Bot
 open Bound_sig
 
 
-module Itv(B:BOUND) = (struct
+module Itv(B:BOUND) = struct
 
   (************************************************************************)
   (* TYPES *)
@@ -218,15 +218,13 @@ module Itv(B:BOUND) = (struct
     let to_pair = ref l in
     let list =
       List.rev_map (fun e ->
-	let ll,hh =
+	      let ll,hh =
           let a, b = B.floor e, B.ceil e in
-          if B.equal a b then
-	    a, B.add_up b B.one
-	  else
-	    a, b
+          if B.equal a b then a, B.add_up b B.one
+	        else a, b
         in
-	let res = (!to_pair,ll) in to_pair := hh ; res)
-	m
+	      let res = (!to_pair,ll) in to_pair := hh ; res)
+	      m
     in
     List.rev_map check_bot ((!to_pair,h)::list)
 
@@ -711,8 +709,11 @@ module Itv(B:BOUND) = (struct
     and sup = B.floor h in
     check_bot (inf, sup)
 
+  let to_float_range (l,h) =
+    (B.to_float_down l),(B.to_float_up h)
 
-end)
+
+end
 
 module ItvF = Itv(Bound_float)
 (* module ItvQ = Itv(Bound_rational) *)

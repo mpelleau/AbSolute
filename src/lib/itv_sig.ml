@@ -1,11 +1,11 @@
 (*
   An abstract fixpoint solver based on Constraint Programming
-  
+
   Author: Antoine Mine
   Copyright 2014
 *)
 
-(* 
+(*
    Generic signature for intervals.
    The interface is functional.
  *)
@@ -22,12 +22,12 @@ module type ITV = sig
   (* interval bound (possibly -oo or +oo) *)
   module B : BOUND
   type bound = B.t
-        
+
   (* an interval is a pair of bounds (lower,upper);
      intervals are always non-empty: lower <= upper;
      functions that can return an empty interval return it as Bot
    *)
-  type t = bound * bound
+  type t (* = bound * bound *)
 
 
   (************************************************************************)
@@ -60,8 +60,10 @@ module type ITV = sig
   (* [min a b, max a b] *)
 
   (************************************************************************)
-  (* PRINTING *)
+  (* PRINTING and CONVERSIONS *)
   (************************************************************************)
+
+  val to_float_range : t -> float * float
 
   val to_string: t -> string
   val output: out_channel -> t -> unit
@@ -80,7 +82,7 @@ module type ITV = sig
 
   val join: t -> t -> t
   val meet: t -> t -> t bot
-      
+
   (* returns None if the set-union cannot be exactly represented *)
   val union: t -> t -> t option
 
@@ -95,14 +97,14 @@ module type ITV = sig
   val is_bounded: t -> bool
   val is_singleton: t -> bool
   val check_bot: t -> t bot
-      
+
 
   (* mesure *)
   (* ------ *)
 
   (* length of the intersection (>= 0) *)
   val overlap: t -> t -> bound
-      
+
   val range: t -> bound
   val magnitude: t -> bound
 
@@ -132,8 +134,8 @@ module type ITV = sig
 
   (* return valid values (possibly Bot) + possible division by zero *)
   val div: t -> t -> t bot * bool
- 
-  (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)  
+
+  (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)
   val pow: t -> t -> t
 
   val cos: t -> t
@@ -143,11 +145,11 @@ module type ITV = sig
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
   (************************************************************************)
 
-  (* given two interval arguments, return a subset of each argument 
+  (* given two interval arguments, return a subset of each argument
      by removing points that cannot satisfy the predicate;
      may also return Bot if no point can satisfy the predicate
    *)
-      
+
   val filter_leq: t -> t -> (t * t) bot
   val filter_geq: t -> t -> (t * t) bot
   val filter_lt: t -> t -> (t * t) bot
@@ -159,7 +161,7 @@ module type ITV = sig
   val filter_lt_int: t -> t -> (t * t) bot
   val filter_gt_int: t -> t -> (t * t) bot
   val filter_neq_int: t -> t -> (t * t) bot
-      
+
 
   (* given the interval argument(s) and the expected interval result of
      a numeric operation, returns refined interval argument(s) where

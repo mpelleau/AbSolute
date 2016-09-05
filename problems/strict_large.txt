@@ -1,0 +1,11 @@
+/* b */
+
+init {
+  real x = [-100;100];
+  real y = [-100;100];
+}
+
+constraints {
+  x > 0;
+  y <= 0;
+}
