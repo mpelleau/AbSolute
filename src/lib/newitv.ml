@@ -1,7 +1,6 @@
 open Bot
 open Bound_sig
 
-
 module Make(B:BOUND) = struct
 
   module B = B
@@ -14,14 +13,11 @@ module Make(B:BOUND) = struct
     | Large,x -> Strict,x
     | Strict,x -> Large,x
 
-  type real_bound = kind * bound
+  let stricten = function
+    | Large,x -> Strict,x
+    | x -> x
 
-  module Op = struct
-    let ( <> ) a b = (Large,a),(Large,b)
-    let ( << ) a b = (Large,a),(Strict,b)
-    let ( >> ) a b = (Strict,a),(Large,b)
-    let ( >< ) a b = (Strict,a),(Strict,b)
-  end
+  type real_bound = kind * bound
 
   let mix k1 k2 =
     match k1,k2 with
@@ -170,7 +166,6 @@ module Make(B:BOUND) = struct
   (* SET-THEORETIC *)
   (************************************************************************)
 
-
   (* operations *)
   (* ---------- *)
   let join ((l1,h1):t) ((l2,h2):t) : t =
@@ -210,9 +205,9 @@ module Make(B:BOUND) = struct
   let is_singleton ((l,h):t) : bool =
     is_finite l && B.equal (snd l) (snd h)
 
-  (* length of the intersection (>= 0) *)
   let range (((_,l),(_,h)): t) = B.sub_up h l
 
+  (* length of the intersection (>= 0) *)
   let overlap i1 i2 =
     match meet i1 i2 with
     | Bot -> B.zero
@@ -274,34 +269,111 @@ module Make(B:BOUND) = struct
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
   (************************************************************************)
 
-  let neg (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
+  (* FEW GENERAL UTILITIES *)
 
-  let abs (((kl,l),(kh,h)):t) : t = failwith "todo abs"
+  (* f [a;b] -> [f(a);f(b)] when f is monotonic increasing *)
+  let mon_incr (f_down,f_up) ((kl,low),(kh,high)) =
+    (kl,(f_down low)),(kh,(f_up high))
+
+  (* f [a;b] -> [f(b);f(a)] when f is monotonic decreasing *)
+  let mon_decr (f_down,f_up) ((kl,low),(kh,high)) =
+    (kh,(f_down high)),(kl,(f_up low))
+
+  (* f [x0;x1;...] [a,b] first, returns a list of interval
+     corresponding to monotonic piece of f. The boolean first
+     specify if the first part is increasing.
+     the change_value x0,x1,x2,etc, must be greater than a
+  *)
+  let pw_mon f change_values (low,high) first =
+    let rec aux acc cur incr =
+      let mon = if incr then mon_incr else mon_decr in function
+      | [] -> List.fold_left join (mon f (cur,high)) acc
+      | h::tl ->
+         if contains (low,high) h then
+           aux ((mon f (cur,(Large,h)))::acc) (Large,h) (not incr) tl
+         else List.fold_left join (mon f (cur,high)) acc
+    in
+    aux [] low first change_values
+
+  let pw_mon f change_values i first =
+    let rec aux incr = function
+      | [] -> [],incr
+      | h::tl as bds ->
+         if contains i h then bds,incr
+         else aux (not first) tl
+    in
+    let bds,fst = aux first change_values in
+    pw_mon f bds i fst
+
+  let neg (i:t) : t = mon_decr (B.neg,B.neg) i
+
+  let abs (i:t) : t =
+    let f = B.abs,B.abs in
+    if subseteq i positive then mon_incr f i
+    else if subseteq i negative then mon_decr f i
+    else pw_mon (B.abs,B.abs) [B.zero] i false
 
   let add ((l1,h1):t) ((l2,h2):t) : t = l1 +$ l2, h1 +@ h2
 
   let sub ((l1,h1):t) ((l2,h2):t) : t = l1 -$ h2, h1 +@ l2
 
-  let mul a b = failwith " todo mul"
+  let mul ((l1,h1):t) ((l2,h2):t) :t =
+    min_low (min_low (l1 *$ l2) (l1 *$ h2)) (min_low (h1 *$ l2) (h1 *$ h2)),
+    max_up  (max_up  (l1 *@ l2) (l1 *@ h2)) (max_up  (h1 *@ l2) (h1 *@ h2))
 
   let div (i1:t) (i2:t) : t bot * bool = failwith "todo div"
 
-  let sqrt ((l,h):t) : t bot = failwith "todo sqrt"
+  let sqrt (itv:t) : t bot =
+    match meet itv positive with
+    | Bot -> Bot
+    | Nb itv -> Nb (mon_incr (B.sqrt_down,B.sqrt_up) itv)
 
-  let pow (i1:t) (i2:t) = failwith "todo pow"
+  let pow (itv:t) ((l,h):t) =
+    let is_int (l,x) = l=Large && B.floor x=x in
+    if l=h && is_int l then
+      let i = B.to_float_down (snd l) |> int_of_float in
+      let f_down_up = ((fun b -> B.pow_down b i),(fun b -> B.pow_up b i)) in
+      let pow_odd x : t = mon_incr f_down_up x
+      and pow_even x : t = pw_mon f_down_up [B.zero] x false in
+      match i with
+      | 0 -> one
+      | 1 -> itv
+      | x when x > 1 && i mod 2 = 1 -> pow_odd itv
+      | x when x > 1 -> pow_even itv
+      | _ -> failwith "cant handle negatives powers"
+    else failwith  "cant handle non_singleton powers"
 
   (* nth-root *)
-  let n_root ((il,ih):t) ((l,h):t) = failwith "todo n_root"
+  let n_root (itv:t) ((l,h):t) : t bot =
+    let is_int (l,x) = l=Large && B.floor x = x in
+    if l=h && is_int l then
+      let i = B.to_float_down (snd l) |> int_of_float in
+      let f_down_up = ((fun b -> B.root_down b i),(fun b -> B.root_up b i)) in
+      let root_odd x : t = mon_incr (f_down_up) x
+      and root_even x : t bot =
+        match meet x positive with
+        | Bot -> Bot
+        | Nb x -> Nb (mon_incr (f_down_up) x)
+      in
+      match i with
+      | 1 -> Nb itv
+      | x when x > 1 && i mod 2 = 1 -> Nb(root_odd itv)
+      | x when x > 1 -> root_even itv
+      | _ -> failwith "can only handle stricly positive roots"
+    else failwith  "cant handle non_singleton roots"
 
-  let cos (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
+  let cos (((kl,l),(kh,h)):t) : t = failwith "todo cos"
 
-  let sin (((kl,l),(kh,h)):t) : t = (kl,B.neg h), (kh,B.neg l)
+  let sin (((kl,l),(kh,h)):t) : t = failwith "todo sin"
 
   let tan ((l,h):t) = failwith "todo tan"
 
-  let log ((l,h):t) = failwith "todo log"
+  let log (i:t) : t bot =
+    match meet i positive with
+    | Bot -> Bot
+    | Nb itv -> Nb (mon_incr (B.log_down,B.log_up) i)
 
-  let exp ((l,h):t) = failwith "todo exp"
+  let exp (i:t) = mon_incr (B.exp_down,B.exp_up) i
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -317,10 +389,10 @@ module Make(B:BOUND) = struct
     merge_check (max_low l1 l2) h1 l2 (min_up h1 h2)
 
   let filter_lt ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check l1 (min_up h1 (sym h2)) (max_low (sym l1) l2) h2
+    merge_check l1 (min_up h1 (stricten h2)) (max_low (stricten l1) l2) h2
 
   let filter_gt  ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check (max_low l1 (sym l2)) h1 l2 (min_up (sym h1) h2)
+    merge_check (max_low l1 (stricten l2)) h1 l2 (min_up (stricten h1) h2)
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     lift_bot (fun x -> x,x) (meet i1 i2)
@@ -348,13 +420,12 @@ module Make(B:BOUND) = struct
   (* --------- *)
 
   (* r = -i => i = -r *)
-  let filter_neg (i:t) (r:t) : t bot =
-    meet i (neg r)
+  let filter_neg (i:t) (r:t) : t bot = meet i (neg r)
 
-  let filter_abs (((_,il),(_,ih)) as i:t) ((rl,(s,rh)) as r:t) : t bot =
-    if B.sign il >= 0 then meet i r
-    else if B.sign ih <= 0 then meet i (neg r)
-    else meet i ((s,B.neg rh), (s,rh))
+  (* r = |i| => i = r U -r *)
+  let filter_abs (i:t) (r:t) : t bot =
+    assert (subseteq r positive);
+    meet i (join r (neg r))
 
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
   let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
@@ -382,8 +453,7 @@ module Make(B:BOUND) = struct
   (* r = sqrt i => i = r*r or i < 0 *)
   let filter_sqrt (((k_il,il),ih) as i:t) ((rl,rh):t) : t bot =
     let rr = rl *$ rl, rh *@ rh in
-    if B.sign il > 0 || (B.sign il = 0 && k_il = Large)
-    then meet i rr
+    if B.sign il > 0 || (B.sign il = 0 && k_il = Large) then meet i rr
     else meet i ((Strict,B.minus_inf), snd rr)
 
   (* r = sin i => i = arcsin r *)
@@ -407,14 +477,14 @@ module Make(B:BOUND) = struct
   (* r = log i => i = exp r *)
   let filter_log i r = meet i (exp r)
 
-  (* r = i ** n => i = nroot i *)
+  (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
     merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
 
-  let filter_bounds (l,h) = failwith "todo filter_bounds"
+  let filter_bounds (l,h) = failwith "todo filter_bound"
 
   let to_float_range ((_,l),(_,h)) = (B.to_float_down l),(B.to_float_up h)
 
 end
 
-module Test:Itv_sig.ITV = Make(Bound_float)
+module Test = Make(Bound_float)

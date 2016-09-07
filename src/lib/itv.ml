@@ -470,7 +470,7 @@ module Itv(B:BOUND) = struct
       match p with
       | 0 -> one
       | 1 -> (il, ih)
-      | x when x > 1 && B.odd l -> (B.pow_down il p, B.pow_up ih p)
+      | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
       | x when x > 1 && B.even l ->
         if B.leq il B.zero && B.geq ih B.zero then
 	  (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))

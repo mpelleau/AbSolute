@@ -1,0 +1,10 @@
+/* power test */
+
+init {
+  real x = [-100;100];
+  real y = [-100;100];
+}
+
+constraints {
+  y <= x^2;
+}

@@ -1,3 +1,5 @@
+(* type precision = Relative of float | Absolute of float *)
+(* let precision       = ref (Absolute(0.001)) *)
 let precision       = ref 0.001
 let max_iter        = ref 10000000
 let max_sol         = ref 1000000
@@ -11,8 +13,16 @@ let trace           = ref false
 let pruning         = ref false
 let sure            = ref false
 
-let set_prec p =
-  if p > 0. then precision := p
+(* let parse_prec p = *)
+(*   try Scanf.sscanf p "%f%%" (fun f -> *)
+(*     if f > 0. then precision := Relative f *)
+(*     else failwith "precision must be >= 0% and < 100%") *)
+(*   with _ -> *)
+(*     try precision := Absolute(float_of_string p) *)
+(*     with _ -> failwith "precision must be a float or of the form : x%" *)
+
+let set_prec f =
+  if f > 0. then precision := f
   else failwith "precision must be stricly positive"
 
 let set_max_iter i =

@@ -1,0 +1,10 @@
+/* root test */
+
+init {
+  real x = [0;100];
+  real y = [0;100];
+}
+
+constraints {
+  y <= sqrt x;
+}

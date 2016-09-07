@@ -1,0 +1,10 @@
+/* exponential value test */
+
+init{
+  real x=[-10;10];
+  real y=[0;10];
+}
+
+constraints{
+  x > exp(y);
+}

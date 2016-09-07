@@ -155,10 +155,10 @@ let split_along (a:t) (v:var) : t list =
     let rec aux a good = function
       | [] -> good,a
       | (v, i_b)::tl ->
-	let add = fun i -> (Env.add v i a) in
-	let i_a = Env.find v a in
-	let sures,unsure = I.prune i_a i_b in
-	aux (add unsure) (List.rev_append (List.rev_map add sures) good) tl
+	       let add = fun i -> (Env.add v i a) in
+	       let i_a = Env.find v a in
+	       let sures,unsure = I.prune i_a i_b in
+	       aux (add unsure) (List.rev_append (List.rev_map add sures) good) tl
     in aux a [] (Env.bindings b)
 
 
@@ -299,5 +299,5 @@ end
 (* INSTANCES *)
 (*************)
 
-module BoxF = Box(Itv.ItvF)
-(* module BoxF = Box(Newitv.Test) *)
+(* module BoxF = Box(Itv.ItvF) *)
+module BoxF = Box(Newitv.Test)
