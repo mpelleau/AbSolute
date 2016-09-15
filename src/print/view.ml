@@ -1,6 +1,10 @@
 open Graphics
 
-let padding = 40.
+let padding = 5.
+let x_min = ref 0.
+and x_max = ref 0.
+and y_min = ref 0.
+and y_max = ref 0.
 
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
@@ -10,8 +14,7 @@ let bas_gauche l =
     match l with
     | [] -> best_x,best_y
     | (x,y)::b ->
-      if best_y > y || best_y = y && x < best_x then
-	aux (x,y) b
+      if best_y > y || best_y = y && x < best_x then aux (x,y) b
       else aux (best_x,best_y) b
   in aux (List.hd l) (List.tl l)
 
@@ -32,117 +35,96 @@ let graham_sort l =
     else if angle p p1 < angle p p2 then 1
     else if angle p p1 = angle p p2 then 0
     else -1
-  in
-  List.sort comp l
-
-(* Useful fonctions *)
-let red rgb = rgb / (0xFFFF)
-let green rgb = (rgb / 255) mod 255
-let blue rgb = rgb mod 255
-
-let getcomp c =
-  let r = red c |> float
-  and g = green c |> float
-  and b = blue c |> float in
-  (r,g,b)
-
-let draw draw_rect (x,y) w h col alpha =
-  for i=x to x+w do
-    for j=y to y+h do
-      let (o_r,o_g,o_b) = point_color i j |> getcomp
-      and (n_r,n_g,n_b) = getcomp col in
-      let r = (alpha *. n_r) +. (1. -. alpha) *. o_r |> int_of_float
-      and g = (alpha *. n_g) +. (1. -. alpha) *. o_g |> int_of_float
-      and b = (alpha *. n_b) +. (1. -. alpha) *. o_b |> int_of_float in
-      set_color (rgb r g b);
-      plot i j
-    done
-  done
-
-(* returns the bounds of a generator list *)
-let get_info l =
-  match l with
-  | (x,y)::tl ->
-    let (min_x,max_x) = (x,x) and (min_y,max_y) = (y,y) in
-    List.fold_left (fun ((min_x,max_x),(min_y,max_y)) (x,y) ->
-      let min_x = min min_x x and max_x = max max_x x
-      and min_y = min min_y y and max_y = max max_y y in
-      (min_x,max_x),(min_y,max_y)
-    ) ((min_x,max_x),(min_y,max_y)) l
-  | _ -> assert false
+  in List.sort comp l
 
 let projection (a,b) (c,d) n =
-  if b = a then a
-  else let r = (d-.c)/.(b-.a) in (n-.a) *. r +. c
+  let perc (x,y) r = x +. (r *. (y-.x))
+  and to_perc (x,y) r =
+    if x < 0. then (r-.x) /. (y-.x)
+    else (r-.x) /. (y-.x)
+  in
+  if b = a then c else perc (c,d) (to_perc (a,b) n)
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
-  let s_x = size_x() |> float and s_y = size_y() |> float in
+  let s_x = size_x() |> float_of_int and s_y = size_y() |> float_of_int in
   let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
-  and b = projection (min_y,max_y) (padding, (s_y-.padding)) b
+  and b = projection (min_y,max_y) (padding, (s_y-. (2. *. padding))) b
   in (int_of_float a, int_of_float b)
 
+let normalize p =
+  to_coord (!x_min,!x_max) (!y_min,!y_max) p
 
-let draw_line_x x col =
-  set_color col;
-  draw_segments [|(x, 0, x, size_y())|]
+let fill_circle a b r =
+  let a,b = normalize (a,b) in
+  fill_circle a b r
 
-let draw_line_y y col =
+let fill_poly l col =
   set_color col;
-  draw_segments [|(0, y, size_x(), y)|]
+  let l = graham_sort l in
+  let n = List.length l in
+  let arr = Array.make n (0,0) in
+  List.iteri (fun i (x,y) -> arr.(i) <- normalize (x,y)) l;
+  fill_poly arr
+
+let draw_poly l col =
+  set_color col;
+  let l = graham_sort l in
+  let n = List.length l in
+  let arr = Array.make n (0,0) in
+  List.iteri (fun i (x,y) -> arr.(i) <- normalize (x,y)) l;
+  draw_poly arr
+
+let draw_seg p1 p2 col =
+  set_color col;
+  let x1,y1 = normalize p1
+  and x2,y2 = normalize p2
+  in draw_segments [|(x1, y1, x2, y2)|]
+
+let draw_dashed_seg ((x1,y1) as p1) (x2,y2) col =
+  let man_dist = abs_float (x2-.x1) +. abs_float (y2-.y1) in
+  let step = 1. in
+  let move (a,b) =
+    (a+.((x2-.x1)*.step/.man_dist)),
+    (b+.((y2-.y1)*.step/.man_dist))
+  in
+  let rec aux (cur_x,cur_y) =
+    if abs_float (x2-.cur_x)+.abs_float (y2-.cur_y) < 2. *. step then
+      draw_seg (cur_x,cur_y) (x2,y2) col
+    else begin
+      let next = move (cur_x,cur_y) in
+      draw_seg (cur_x,cur_y) next col;
+      aux (move next)
+    end
+  in aux p1
+
+let draw_line_x x col = draw_seg (x, 0.) (x, size_y() |> float_of_int) col
+
+let draw_line_y y col = draw_seg (0., y) ((size_x() |> float_of_int
+), y) col
 
 let draw_string x y str col =
   set_color col;
-  moveto x y; draw_string str
+  moveto (int_of_float x) (int_of_float y);
+  draw_string str
 
-let draw_end ((x_min,x_max),(y_min,y_max)) =
-  let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
-  let p = int_of_float padding and lg = rgb 200 200 200
-  and sx = size_x() and sy = size_y() in
-  let nb = 10 in
-  let rangex = x_max -. x_min and rangey = y_max -. y_min in
-  let stepx = rangex /. (float nb) and stepy = rangey /. (float nb) in
-  set_color (rgb 160 240 160);
-  for i = 0 to nb do
-    let x = x_min +. (float i) *. stepx
-    and y = y_min +. (float i) *. stepy in
-    let a,_ = f_coord (x,0.)
-    and c,_=f_coord (x, float sy) in
-    draw_segments [|(a,0,c,sy)|];
-    let _,b = f_coord (0.,y)
-    and _,d = f_coord (float sx, y) in
-    draw_segments [|(0,b,sx,d)|]
-  done;
-  draw_line_x p lg;
-  draw_string p (p/2 - 5) (string_of_float x_min) black;
-  draw_line_x (sx-p) lg;
-  draw_string (sx-p) (p/2 - 5) (string_of_float x_max) black;
-  draw_line_y p lg;
-  draw_string (p/2 -5 ) (p+5) (string_of_float y_min) black;
-  draw_line_y (sy - p) lg;
-  draw_string (p/2-5) (sy-p+5) (string_of_float y_max) black;
-  let (a,b) = f_coord (0.,0.) in
-  draw_line_y a (rgb 255 160 30);
-  draw_line_x b (rgb 255 160 30)
+let init (xl,xu) (yl,yu) =
+  x_min := xl;
+  x_max := xu;
+  y_min := yl;
+  y_max := yu
 
-let draw dom col ((x_min,x_max),(y_min,y_max)) =
-  set_color col;
-  let ((f1,f2) as a) = List.hd dom in
-  if List.for_all (( = ) a) dom then
-    let (a,b) = to_coord (x_min,x_max) (y_min,y_max) (f1,f2) in
-    fill_circle a b 2
-  else begin
-    let l = graham_sort dom in
-    let f_coord = to_coord (x_min,x_max) (y_min,y_max) in
-    let l = List.rev_map f_coord l in
-    fill_poly (Array.of_list l);
-    set_color black;
-    draw_poly (Array.of_list l)
-  end
-
-let clear dom ((x_min,x_max),(y_min,y_max)) =
-  set_color (white);
-  let l = List.rev_map (to_coord (x_min,x_max) (y_min,y_max)) dom in
-  fill_poly (Array.of_list l)
+let draw_end () =
+  let lg = rgb 200 200 200
+  and sx = size_x() |> float_of_int
+  and sy = size_y() |> float_of_int in
+  draw_line_x padding lg;
+  draw_string padding (padding/.2. -. 5.) (string_of_float !x_min) black;
+  draw_line_x (sx-.padding) lg;
+  draw_string (sx-.padding) (padding/.2. -. 5.) (string_of_float !x_max) black;
+  draw_line_y padding lg;
+  draw_string (padding/.2.-.5.) (padding+.5.) (string_of_float !y_min) black;
+  draw_line_y (sy -. padding) lg;
+  draw_string (padding/.2.-.5.) (sy-.padding+.5.) (string_of_float !y_max) black
 
 let loop state =
   loop_at_exit [] (fun _ -> ())

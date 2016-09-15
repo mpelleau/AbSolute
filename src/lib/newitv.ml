@@ -107,7 +107,6 @@ module Make(B:BOUND) = struct
 
   let strict_large (x:B.t) (y:B.t) : t = validate ((Strict,x),(Large,y))
 
-
   let of_bound (x:B.t) : t = large x x
 
   let zero : t = of_bound B.zero
@@ -143,6 +142,11 @@ module Make(B:BOUND) = struct
   let hull (x:B.t) (y:B.t) : t =
     try large x y
     with Failure _ -> large y x
+
+  let half_sup (x:B.t) : t = large_strict x B.inf
+
+  let half_inf (x:B.t) : t = strict_large B.minus_inf x
+
 
   (************************************************************************)
   (* PRINTING *)
@@ -261,15 +265,16 @@ module Make(B:BOUND) = struct
   let prune ((l,h):t) ((l',h'):t) : t list * t  =
     match (gt_low l' l),(lt_up h' h) with
     | true , true -> [(l,(sym l'));((sym h'),h)],(l',h')
-    | true , false  -> [(l,(sym l'))],(l,h)
-    | false, true -> [((sym h'),h)],(l,h)
+    | true , false  -> [(l,(sym l'))],(l',h)
+    | false, true -> [((sym h'),h)],(l,h')
     | false, false  -> [],(l,h)
 
   (************************************************************************)
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
   (************************************************************************)
 
-  (* FEW GENERAL UTILITIES *)
+  (* few utilities based on monotony *)
+  (***********************************)
 
   (* f [a;b] -> [f(a);f(b)] when f is monotonic increasing *)
   let mon_incr (f_down,f_up) ((kl,low),(kh,high)) =
@@ -279,31 +284,17 @@ module Make(B:BOUND) = struct
   let mon_decr (f_down,f_up) ((kl,low),(kh,high)) =
     (kh,(f_down high)),(kl,(f_up low))
 
-  (* f [x0;x1;...] [a,b] first, returns a list of interval
-     corresponding to monotonic piece of f. The boolean first
-     specify if the first part is increasing.
-     the change_value x0,x1,x2,etc, must be greater than a
-  *)
-  let pw_mon f change_values (low,high) first =
-    let rec aux acc cur incr =
-      let mon = if incr then mon_incr else mon_decr in function
-      | [] -> List.fold_left join (mon f (cur,high)) acc
-      | h::tl ->
-         if contains (low,high) h then
-           aux ((mon f (cur,(Large,h)))::acc) (Large,h) (not incr) tl
-         else List.fold_left join (mon f (cur,high)) acc
-    in
-    aux [] low first change_values
+  (* when f changes its monotony in "c";
+     - if f ↗↘ then f [a;b] -> [f(a);f(c)] U f [f(b);f(c)]
+     - if f ↘↗ then f [a;b] -> [f(c);f(a)] U f [f(c);f(b)] *)
+  let mon_2 f c ((a,b) as itv) first =
+    let f1,f2 = if first then mon_incr,mon_decr else mon_decr,mon_incr in
+    if subseteq itv (half_inf c) then f1 f itv
+    else if subseteq itv (half_sup c) then f2 f itv
+    else join (f1 f (a,(Large,c))) (f2 f ((Large,c),b))
 
-  let pw_mon f change_values i first =
-    let rec aux incr = function
-      | [] -> [],incr
-      | h::tl as bds ->
-         if contains i h then bds,incr
-         else aux (not first) tl
-    in
-    let bds,fst = aux first change_values in
-    pw_mon f bds i fst
+  (* arithmetical functions *)
+  (**************************)
 
   let neg (i:t) : t = mon_decr (B.neg,B.neg) i
 
@@ -311,13 +302,13 @@ module Make(B:BOUND) = struct
     let f = B.abs,B.abs in
     if subseteq i positive then mon_incr f i
     else if subseteq i negative then mon_decr f i
-    else pw_mon (B.abs,B.abs) [B.zero] i false
+    else mon_2 (B.abs,B.abs) B.zero i false
 
-  let add ((l1,h1):t) ((l2,h2):t) : t = l1 +$ l2, h1 +@ h2
+  let add ((l1,h1):t) (l2,h2:t) : t = l1 +$ l2, h1 +@ h2
 
-  let sub ((l1,h1):t) ((l2,h2):t) : t = l1 -$ h2, h1 +@ l2
+  let sub ((l1,h1):t) (l2,h2:t) : t = l1 -$ h2, h1 -@ l2
 
-  let mul ((l1,h1):t) ((l2,h2):t) :t =
+  let mul ((l1,h1):t) ((l2,h2):t) : t =
     min_low (min_low (l1 *$ l2) (l1 *$ h2)) (min_low (h1 *$ l2) (h1 *$ h2)),
     max_up  (max_up  (l1 *@ l2) (l1 *@ h2)) (max_up  (h1 *@ l2) (h1 *@ h2))
 
@@ -334,7 +325,7 @@ module Make(B:BOUND) = struct
       let i = B.to_float_down (snd l) |> int_of_float in
       let f_down_up = ((fun b -> B.pow_down b i),(fun b -> B.pow_up b i)) in
       let pow_odd x : t = mon_incr f_down_up x
-      and pow_even x : t = pw_mon f_down_up [B.zero] x false in
+      and pow_even x : t = mon_2 f_down_up B.zero x false in
       match i with
       | 0 -> one
       | 1 -> itv
@@ -353,7 +344,9 @@ module Make(B:BOUND) = struct
       and root_even x : t bot =
         match meet x positive with
         | Bot -> Bot
-        | Nb x -> Nb (mon_incr (f_down_up) x)
+        | Nb x ->
+           let pos_part = mon_incr (f_down_up) x in
+           Nb (join pos_part (neg pos_part))
       in
       match i with
       | 1 -> Nb itv

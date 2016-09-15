@@ -22,23 +22,23 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cst c -> Texpr1.Cst (Coeff.s_of_float c)
     | Unary (o,e1) ->
       let r = match o with
-	| NEG -> Texpr1.Neg
-	| SQRT -> Texpr1.Sqrt
-	| COS | SIN | ABS -> failwith "COS and SIN unsupported with apron"
+	      | NEG -> Texpr1.Neg
+	      | SQRT -> Texpr1.Sqrt
+	      | COS | SIN | ABS -> failwith "COS and SIN unsupported with apron"
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
     | Binary (o,e1,e2) ->
-      let r = match o with
-	| ADD -> Texpr1.Add
-	| SUB -> Texpr1.Sub
-	| DIV -> Texpr1.Div
-	| MUL -> Texpr1.Mul
-	| POW -> Texpr1.Pow
-      in
-      let e1 = expr_to_apron a e1
-      and e2 = expr_to_apron a e2 in
-      Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
+       let r = match o with
+	       | ADD -> Texpr1.Add
+	       | SUB -> Texpr1.Sub
+	       | DIV -> Texpr1.Div
+	       | MUL -> Texpr1.Mul
+	       | POW -> Texpr1.Pow
+       in
+       let e1 = expr_to_apron a e1
+       and e2 = expr_to_apron a e2 in
+       Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
 
   let cmp_expr_to_apron b env =
     let cmp_to_apron (e1,op,e2) =
@@ -109,12 +109,12 @@ module MAKE(AP:ADomain) = struct
     let rec aux a sures = function
       | [] -> sures
       | h::tl ->
-	let neg_h = neg_lincons h in
-	let neg_earray = constr_to_earray neg_h and h_earray = constr_to_earray h in
-	let a = A.meet_lincons_array man a h_earray
-	and s = A.meet_lincons_array man a neg_earray in
-	if is_bottom s then aux a sures tl
-	else aux a (s::sures) tl
+	       let neg_h = neg_lincons h in
+	       let neg_earray = constr_to_earray neg_h and h_earray = constr_to_earray h in
+	       let a = A.meet_lincons_array man a h_earray
+	       and s = A.meet_lincons_array man a neg_earray in
+	       if is_bottom s then aux a sures tl
+	       else aux a (s::sures) tl
     in
     let sures = aux a [] (A.to_lincons_array man b |> lincons_earray_to_list) in
     sures,b

@@ -106,15 +106,14 @@ module Box (I:ITV) = struct
 
   (* split *)
   (* ----- *)
-  let is_integer var =
-    var.[String.length var - 1] = '%'
+  let is_integer var = var.[String.length var - 1] = '%'
 
   let filter_bounds (a:t) : t =
     let b = Env.mapi (fun v i ->
       if is_integer v then
-	match I.filter_bounds i with
-	| Bot -> raise Bot_found
-	| Nb e -> e
+	      match I.filter_bounds i with
+	      | Bot -> raise Bot_found
+	      | Nb e -> e
       else i) a in
     b
 
@@ -198,28 +197,28 @@ let split_along (a:t) (v:var) : t list =
         let _,i1 as b1 = eval a e1 in
         let r = match o with
         | NEG -> I.neg i1
-	| ABS -> I.abs i1
+	      | ABS -> I.abs i1
         | SQRT -> debot (I.sqrt i1)
-	| COS -> I.cos i1
-	| SIN -> I.sin i1
+	      | COS -> I.cos i1
+	      | SIN -> I.sin i1
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
-        let _,i1 as b1 = eval a e1
-        and _,i2 as b2 = eval a e2 in
-        let r = match o with
-        | ADD -> I.add i1 i2
-        | SUB -> I.sub i1 i2
-        | DIV -> debot (fst (I.div i1 i2))
-        | MUL ->
+       let _,i1 as b1 = eval a e1
+       and _,i2 as b2 = eval a e2 in
+       let r = match o with
+         | ADD -> I.add i1 i2
+         | SUB -> I.sub i1 i2
+         | DIV -> debot (fst (I.div i1 i2))
+         | MUL ->
             let r = I.mul i1 i2 in
             if e1=e2 then
               (* special case: squares are positive *)
               debot (I.meet r I.positive)
             else r
-	| POW -> I.pow i1 i2
-        in
-        BBinary (o,b1,b2), r
+	       | POW -> I.pow i1 i2
+       in
+       BBinary (o,b1,b2), r
 
 
   (* returns a box included in its argument, by removing points such that
@@ -238,8 +237,8 @@ let split_along (a:t) (v:var) : t list =
         | NEG -> I.filter_neg i1 x
         | ABS -> I.filter_abs i1 x
         | SQRT -> I.filter_sqrt i1 x
-	| COS -> I.filter_cos i1 x
-	| SIN -> I.filter_sin i1 x
+	      | COS -> I.filter_cos i1 x
+	      | SIN -> I.filter_sin i1 x
         in
         refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
@@ -252,7 +251,6 @@ let split_along (a:t) (v:var) : t list =
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2
-
 
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =

@@ -55,7 +55,9 @@ let get_vars p =
 let domain_to_constraints (_,v,d)  =
   match d with
   | Finite (l,h) ->
-    let c1 = (Var v, GEQ, Cst l) and c2 = (Var v, LEQ, Cst h) in c1,c2
+     let c1 = (Var v, GEQ, Cst l)
+     and c2 = (Var v, LEQ, Cst h)
+     in c1,c2
   | _ -> failwith "cant handle non-finite domains"
 
 (* iter on expr*)

@@ -1,18 +1,20 @@
-module GoS (Abs:Adcp_sig.AbstractCP) = struct
+open Drawer_sig
+
+module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
-  module Print = Out.Make(Abs)
+  module Print = Out.Make(Dr)
   let go prob =
     let res = Sol.solving prob in
     Print.out prob res
 end
 
-module SBox      = GoS (Abstract_box.BoxF)
-module SBoxCP    = GoS (ADCP.BoxCP)
-module SOctCP    = GoS (ADCP.OctBoxCP)
-module SPolyCP   = GoS (ADCP.PolyCP)
-module SBoxNOct  = GoS (VariousDA.BoxNOct)
-module SBoxNPoly = GoS (VariousDA.BoxNPoly)
-module SOctNPoly = GoS (VariousDA.OctNPoly)
+module SBox = GoS (Abstract_box.BoxF)(Realbox_drawer)
+(* module SBoxCP    = GoS (ADCP.BoxCP) *)
+module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
+module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+(* module SBoxNOct  = GoS (VariousDA.BoxNOct) *)
+(* module SBoxNPoly = GoS (VariousDA.BoxNPoly) *)
+(* module SOctNPoly = GoS (VariousDA.OctNPoly) *)
 
 
 let speclist =
@@ -60,10 +62,10 @@ let _ =
   else
     match !domain with
     | "box" -> SBox.go prob
-    | "boxCP" -> SBoxCP.go prob
+    (* | "boxCP" -> SBoxCP.go prob *)
     | "oct" -> SOctCP.go prob
     | "poly" -> SPolyCP.go prob
-    | "boxNoct" -> SBoxNOct.go prob
-    | "boxNpoly" -> SBoxNPoly.go prob
-    | "octNpoly" -> SOctNPoly.go prob
+    (* | "boxNoct" -> SBoxNOct.go prob *)
+    (* | "boxNpoly" -> SBoxNPoly.go prob *)
+    (* | "octNpoly" -> SOctNPoly.go prob *)
     | _ -> "domain undefined "^(!domain) |> failwith

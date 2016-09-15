@@ -57,6 +57,9 @@ MLFILES = \
   src/solver/minimizer.ml \
   src/print/view.ml \
   src/print/objgen.ml \
+  src/print/drawer_sig.ml \
+  src/print/realbox_drawer.ml \
+	src/print/apron_drawer.ml \
   src/print/out.ml \
 	src/main.ml
 
