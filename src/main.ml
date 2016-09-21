@@ -8,7 +8,8 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
     Print.out prob res
 end
 
-module SBox = GoS (Abstract_box.BoxF)(Realbox_drawer)
+(* module SBox = GoS (Abstract_box.BoxStrict)(Realbox_drawer) *)
+module SBox = GoS (Abstract_box.BoxF)(Box_drawer)
 (* module SBoxCP    = GoS (ADCP.BoxCP) *)
 module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)

@@ -30,6 +30,20 @@ module Make (D:Drawer) = struct
       List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
     View.draw_end ()
 
+  let print_latex sure unsure (v1,v2) =
+    match !Constant.problem with
+    | None -> assert false
+    | Some s ->
+       let name = Filename.(basename s |> chop_extension) in
+	     let out = ("out/"^name^".tex") in
+       let fmt = Format.formatter_of_out_channel (open_out out) in
+	     Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\subfigure[%s]{\\label{fg:2r}\n\\begin{tikzpicture}[scale=0.6]\n" name;
+    List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
+    if !Constant.sure |> not then
+      List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
+    Format.fprintf fmt "
+    \\end{tikzpicture}}\n\\caption{%s\\label{fg:%s}}\n\\end{figure}\n" name name
+
   let draw3d values vars =
     if !Constant.domain = "box" then
       match !Constant.problem with
@@ -66,7 +80,7 @@ module Make (D:Drawer) = struct
     let open Csp in
     let unsure = if !Constant.sure then [] else res.unsure in
     if !Constant.visualization then draw2d res.sure unsure (vars2D prob);
-    (* if !Constant.tex then print_latex res.sure unsure prob.to_draw; *)
+    if !Constant.tex then print_latex res.sure unsure (vars2D prob);
     if !Constant.trace then trace res.sure unsure
     (* if !Constant.obj then draw3d res.sure vars *)
 

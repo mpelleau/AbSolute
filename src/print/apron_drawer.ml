@@ -52,6 +52,8 @@ module Make(AP:ADomain) = struct
 
   let draw3d abs_list (v1,v2,v3) = failwith "niy"
 
+  let print_latex fmt abs (v1,v2) col = failwith ""
+
 end
 
 module OctDrawer = Make(struct

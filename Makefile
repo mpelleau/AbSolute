@@ -58,6 +58,7 @@ MLFILES = \
   src/print/view.ml \
   src/print/objgen.ml \
   src/print/drawer_sig.ml \
+	src/print/box_drawer.ml \
   src/print/realbox_drawer.ml \
 	src/print/apron_drawer.ml \
   src/print/out.ml \

@@ -325,14 +325,14 @@ module Itv(B:BOUND) = struct
   let i_two_pi = i_pi +@ i_pi
   let i_three_half_of_pi = (i_two_pi +@ i_pi) /@ (of_int 2) |> fst |> debot
 
-  type quadrant = One
-		| Two
-		| Three
-		| Four
-		| AroundPiHalf
-		| AroundPi
-		| AroundThreePiHalf
-		| AroundTwoPi
+  type quadrant = | One
+		              | Two
+		              | Three
+		              | Four
+		              | AroundPiHalf
+		              | AroundPi
+		              | AroundThreePiHalf
+		              | AroundTwoPi
 
   let might_intersect a b =
     match a,b with

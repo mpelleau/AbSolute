@@ -4,9 +4,9 @@
 type 'a t = {
   sure      : 'a list;   (* elements that satisfy the constraints *)
   unsure    : 'a list;   (* elements that MAY satisfy the constraints *)
-  nb_sure   : int;          (* size of sure list *)
-  nb_unsure : int;          (* size of unsure list *)
-  nb_steps  : int           (* number of steps of the solving process *)
+  nb_sure   : int;       (* size of sure list *)
+  nb_unsure : int;       (* size of unsure list *)
+  nb_steps  : int        (* number of steps of the solving process *)
 }
 
 (* the empty result *)
