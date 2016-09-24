@@ -1,3 +1,13 @@
+(******************************************************************)
+(*                   entry point of the solver                    *)
+(******************************************************************)
+
+(******************************************************************)
+(* An instance of the solver is parmetrized by an abstract domain *)
+(* which will be used in the abstract solving process and a       *)
+(* rendering module witch fits the domain we use                  *)
+(******************************************************************)
+
 open Drawer_sig
 
 module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
@@ -8,15 +18,31 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
     Print.out prob res
 end
 
-(* module SBox = GoS (Abstract_box.BoxStrict)(Realbox_drawer) *)
-module SBox = GoS (Abstract_box.BoxF)(Box_drawer)
-(* module SBoxCP    = GoS (ADCP.BoxCP) *)
+(************************)
+(* THE SOLVER INSTANCES *)
+(************************)
+
+(* built-in instances *)
+(* interval domain instance. Only large constraints *)
+module SBox      = GoS (Abstract_box.BoxF)(Box_drawer)
+
+(* interval domain instance. Both large and strict constraints *)
+module SBoxStrict = GoS (Abstract_box.BoxStrict)(Realbox_drawer)
+
+(* apron domain based instances *)
+module SBoxCP    = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
 module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+
+(* reduced product based instances*)
 (* module SBoxNOct  = GoS (VariousDA.BoxNOct) *)
 (* module SBoxNPoly = GoS (VariousDA.BoxNPoly) *)
 (* module SOctNPoly = GoS (VariousDA.OctNPoly) *)
 
+
+(********************)
+(* OPTIONS HANDLING *)
+(********************)
 
 let speclist =
   let open Constant in
@@ -44,6 +70,10 @@ let speclist =
 let anonymous_arg = Constant.set_prob
 
 let parse_args () = Arg.parse speclist anonymous_arg ""
+
+(***************)
+(* entry point *)
+(***************)
 
 let _ =
   let open Constant in

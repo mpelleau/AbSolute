@@ -1,10 +1,12 @@
 open Graphics
 
-let padding = 5.
+let padding = 15.
 let x_min = ref 0.
 and x_max = ref 0.
 and y_min = ref 0.
 and y_max = ref 0.
+and sx = ref 0.
+and sy = ref 0.
 
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
@@ -46,9 +48,8 @@ let projection (a,b) (c,d) n =
   if b = a then c else perc (c,d) (to_perc (a,b) n)
 
 let to_coord (min_x,max_x) (min_y,max_y) (a,b) =
-  let s_x = size_x() |> float_of_int and s_y = size_y() |> float_of_int in
-  let a = projection (min_x,max_x) (padding, (s_x-.padding)) a
-  and b = projection (min_y,max_y) (padding, (s_y-. (2. *. padding))) b
+  let a = projection (min_x,max_x) (padding, (!sx-.padding)) a
+  and b = projection (min_y,max_y) (padding, (!sy-. (2. *. padding))) b
   in (int_of_float a, int_of_float b)
 
 let normalize p =
@@ -131,5 +132,7 @@ let loop state =
 
 let create_window width height =
   Format.sprintf " %ix%i" width height |> open_graph;
+  sx := size_x() |> float;
+  sy := size_y() - 10 |> float;
   set_window_title "AbSolute";
   loop ()

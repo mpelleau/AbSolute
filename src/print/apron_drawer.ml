@@ -56,6 +56,12 @@ module Make(AP:ADomain) = struct
 
 end
 
+module BoxDrawer = Make(struct
+  type t = Box.t
+  let get_manager =  Box.manager_alloc ()
+end)
+
+
 module OctDrawer = Make(struct
   type t = Oct.t
   let get_manager =  Oct.manager_alloc ()
