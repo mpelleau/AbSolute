@@ -19,8 +19,8 @@ let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
       | Strict,x -> draw_f ,x
       | Large,x  -> draw_dashed_f,x
     in
-    (if vert then draw_f (value,b) (value,c)
-     else draw_f (b,value) (c,value))
+    (if vert then draw_f (value,b) (value,c) Graphics.black
+     else draw_f (b,value) (c,value) Graphics.black)
   in
   draw_seg true xl (I.to_float_range i2);
   draw_seg true xu (I.to_float_range i2);
@@ -29,24 +29,8 @@ let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
 
 
 let print_latex fmt =
-  let drawseg =  fun (x1,y1) (x2,y2) ->
-    Format.fprintf fmt "\\draw[black] (%f,%f) -- (%f,%f);\n" x1 y1 x2 y2
-  and draw_dashed_seg = fun (x1,y1) (x2,y2) ->
-    Format.fprintf fmt "\\draw[black, dashed] (%f,%f) -- (%f,%f);\n" x1 y1 x2 y2
-  and fillpol = fun l col ->
-    let col = if col = Graphics.green then "green" else "blue" in
-	  Format.fprintf fmt "\\filldraw[%s] " col;
-	  List.iter (fun (x,y) ->
-      Format.fprintf fmt "(%f, %f) -- " x y
-    ) l;
-    Format.fprintf fmt "cycle;@."
-  in
-  draw drawseg draw_dashed_seg fillpol
+  Latex.(draw (drawseg fmt) (draw_dashed_seg fmt) (fillpol fmt))
 
-let draw2d : t -> Csp.var * Csp.var -> Graphics.color -> unit =
-  draw
-    (fun (a,b) (c,d) -> View.draw_seg (a,b) (c,d) Graphics.black)
-    (fun (a,b) (c,d) -> View.draw_dashed_seg (a,b) (c,d) Graphics.black)
-    View.fill_poly
+let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly)
 
 let draw3d abs_list (v1,v2,v3) = failwith "niy"

@@ -36,13 +36,13 @@ module Make (D:Drawer) = struct
     | Some s ->
        let name = Filename.(basename s |> chop_extension) in
 	     let out = ("out/"^name^".tex") in
+       let name = Latex.escape name in
        let fmt = Format.formatter_of_out_channel (open_out out) in
 	     Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\subfigure[%s]{\\label{fg:2r}\n\\begin{tikzpicture}[scale=0.6]\n" name;
     List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
-    Format.fprintf fmt "
-    \\end{tikzpicture}}\n\\caption{%s\\label{fg:%s}}\n\\end{figure}\n" name name
+    Format.fprintf fmt "\\end{tikzpicture}}\n\\caption{%s\\label{fg:%s}}\n\\end{figure}\n" name name
 
   let draw3d values vars =
     if !Constant.domain = "box" then

@@ -57,6 +57,7 @@ MLFILES = \
   src/solver/minimizer.ml \
   src/print/view.ml \
   src/print/objgen.ml \
+	src/print/latex.ml \
   src/print/drawer_sig.ml \
 	src/print/box_drawer.ml \
   src/print/realbox_drawer.ml \
@@ -101,7 +102,7 @@ minimizer.opt: $(CMXFILES)
 	$(OCAMLYACC) $*.mly
 
 %.o: %.c
-	$(CC) -o $@ -c $(CFLAGS) $+
+	$(CC) -o $@ -c $+
 
 clean:
 	rm -f depend $(TARGETS) $(AUTOGEN)
