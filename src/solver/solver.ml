@@ -11,12 +11,13 @@ module Solve(Abs : AbstractCP) = struct
     let rec aux abs cstrs res =
       match consistency abs cstrs with
       | Empty -> res
-      | Full abs' -> add_s res abs'
-      | Maybe(a,cstrs) when stop res a || Abs.is_small a -> add_u res a
+      | Full abs' -> add_s res abs' (Abs.volume abs')
+      | Maybe(a,cstrs) when stop res a || Abs.is_small a -> add_u res a (Abs.volume a)
       | Maybe(abs',cstrs) ->
          if !Constant.pruning then
 	         let ls,lu = prune abs' cstrs in
-	         let res = {res with sure = List.rev_append ls res.sure} in
+		 let vol = List.fold_left (fun v a -> v +. (Abs.volume a)) 0. ls in
+	         let res = {res with sure = List.rev_append ls res.sure; vol_sure = res.vol_sure +. vol; nb_sure = res.nb_sure + List.length ls} in
 	         List.fold_left (fun res x ->
              List.fold_left (fun res elem ->
 	             aux elem cstrs {res with nb_steps=res.nb_steps+1}
@@ -30,7 +31,7 @@ module Solve(Abs : AbstractCP) = struct
 
   let solving prob =
     let abs = init prob in
-    Format.printf "abs = %a@." Abs.print abs;
+    Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);
     let res =  explore abs prob.Csp.constraints in
     Format.printf "\nsolving ends\n%!%a" Result.print res;
     res

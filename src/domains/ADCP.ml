@@ -49,6 +49,8 @@ module BoxCP =
       let y1,y2 = (scalar_to_float i2.inf, scalar_to_float i2.sup) in
       [x1,y1; x2,y1; x2,y2; x1,y2]
 
+    let volume box = 0.
+
   end
 
 (**
@@ -202,6 +204,8 @@ module OctMinMinCP =
       let mmin' = Scalar.of_mpqf mmin in
       let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in
       split octad [linexpr1;linexpr2]
+
+    let volume box = 0.
   end
 
 (**
@@ -307,6 +311,8 @@ module OctMinMaxCP =
       let env = Abstract1.env octad in
       let poly = to_poly octad env in
       split octad (get_expr (Polka.manager_alloc_strict()) poly)
+
+    let volume box = 0.
   end
 
 (**
@@ -338,6 +344,8 @@ module OctBoxCP =
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       split octad [expr; expr']
+
+    let volume box = 0.
   end
 
 (**
@@ -352,4 +360,6 @@ module PolyCP = struct
   let is_small poly = is_small man poly
 
   let split poly = split poly (get_expr (Polka.manager_alloc_strict()) poly)
+
+    let volume box = 0.
 end

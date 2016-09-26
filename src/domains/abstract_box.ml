@@ -103,6 +103,10 @@ module Box (I:ITV) = struct
     let (v,i) = max_range a in
     (B.to_float_up (I.range i) <= !Constant.precision)
 
+  let volume (a:t) : float = 
+    let vol_bound = Env.fold (fun _ x v -> B.mul_down (I.range x) v) a B.one in
+    B.to_float_up vol_bound
+
 
   (* split *)
   (* ----- *)

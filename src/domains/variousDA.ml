@@ -110,14 +110,17 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
       B.forward_eval abs_tmp cons
 
     let vertices2d ((abs, abs'):t) =
-      A.vertices2d abs
+      B.vertices2d (a_meet_b abs abs')
 
     let vertices3d ((abs, abs'):t) =
-      A.vertices3d abs
+      B.vertices3d (a_meet_b abs abs')
 
     let print fmt ((abs, abs'):t) =
       A.print fmt abs;
       B.print fmt abs'
+
+    let volume ((abs, abs'):t) =
+      B.volume (a_meet_b abs abs')
 
   end
 

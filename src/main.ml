@@ -35,9 +35,9 @@ module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 
 (* reduced product based instances*)
-(* module SBoxNOct  = GoS (VariousDA.BoxNOct) *)
-(* module SBoxNPoly = GoS (VariousDA.BoxNPoly) *)
-(* module SOctNPoly = GoS (VariousDA.OctNPoly) *)
+(* module SBoxNOct  = GoS (VariousDA.BoxNOct)(Apron_drawer.OctDrawer)
+module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.PolyDrawer)
+module SOctNPoly = GoS (VariousDA.OctNPoly)(Apron_drawer.PolyDrawer) *)
 
 
 (********************)
@@ -78,6 +78,7 @@ let parse_args () = Arg.parse speclist anonymous_arg ""
 let _ =
   let open Constant in
   parse_args ();
+  Format.printf "domain : %s\n" !domain;
   let prob = File_parser.parse !problem in
   if !trace then Format.printf "%a" Csp.print prob;
   if !minimizing then
@@ -93,11 +94,11 @@ let _ =
   else
     match !domain with
     | "box" -> SBox.go prob
-    (* | "boxStrict" -> SBoxStrict.go prob *)
-    (* | "boxCP" -> SBoxCP.go prob *)
+    | "boxS" -> SBoxStrict.go prob
+    | "boxCP" -> SBoxCP.go prob
     | "oct" -> SOctCP.go prob
     | "poly" -> SPolyCP.go prob
-    (* | "boxNoct" -> SBoxNOct.go prob *)
-    (* | "boxNpoly" -> SBoxNPoly.go prob *)
-    (* | "octNpoly" -> SOctNPoly.go prob *)
+    (* | "boxNoct" -> SBoxNOct.go prob
+    | "boxNpoly" -> SBoxNPoly.go prob
+    | "octNpoly" -> SOctNPoly.go prob *)
     | _ -> "domain undefined "^(!domain) |> failwith

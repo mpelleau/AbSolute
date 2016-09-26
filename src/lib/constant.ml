@@ -1,8 +1,8 @@
 (* type precision = Relative of float | Absolute of float *)
 (* let precision       = ref (Absolute(0.001)) *)
 let precision       = ref 0.001
-let max_iter        = ref 10000000
-let max_sol         = ref 1000000
+let max_iter        = ref 100000000
+let max_sol         = ref 10000000
 let problem         = ref None
 let domain          = ref "box"
 let minimizing      = ref false
@@ -39,6 +39,6 @@ let set_prob s =
 
 let set_domain d =
   match d with
-  | "box" | "boxCP" | "oct" | "poly"
+  | "box" | "boxS" | "boxCP" | "oct" | "poly"
   | "boxNoct" | "boxNpoly" | "octNpoly" -> domain := d
   | x -> "domain "^x^" undefined" |> failwith

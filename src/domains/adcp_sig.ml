@@ -47,4 +47,7 @@ module type AbstractCP = sig
   (* printing *)
   val print : Format.formatter -> t -> unit
 
+  (* volume *)
+  val volume : t -> float
+
  end
