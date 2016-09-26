@@ -44,6 +44,9 @@ module type ITV = sig
   val positive: t       (* [0,+oo] *)
   val negative: t       (* [-oo,0] *)
 
+  (* approximation of pi *)
+  val i_pi:t
+
   val of_bounds: bound -> bound -> t
   val of_ints: int -> int -> t
   (* val of_rats: Q.t -> Q.t -> t *)
@@ -137,9 +140,23 @@ module type ITV = sig
 
   (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)
   val pow: t -> t -> t
+  val n_root: t -> t -> t bot
 
   val cos: t -> t
   val sin: t -> t
+  val tan: t -> t
+  val cot: t -> t
+  val acos: t -> t bot
+  val asin: t -> t bot
+  val atan: t -> t
+  val acot: t -> t
+
+  val ln: t -> t bot
+  val log: t -> t bot
+  val exp: t -> t
+
+  val min: t -> t -> t
+  val max: t -> t -> t
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -181,9 +198,23 @@ module type ITV = sig
   val filter_div: t -> t -> t -> (t*t) bot
 
   val filter_pow: t -> t -> t -> (t*t) bot
+  val filter_root: t -> t -> t -> (t*t) bot
 
   val filter_cos: t -> t -> t bot
   val filter_sin: t -> t -> t bot
+  val filter_tan: t -> t -> t bot
+  val filter_cot: t -> t -> t bot
+  val filter_acos: t -> t -> t bot
+  val filter_asin: t -> t -> t bot
+  val filter_atan: t -> t -> t bot
+  val filter_acot: t -> t -> t bot
+
+  val filter_ln: t -> t -> t bot
+  val filter_log: t -> t -> t bot
+  val filter_exp: t -> t -> t bot
+
+  val filter_min: t -> t -> t -> (t*t) bot
+  val filter_max: t -> t -> t -> (t*t) bot
 
 
   val filter_bounds: t -> t bot

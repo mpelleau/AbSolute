@@ -18,6 +18,18 @@ let _ =
       "sqrt",           TOK_SQRT;
       "cos",            TOK_COS;
       "sin",            TOK_SIN;
+      "tan",            TOK_TAN;
+      "cot",            TOK_COT;
+      "acos",           TOK_ACOS;
+      "asin",           TOK_ASIN;
+      "atan",           TOK_ATAN;
+      "acot",           TOK_ACOT;
+      "ln",             TOK_LN;
+      "log",            TOK_LOG;
+      "exp",            TOK_EXP;
+      "nroot",          TOK_NROOT;
+      "max",            TOK_MAX;
+      "min",            TOK_MIN;
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;

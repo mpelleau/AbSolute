@@ -49,13 +49,12 @@ let pp_print f x = Format.pp_print_string f (to_string x)
 type kind = FINITE | MINF | INF | INVALID
   
 let classify (x:t) : kind =
-  let f = Mpqf.to_float x in
-  if classify_float f = FP_nan then INVALID
-  else if f = infinity then INF
-  else if f = neg_infinity then MINF
-  else FINITE
-      
-
+  let (num, den) = Mpqf.to_mpzf2 x in
+  match (Mpzf.sgn num, Mpzf.sgn den) with
+    | 0, 0 -> INVALID
+    | 1, 0 -> INF
+    | -1, 0 -> MINF
+    | _ -> FINITE
 
 (* useful constants *)        
 
@@ -63,10 +62,9 @@ let zero : t = Mpqf.of_int 0
 let one : t = Mpqf.of_int 1
 let two : t = Mpqf.of_int 2
 let minus_one : t = Mpqf.of_int (-1)
-(* let inf : t = Mpq.of_float infinity *)
-(* let minus_inf : t = Mpqf.of_float neg_infinity  *)
-(* let nan : t = Mpqf.of_float nan *)
-    
+let inf : t = Mpqf.of_frac 1 0
+let minus_inf : t = Mpqf.of_frac (-1) 0
+let nan : t = Mpqf.of_frac 0 0
 
 (* exact operators *)
 
@@ -85,6 +83,18 @@ let add_down a b = Mpqf.add a b
 let sub_down a b = Mpqf.sub a b
 let mul_down a b = Mpqf.mul a b
 let div_down a b = Mpqf.div a b
+
+(* helper: oo * 0 = 0 when multiplying bounds *)
+let bound_mul f x y =
+  if sign x = 0 || sign y = 0 then zero else f x y
+
+(* helper: 0/0 = 0, x/0 = sign(x) oo *)
+let bound_div f x y =
+  match sign x, sign y with
+  |  0,_ -> zero
+  |  1,0 -> inf
+  | -1,0 -> minus_inf
+  | _ -> f x y
 
 (* TODO: improve and check soundness *)
 let sqrt_up x = Mpqf.of_float (sqrt (Mpqf.to_float x))
@@ -111,11 +121,11 @@ let atan_down x = Mpqf.of_float (atan (Mpqf.to_float x))
 let exp_up x = Mpqf.of_float (exp (Mpqf.to_float x))
 let exp_down x = Mpqf.of_float (exp (Mpqf.to_float x))
 
-let log_up x = Mpqf.of_float (log (Mpqf.to_float x))
-let log_down x = Mpqf.of_float (log (Mpqf.to_float x))
+let ln_up x = Mpqf.of_float (log (Mpqf.to_float x))
+let ln_down x = Mpqf.of_float (log (Mpqf.to_float x))
 
-let log10_up x = Mpqf.of_float (log10 (Mpqf.to_float x))
-let log10_down x = Mpqf.of_float (log10 (Mpqf.to_float x))
+let log_up x = Mpqf.of_float (log10 (Mpqf.to_float x))
+let log_down x = Mpqf.of_float (log10 (Mpqf.to_float x))
 
 let floor x = Mpqf.of_float (floor (Mpqf.to_float x))
 let ceil x = Mpqf.of_float (ceil (Mpqf.to_float x))

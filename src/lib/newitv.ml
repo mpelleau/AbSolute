@@ -27,6 +27,11 @@ module Make(B:BOUND) = struct
   let bound_arith ((k1,b1):real_bound) ((k2,b2):real_bound) f =
     (mix k1 k2),(f b1 b2)
 
+  let bound_mul_up   = B.bound_mul B.mul_up
+  let bound_mul_down = B.bound_mul B.mul_down
+  let bound_div_up   = B.bound_div B.div_up
+  let bound_div_down = B.bound_div B.div_down
+
   let ( +@ ) rb1 rb2 = bound_arith rb1 rb2 B.add_up
 
   let ( +$ ) rb1 rb2 = bound_arith rb1 rb2 B.add_down
@@ -35,9 +40,13 @@ module Make(B:BOUND) = struct
 
   let ( -$ ) rb1 rb2 = bound_arith rb1 rb2 B.sub_down
 
-  let ( *@ ) rb1 rb2 = bound_arith rb1 rb2 B.mul_up
+  let ( *@ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_up
 
-  let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 B.mul_down
+  let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_down
+
+  let ( /@ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_up
+
+  let ( /$ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_down
 
   type t = real_bound * real_bound
 
@@ -285,8 +294,8 @@ module Make(B:BOUND) = struct
     (kh,(f_down high)),(kl,(f_up low))
 
   (* when f changes its monotony in "c";
-     - if f ↗↘ then f [a;b] -> [f(a);f(c)] U f [f(b);f(c)]
-     - if f ↘↗ then f [a;b] -> [f(c);f(a)] U f [f(c);f(b)] *)
+     - if f ↗↘ then f [a;b] -> [f(a);f(c)] U [f(b);f(c)]
+     - if f ↘↗ then f [a;b] -> [f(c);f(a)] U [f(c);f(b)] *)
   let mon_2 f c ((a,b) as itv) first =
     let f1,f2 = if first then mon_incr,mon_decr else mon_decr,mon_incr in
     if subseteq itv (half_inf c) then f1 f itv
@@ -312,7 +321,15 @@ module Make(B:BOUND) = struct
     min_low (min_low (l1 *$ l2) (l1 *$ h2)) (min_low (h1 *$ l2) (h1 *$ h2)),
     max_up  (max_up  (l1 *@ l2) (l1 *@ h2)) (max_up  (h1 *@ l2) (h1 *@ h2))
 
-  let div (i1:t) (i2:t) : t bot * bool = failwith "todo div"
+  let div_sgn ((l1,h1):t) ((l2,h2):t) : t =
+    min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
+    max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
+
+  let div (i1:t) (i2:t) : t bot * bool =
+    let pos = (lift_bot (div_sgn i1)) (meet i2 positive) in
+    let neg = (lift_bot (div_sgn i1)) (meet i2 negative) in
+    join_bot2 join pos neg,
+    contains i2 B.zero
 
   let sqrt (itv:t) : t bot =
     match meet itv positive with
@@ -355,18 +372,67 @@ module Make(B:BOUND) = struct
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
 
+
+
+  (*the two closest floating boundaries of pi*)
+  let pi_up = B.of_float_up 3.14159265358979356
+  let pi_down = B.of_float_down 3.14159265358979312
+
+  (* it improves soundness to use those *)
+  let i_pi:t= (Large, pi_down), (Large, pi_up)
+  let i_pi_half = div i_pi (of_int 2) |> fst |> debot
+  let i_two_pi = add i_pi i_pi
+  let i_three_half_of_pi = div (add i_two_pi i_pi) (of_int 2) |> fst |> debot
+
+
   let cos (((kl,l),(kh,h)):t) : t = failwith "todo cos"
 
   let sin (((kl,l),(kh,h)):t) : t = failwith "todo sin"
 
-  let tan ((l,h):t) = failwith "todo tan"
+  let tan (((kl,l),(kh,h)):t) = failwith "todo tan"
 
-  let log (i:t) : t bot =
+  (* interval cot *)
+  let cot itv =
+    let itv' = tan (add itv i_pi_half) in
+    neg itv'
+
+  let asin (((kl,l),(kh,h)):t) : t bot = failwith "todo asin"
+
+  let acos (((kl,l),(kh,h)):t) : t bot = failwith "todo acos"
+
+  let atan (((kl,l),(kh,h)):t) = failwith "todo atan"
+
+  let acot (((kl,l),(kh,h)):t) : t = failwith "todo acot"
+
+  let ln (i:t) : t bot =
     match meet i positive with
     | Bot -> Bot
-    | Nb itv -> Nb (mon_incr (B.log_down,B.log_up) i)
+    | Nb itv -> Nb (mon_incr (B.ln_down,B.ln_up) i)
 
   let exp (i:t) = mon_incr (B.exp_down,B.exp_up) i
+
+  (*the two closest floating boundaries of pi*)
+  let ln10_up = B.ln_up (B.of_int_up 10)
+  let ln10_down = B.ln_down (B.of_int_down 10)
+
+  (* it improves soundness to use those *)
+  let i_ln10:t= (Large, ln10_down), (Large, ln10_up)
+
+  (* interval log *)
+  let log itv =
+    let itv' = ln itv in
+    match itv' with
+    | Bot -> Bot
+    | Nb i -> fst (div i i_ln10)
+    
+
+  (* interval min *)
+  let min ((l1, u1):t) ((l2, u2):t) = failwith "todo min"
+    (* validate (B.min l1 l2, B.min u1 u2) *)
+
+  (* interval max *)
+  let max ((l1, u1):t) ((l2, u2):t) = failwith "todo max"
+    (* validate (B.max l1 l2, B.max u1 u2) *)
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -455,6 +521,12 @@ module Make(B:BOUND) = struct
   (* r = cos i => i = arccos r *)
   let filter_cos i r = failwith "todo filter_cos"
 
+  (* r = atan i => i = tan r *)
+  let filter_tan i r = failwith "todo filter_tan"
+
+  (* r = cot i => i = arccot r *)
+  let filter_cot i r = failwith "todo filter_cot"
+
   (* r = asin i => i = sin r *)
   let filter_asin i r = meet i (sin r)
 
@@ -464,15 +536,31 @@ module Make(B:BOUND) = struct
   (* r = atan i => i = tan r *)
   let filter_atan i r = meet i (tan r)
 
-  (* r = exp i => i = log r *)
-  let filter_exp i r = meet_bot2 meet i (log r)
+  (* r = acot i => i = cot r *)
+  let filter_acot i r = meet i (cot r)
 
-  (* r = log i => i = exp r *)
-  let filter_log i r = meet i (exp r)
+  (* r = exp i => i = ln r *)
+  let filter_exp i r = meet_bot meet i (ln r)
+
+  (* r = ln i => i = exp r *)
+  let filter_ln i r = meet i (exp r)
+
+  (* r = log i => i = *)
+  let filter_log i r = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
     merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
+
+  (* r = nroot i => i = r ** n *)
+  let filter_root i r n =
+    merge_bot2 (meet i (pow r n)) (Nb n)
+
+  (* r = min (i1, i2) *)
+  let filter_min i1 i2 r = failwith "todo filter_min"
+
+  (* r = max (i1, i2) *)
+  let filter_max i1 i2 r = failwith "todo filter_max"
 
   let filter_bounds (l,h) = failwith "todo filter_bound"
 

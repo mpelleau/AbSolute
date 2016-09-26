@@ -116,6 +116,9 @@ module type BOUND = sig
   val mul_down: t -> t -> t
   val div_down: t -> t -> t
 
+  val bound_mul: (t -> t -> t) -> t -> t -> t
+  val bound_div: (t -> t -> t) -> t -> t -> t
+
   val sqrt_up: t -> t
   val sqrt_down: t -> t
 
@@ -140,10 +143,10 @@ module type BOUND = sig
 
   val exp_up: t -> t
   val exp_down: t -> t
+  val ln_up: t -> t
+  val ln_down: t -> t
   val log_up: t -> t
   val log_down: t -> t
-  val log10_up: t -> t
-  val log10_down: t -> t
 
   (* integer rounding *)
   val floor: t -> t

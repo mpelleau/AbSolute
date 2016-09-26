@@ -93,6 +93,7 @@ let _ =
   else
     match !domain with
     | "box" -> SBox.go prob
+    (* | "boxStrict" -> SBoxStrict.go prob *)
     (* | "boxCP" -> SBoxCP.go prob *)
     | "oct" -> SOctCP.go prob
     | "poly" -> SPolyCP.go prob

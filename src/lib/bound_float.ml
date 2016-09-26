@@ -82,16 +82,37 @@ let abs x = abs_float x
 
 
 (* operators with rounding *)
-
 let add_up a b = a +. b
 let sub_up a b = a -. b
 let mul_up a b = a *. b
-let div_up a b = a /. b
+let div_up a b = 
+  match sign a, sign b with
+  |  0,_ -> zero
+  |  1,0 -> inf
+  | -1,0 -> minus_inf
+  | _ -> a /. b
 
 let add_down a b = -. (-. a -. b)
 let sub_down a b = -. (b -. a)
 let mul_down a b = -. ((-. a) *. b)
-let div_down a b = -. ((-. a) /. b)
+let div_down a b = 
+    match sign a, sign b with
+    |  0,_ -> zero
+    |  1,0 -> inf
+    | -1,0 -> minus_inf
+    | _ -> -. ((-. a) /. b)
+
+(* helper: oo * 0 = 0 when multiplying bounds *)
+let bound_mul f x y =
+  if sign x = 0 || sign y = 0 then zero else f x y
+
+(* helper: 0/0 = 0, x/0 = sign(x) oo *)
+let bound_div f x y =
+  match sign x, sign y with
+  |  0,_ -> zero
+  |  1,0 -> inf
+  | -1,0 -> minus_inf
+  | _ -> f x y
 
 (* TODO: improve and check soundness *)
 let sqrt_up x = sqrt x
@@ -153,11 +174,11 @@ let atan_down = atan
 let exp_up = exp
 let exp_down x = div_down 1. (exp_up (-. x))
 
-let log_up = log
-let log_down = log
+let ln_up = log
+let ln_down = log
 
-let log10_up = log10
-let log10_down = log10
+let log_up = log10
+let log_down = log10
 
 
 (* double-precision characteristics *)

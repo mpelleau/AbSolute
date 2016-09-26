@@ -196,11 +196,20 @@ let split_along (a:t) (v:var) : t list =
     | Unary (o,e1) ->
         let _,i1 as b1 = eval a e1 in
         let r = match o with
-        | NEG -> I.neg i1
-	      | ABS -> I.abs i1
-        | SQRT -> debot (I.sqrt i1)
-	      | COS -> I.cos i1
-	      | SIN -> I.sin i1
+          | NEG -> I.neg i1
+	  | ABS -> I.abs i1
+          | SQRT -> debot (I.sqrt i1)
+	  | COS -> I.cos i1
+	  | SIN -> I.sin i1
+	  | TAN -> I.tan i1
+	  | COT -> I.cot i1
+	  | ACOS -> debot (I.acos i1)
+	  | ASIN -> debot (I.asin i1)
+	  | ATAN -> I.atan i1
+	  | ACOT -> I.acot i1
+	  | LN -> debot (I.ln i1)
+	  | LOG -> debot (I.log i1)
+	  | EXP -> I.exp i1
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
@@ -216,7 +225,10 @@ let split_along (a:t) (v:var) : t list =
               (* special case: squares are positive *)
               debot (I.meet r I.positive)
             else r
-	       | POW -> I.pow i1 i2
+	 | POW -> I.pow i1 i2
+	 | NROOT -> debot (I.n_root i1 i2)
+	 | MIN -> I.min i1 i2
+	 | MAX -> I.max i1 i2
        in
        BBinary (o,b1,b2), r
 
@@ -234,20 +246,32 @@ let split_along (a:t) (v:var) : t list =
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
         let j = match o with
-        | NEG -> I.filter_neg i1 x
-        | ABS -> I.filter_abs i1 x
-        | SQRT -> I.filter_sqrt i1 x
-	      | COS -> I.filter_cos i1 x
-	      | SIN -> I.filter_sin i1 x
+          | NEG -> I.filter_neg i1 x
+          | ABS -> I.filter_abs i1 x
+          | SQRT -> I.filter_sqrt i1 x
+	  | COS -> I.filter_cos i1 x
+	  | SIN -> I.filter_sin i1 x
+	  | TAN -> I.filter_tan i1 x
+	  | COT -> I.filter_cot i1 x
+	  | ACOS -> I.filter_acos i1 x
+	  | ASIN -> I.filter_asin i1 x
+	  | ATAN -> I.filter_atan i1 x
+	  | ACOT -> I.filter_acot i1 x
+	  | LN -> I.filter_ln i1 x
+	  | LOG -> I.filter_log i1 x
+	  | EXP -> I.filter_exp i1 x
         in
         refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
         let j = match o with
-        | ADD -> I.filter_add i1 i2 x
-        | SUB -> I.filter_sub i1 i2 x
-        | MUL -> I.filter_mul i1 i2 x
-        | DIV -> I.filter_div i1 i2 x
-	| POW -> I.filter_pow i1 i2 x
+          | ADD -> I.filter_add i1 i2 x
+          | SUB -> I.filter_sub i1 i2 x
+          | MUL -> I.filter_mul i1 i2 x
+          | DIV -> I.filter_div i1 i2 x
+	  | POW -> I.filter_pow i1 i2 x
+	  | NROOT -> I.filter_root i1 i2 x
+	  | MIN -> I.filter_min i1 i2 x
+	  | MAX -> I.filter_max i1 i2 x
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2

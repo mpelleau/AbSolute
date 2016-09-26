@@ -259,12 +259,8 @@ module Itv(B:BOUND) = struct
   let sub ((l1,h1):t) ((l2,h2):t) : t =
     B.sub_down l1 h2, B.sub_up h1 l2
 
-  (* helper: oo * 0 = 0 when multiplying bounds *)
-  let bound_mul f x y =
-    if B.sign x = 0 || B.sign y = 0 then B.zero else f x y
-
-  let bound_mul_up   = bound_mul B.mul_up
-  let bound_mul_down = bound_mul B.mul_down
+  let bound_mul_up   = B.bound_mul B.mul_up
+  let bound_mul_down = B.bound_mul B.mul_down
 
   let mix4 up down ((l1,h1):t) ((l2,h2):t) =
     B.min (B.min (down l1 l2) (down l1 h2)) (B.min (down h1 l2) (down h1 h2)),
@@ -273,16 +269,8 @@ module Itv(B:BOUND) = struct
   let mul =
     mix4 bound_mul_up bound_mul_down
 
-  (* helper: 0/0 = 0, x/0 = sign(x) oo *)
-  let bound_div f x y =
-    match B.sign x, B.sign y with
-    |  0,_ -> B.zero
-    |  1,0 -> B.inf
-    | -1,0 -> B.minus_inf
-    | _ -> f x y
-
-  let bound_div_up   = bound_div B.div_up
-  let bound_div_down = bound_div B.div_down
+  let bound_div_up   = B.bound_div B.div_up
+  let bound_div_down = B.bound_div B.div_down
 
   (* helper: assumes i2 has constant sign *)
   let div_sign =
@@ -320,19 +308,19 @@ module Itv(B:BOUND) = struct
   let pi_down = B.of_float_down 3.14159265358979312
 
   (* it improves soundness to use those *)
-  let i_pi:t= pi_up, pi_down
+  let i_pi:t= pi_down, pi_up
   let i_pi_half = i_pi /@ (of_int 2) |> fst |> debot
   let i_two_pi = i_pi +@ i_pi
   let i_three_half_of_pi = (i_two_pi +@ i_pi) /@ (of_int 2) |> fst |> debot
 
   type quadrant = | One
-		              | Two
-		              | Three
-		              | Four
-		              | AroundPiHalf
-		              | AroundPi
-		              | AroundThreePiHalf
-		              | AroundTwoPi
+		  | Two
+		  | Three
+		  | Four
+		  | AroundPiHalf
+		  | AroundPi
+		  | AroundThreePiHalf
+		  | AroundTwoPi
 
   let might_intersect a b =
     match a,b with
@@ -451,14 +439,14 @@ module Itv(B:BOUND) = struct
   let exp (l,h) = (B.exp_down l,B.exp_up h)
 
   (* interval ln *)
-  let log (l,h) =
+  let ln (l,h) =
     if B.leq h B.zero then Bot
-    else if B.leq l B.zero then Nb (B.minus_inf,B.log_up h)
-    else Nb (B.log_down l,B.log_up h)
+    else if B.leq l B.zero then Nb (B.minus_inf,B.ln_up h)
+    else Nb (B.ln_down l,B.ln_up h)
 
-  (* interval log10 *)
-  let log10 itv =
-    let itv' = log itv in
+  (* interval log *)
+  let log itv =
+    let itv' = ln itv in
     match itv' with
     | Bot -> Bot
     | Nb (l', h') -> fst (div (l',h') (of_bound ln10))
@@ -495,6 +483,15 @@ module Itv(B:BOUND) = struct
           Nb (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
+    
+
+  (* interval min *)
+  let min ((l1, u1):t) ((l2, u2):t) =
+    validate (B.min l1 l2, B.min u1 u2)
+
+  (* interval max *)
+  let max ((l1, u1):t) ((l2, u2):t) =
+    validate (B.max l1 l2, B.max u1 u2)
 
 
   (************************************************************************)
@@ -670,7 +667,10 @@ module Itv(B:BOUND) = struct
           idx := !idx - 1;
           itv' := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
         done;
-        Nb (Bot.join_bot2 join !itv !itv')
+        Bot.join_bot2 join !itv !itv'
+
+  (* r = cot i => i = arccot r *)
+  let filter_cot i r = failwith "todo filter_cot"
 
   (* r = asin i => i = sin r *)
   let filter_asin i r =
@@ -684,15 +684,22 @@ module Itv(B:BOUND) = struct
   let filter_atan i r =
     meet i (tan r)
 
-  (* r = exp i => i = log r *)
-  let filter_exp i r =
-    meet_bot2 meet i (log r)
+  (* r = acot i => i = cot r *)
+  let filter_acot i r =
+    meet i (cot r)
 
-  (* r = log i => i = exp r *)
-  let filter_log i r =
+  (* r = exp i => i = ln r *)
+  let filter_exp i r =
+    meet_bot meet i (ln r)
+
+  (* r = ln i => i = exp r *)
+  let filter_ln i r =
     meet i (exp r)
 
-  (* r = i ** n => i = nroot i *)
+  (* r = log i => i = *)
+  let filter_log i r = failwith "todo filter_log"
+
+  (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
     (* let nri = n_root r n in *)
     (* let fnri = meet_bot meet i (n_root r n) in *)
@@ -701,7 +708,15 @@ module Itv(B:BOUND) = struct
 
   (* r = nroot i => i = r ** n *)
   let filter_root i r n =
-    meet i (pow r n)
+     merge_bot2 (meet i (pow r n)) (Nb n)
+
+  (* r = min (i1, i2) *)
+  let filter_min (l1, u1) (l2, u2) (lr, ur) =
+    merge_bot2 (check_bot ((B.max l1 lr), (B.max u1 ur))) (check_bot ((B.max l2 lr), (B.max u2 ur)))
+
+  (* r = max (i1, i2) *)
+  let filter_max (l1, u1) (l2, u2) (lr, ur) =
+    merge_bot2 (check_bot ((B.min l1 lr), (B.min u1 ur))) (check_bot ((B.min l2 lr), (B.min u2 ur)))
 
 
   let filter_bounds (l,h) =

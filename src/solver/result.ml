@@ -33,7 +33,8 @@ let stop res abs =
 
 (* prints a result *)
 let print fmt res =
-  Format.fprintf fmt "#solutions: %d\n#created nodes: %d%!\n"
-    (if !Constant.sure then res.nb_sure
-     else res.nb_sure+res.nb_unsure)
+  Format.fprintf fmt "#inner boxes: %d\n#boundary boxes: %d\n#created nodes: %d%!\n"
+    res.nb_sure
+    (if !Constant.sure then 0
+     else res.nb_unsure)
     res.nb_steps

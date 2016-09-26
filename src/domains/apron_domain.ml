@@ -24,7 +24,18 @@ module SyntaxTranslator (D:ADomain) = struct
       let r = match o with
 	      | NEG -> Texpr1.Neg
 	      | SQRT -> Texpr1.Sqrt
-	      | COS | SIN | ABS -> failwith "COS and SIN unsupported with apron"
+	      | COS -> failwith "COS unsupported with apron"
+              | SIN -> failwith "SIN unsupported with apron"
+              | TAN -> failwith "TAN unsupported with apron"
+	      | COT -> failwith "COT unsupported with apron"
+	      | ACOS -> failwith "ACOS unsupported with apron"
+              | ASIN -> failwith "ASIN unsupported with apron"
+              | ATAN -> failwith "ATAN unsupported with apron"
+	      | ACOT -> failwith "ACOT unsupported with apron"
+	      | ABS -> failwith "ABS unsupported with apron"
+              | LN -> failwith "LN unsupported with apron"
+              | LOG -> failwith "LOG unsupported with apron"
+              | EXP -> failwith "EXP unsupported with apron"
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
@@ -35,6 +46,9 @@ module SyntaxTranslator (D:ADomain) = struct
 	       | DIV -> Texpr1.Div
 	       | MUL -> Texpr1.Mul
 	       | POW -> Texpr1.Pow
+               | MIN -> failwith "MIN unsupported with apron"
+               | MAX -> failwith "MAX unsupported with apron"
+               | NROOT -> failwith "NROOT unsupported with apron"
        in
        let e1 = expr_to_apron a e1
        and e2 = expr_to_apron a e2 in

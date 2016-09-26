@@ -5,10 +5,11 @@ type var = string
 type i = float
 
 (* unary arithmetic operators *)
-type unop = NEG | SQRT | ABS | COS | SIN
+type unop = NEG | SQRT | ABS | COS | SIN | TAN | COT 
+	  | ASIN | ACOS | ATAN | ACOT | LN | LOG | EXP
 
 (* binary arithmetic operators *)
-type binop = ADD | SUB | MUL | DIV | POW
+type binop = ADD | SUB | MUL | DIV | POW | NROOT | MIN | MAX
 
 (* arithmetic comparison operators *)
 type cmpop =
@@ -97,12 +98,12 @@ let rec power_unrolling_bexpr bexpr : bexpr =
 
 (* cmp operator negation *)
 let neg = function
-| EQ -> NEQ
-| LEQ ->GT
-| GEQ ->LT
-| NEQ ->EQ
-| GT -> LEQ
-| LT -> GEQ
+  | EQ -> NEQ
+  | LEQ ->GT
+  | GEQ ->LT
+  | NEQ ->EQ
+  | GT -> LEQ
+  | LT -> GEQ
 
 (* constraint negation *)
 let rec neg_bexpr = function
@@ -150,6 +151,15 @@ let print_unop fmt = function
   | SQRT -> Format.fprintf fmt "sqrt"
   | COS -> Format.fprintf fmt "cos"
   | SIN -> Format.fprintf fmt "sin"
+  | TAN -> Format.fprintf fmt "tan"
+  | COT -> Format.fprintf fmt "cot"
+  | ASIN -> Format.fprintf fmt "asin"
+  | ACOS -> Format.fprintf fmt "acos"
+  | ATAN -> Format.fprintf fmt "atan"
+  | ACOT -> Format.fprintf fmt "acot"
+  | LN -> Format.fprintf fmt "ln"
+  | LOG -> Format.fprintf fmt "log"
+  | EXP -> Format.fprintf fmt "exp"
   | ABS -> Format.fprintf fmt "abs"
 
 let print_binop fmt = function
@@ -158,6 +168,9 @@ let print_binop fmt = function
   | MUL -> Format.fprintf fmt "*"
   | DIV -> Format.fprintf fmt "/"
   | POW -> Format.fprintf fmt "^"
+  | MIN -> Format.fprintf fmt "min"
+  | MAX -> Format.fprintf fmt "max"
+  | NROOT -> Format.fprintf fmt "nroot"
 
 let print_cmpop fmt = function
   | EQ -> Format.fprintf fmt "="
