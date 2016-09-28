@@ -11,6 +11,7 @@ OPAMDIR   := $(shell opam config var lib)
 APRONDIR  := $(OPAMDIR)/apron
 ZARITHDIR := $(OPAMDIR)/zarith
 GMPDIR    := $(OPAMDIR)/gmp
+OCAMLDIR  := $(OPAMDIR)/ocaml
 
 #ocaml libraries
 LIBS         := bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
@@ -78,7 +79,7 @@ OFILES   = $(CFILES:%.c=%.o)
 
 # rules
 all: $(TARGETS)
-	mkdir -p out
+	@mkdir -p out
 
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
@@ -102,10 +103,10 @@ minimizer.opt: $(CMXFILES)
 	$(OCAMLYACC) $*.mly
 
 %.o: %.c
-	$(CC) -o $@ -c $+
+	$(CC) -I $(OCAMLDIR) -o $@ -c $+
 
 clean:
-	rm -f depend $(TARGETS) $(AUTOGEN)
+	rm -f .depend $(TARGETS) $(AUTOGEN)
 	rm -f `find . -name "*.o"`
 	rm -f `find . -name "*.a"`
 	rm -f `find . -name "*.cm*"`
@@ -115,9 +116,9 @@ clean:
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
-depend: $(MLSOURCES) Makefile
-	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > depend
+.depend: $(MLSOURCES) Makefile
+	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend
 
 .phony:	all clean
 
-include depend
+include .depend
