@@ -1,10 +1,11 @@
 *.cm[ioaxt]
 *.o
 *.opt
-depend
+*depend
 *~
 *#
 src/frontend/parser.ml
 src/frontend/parser.mli
 src/frontend/lexer.ml
 *.obj
+out/*
