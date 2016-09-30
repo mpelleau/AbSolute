@@ -33,4 +33,9 @@ let print_latex fmt =
 
 let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly)
 
-let draw3d abs_list (v1,v2,v3) = failwith "niy"
+let draw3d fmt abs_list (v1,v2,v3) =
+  let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
+  let cube e = make_cube (bound e v1) (bound e v2) (bound e v3) in
+  let cubes = List.rev_map (fun e -> cube e) abs_list in
+  let o = Objgen.build_cube_list cubes in
+  Format.fprintf fmt "%a" Objgen.print o

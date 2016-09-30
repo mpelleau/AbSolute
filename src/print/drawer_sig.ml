@@ -4,12 +4,12 @@ module type Drawer = sig
 
   val bound : t -> Csp.var -> float * float
 
+  val draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
+
   val print : Format.formatter -> t -> unit
 
   val print_latex :  Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
 
-  val draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
-
-  val draw3d : t list -> (Csp.var * Csp.var * Csp.var) -> unit
+  val draw3d : Format.formatter -> t list -> (Csp.var * Csp.var * Csp.var) -> unit
 
 end

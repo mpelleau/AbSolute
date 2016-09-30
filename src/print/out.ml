@@ -45,14 +45,14 @@ module Make (D:Drawer) = struct
     Format.fprintf fmt "\\end{tikzpicture}}\n\\caption{%s\\label{fg:%s}}\n\\end{figure}\n" name name
 
   let draw3d values vars =
-    if !Constant.domain = "box" then
-      match !Constant.problem with
-      | None -> assert false
-      | Some s ->
-	       let out = Filename.basename s in
-	       let out = ("out/"^(Filename.chop_extension out)^".obj") in
-	       Objgen.doit out values vars
-    else Format.printf "obj generation only available with interval domain for now\n"
+    match !Constant.problem with
+    | None -> assert false
+    | Some s ->
+	     let out = Filename.basename s in
+	     let out = ("out/"^(Filename.chop_extension out)^".obj") in
+       let out = open_out out in
+       let fmt = Format.formatter_of_out_channel out in
+	     D.draw3d fmt values vars
 
   let trace sure unsure =
     List.iter (Format.printf "sure:%a\n%!" D.print) sure;
@@ -81,9 +81,8 @@ module Make (D:Drawer) = struct
     let unsure = if !Constant.sure then [] else res.unsure in
     if !Constant.visualization then draw2d res.sure unsure (vars2D prob);
     if !Constant.tex then print_latex res.sure unsure (vars2D prob);
-    if !Constant.trace then trace res.sure unsure
-    (* if !Constant.obj then draw3d res.sure vars *)
-
+    if !Constant.trace then trace res.sure unsure;
+    if !Constant.obj then draw3d res.sure (vars3D prob)
 
   let trace_min sure unsure value =
     Format.printf "best value:%f\n%!" value;

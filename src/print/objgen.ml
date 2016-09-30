@@ -90,33 +90,3 @@ let print_to_file fn cubelist =
   let fmt = Format.formatter_of_out_channel oc in
   let o:obj = build_cube_list cubelist in
   Format.fprintf fmt "%a" print o
-
-module Abs = Abstract_box.BoxF
-
-let get_cube abs vars =
-  let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
-  let open Abs in
-  match vars with
-  | None -> (
-    match (Env.bindings abs) with
-    | x::y::z::_ ->
-      make_cube
-	(Env.find (fst x) abs)
-	(Env.find (fst y) abs)
-	(Env.find (fst z) abs)
-    | x::y::[] ->
-      make_cube
-	(Env.find (fst x) abs)
-	(Env.find (fst y) abs)
-	(1.,1.)
-    | x::[] ->
-      make_cube
-	(Env.find (fst x) abs)
-	(1.,1.)
-	(1.,1.)
-    | _ -> failwith "need at least 1 var")
-  | _ -> failwith "niy"
-
-let doit out values vars=
-  List.rev_map (fun (e,_) -> get_cube e vars) values
-  |> print_to_file out

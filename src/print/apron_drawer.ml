@@ -50,7 +50,7 @@ module Make(AP:ADomain) = struct
     View.fill_poly vert col;
     View.draw_poly vert Graphics.black
 
-  let draw3d abs_list (v1,v2,v3) = failwith "niy"
+  let draw3d fmt abs_list (v1,v2,v3) = failwith "niy"
 
   let print_latex fmt abs (v1,v2) col = failwith ""
 
