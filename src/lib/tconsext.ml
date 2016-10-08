@@ -19,7 +19,7 @@ let to_lincons env tc =
     ) in
     let s' = Bytes.of_string s in
     Bytes.iteri (fun i c ->
-      if c = '<' && i < String.length s - 2 && s.[i+1] = '>' then begin
+      if c = '<' && i < Bytes.length s - 2 && s.[i+1] = '>' then begin
       Bytes.set s' i '<';
       Bytes.set s' (i+1)  '='
     end
