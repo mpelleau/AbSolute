@@ -54,7 +54,7 @@ module SyntaxTranslator (D:ADomain) = struct
        and e2 = expr_to_apron a e2 in
        Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
 
-  let cmp_expr_to_apron b env =
+  let cmp_expr_to_tcons b env =
     let cmp_to_apron (e1,op,e2) =
       match op with
       | EQ  -> e1, e2, Tcons1.EQ
@@ -70,6 +70,7 @@ module SyntaxTranslator (D:ADomain) = struct
     let e = Texpr1.of_expr env (expr_to_apron a e) in
     let res = Tcons1.make e op in
     res
+
 end
 
 
@@ -114,18 +115,30 @@ module MAKE(AP:ADomain) = struct
   let join a b = A.join man a b
 
   let prune a b =
-    let a,pruned = Linconsext.array_fold (fun (abs,acc) c ->
-	    let neg_c = Linconsext.neg c in
-	    let a = A.filter_lincons man a c
+    let work acc a c =
+      let neg_c = Linconsext.neg c in
+      let a' = A.filter_lincons man a c
 	    and s = A.filter_lincons man a neg_c in
 	    if is_bottom s then a,acc
-	    else a,(s::acc)
+	    else a',(s::acc)
+    in
+    let a,pruned = Linconsext.array_fold (fun (abs,acc) c ->
+      if Linconsext.get_typ c = Linconsext.EQ then
+        let c1,c2 = Linconsext.spliteq c in
+        let a',acc' = work acc a c1 in
+        work acc' a' c2
+      else work acc a c
     ) (a,[]) (A.to_lincons_array man b) in pruned,b
 
   let filter b (e1,c,e2) =
+    Format.printf "%a\n" A.print b;
     let env = A.env b in
-    let c = T.cmp_expr_to_apron (e1,c,e2) env in
-    A.filter_tcons man b c
+    let c = T.cmp_expr_to_tcons (e1,c,e2) env in
+    if Tconsext.get_typ c = Tconsext.DISEQ then
+      let lin = Tconsext.to_lincons b.A.env c in
+      let l1,l2 = Linconsext.splitdiseq lin in
+      join (A.filter_lincons man b l1) (A.filter_lincons man b l2)
+    else A.filter_tcons man b c
 
   let print = A.print
 

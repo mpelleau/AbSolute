@@ -24,85 +24,10 @@ let coeff_to_float = function
 let coeff_to_int x = coeff_to_float x |> int_of_float
 
 (**********************)
-(* Printing utilities *)
-(**********************)
-let print_sol box =
-  let open Interval in
-  let open Format in
-  let itv = box.Abstract1.interval_array in
-  printf "[| ";
-  Array.iter (fun e -> printf "[%f; %f];" (scalar_to_float e.inf) (scalar_to_float e.sup)) itv;
-  printf "|] "
-
-
-(**********************)
 (*   APRON Utilities  *)
 (**********************)
 
 let empty_env = Environment.make [||] [||]
-
-let array_fold get len f a arr =
-  let size = len arr in
-  let rec aux accu idx =
-    if idx >= size then accu
-    else aux (f accu (get arr idx)) (idx+1)
-  in aux a 0
-
-let tcons_aiter f tcons =
-  for i = 0 to Tcons1.array_length tcons -1 do
-    Tcons1.array_get tcons i |> f
-  done
-
-let lincons_aiter f lcons =
-  for i = 0 to Lincons1.array_length lcons - 1 do
-    Lincons1.array_get lcons i |> f
-  done
-
-(* Tcons earray utilities *)
-let tcons_for_all pred tcons =
-  let open Tcons1 in
-  try
-    for i = 0 to (array_length tcons) -1 do
-      if array_get tcons i |> pred |> not then raise Exit
-    done;
-    true
-  with Exit -> false
-
-let tcons_list_to_earray tcl =
-  let open Tcons1 in
-  let size = List.length tcl
-  and env = (List.hd tcl).env in
-  let ear = array_make env size in
-  List.iteri (fun i b -> array_set ear i b) tcl;
-  ear
-
-let earray_to_list get length tcl =
-  let l = ref [] in
-  for i = 0 to (length tcl) - 1 do
-    l:=(get tcl i)::!l
-  done;
-  !l
-
-let lincons_earray_to_list =
-  earray_to_list Lincons1.array_get Lincons1.array_length
-
-(* let tcons_earray_to_list = *)
-(*   earray_to_list Tcons1.array_get Tcons1.array_length *)
-
-let neg_typ = let open Lincons1 in function
-  | EQ -> DISEQ
-  | SUP -> SUPEQ
-  | SUPEQ -> SUP
-  | DISEQ -> EQ
-  | _ -> assert false
-
-(* constructs a new contraint in opposite direction *)
-  let neg_lincons (d:Lincons1.t) : Lincons1.t =
-    let d = Lincons1.copy d in
-    Lincons1.set_cst d (Coeff.neg (Lincons1.get_cst d));
-    Lincons1.iter (fun c v -> Lincons1.set_coeff d v (Coeff.neg c)) d;
-    Lincons1.set_typ d (Lincons1.get_typ d |> neg_typ);
-    d
 
 (******************************************************************)
 (*********************** Various operators ************************)
@@ -161,34 +86,26 @@ let diam_interval itv =
 
 (* Compute the euclidian distance between two arrays of floats. *)
 let dist tab1 tab2 =
-  if Array.length tab1 != Array.length tab2 then
-    failwith ("The two arrays must have the same length.")
-  else
-    let sum = ref 0. in
-    for i=0 to ((Array.length tab1)-1) do
-      sum := !sum +. ((tab1.(i) -. tab2.(i)) ** 2.)
-    done;
-    sqrt !sum
+  let sum = ref 0. in
+  Array.iter2 (fun a b -> sum := !sum +. (a -. b) ** 2.) tab1 tab2;
+  sqrt !sum
 
-(* Compute the maximal distance between a point and an array of points.
- * A point correspond to an array of floats.
- *)
+(* Compute the max distance between a point and a array of points.
+ * A point correspond to an array of floats. *)
 let maxdist point tabpoints =
-  let length = Array.length tabpoints in
-  let rec maxd i point_max i_max dist_max =
-    if i >= length then (point_max, i_max, dist_max)
-    else
-      let dist_i = dist tabpoints.(i) point in
-      if dist_i > dist_max then
-        maxd (i+1) tabpoints.(i) i dist_i
-      else
-        maxd (i+1) point_max i_max dist_max
-  in
-  let (point_max, i_max, dist_max) = maxd 1 tabpoints.(0) 0 (dist tabpoints.(0) point) in
-  (point_max, i_max, dist_max)
+  let best_dist = ref (-1.)
+  and best_point = ref [||]
+  and best_ind = ref (-1) in
+  Array.iteri (fun i p ->
+    let cur_dist = dist point p in
+    if cur_dist > !best_dist then begin
+      best_ind := i;
+      best_dist := cur_dist;
+      best_point := p;
+    end
+  ) tabpoints;
+  (!best_point,!best_ind,!best_dist)
 
-(* Compute the maximal distance between two points in an array of points.
-   A point correspond to an array of floats *)
 let maxdisttab tabpoints =
   let length = Array.length tabpoints in
   let rec maxd i p1 i1 p2 i2 dist_max =
@@ -204,19 +121,6 @@ let maxdisttab tabpoints =
   let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
   let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
   (p1, i1, p2, i2, dist_max)
-
-
-(* Converts a linear expression into its negation
- * ex: converts 3x-y into -3x+y
- *)
-let linexpr_neg linexpr env =
-  let linexpr' = Linexpr1.make env in
-  let list = ref [] in
-  let cst = Linexpr1.get_cst linexpr in
-  Linexpr1.iter (fun c -> fun v -> list := List.append !list [(Coeff.neg c, v)]) linexpr;
-  Linexpr1.set_list linexpr' !list (Some (Coeff.neg cst));
-  linexpr'
-
 
 (* Converts a Generator0 into an array of floats. *)
 let to_float_array gen size =
