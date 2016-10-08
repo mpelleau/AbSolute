@@ -2,7 +2,7 @@ open Drawer_sig
 
 module Make (D:Drawer) = struct
 
-  let color_sure = Graphics.rgb 0 191 255
+  let color_sure = Graphics.rgb 100 200 255
   let color_unsure = Graphics.green
 
   let bound_dim v sure unsure =
@@ -38,11 +38,11 @@ module Make (D:Drawer) = struct
 	     let out = ("out/"^name^".tex") in
        let name = Latex.escape name in
        let fmt = Format.formatter_of_out_channel (open_out out) in
-	     Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\subfigure[%s]{\\label{fg:2r}\n\\begin{tikzpicture}[scale=0.6]\n" name;
+	     Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\begin{tikzpicture}[scale=0.6]\n";
     List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
-    Format.fprintf fmt "\\end{tikzpicture}}\n\\caption{%s\\label{fg:%s}}\n\\end{figure}\n" name name
+    Format.fprintf fmt "\\end{tikzpicture}\n\\caption{%s}\n\\end{figure}\n" name
 
   let draw3d values vars =
     match !Constant.problem with
@@ -54,7 +54,7 @@ module Make (D:Drawer) = struct
        let fmt = Format.formatter_of_out_channel out in
 	     D.draw3d fmt values vars
 
-  let trace sure unsure =
+  let traceout sure unsure =
     List.iter (Format.printf "sure:%a\n%!" D.print) sure;
     List.iter (Format.printf "unsure:%a\n%!" D.print) unsure
 
@@ -78,11 +78,12 @@ module Make (D:Drawer) = struct
   let out prob res =
     let open Result in
     let open Csp in
-    let unsure = if !Constant.sure then [] else res.unsure in
-    if !Constant.visualization then draw2d res.sure unsure (vars2D prob);
-    if !Constant.tex then print_latex res.sure unsure (vars2D prob);
-    if !Constant.trace then trace res.sure unsure;
-    if !Constant.obj then draw3d res.sure (vars3D prob)
+    let open Constant in
+    let unsure = if !sure then [] else res.unsure in
+    if !visualization then draw2d res.sure unsure (vars2D prob);
+    if !tex then print_latex res.sure unsure (vars2D prob);
+    if !obj then draw3d res.sure (vars3D prob);
+    if !trace then traceout res.sure unsure
 
   let trace_min sure unsure value =
     Format.printf "best value:%f\n%!" value;

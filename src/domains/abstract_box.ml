@@ -50,21 +50,6 @@ module Box (I:ITV) = struct
     let ((l,h), _) = find v a in
     (B.to_float_down l),(B.to_float_up h)
 
-  let vertices2d (a:t) (v1,v2) =
-    let (l1,h1) = find v1 a |> fst |> I.to_float_range
-    and (l2,h2) = find v2 a |> fst |> I.to_float_range
-    in [l1,l2; h1,l2; h1,h2; l1,h2]
-
-  let vertices3d a (v1,v2,v3) =
-    let (l3,h3) = find v3 a |> fst |> I.to_float_range in
-    let rec aux acc = function
-      | [] -> acc
-      | (x,y)::tl ->
-         let p1 = (x,y,l3) and p2 = (x,y,h3) in
-         aux (p1::p2::acc) tl
-    in aux [] (vertices2d a (v1,v2))
-
-
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
@@ -103,7 +88,7 @@ module Box (I:ITV) = struct
     let (v,i) = max_range a in
     (B.to_float_up (I.range i) <= !Constant.precision)
 
-  let volume (a:t) : float = 
+  let volume (a:t) : float =
     let vol_bound = Env.fold (fun _ x v -> B.mul_down (I.range x) v) a B.one in
     B.to_float_up vol_bound
 

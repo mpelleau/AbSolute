@@ -22,20 +22,20 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cst c -> Texpr1.Cst (Coeff.s_of_float c)
     | Unary (o,e1) ->
       let r = match o with
-	      | NEG -> Texpr1.Neg
+	      | NEG  -> Texpr1.Neg
 	      | SQRT -> Texpr1.Sqrt
-	      | COS -> failwith "COS unsupported with apron"
-              | SIN -> failwith "SIN unsupported with apron"
-              | TAN -> failwith "TAN unsupported with apron"
-	      | COT -> failwith "COT unsupported with apron"
+	      | COS  -> failwith "COS unsupported with apron"
+        | SIN  -> failwith "SIN unsupported with apron"
+        | TAN  -> failwith "TAN unsupported with apron"
+	      | COT  -> failwith "COT unsupported with apron"
 	      | ACOS -> failwith "ACOS unsupported with apron"
-              | ASIN -> failwith "ASIN unsupported with apron"
-              | ATAN -> failwith "ATAN unsupported with apron"
+        | ASIN -> failwith "ASIN unsupported with apron"
+        | ATAN -> failwith "ATAN unsupported with apron"
 	      | ACOT -> failwith "ACOT unsupported with apron"
-	      | ABS -> failwith "ABS unsupported with apron"
-              | LN -> failwith "LN unsupported with apron"
-              | LOG -> failwith "LOG unsupported with apron"
-              | EXP -> failwith "EXP unsupported with apron"
+	      | ABS  -> failwith "ABS unsupported with apron"
+        | LN   -> failwith "LN unsupported with apron"
+        | LOG  -> failwith "LOG unsupported with apron"
+        | EXP  -> failwith "EXP unsupported with apron"
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
@@ -79,7 +79,7 @@ end
 (*****************************************************************)
 module MAKE(AP:ADomain) = struct
 
-  module A = Abstract1
+  module A = Abstractext
 
   type t = AP.t A.t
 
@@ -114,29 +114,18 @@ module MAKE(AP:ADomain) = struct
   let join a b = A.join man a b
 
   let prune a b =
-    let env = A.env a in
-    let constr_to_earray c =
-      let ear = Lincons1.array_make env 1 in
-      Lincons1.array_set ear 0 c;
-      ear
-    in
-    let rec aux a sures = function
-      | [] -> sures
-      | h::tl ->
-	       let neg_h = neg_lincons h in
-	       let neg_earray = constr_to_earray neg_h and h_earray = constr_to_earray h in
-	       let a = A.meet_lincons_array man a h_earray
-	       and s = A.meet_lincons_array man a neg_earray in
-	       if is_bottom s then aux a sures tl
-	       else aux a (s::sures) tl
-    in
-    let sures = aux a [] (A.to_lincons_array man b |> lincons_earray_to_list) in
-    sures,b
+    let a,pruned = Linconsext.array_fold (fun (abs,acc) c ->
+	    let neg_c = Linconsext.neg c in
+	    let a = A.filter_lincons man a c
+	    and s = A.filter_lincons man a neg_c in
+	    if is_bottom s then a,acc
+	    else a,(s::acc)
+    ) (a,[]) (A.to_lincons_array man b) in pruned,b
 
   let filter b (e1,c,e2) =
     let env = A.env b in
     let c = T.cmp_expr_to_apron (e1,c,e2) env in
-    A.meet_tcons_array man b (tcons_list_to_earray [c])
+    A.filter_tcons man b c
 
   let print = A.print
 
@@ -154,32 +143,6 @@ module MAKE(AP:ADomain) = struct
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
     A.of_lincons_array (Polka.manager_alloc_strict ()) env
-
-  (* given two variables to draw, and an environnement,
-     returns the two variables value in the environment.
-  *)
-  let get_indexes env (x,y) =
-	  (Environment.dim_of_var env (Var.of_string x)),
-	  (Environment.dim_of_var env (Var.of_string y))
-
-  let vertices2d abs (v1,v2) =
-    let env = A.env abs in
-    let draw_pol pol =
-      let i1,i2 = get_indexes env (v1,v2) in
-      let x = Environment.var_of_dim env i1
-      and y = Environment.var_of_dim env i2 in
-      let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in
-      let gen' = A.to_generator_array (Polka.manager_alloc_strict ()) pol in
-      let v = Array.init (Generator1.array_length gen')
-	(fun i -> get_coord
-	  (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
-	       |> Array.to_list
-      in
-      List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
-    in
-    draw_pol (to_poly abs env)
-
-  let vertices3d abs (v1,v2,v3) = failwith "no 3d generation for apron modules for now"
 
   let forward_eval abs cons =
     let ap_expr = T.expr_to_apron abs cons |> Texpr1.of_expr (A.env abs) in
@@ -228,25 +191,22 @@ module MAKE(AP:ADomain) = struct
      * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
     let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
       if i >= size then (list1, list2, cst) else
-	let ci = p2.(i) -. p1.(i) in
-	let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
-	let ci' = 2. *. ci in
-	let coeffi = Coeff.Scalar (Scalar.of_float ci') in
-	let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
-	let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
-	genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
+	      let ci = p2.(i) -. p1.(i) in
+	      let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
+	      let ci' = 2. *. ci in
+	      let coeffi = Coeff.Scalar (Scalar.of_float ci') in
+	      let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
+	      let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
+	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
- let split abs list =
+ let split abs (e1,e2) =
     let meet_linexpr abs man env expr =
-      let cons = Lincons1.make expr Lincons1.SUPEQ in
-      let tab = Lincons1.array_make env 1 in
-      Lincons1.array_set tab 0 cons;
-      let abs' = A.meet_lincons_array man abs tab in
-      abs'
+      let cons = Linconsext.make expr Linconsext.SUPEQ in
+      A.filter_lincons man abs cons
     in
     let env = A.env abs in
-    let abs1 = meet_linexpr abs man env (List.nth list 0) in
-    let abs2 = meet_linexpr abs man env (List.nth list 1) in
+    let abs1 = meet_linexpr abs man env e1 in
+    let abs2 = meet_linexpr abs man env e2 in
     [abs1; abs2]
 
   (************************************************)
@@ -267,7 +227,7 @@ module MAKE(AP:ADomain) = struct
     Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
     let linexp' = Linexpr1.make gen_env in
     Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
-    [linexp; linexp']
+    (linexp, linexp')
 
   let is_small man polyad =
     let poly = A.to_generator_array man polyad in

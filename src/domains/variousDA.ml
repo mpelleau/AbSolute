@@ -89,7 +89,7 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let prune (a,a') (b,b') =
       (* let la,ua = A.prune a b *)
       (* and lb,ub = B.prune a' b' in *)
-      [],(a,a')
+      [],(b,b')
 
     let split ((abs, abs'):t) =
       let split_a = A.split abs in
@@ -108,12 +108,6 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in
       B.forward_eval abs_tmp cons
-
-    let vertices2d ((abs, abs'):t) =
-      B.vertices2d (a_meet_b abs abs')
-
-    let vertices3d ((abs, abs'):t) =
-      B.vertices3d (a_meet_b abs abs')
 
     let print fmt ((abs, abs'):t) =
       A.print fmt abs;

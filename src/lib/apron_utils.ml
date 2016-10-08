@@ -8,7 +8,7 @@ let scalar_to_mpqf = function
   | Scalar.Float x -> Mpqf.of_float x
   | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
 
-let scalar_to_float s = 
+let scalar_to_float s =
   let res = match s with
   | Scalar.Mpqf x -> Mpqf.to_float x
   | Scalar.Float x -> x
@@ -26,12 +26,6 @@ let coeff_to_int x = coeff_to_float x |> int_of_float
 (**********************)
 (* Printing utilities *)
 (**********************)
-let print_array = Abstract0.print_array
-
-let lincons1_array_print fmt x = Lincons1.array_print fmt x
-
-let generator1_array_print fmt x = Generator1.array_print fmt x
-
 let print_sol box =
   let open Interval in
   let open Format in
@@ -46,6 +40,23 @@ let print_sol box =
 (**********************)
 
 let empty_env = Environment.make [||] [||]
+
+let array_fold get len f a arr =
+  let size = len arr in
+  let rec aux accu idx =
+    if idx >= size then accu
+    else aux (f accu (get arr idx)) (idx+1)
+  in aux a 0
+
+let tcons_aiter f tcons =
+  for i = 0 to Tcons1.array_length tcons -1 do
+    Tcons1.array_get tcons i |> f
+  done
+
+let lincons_aiter f lcons =
+  for i = 0 to Lincons1.array_length lcons - 1 do
+    Lincons1.array_get lcons i |> f
+  done
 
 (* Tcons earray utilities *)
 let tcons_for_all pred tcons =
@@ -64,17 +75,19 @@ let tcons_list_to_earray tcl =
   let ear = array_make env size in
   List.iteri (fun i b -> array_set ear i b) tcl;
   ear
-  
-let earray_to_list get length tcl = 
+
+let earray_to_list get length tcl =
   let l = ref [] in
   for i = 0 to (length tcl) - 1 do
     l:=(get tcl i)::!l
   done;
   !l
 
-let lincons_earray_to_list = earray_to_list Lincons1.array_get Lincons1.array_length
+let lincons_earray_to_list =
+  earray_to_list Lincons1.array_get Lincons1.array_length
 
-let tcons_earray_to_list = earray_to_list Tcons1.array_get Tcons1.array_length
+(* let tcons_earray_to_list = *)
+(*   earray_to_list Tcons1.array_get Tcons1.array_length *)
 
 let neg_typ = let open Lincons1 in function
   | EQ -> DISEQ
@@ -82,7 +95,7 @@ let neg_typ = let open Lincons1 in function
   | SUPEQ -> SUP
   | DISEQ -> EQ
   | _ -> assert false
- 
+
 (* constructs a new contraint in opposite direction *)
   let neg_lincons (d:Lincons1.t) : Lincons1.t =
     let d = Lincons1.copy d in
@@ -102,31 +115,31 @@ let sqrt2 = 0.707106781186548
 let sqrt2_mpqf = Mpqf.of_float sqrt2
 
 (* Compute the sum of two scalars *)
-let scalar_add sca sca' = 
+let scalar_add sca sca' =
   let value = scalar_to_mpqf sca in
   let value' = scalar_to_mpqf sca' in
   let sum = Mpqf.add value value' in
   Scalar.of_mpqf sum
 
 (* Compute the sum of two scalars *)
-let scalar_mul_sqrt2 sca = 
+let scalar_mul_sqrt2 sca =
   let value = scalar_to_mpqf sca in
   let mult = Mpqf.mul value sqrt2_mpqf in
   Scalar.of_mpqf mult
 
 (* Compute the sum of a scalar and a Mpqf *)
-let scalar_plus_mpqf sca mpqf = 
+let scalar_plus_mpqf sca mpqf =
   let value = scalar_to_mpqf sca in
   let sum = Mpqf.add value mpqf in
   Scalar.of_mpqf sum
 
 (* Compute the medium value of two scalars *)
-let mid inf sup = 
-  let mpqf_inf = scalar_to_mpqf inf 
+let mid inf sup =
+  let mpqf_inf = scalar_to_mpqf inf
   and mpqf_sup = scalar_to_mpqf sup in
   let mid =
     let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
-    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2) 
+    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2)
     in Scalar.of_mpqf (Mpqf.add div_inf div_sup)
   in mid
   (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
@@ -137,15 +150,14 @@ let mid_interval itv =
 
 
 (* Compute the euclidian distance between two scalars *)
-let diam inf sup = 
+let diam inf sup =
   let mpqf_inf = scalar_to_mpqf inf in
   let mpqf_sup = scalar_to_mpqf sup in
   Mpqf.sub mpqf_sup mpqf_inf
 
 (* Compute the diameter of an interval *)
-let diam_interval itv = 
+let diam_interval itv =
   diam itv.Interval.inf itv.Interval.sup
-
 
 (* Compute the euclidian distance between two arrays of floats. *)
 let dist tab1 tab2 =
@@ -158,15 +170,13 @@ let dist tab1 tab2 =
     done;
     sqrt !sum
 
-(* Compute the maximal distance between a point and an array of points. 
+(* Compute the maximal distance between a point and an array of points.
  * A point correspond to an array of floats.
  *)
 let maxdist point tabpoints =
   let length = Array.length tabpoints in
-  
   let rec maxd i point_max i_max dist_max =
-    if i >= length then
-      (point_max, i_max, dist_max)
+    if i >= length then (point_max, i_max, dist_max)
     else
       let dist_i = dist tabpoints.(i) point in
       if dist_i > dist_max then
@@ -174,19 +184,17 @@ let maxdist point tabpoints =
       else
         maxd (i+1) point_max i_max dist_max
   in
-  
   let (point_max, i_max, dist_max) = maxd 1 tabpoints.(0) 0 (dist tabpoints.(0) point) in
-  
   (point_max, i_max, dist_max)
 
-(* Compute the maximal distance between two points in an array of points. 
+(* Compute the maximal distance between two points in an array of points.
    A point correspond to an array of floats *)
 let maxdisttab tabpoints =
   let length = Array.length tabpoints in
   let rec maxd i p1 i1 p2 i2 dist_max =
     if i >= length then (p1, i1, p2, i2, dist_max)
     else
-      try 
+      try
 	let tabpoints' = Array.sub tabpoints (i+1) (length-i-1) in
 	let (pj, j, dist) = maxdist tabpoints.(i) tabpoints' in
 	if dist > dist_max then maxd (i+1) tabpoints.(i) i pj j dist
@@ -219,7 +227,6 @@ let to_float_array gen size =
     tab.(i) <- coeff_to_float coeff
   done;
   tab
-
 
 (* Converts a Generator1 into an array of array of floats. *)
 let gen_to_array gens size =

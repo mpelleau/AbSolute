@@ -20,36 +20,22 @@ module BoxCP =
       (dim <= !Constant.precision)
 
   let split abs =
-      let env = Abstract1.env abs in
-      let (var, itv, size) = largest abs in
-      let mid = mid_interval itv in
-      let value = match Environment.typ_of_var env var with
-	| Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf
-	| _ -> mid
-      in
-      (* var <= mid*)
-      let expr =  Linexpr1.make env in
-      Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
-      (* var >= value*)
-      let expr' =  Linexpr1.make env in
-      Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      split abs [expr;expr']
+    let env = Abstract1.env abs in
+    let (var, itv, size) = largest abs in
+    let mid = mid_interval itv in
+    let value = match Environment.typ_of_var env var with
+	    | Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf
+	    | _ -> mid
+    in
+    (* var <= mid*)
+    let expr =  Linexpr1.make env in
+    Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
+    (* var >= value*)
+    let expr' =  Linexpr1.make env in
+    Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
+    split abs (expr,expr')
 
-    (* More efficient implementation of points to draw *)
-    let points_to_draw box vars =
-      let env = Abstract1.env box in
-      let b = Abstract1.to_box man box in
-      let i1,i2 = get_indexes env vars in
-      let i1,i2 =
-	Abstract1.(b.interval_array.(i1)),
-	Abstract1.(b.interval_array.(i2))
-      in
-      let open Interval in
-      let x1,x2 = (scalar_to_float i1.inf, scalar_to_float i1.sup) in
-      let y1,y2 = (scalar_to_float i2.inf, scalar_to_float i2.sup) in
-      [x1,y1; x2,y1; x2,y2; x1,y2]
-
-    let volume box = 0.
+  let volume box = 0.
 
   end
 
@@ -203,7 +189,7 @@ module OctMinMinCP =
       Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
       let mmin' = Scalar.of_mpqf mmin in
       let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in
-      split octad [linexpr1;linexpr2]
+      split octad (linexpr1,linexpr2)
 
     let volume box = 0.
   end
@@ -343,7 +329,7 @@ module OctBoxCP =
       (* var >= value*)
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      split octad [expr; expr']
+      split octad (expr, expr')
 
     let volume box = 0.
   end

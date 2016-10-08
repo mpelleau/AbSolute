@@ -10,10 +10,11 @@ module Make(AP:ADomain) = struct
 
   let man = AP.get_manager
 
+  let polkaman = Polka.manager_alloc_strict ()
+
   let to_poly abs env =
     let abs' = A.change_environment man abs env false in
-    A.to_lincons_array man abs' |>
-        A.of_lincons_array (Polka.manager_alloc_strict ()) env
+    A.to_lincons_array man abs' |> A.of_lincons_array polkaman env
 
   let print = Abstract1.print
 
@@ -22,21 +23,18 @@ module Make(AP:ADomain) = struct
     let open Interval in
     Apron_utils.(scalar_to_float i.inf,scalar_to_float i.sup)
 
-  let draw2d abs (v1,v2) col =
-    (* given two variables to draw, and an environnement,
-       returns the two variables value in the environment. *)
-    let get_indexes env (x,y) =
-	    (Environment.dim_of_var env (Var.of_string x)),
-	    (Environment.dim_of_var env (Var.of_string y))
+  let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
+    let get_indexes env (x,y) = Environment.(
+      dim_of_var env (Var.of_string x),
+      dim_of_var env (Var.of_string y))
     in
     let vertices2d abs (v1,v2) =
       let env = A.env abs in
       let draw_pol pol =
         let i1,i2 = get_indexes env (v1,v2) in
-        let x = Environment.var_of_dim env i1
-        and y = Environment.var_of_dim env i2 in
-        let get_coord l = (Linexpr1.get_coeff l x),(Linexpr1.get_coeff l y) in
-        let gen' = A.to_generator_array (Polka.manager_alloc_strict ()) pol in
+        let x,y = Environment.(var_of_dim env i1,var_of_dim env i2) in
+        let get_coord l = Linexpr1.(get_coeff l x,get_coeff l y) in
+        let gen' = A.to_generator_array polkaman pol in
         let v = Array.init (Generator1.array_length gen')
 	        (fun i -> get_coord
 	          (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
@@ -47,12 +45,17 @@ module Make(AP:ADomain) = struct
       draw_pol (to_poly abs env)
     in
     let vert = vertices2d abs (v1,v2) in
-    View.fill_poly vert col;
-    View.draw_poly vert Graphics.black
+    fillpol vert col;
+    draw_f vert Graphics.black
 
-  let draw3d fmt abs_list (v1,v2,v3) = failwith "niy"
+  let draw2d =
+    draw View.draw_poly 2 View.fill_poly
 
-  let print_latex fmt abs (v1,v2) col = failwith ""
+  let draw3d fmt abs_list (v1,v2,v3) =
+    Format.printf "no 3d generation for apron domains for now\n%!"
+
+  let print_latex fmt abs (v1,v2) col =
+    Format.printf "no latex generation for apron domains for now\n%!"
 
 end
 
@@ -60,7 +63,6 @@ module BoxDrawer = Make(struct
   type t = Box.t
   let get_manager =  Box.manager_alloc ()
 end)
-
 
 module OctDrawer = Make(struct
   type t = Oct.t

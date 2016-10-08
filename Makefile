@@ -37,6 +37,10 @@ MLFILES = \
   src/frontend/parser.ml \
   src/frontend/lexer.ml \
   src/frontend/file_parser.ml \
+	src/lib/array_maker.ml \
+	src/lib/linconsext.ml \
+	src/lib/tconsext.ml \
+	src/lib/abstractext.ml \
   src/lib/constant.ml \
   src/lib/apron_utils.ml \
   src/lib/bot.ml \

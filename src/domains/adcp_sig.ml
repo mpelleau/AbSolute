@@ -2,6 +2,7 @@
 (*            Module for Abstract Domains for Constraint Programming.             *)
 (*   These are abstract domains with consistency, split and precision operators.  *)
 (**********************************************************************************)
+
 open Csp
 
 module type AbstractCP = sig
@@ -9,6 +10,14 @@ module type AbstractCP = sig
   (*** TYPES ***)
   (* abstract elements *)
   type t
+
+  (* (\* expression and constraint conversion *\) *)
+  (* type expr *)
+  (* type cmp *)
+
+  (* val translate_expr : Csp.expr -> expr *)
+
+  (* val translate_cons : Csp.expr * Csp.cmpop * Csp.expr -> expr * cmpop * expr *)
 
   (*** INSTANCIATION ***)
 
@@ -39,10 +48,6 @@ module type AbstractCP = sig
   val filter : t -> (expr * cmpop * expr) -> t
 
   val forward_eval : t -> expr -> (float * float)
-
-  (* 2d and 3d rendering *)
-  val vertices2d : t -> var * var -> (float*float) list
-  val vertices3d : t -> var * var * var -> (float*float*float) list
 
   (* printing *)
   val print : Format.formatter -> t -> unit
