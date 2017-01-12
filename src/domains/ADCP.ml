@@ -14,8 +14,8 @@ module BoxCP =
       let get_manager =  Box.manager_alloc ()
     end)
 
-    let is_small boxad : bool =
-      let (_, _, max) = largest boxad in
+    let is_small box : bool =
+      let (_, _, max) = largest box in
       let dim = Mpqf.to_float max in
       (dim <= !Constant.precision)
 
@@ -35,7 +35,11 @@ module BoxCP =
     Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
     split abs (expr,expr')
 
-  let volume box = 0.
+  let volume abs =
+    let box = Abstract1.to_box man abs in
+    let tab = box.Abstract1.interval_array in
+    let vol = Array.fold_left (fun v itv -> Mpqf.mul v (diam_interval itv)) (Mpqf.of_int 1) tab in
+    Mpqf.to_float vol
 
   end
 
@@ -312,8 +316,8 @@ module OctBoxCP =
       let get_manager =  Oct.manager_alloc ()
     end)
 
-    let is_small octad =
-      let (_, _,max) = largest octad in
+    let is_small oct =
+      let (_, _,max) = largest oct in
       let dim = Mpqf.to_float max in
       (dim <= !Constant.precision)
 

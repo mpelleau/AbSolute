@@ -71,6 +71,65 @@ module SyntaxTranslator (D:ADomain) = struct
     let res = Tcons1.make e op in
     res
 
+  let apron_to_var abs =
+    let env = Abstract1.env abs in
+    let (iv, rv) = Environment.vars env in
+    let ivars = Array.map (fun v -> Var.to_string v) iv in
+    let rvars = Array.map (fun v -> Var.to_string v) rv in
+    (Array.to_list ivars, Array.to_list rvars)
+  
+  let rec apron_to_expr texpr env =
+    match texpr with
+    | Texpr1.Cst c -> Cst (coeff_to_float c)
+    | Texpr1.Var v -> 
+      let e = match (Environment.typ_of_var env v) with
+              | Environment.INT -> Var ((Var.to_string v)^"%")
+              | Environment.REAL -> Var (Var.to_string v)
+      in e
+    | Texpr1.Unop (op, e, _, _) ->
+      let o = match op with
+              | Texpr1.Neg -> NEG
+              | Texpr1.Sqrt -> SQRT
+              | Texpr1.Cast -> failwith "Cast unsupported with AbSolute"
+      in
+      let e = apron_to_expr e env in
+      Unary (o, e)
+    | Texpr1.Binop (op, e1, e2, _, _) -> 
+      let o = match op with
+              | Texpr1.Add -> ADD
+              | Texpr1.Sub -> SUB
+              | Texpr1.Mul -> MUL
+              | Texpr1.Div -> DIV
+              | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
+      in
+      let e1 = apron_to_expr e1 env 
+      and e2 = apron_to_expr e2 env in
+      Binary (o, e1, e2)
+    
+  let apron_to_bexpr tcons env =
+    let apron_to_cmp op =
+      match op with
+      | Tcons1.EQ  -> EQ
+      | Tcons1.DISEQ -> NEQ
+      | Tcons1.SUPEQ -> GEQ
+      | Tcons1.SUP -> GT
+    in
+    let typ = apron_to_cmp (Tcons1.get_typ tcons) in
+    let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
+    (exp, typ, Cst (0.))
+
+  let apron_to_bexpr abs =
+    let abscons = Abstract1.to_tcons_array man abs in
+    let earray = abscons.Tcons1.tcons0_array in
+    let tenv = abscons.Tcons1.array_env in
+    Array.map (fun t -> 
+                apron_to_bexpr (Tcons1.{tcons0 = t; env = tenv}) tenv
+              ) earray 
+    |> Array.to_list
+     
+    
+    
+
 end
 
 
@@ -96,7 +155,8 @@ module MAKE(AP:ADomain) = struct
     let env = Environment.add e ints reals in
     A.change_environment man abs env false
 
-  let is_bottom b = A.is_bottom man b
+  let is_bottom abs = 
+    A.is_bottom man abs
 
   let is_singleton b v =
     let man = A.manager b in
@@ -113,7 +173,7 @@ module MAKE(AP:ADomain) = struct
     with Exit -> false
 
   let join a b = A.join man a b
-
+  
   let prune a b =
     let work acc a c =
       let neg_c = Linconsext.neg c in
@@ -131,7 +191,7 @@ module MAKE(AP:ADomain) = struct
     ) (a,[]) (A.to_lincons_array man b) in pruned,b
 
   let filter b (e1,c,e2) =
-    Format.printf "%a\n" A.print b;
+    (*Format.printf "%a\n" A.print b;*)
     let env = A.env b in
     let c = T.cmp_expr_to_tcons (e1,c,e2) env in
     if Tconsext.get_typ c = Tconsext.DISEQ then
@@ -139,6 +199,9 @@ module MAKE(AP:ADomain) = struct
       let l1,l2 = Linconsext.splitdiseq lin in
       join (A.filter_lincons man b l1) (A.filter_lincons man b l2)
     else A.filter_tcons man b c
+
+  let filterl b (e1,c,e2) =
+    filter b (e1,c,e2)
 
   let print = A.print
 
@@ -174,19 +237,19 @@ module MAKE(AP:ADomain) = struct
 	    else largest tab (i+1) max i_max
 
   let largest abs : (Var.t * Interval.t * Mpqf.t) =
-      let env = A.env abs in
-      let box = A.to_box man abs in
-      let tab = box.A.interval_array in
-      let rec aux cur i_max diam_max itv_max =
-	      if cur>=Array.length tab then (i_max, diam_max, itv_max)
-	      else
-	        let e = tab.(cur) in
-	        let diam = diam_interval e in
-	        if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
-	        else aux (cur+1) i_max diam_max itv_max
-      in
-      let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
-      ((Environment.var_of_dim env a),c,b)
+    let env = A.env abs in
+    let box = A.to_box man abs in
+    let tab = box.A.interval_array in
+    let rec aux cur i_max diam_max itv_max =
+      if cur>=Array.length tab then (i_max, diam_max, itv_max)
+      else
+        let e = tab.(cur) in
+        let diam = diam_interval e in
+        if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
+        else aux (cur+1) i_max diam_max itv_max
+    in
+    let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
+    ((Environment.var_of_dim env a),c,b)
 
     (* Compute the minimal and the maximal diameter of an array on intervals *)
     let rec minmax tab i max i_max min i_min =
@@ -213,20 +276,20 @@ module MAKE(AP:ADomain) = struct
 	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
  let split abs (e1,e2) =
-    let meet_linexpr abs man env expr =
-      let cons = Linconsext.make expr Linconsext.SUPEQ in
-      A.filter_lincons man abs cons
-    in
-    let env = A.env abs in
-    let abs1 = meet_linexpr abs man env e1 in
-    let abs2 = meet_linexpr abs man env e2 in
-    [abs1; abs2]
+   let meet_linexpr abs man env expr =
+     let cons = Linconsext.make expr Linconsext.SUPEQ in
+     A.filter_lincons man abs cons
+   in
+   let env = A.env abs in
+   let abs1 = meet_linexpr abs man env e1 in
+   let abs2 = meet_linexpr abs man env e2 in
+   [abs1; abs2]
 
   (************************************************)
   (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)
   (************************************************)
 
-  let get_expr man polyad =
+  let get_expr man (polyad:Polka.strict Polka.t A.t) =
     let poly = A.to_generator_array man polyad in
     let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)

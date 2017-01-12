@@ -107,7 +107,9 @@ module Itv(B:BOUND) = struct
     | true,false -> Format.fprintf fmt "[%0F;%f]" (B.to_float_down l) (B.to_float_up h)
     | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
 
-
+  let to_expr ((l, h):t) =
+    ((Csp.GEQ, Csp.Cst(B.to_float_down l)), 
+     (Csp.LEQ, Csp.Cst(B.to_float_up h)))
 
   (************************************************************************)
   (* SET-THEORETIC *)

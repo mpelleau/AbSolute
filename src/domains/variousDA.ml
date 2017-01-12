@@ -14,6 +14,42 @@ module type Reduction =
     val b_meet_a : A.t -> B.t -> A.t
   end
 
+module BoxAndPolyNew : Reduction =
+  struct
+
+    module A=Abstract_box.BoxF
+    module B=PolyCP
+    
+    let to_poly box poly =
+      let poly' = Abstractext.change_environment B.man B.empty (Abstractext.env poly) false in
+      (* Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly'; *)
+      let (ivar, rvar) = B.T.apron_to_var poly in
+      (* Format.printf "nb_int_var = %i ; nb_real_var = %i@." (List.length ivar) (List.length rvar); *)
+      let l_expr = A.to_expr box (List.append ivar rvar) in
+      (* Format.printf "nb_expr = %i@." (List.length l_expr);
+      List.iter (fun (v, op, b) -> Format.printf "%a;" Csp.print_bexpr (Csp.Cmp (op, v, b)));*)
+      let poly' = List.fold_left (fun a c -> B.filter a c) poly' l_expr in
+      (* Format.printf "poly' = %a@." B.print poly'; *)
+      let poly' = B.join poly poly' in
+      (* Format.printf "poly' = %a@." B.print poly'; *)
+      poly'
+    
+    let to_box poly box =
+      let polycons = B.T.apron_to_bexpr poly in
+      let box' = A.lfilter box polycons in
+      (* Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box'; *)
+      box'
+
+    let a_meet_b box poly =
+      let poly' = to_poly box poly in
+      Abstractext.meet B.man poly poly'
+
+    let b_meet_a box poly =
+      let box' = to_box poly box in
+      A.meet box box'
+
+  end
+
 module BoxAndPoly : Reduction =
   struct
 
@@ -22,13 +58,17 @@ module BoxAndPoly : Reduction =
 
     let a_meet_b box poly =
       let poly_env = Abstract1.env poly in
-      let poly' = BoxCP.to_poly box poly_env in
-      Abstract1.meet PolyCP.man poly poly'
+      let poly' = A.to_poly box poly_env in
+      let poly' = Abstract1.meet B.man poly poly' in
+      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly;
+      poly'
 
     let b_meet_a box poly =
       let box_env = Abstract1.env box in
-      let box' = PolyCP.to_box poly box_env in
-      Abstract1.meet BoxCP.man box box'
+      let box' = B.to_box poly box_env in
+      let box' = Abstract1.meet BoxCP.man box box' in
+      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly;
+      box'
 
   end
 
@@ -40,8 +80,8 @@ module BoxAndOct : Reduction =
 
     let a_meet_b box oct =
       let oct_env = Abstract1.env oct in
-      let oct' = BoxCP.to_oct box oct_env in
-      Abstract1.meet OctBoxCP.man oct oct'
+      let oct' = A.to_oct box oct_env in
+      Abstract1.meet B.man oct oct'
 
     let b_meet_a box oct =
       let box_env = Abstract1.env box in
@@ -68,6 +108,7 @@ module OctAndPoly : Reduction =
 
   end
 
+
 module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
   struct
 
@@ -82,7 +123,7 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
 
     let empty = A.empty,B.empty
 
-    let add_var (abs,abs') v = (A.add_var abs v),(B.add_var abs' v)
+    let add_var (abs,abs') v = (A.add_var abs v), (B.add_var abs' v)
 
     let is_small ((abs, abs'):t) = A.is_small abs
 
@@ -105,12 +146,16 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let filter ((abs, abs'):t) cons =
       (A.filter abs cons, abs')
 
+    let filterl ((abs, abs'):t) cons =
+      (abs, B.filter abs' cons)
+
     let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in
       B.forward_eval abs_tmp cons
 
     let print fmt ((abs, abs'):t) =
       A.print fmt abs;
+      Format.printf ", ";
       B.print fmt abs'
 
     let volume ((abs, abs'):t) =
@@ -118,6 +163,7 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
 
   end
 
+module BandP = VariousDomain_MS(BoxAndPolyNew)
 module BoxNOct = VariousDomain_MS(BoxAndOct)
 module BoxNPoly = VariousDomain_MS(BoxAndPoly)
 module OctNPoly = VariousDomain_MS(OctAndPoly)

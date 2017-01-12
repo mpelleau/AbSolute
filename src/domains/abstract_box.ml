@@ -50,6 +50,27 @@ module Box (I:ITV) = struct
     let ((l,h), _) = find v a in
     (B.to_float_down l),(B.to_float_up h)
 
+  let to_expr abs =
+    Env.fold (fun v x lexp -> 
+               let ((cl, l), (ch, h)) = I.to_expr x in
+               List.append lexp [(Csp.Var(v), cl, l);
+                                 (Csp.Var(v), ch, h)]
+             ) abs []
+
+  let to_expr abs vars : (Csp.expr * Csp.cmpop * Csp.expr) list =
+    Env.fold (fun v x lexp -> 
+               if List.exists (fun vn -> String.equal v vn) vars then
+                 let ((cl, l), (ch, h)) = I.to_expr x in
+                 List.append lexp [(Csp.Var(v), cl, l);
+                                   (Csp.Var(v), ch, h)]
+               else if List.exists (fun vn -> String.equal v (vn^"%")) vars then
+                 let ((cl, l), (ch, h)) = I.to_expr x in
+                 let vn = String.sub v 0 ((String.length v)-2) in
+                 List.append lexp [(Csp.Var(vn), cl, l);
+                                   (Csp.Var(vn), ch, h)]
+               else lexp
+             ) abs []
+
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
@@ -60,6 +81,9 @@ module Box (I:ITV) = struct
 
   let join (a:t) (b:t) : t =
     Env.map2z (fun _ x y -> I.join x y) a b
+
+  let meet (a:t) (b:t) : t =
+    Env.map2z (fun _ x y -> debot(I.meet x y)) a b
 
   (* predicates *)
   (* ---------- *)
@@ -168,7 +192,7 @@ let split_along (a:t) (v:var) : t list =
      intermediate results (useful for test transfer functions
 
      errors (e.g. division by zero) return no result, so:
-     - we raies Bot_found in case the expression only evaluates to error values
+     - we raise Bot_found in case the expression only evaluates to error values
      - otherwise, we return only the non-error values
    *)
   let rec eval (a:t) (e:expr) : bexpri =
@@ -292,6 +316,9 @@ let split_along (a:t) (v:var) : t list =
     | Bot -> raise Bot_found
     | Nb e -> e
 
+  let filterl (a:t) (e1,binop,e2) : t =
+    filter a (e1, binop, e2)
+
   let empty : t = Env.empty
 
   let add_var abs (typ,var) : t =
@@ -303,6 +330,26 @@ let split_along (a:t) (v:var) : t list =
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
     I.to_float_range bounds
+   
+
+  let rec is_applicable abs (e:expr) : bool =
+    match e with
+    | Var v -> let (var, name) = try find v abs with 
+                                   Not_found -> (I.zero, "")
+               in
+               let res = match name with
+                 | "" -> false
+                 | _ -> true
+               in
+               res
+    | Cst _ -> true
+    | Unary (_, e1) -> is_applicable abs e1
+    | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
+
+  let lfilter (a:t) l : t =
+    let la = List.filter (fun (e1, op, e2) -> 
+                           (is_applicable a e1) && (is_applicable a e2)) l in
+    List.fold_left (fun a' e -> filter a' e) a la
 
 end
 

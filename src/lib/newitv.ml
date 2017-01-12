@@ -175,6 +175,17 @@ module Make(B:BOUND) = struct
   let pp_print f x = Format.pp_print_string f (to_string x)
   let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
 
+  let to_expr (((kl, l), (kh, h)):t) =
+    match kl, kh with
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_float_down l)), 
+                           (Csp.LT, Csp.Cst(B.to_float_up h)))
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_float_down l)), 
+                          (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)), 
+                          (Csp.LT, Csp.Cst(B.to_float_up h)))
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)), 
+                         (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+
    (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)

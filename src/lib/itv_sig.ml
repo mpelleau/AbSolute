@@ -75,6 +75,8 @@ module type ITV = sig
   val pp_print: Format.formatter -> t -> unit
   val print: Format.formatter -> t -> unit
 
+  val to_expr: t -> (Csp.cmpop * Csp.expr) * (Csp.cmpop * Csp.expr)
+
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)

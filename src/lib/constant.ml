@@ -40,5 +40,5 @@ let set_prob s =
 let set_domain d =
   match d with
   | "box" | "boxS" | "boxCP" | "oct" | "poly"
-  | "boxNoct" | "boxNpoly" | "octNpoly" -> domain := d
+  | "boxNoct" | "boxNpoly" | "octNpoly" | "BandP" -> domain := d
   | x -> "domain "^x^" undefined" |> failwith

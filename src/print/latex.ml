@@ -18,14 +18,14 @@ let rgb_to_latex_col col =
 
 let drawseg fmt (x1,y1) (x2,y2) col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\draw[draw=%s] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
+  fff fmt "\\draw[%s] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
 
 let draw_dashed_seg fmt (x1,y1) (x2,y2) col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\draw[draw=%s, dashed] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
+  fff fmt "\\draw[%s, dashed] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
 
 let fillpol fmt l col =
   let c = rgb_to_latex_col col in
-	fff fmt "\\filldraw[fill=%s] " c;
+	fff fmt "\\fill[%s] " c;
 	List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."

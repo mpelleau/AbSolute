@@ -39,6 +39,11 @@ module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.PolyDrawer)
 module SOctNPoly = GoS (VariousDA.OctNPoly)(Apron_drawer.PolyDrawer) *)
 
+module SBoxNOct = Solver.Solve(VariousDA.BoxNOct)
+module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
+module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
+module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
+
 
 (********************)
 (* OPTIONS HANDLING *)
@@ -87,9 +92,9 @@ let _ =
     | "boxCP" -> Minimizer.BoxCP.minimizing prob
     | "oct" -> Minimizer.Oct.minimizing prob
     | "poly" -> Minimizer.Poly.minimizing prob
-    | "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
+    (*| "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
     | "boxNpoly" -> Minimizer.BoxNPoly.minimizing_various prob
-    | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob
+    | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob*)
     | _ -> "domain undefined "^(!domain) |> failwith
   else
     match !domain with
@@ -101,4 +106,8 @@ let _ =
     (* | "boxNoct" -> SBoxNOct.go prob
     | "boxNpoly" -> SBoxNPoly.go prob
     | "octNpoly" -> SOctNPoly.go prob *)
+    | "boxNoct" -> let res = SBoxNOct.solving_various prob in Format.printf "solving done\n"
+    | "boxNpoly" -> let res = SBoxNPoly.solving_various prob in Format.printf "solving done\n"
+    | "octNpoly" -> let res = SOctNPoly.solving_various prob in Format.printf "solving done\n"
+    | "BandP" -> let res = SBoxAndPoly.solving_various prob in Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
