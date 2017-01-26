@@ -29,3 +29,13 @@ let fillpol fmt l col =
 	fff fmt "\\fill[%s] " c;
 	List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."
+
+let filldraw fmt l col =
+  let c = rgb_to_latex_col col in
+  fff fmt "\\filldraw[fill = %s] " c;
+  List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
+  fff fmt "cycle;@."
+
+let filldrawbox fmt (xl, yl) (xu, yu) col =
+  let c = rgb_to_latex_col col in
+  fff fmt "\\filldraw[fill = %s] (%f, %f) rectangle (%f, %f);@." c xl yl xu yu

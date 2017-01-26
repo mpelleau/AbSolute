@@ -41,6 +41,7 @@ module SOctNPoly = GoS (VariousDA.OctNPoly)(Apron_drawer.PolyDrawer) *)
 
 module SBoxNOct = Solver.Solve(VariousDA.BoxNOct)
 module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
+(*module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.BoxNPolyDrawer)*)
 module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
 module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
 

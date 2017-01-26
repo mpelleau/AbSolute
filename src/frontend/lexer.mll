@@ -13,7 +13,7 @@ let _ =
       "info",           TOK_ANNOT;
       "draw",           TOK_DRAW;
       "init",           TOK_INIT;
-      "objective", 	    TOK_OBJ;
+      "objective", 	TOK_OBJ;
       "constraints",    TOK_CONSTR;
       "sqrt",           TOK_SQRT;
       "cos",            TOK_COS;

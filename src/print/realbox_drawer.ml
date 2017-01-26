@@ -27,7 +27,6 @@ let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
   draw_seg false yl (I.to_float_range i1);
   draw_seg false yu (I.to_float_range i1)
 
-
 let print_latex fmt =
   Latex.(draw (drawseg fmt) (draw_dashed_seg fmt) (fillpol fmt))
 

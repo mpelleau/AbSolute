@@ -21,9 +21,13 @@ let draw draw_f fillpol abs (v1,v2) col =
   draw_seg false yl (I.to_float_range i1);
   draw_seg false yu (I.to_float_range i1)
 
+let fill fillbox abs (v1,v2) col =
+  let (xl,xu) = bound abs v1 and (yl,yu) = bound abs v2 in
+  fillbox (xl,yl) (xu,yu) col
+
 let draw2d = View.(draw draw_seg fill_poly)
 
-let print_latex fmt = Latex.(draw (drawseg fmt) (fillpol fmt))
+let print_latex fmt = Latex.(fill (filldrawbox fmt))
 
 let draw3d fmt abs_list (v1,v2,v3) =
   let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
