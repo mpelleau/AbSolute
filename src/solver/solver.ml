@@ -5,35 +5,35 @@ open ADCP
 module Solve(Abs : AbstractCP) = struct
 
   include Splitter.Make(Abs)
+  module Res = Result.Make(Abs)
 
-  let explore (abs:Abs.t) (constrs:Csp.constrs) : Abs.t Result.t =
-    let open Result in
+  let explore (abs:Abs.t) (constrs:Csp.constrs) =
+    let open Res in
     let rec aux abs cstrs res =
       match consistency abs cstrs with
       | Empty -> res
-      | Full abs' -> add_s res abs' (Abs.volume abs')
-      | Maybe(a,cstrs) when stop res a || Abs.is_small a -> add_u res a (Abs.volume a)
+      | Full abs' -> add_s res abs'
+      | Maybe(a,cstrs) when stop res a || Abs.is_small a -> add_u res a
       | Maybe(abs',cstrs) ->
          if !Constant.pruning then
-	     let ls,lu = prune abs' cstrs in
-	     let vol = List.fold_left (fun v a -> v +. (Abs.volume a)) 0. ls in
-	     let res = {res with sure = List.rev_append ls res.sure; vol_sure = res.vol_sure +. vol; nb_sure = res.nb_sure + List.length ls} in
-	     List.fold_left (fun res x ->
-	       List.fold_left (fun res elem ->
-	          aux elem cstrs {res with nb_steps=res.nb_steps+1}
-	       ) res (split x cstrs)
-	     ) res lu
+	         let ls,lu = prune abs' cstrs in
+	         let res = List.fold_left add_s res ls in
+	         List.fold_left (fun res x ->
+	             List.fold_left (fun res elem ->
+	                 aux elem cstrs (incr_step res)
+	               ) res (split x cstrs)
+	           ) res lu
          else
            List.fold_left (fun res elem ->
-	           aux elem cstrs {res with nb_steps=res.nb_steps+1}
-	         ) res (split abs' cstrs)
+	             aux elem cstrs (incr_step res)
+	           ) res (split abs' cstrs)
     in aux abs constrs empty_res
 
   let solving prob =
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);
     let res =  explore abs prob.Csp.constraints in
-    Format.printf "\nsolving ends\n%!%a" Result.print res;
+    Format.printf "\nsolving ends\n%!%a" Res.print res;
     res
 
   let solving_various prob =
@@ -54,6 +54,6 @@ module Solve(Abs : AbstractCP) = struct
     let abs = List.fold_left (fun a c -> filterl a c) abs lcons in
     Format.printf "abs = %a@." Abs.print abs;
     let res = explore abs cons in
-    Format.printf "\nsolving ends\n%!%a" Result.print res;
+    Format.printf "\nsolving ends\n%!%a" Res.print res;
     res
 end

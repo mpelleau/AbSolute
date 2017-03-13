@@ -65,6 +65,7 @@ module Make (Abs : AbstractCP) = struct
 	| _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
     with Bot.Bot_found -> Empty
 
+  (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.constrs) =
     let rec aux abs c_list is_sure sures unsures =
       match c_list with
