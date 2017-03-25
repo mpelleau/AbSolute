@@ -55,14 +55,21 @@ module Make (Abs : AbstractCP) = struct
 		     | Maybe of Abs.t * Csp.bexpr list
 		     | Empty
 
-  let consistency abs constrs : consistency =
+  let rec consistency abs constrs : consistency =
     try
       let abs' = List.fold_left filter abs constrs in
       if Abs.is_bottom abs' then Empty else
 	let unsat = List.filter (fun c -> not (sat_cons abs' c)) constrs in
 	match unsat with
 	| [] -> Full abs'
-	| _ -> if Abs.is_bottom abs' then Empty else Maybe(abs', unsat)
+	| _ -> if !Constant.iter then
+                 let ratio = (Abs.volume abs')/.(Abs.volume abs) in
+                 if (ratio > 0.9) then
+                   Maybe(abs', unsat)
+                 else
+                   consistency abs' unsat
+               else
+                 Maybe(abs', unsat)
     with Bot.Bot_found -> Empty
 
   (* using elimination technique *)

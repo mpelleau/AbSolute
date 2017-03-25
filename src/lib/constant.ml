@@ -12,6 +12,7 @@ let tex             = ref false
 let trace           = ref false
 let pruning         = ref false
 let sure            = ref false
+let iter            = ref false
 
 (* let parse_prec p = *)
 (*   try Scanf.sscanf p "%f%%" (fun f -> *)

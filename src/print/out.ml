@@ -7,7 +7,7 @@ module Make (D:Drawer) = struct
 
   let bound_dim v sure unsure =
     let aux v info_init abs_list = List.fold_left (fun a b ->
-	    let (l,h) = D.bound b v in
+      let (l,h) = D.bound b v in
       match a with
       | None -> Some(l,h)
       | Some(l',h') -> Some((min l l'),(max h h'))
@@ -35,14 +35,14 @@ module Make (D:Drawer) = struct
     | None -> assert false
     | Some s ->
        let name = Filename.(basename s |> chop_extension) in
-	     let out = ("out/"^name^".tex") in
+       let out = ("out/"^name^".tex") in
        let name = Latex.escape name in
        let fmt = Format.formatter_of_out_channel (open_out out) in
-	     Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\begin{tikzpicture}[scale=0.6]\n";
-    List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
-    if !Constant.sure |> not then
-      List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
-    Format.fprintf fmt "\\end{tikzpicture}\n\\caption{%s}\n\\end{figure}\n" name
+       Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\begin{tikzpicture}[scale=0.6]\n";
+       List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
+       if !Constant.sure |> not then
+         List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
+       Format.fprintf fmt "\\end{tikzpicture}\n\\caption{%s}\n\\end{figure}\n" name
 
   let draw3d values vars =
     match !Constant.problem with

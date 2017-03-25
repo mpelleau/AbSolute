@@ -18,6 +18,14 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
     Print.out prob res
 end
 
+module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
+  module Min = Minimizer.Minimize(Abs)
+  module Print = Out.Make(Dr)
+  let go prob =
+    let res = Min.minimizing prob in
+    Print.out prob res
+end
+
 (************************)
 (* THE SOLVER INSTANCES *)
 (************************)
@@ -25,14 +33,19 @@ end
 (* built-in instances *)
 (* interval domain instance. Only large constraints *)
 module SBox      = GoS (Abstract_box.BoxF)(Box_drawer)
+module MBox      = GoM (Abstract_box.BoxF)(Box_drawer)
 
 (* interval domain instance. Both large and strict constraints *)
 module SBoxStrict = GoS (Abstract_box.BoxStrict)(Realbox_drawer)
+module MBoxStrict = GoM (Abstract_box.BoxStrict)(Realbox_drawer)
 
 (* apron domain based instances *)
 module SBoxCP    = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
+module MBoxCP    = GoM (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
 module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
+module MOctCP    = GoM (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+module MPolyCP   = GoM (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 
 (* reduced product based instances*)
 (* module SBoxNOct  = GoS (VariousDA.BoxNOct)(Apron_drawer.OctDrawer)
@@ -64,6 +77,7 @@ let speclist =
   ("-trace"        , Arg.Set trace        , "Prints the solutions on standard output");
   ("-sure"         , Arg.Set sure         , "Keeps only the sure solutions");
   ("-minimize"     , Arg.Set minimizing   , "Specify that the problem is a minimization problem");
+  ("-iter"         , Arg.Set iter         , "Enables the loop for the propagation");
   (*********************************************** ALIASES ********************************************************)
   ("-m"            , Arg.Set minimizing   , "Alias for -minimize");
   ("-t"            , Arg.Set trace        , "Alias for -trace");
@@ -89,10 +103,11 @@ let _ =
   if !trace then Format.printf "%a" Csp.print prob;
   if !minimizing then
     match !domain with
-    | "box" -> Minimizer.Box.minimizing prob
-    | "boxCP" -> Minimizer.BoxCP.minimizing prob
-    | "oct" -> Minimizer.Oct.minimizing prob
-    | "poly" -> Minimizer.Poly.minimizing prob
+    | "box" -> MBox.go prob
+    | "boxS" -> MBoxStrict.go prob
+    | "boxCP" -> MBoxCP.go prob
+    | "oct" -> MOctCP.go prob
+    | "poly" -> MPolyCP.go prob
     (*| "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
     | "boxNpoly" -> Minimizer.BoxNPoly.minimizing_various prob
     | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob*)

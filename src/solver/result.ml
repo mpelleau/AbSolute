@@ -4,11 +4,12 @@ open Adcp_sig
 type 'a res = {
     sure       : 'a list;   (* elements that satisfy the constraints *)
     unsure     : 'a list;   (* elements that MAY satisfy the constraints *)
-    nb_sure    : int;        (* size of sure list *)
-    nb_unsure  : int;        (* size of unsure list *)
-    vol_sure   : float;      (* volume of the elements in the sure list *)
-    vol_unsure : float;      (* volume of the elements in the unsure list *)
-    nb_steps   : int         (* number of steps of the solving process *)
+    nb_sure    : int;       (* size of sure list *)
+    nb_unsure  : int;       (* size of unsure list *)
+    vol_sure   : float;     (* volume of the elements in the sure list *)
+    vol_unsure : float;     (* volume of the elements in the unsure list *)
+    nb_steps   : int;       (* number of steps of the solving process *)
+    best_value : float      (* best value found during the optimization *)
   }
 
 (* the abstract result type we'll be manipulating *)
@@ -24,7 +25,8 @@ module Make (A: AbstractCP) = struct
       nb_unsure  = 0;
       vol_sure   = 0.;
       vol_unsure = 0.;
-      nb_steps   = 0
+      nb_steps   = 0;
+      best_value = 0.
     }
 
   (* adds an unsure element to a result *)
@@ -38,6 +40,44 @@ module Make (A: AbstractCP) = struct
     {res with sure     = s::res.sure;
               nb_sure  = res.nb_sure+1;
               vol_sure = res.vol_sure +. A.volume s}
+
+  (* adds a sure solution taking into account the objective value *)
+  let add_so res s obj =
+    let (obj_value, _) = A.forward_eval s obj in
+    if obj_value > res.best_value then
+      res
+    else if obj_value < res.best_value then
+      {sure       = [s];
+       unsure     = []; 
+       best_value = obj_value; 
+       nb_sure    = 1; 
+       nb_unsure  = 0; 
+       nb_steps   = res.nb_steps;
+       vol_sure   = A.volume s;
+       vol_unsure = 0.}
+    else
+      {res with sure     = s::res.sure; 
+                nb_sure  = res.nb_sure + 1;
+                vol_sure = res.vol_sure +. A.volume s}
+
+  (* adds an unsure solution taking into account the objective value *)
+  let add_uo res s obj =
+    let (obj_value, _) = A.forward_eval s obj in
+    if obj_value > res.best_value then
+      res
+    else if obj_value < res.best_value then
+      {sure       = [];
+       unsure     = [s]; 
+       best_value = obj_value; 
+       nb_unsure  = 0; 
+       nb_sure    = 1; 
+       nb_steps   = res.nb_steps;
+       vol_unsure = A.volume s;
+       vol_sure   = 0.}
+    else
+      {res with unsure     = s::res.unsure; 
+                nb_unsure  = res.nb_unsure + 1;
+                vol_unsure = res.vol_unsure +. A.volume s}
 
   (* increments the step number of the solving process *)
   let incr_step res = {res with nb_steps = res.nb_steps+1}
