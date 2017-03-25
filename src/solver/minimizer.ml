@@ -13,25 +13,25 @@ module Minimize(Abs : AbstractCP) = struct
 
   let explore abs constrs obj =
     let open Res in
-    let rec aux abs cstrs obj res =
+    let rec aux abs cstrs obj res depth =
       match consistency abs cstrs with
       | Empty -> res
       | Full abs' -> add_so res abs' obj
       | Maybe(a,cstrs) when stop res a || is_small a obj -> add_uo res a obj
       | Maybe(abs',cstrs)  ->
-         if prunable res then
+         if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
            let res = List.fold_left add_s res ls in
            List.fold_left (fun res x ->
                 List.fold_left (fun res elem ->
-                     aux elem cstrs obj (incr_step res)
+                     aux elem cstrs obj (incr_step res) (depth + 1)
                 ) res (split x cstrs)
 	   ) res lu
          else
            List.fold_left (fun res elem ->
-                aux elem cstrs obj (incr_step res)
+                aux elem cstrs obj (incr_step res) (depth + 1)
 	   ) res (split abs' cstrs) in 
-    aux abs constrs obj (empty_obj_res abs obj)
+    aux abs constrs obj (empty_obj_res abs obj) 0
 
   let minimizing prob =
     let open Csp in
