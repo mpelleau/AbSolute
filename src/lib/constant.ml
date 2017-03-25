@@ -13,6 +13,7 @@ let trace           = ref false
 let pruning         = ref false
 let sure            = ref false
 let iter            = ref false
+let pruning_iter    = ref 100000000
 
 (* let parse_prec p = *)
 (*   try Scanf.sscanf p "%f%%" (fun f -> *)
@@ -28,6 +29,10 @@ let set_prec f =
 
 let set_max_iter i =
   if i > 0 then max_iter := i
+  else failwith "number of iterations must be stricly positive"
+
+let set_pruning_iter i =
+  if i > 0 then pruning_iter := i
   else failwith "number of iterations must be stricly positive"
 
 let set_max_sol s =

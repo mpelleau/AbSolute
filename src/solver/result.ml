@@ -87,6 +87,15 @@ module Make (A: AbstractCP) = struct
     res.nb_sure + res.nb_unsure > !Constant.max_sol
     || res.nb_steps > !Constant.max_iter
 
+  (* tests if a result can't be pruned anymore *)
+  let prunable res =
+    !Constant.pruning && res.nb_steps < !Constant.pruning_iter
+
+  (* creates an empty res for the optimization *)
+  let empty_obj_res abs obj =
+    let (_,obj_value) = A.forward_eval abs obj in
+      {empty_res with best_value = obj_value}
+
   (* prints a result *)
   let print fmt res =
     Format.fprintf fmt "\n#inner boxes: %d\n#boundary boxes: %d\n#created nodes: %d\n\ninner volume = %f\nboundary volume = %f\ntotal volume = %f%!\n"

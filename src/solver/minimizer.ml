@@ -19,11 +19,19 @@ module Minimize(Abs : AbstractCP) = struct
       | Full abs' -> add_so res abs' obj
       | Maybe(a,cstrs) when stop res a || is_small a obj -> add_uo res a obj
       | Maybe(abs',cstrs)  ->
-         List.fold_left (fun res elem ->
-            aux elem cstrs obj (incr_step res)
-	  ) res (split abs' cstrs)
-    in let (_, obj_sup) = Abs.forward_eval abs obj in
-    aux abs constrs obj empty_res
+         if prunable res then
+           let ls,lu = prune abs' cstrs in
+           let res = List.fold_left add_s res ls in
+           List.fold_left (fun res x ->
+                List.fold_left (fun res elem ->
+                     aux elem cstrs obj (incr_step res)
+                ) res (split x cstrs)
+	   ) res lu
+         else
+           List.fold_left (fun res elem ->
+                aux elem cstrs obj (incr_step res)
+	   ) res (split abs' cstrs) in 
+    aux abs constrs obj (empty_obj_res abs obj)
 
   let minimizing prob =
     let open Csp in
@@ -35,6 +43,7 @@ module Minimize(Abs : AbstractCP) = struct
 
     let minimizing_various prob =
     let open Csp in
+    let open Result in
     let abs = init prob in
     printf "abs = %a" Abs.print abs;
     if not (Abs.is_bottom abs) then

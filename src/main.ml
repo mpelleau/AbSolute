@@ -68,23 +68,26 @@ let speclist =
   [
   ("-visualization", Arg.Set visualization, "Enables visualization mode");
   ("-precision"    , Arg.Float set_prec   , "Changes the precision. default is 1e-3");
-  ("-max_sol"      , Arg.Int set_max_sol  , "Changes the maximum number of solutions. default is 1e6");
-  ("-max_iter"     , Arg.Int set_max_iter , "Changes the maximum number of iterations. default is 1e7");
-  ("-domain"       , Arg.String set_domain, "Changes the domain used for the solving. default is box");
-  ("-obj"          , Arg.Set obj          , "Generates an .obj file (for 3D visualization)");
-  ("-tex"          , Arg.Set tex          , "Prints the solutions in latex format on stadard output");
-  ("-pruning"      , Arg.Set pruning      , "Enables the \"pruning\" during the solving process");
-  ("-trace"        , Arg.Set trace        , "Prints the solutions on standard output");
-  ("-sure"         , Arg.Set sure         , "Keeps only the sure solutions");
-  ("-minimize"     , Arg.Set minimizing   , "Specify that the problem is a minimization problem");
-  ("-iter"         , Arg.Set iter         , "Enables the loop for the propagation");
+  ("-max_sol"      , Arg.Int set_max_sol     , "Changes the maximum number of solutions. default is 1e6");
+  ("-max_iter"     , Arg.Int set_max_iter    , "Changes the maximum number of iterations. default is 1e7");
+  ("-domain"       , Arg.String set_domain   , "Changes the domain used for the solving. default is box");
+  ("-obj"          , Arg.Set obj             , "Generates an .obj file (for 3D visualization)");
+  ("-tex"          , Arg.Set tex             , "Prints the solutions in latex format on stadard output");
+  ("-pruning"      , Arg.Set pruning         , "Enables the \"pruning\" during the solving process");
+  ("-trace"        , Arg.Set trace           , "Prints the solutions on standard output");
+  ("-sure"         , Arg.Set sure            , "Keeps only the sure solutions");
+  ("-minimize"     , Arg.Set minimizing      , "Specify that the problem is a minimization problem");
+  ("-iter"         , Arg.Set iter            , "Enables the loop for the propagation");
+  ("-pruning_iter" , Arg.Int set_pruning_iter, "Changes the number of times the pruning process is applied");
   (*********************************************** ALIASES ********************************************************)
-  ("-m"            , Arg.Set minimizing   , "Alias for -minimize");
-  ("-t"            , Arg.Set trace        , "Alias for -trace");
-  ("-s"            , Arg.Set sure         , "Alias for -sure");
-  ("-v"            , Arg.Set visualization, "Alias for -visualization");
-  ("-p"            , Arg.Float set_prec   , "Alias for -precision");
-  ("-d"            , Arg.String set_domain, "Alias for -domain");
+  ("-m"            , Arg.Set minimizing      , "Alias for -minimize");
+  ("-t"            , Arg.Set trace           , "Alias for -trace");
+  ("-s"            , Arg.Set sure            , "Alias for -sure");
+  ("-v"            , Arg.Set visualization   , "Alias for -visualization");
+  ("-p"            , Arg.Float set_prec      , "Alias for -precision");
+  ("-d"            , Arg.String set_domain   , "Alias for -domain");
+  ("-i"            , Arg.Set iter            , "Alias for -iter");
+  ("-pi"           , Arg.Int set_pruning_iter, "Alias for -pruning_iter");
 ]
 
 let anonymous_arg = Constant.set_prob

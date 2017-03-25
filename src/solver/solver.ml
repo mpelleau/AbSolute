@@ -15,18 +15,18 @@ module Solve(Abs : AbstractCP) = struct
       | Full abs' -> add_s res abs'
       | Maybe(a,cstrs) when stop res a || Abs.is_small a -> add_u res a
       | Maybe(abs',cstrs) ->
-         if !Constant.pruning then
-	         let ls,lu = prune abs' cstrs in
-	         let res = List.fold_left add_s res ls in
-	         List.fold_left (fun res x ->
-	             List.fold_left (fun res elem ->
-	                 aux elem cstrs (incr_step res)
-	               ) res (split x cstrs)
-	           ) res lu
+         if prunable res then
+           let ls,lu = prune abs' cstrs in
+           let res = List.fold_left add_s res ls in
+           List.fold_left (fun res x ->
+                List.fold_left (fun res elem ->
+                     aux elem cstrs (incr_step res)
+                ) res (split x cstrs)
+	   ) res lu
          else
            List.fold_left (fun res elem ->
-	             aux elem cstrs (incr_step res)
-	           ) res (split abs' cstrs)
+                aux elem cstrs (incr_step res)
+	   ) res (split abs' cstrs)
     in aux abs constrs empty_res
 
   let solving prob =
