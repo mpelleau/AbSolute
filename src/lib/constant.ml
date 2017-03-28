@@ -32,7 +32,7 @@ let set_max_iter i =
   else failwith "number of iterations must be stricly positive"
 
 let set_pruning_iter i =
-  if i > 0 then pruning_iter := i
+  if i > 0 then (pruning_iter := i; pruning := true)
   else failwith "number of iterations must be stricly positive"
 
 let set_max_sol s =
