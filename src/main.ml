@@ -23,7 +23,7 @@ module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
   module Print = Out.Make(Dr)
   let go prob =
     let res = Min.minimizing prob in
-    Print.out prob res
+    Print.out_min prob res
 end
 
 (************************)

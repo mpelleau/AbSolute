@@ -76,6 +76,7 @@ module Make (D:Drawer) = struct
     ((vars.(0)),(vars.(1 mod size)),(vars.(2 mod size)))
 
   let out prob res =
+    Format.printf "\ntime : %fs\n" (Sys.time ());
     let open Result in
     let open Csp in
     let open Constant in
@@ -90,12 +91,15 @@ module Make (D:Drawer) = struct
     List.iter (Format.printf "sure:%a\n%!" D.print) sure;
     List.iter (Format.printf "unsure:%a\n%!" D.print) unsure
 
-  let out_min sure unsure value vars =
-    if !Constant.visualization then draw2d sure unsure vars;
-    (* if !Constant.tex then print_latex sure unsure vars; *)
-    if !Constant.trace then
-      if !Constant.sure then trace_min sure [] value
-			else trace_min sure unsure value
-(* if !Constant.obj then draw3d values vars *)
+  let out_min prob res =
+    Format.printf "\ntime : %fs\n" (Sys.time ());
+    let open Result in
+    let open Csp in
+    let open Constant in
+    let unsure = if !sure then [] else res.unsure in
+    if !visualization then draw2d res.sure unsure (vars2D prob);
+    if !tex then print_latex res.sure unsure (vars2D prob);
+    if !obj then draw3d res.sure (vars3D prob);
+    if !trace then trace_min res.sure unsure res.best_value
 
 end
