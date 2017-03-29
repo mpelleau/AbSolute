@@ -68,10 +68,6 @@ module Make (Abs : AbstractCP) = struct
     | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
     | None -> false
 
-  let check abs abs' =
-    let ratio = (Abs.volume abs')/.(Abs.volume abs) in
-    abs = abs' || ratio > 0.9
-
   let rec consistency abs ?obj:objv constrs : consistency =
     print_debug "" objv abs;
     try
