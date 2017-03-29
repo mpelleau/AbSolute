@@ -79,6 +79,7 @@ let speclist =
   ("-minimize"     , Arg.Set minimizing      , "Specify that the problem is a minimization problem");
   ("-iter"         , Arg.Set iter            , "Enables the loop for the propagation");
   ("-pruning_iter" , Arg.Int set_pruning_iter, "Changes the number of times the pruning process is applied");
+  ("-debug"        , Arg.Set debug           , "Prints the execution for debug purpose");
   (*********************************************** ALIASES ********************************************************)
   ("-m"            , Arg.Set minimizing      , "Alias for -minimize");
   ("-t"            , Arg.Set trace           , "Alias for -trace");

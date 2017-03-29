@@ -88,8 +88,8 @@ all: $(TARGETS)
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
-minimizer.opt: $(CMXFILES)
-	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
+#minimizer.opt: $(CMXFILES)
+#	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
 %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC) -c $*.ml

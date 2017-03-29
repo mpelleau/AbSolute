@@ -17,7 +17,7 @@ module Solve(Abs : AbstractCP) = struct
       | Maybe(abs',cstrs) ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
-           let res = List.fold_left add_s res ls in
+           let res = List.fold_left (fun r x -> add_s r x) res ls in
            List.fold_left (fun res x ->
                 List.fold_left (fun res elem ->
                      aux elem cstrs (incr_step res) (depth +1)

@@ -30,6 +30,8 @@ module Box (I:ITV) = struct
     try (Env.find v a, v) with
       Not_found -> (Env.find (v^"%") a, v^"%")
 
+  let is_integer var = var.[String.length var - 1] = '%'
+
 
   (************************************************************************)
   (* PRINTING *)
@@ -105,8 +107,19 @@ module Box (I:ITV) = struct
   let max_range (a:t) : var * i =
     Env.fold
       (fun v i (vo,io) ->
-        if B.geq (I.range i) (I.range io) then v,i else vo,io
+        if B.gt (I.range i) (I.range io) then v,i else vo,io
       ) a (Env.min_binding a)
+
+  (* variable with maximal range if real or with smallest range if integer *)
+  let mix_range (a:t) : var * i =
+    Env.fold
+      (fun v i (vo,io) ->
+        if is_integer v then
+          let r = I.range i in
+          if (B.neq B.zero r) && (B.gt (I.range io) r) then v,i else vo,io
+        else
+          vo,io
+      ) a (max_range a)
 
   let is_small (a:t) : bool =
     let (v,i) = max_range a in
@@ -119,7 +132,6 @@ module Box (I:ITV) = struct
 
   (* split *)
   (* ----- *)
-  let is_integer var = var.[String.length var - 1] = '%'
 
   let filter_bounds (a:t) : t =
     let b = Env.mapi (fun v i ->
@@ -160,7 +172,9 @@ let split_along (a:t) (v:var) : t list =
     ) [] i_list
 
   let split (a:t) : t list =
-    let (v,_) = max_range a in
+    let (v,_) = mix_range a in
+    (if !Constant.debug then
+      Format.printf " ---- splits along %s ---- \n" v);
     split_along a v
 
   let prune (a:t) (b:t) : t list * t =

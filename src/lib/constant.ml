@@ -10,6 +10,7 @@ let visualization   = ref false
 let obj             = ref false
 let tex             = ref false
 let trace           = ref false
+let debug           = ref false
 let pruning         = ref false
 let sure            = ref false
 let iter            = ref false

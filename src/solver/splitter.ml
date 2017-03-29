@@ -55,22 +55,40 @@ module Make (Abs : AbstractCP) = struct
 		     | Maybe of Abs.t * Csp.bexpr list
 		     | Empty
 
-  let rec consistency abs constrs : consistency =
+  let print_debug tab obj abs =
+    if !Constant.debug then
+      match obj with
+      | Some obj -> 
+         let (inf, sup) = Abs.forward_eval abs obj in
+         Format.printf "%sabs = %a\tobjective = (%f, %f)@." tab Abs.print abs inf sup
+      | None -> Format.printf "%sabs = %a@." tab Abs.print abs
+
+  let minimize_test obj abs =
+    match obj with
+    | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
+    | None -> false
+
+  let rec consistency abs ?obj:objv constrs : consistency =
+    print_debug "" objv abs;
     try
       let abs' = List.fold_left filter abs constrs in
       if Abs.is_bottom abs' then Empty else
 	let unsat = List.filter (fun c -> not (sat_cons abs' c)) constrs in
 	match unsat with
-	| [] -> Full abs'
-	| _ -> if !Constant.iter then
-                 let ratio = (Abs.volume abs')/.(Abs.volume abs) in
-                 if (ratio > 0.9) then
-                   Maybe(abs', unsat)
-                 else
-                   consistency abs' unsat
-               else
-                 Maybe(abs', unsat)
-    with Bot.Bot_found -> Empty
+	| [] -> print_debug "\t=> sure:" objv abs'; Full abs'
+	| _ ->  if minimize_test objv abs' then
+                  (print_debug "\t*******=> sure:" objv abs'; Full abs')
+                else (
+                  print_debug "\t=> " objv abs'; 
+                  if !Constant.iter then
+                    let ratio = (Abs.volume abs')/.(Abs.volume abs) in
+                    if (ratio > 0.9) then
+                      Maybe(abs', unsat)
+                    else
+                      consistency abs' unsat
+                  else
+                    Maybe(abs', unsat))
+    with Bot.Bot_found -> if !Constant.debug then Format.printf "\t=> bot\n"; Empty
 
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.constrs) =

@@ -14,14 +14,14 @@ module Minimize(Abs : AbstractCP) = struct
   let explore abs constrs obj =
     let open Res in
     let rec aux abs cstrs obj res depth =
-      match consistency abs cstrs with
+      match consistency abs ~obj:obj cstrs with
       | Empty -> res
-      | Full abs' -> add_so res abs' obj
-      | Maybe(a,cstrs) when stop res a || is_small a obj -> add_uo res a obj
+      | Full abs' -> add_s res ~obj:obj abs'
+      | Maybe(a,cstrs) when stop res a || is_small a obj -> add_u res ~obj:obj a
       | Maybe(abs',cstrs)  ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
-           let res = List.fold_left add_s res ls in
+           let res = List.fold_left (fun r x -> add_s r ~obj:obj x) res ls in
            List.fold_left (fun res x ->
                 List.fold_left (fun res elem ->
                      aux elem cstrs obj (incr_step res) (depth + 1)
