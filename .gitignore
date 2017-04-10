@@ -7,5 +7,8 @@
 src/frontend/parser.ml
 src/frontend/parser.mli
 src/frontend/lexer.ml
+src/frontend/modParser.ml
+src/frontend/modParser.mli
+src/frontend/modLexer.ml
 *.obj
 out/*

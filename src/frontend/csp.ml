@@ -1,11 +1,11 @@
 (* variables are identified by a string *)
 type var = string
 
-(* constants are intervals (the domain of the variable *)
+(* constants are floats (the domain of the variable *)
 type i = float
 
 (* unary arithmetic operators *)
-type unop = NEG | SQRT | ABS | COS | SIN | TAN | COT 
+type unop = NEG | SQRT | ABS | COS | SIN | TAN | COT
 	  | ASIN | ACOS | ATAN | ACOT | LN | LOG | EXP
 
 (* binary arithmetic operators *)
@@ -52,6 +52,13 @@ type prog = { init: decls; objective : expr; constraints: constrs; to_draw : var
 
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
+
+let add_real_var csp name inf sup =
+  let assign = (REAL, name, (Finite(inf,sup))) in
+  {csp with init = assign::csp.init}
+
+let add_constr csp c =
+  {csp with constraints = c::csp.constraints}
 
 let domain_to_constraints (_,v,d)  =
   match d with

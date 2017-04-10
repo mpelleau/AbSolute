@@ -29,13 +29,19 @@ TARGETS = solver.opt
 AUTOGEN =\
   src/frontend/parser.ml \
   src/frontend/lexer.ml \
-  src/frontend/parser.mli
+  src/frontend/parser.mli \
+  src/frontend/modParser.ml \
+  src/frontend/modLexer.ml \
+  src/frontend/modParser.mli
 
 # source files
 MLFILES = \
   src/frontend/csp.ml \
   src/frontend/parser.ml \
   src/frontend/lexer.ml \
+  src/frontend/modCsp.ml \
+  src/frontend/modParser.ml \
+  src/frontend/modLexer.ml \
   src/frontend/file_parser.ml \
 	src/lib/array_maker.ml \
 	src/lib/linconsext.ml \

@@ -66,9 +66,17 @@ let parse (filename:string option) : prog =
   in
   let f = open_in filename in
   let lex = from_channel f in
+  let fileparser =
+    let ext = Filename.extension filename in
+    Format.printf "%s\n%!" ext;
+    if ext = ".mod" then begin
+        Format.printf "mod file detected. parsing with mod parser\n%!";
+        (fun lex -> ModParser.stmts ModLexer.token lex |> ModCsp.toCsp)
+      end else Parser.file Lexer.token
+  in
   try
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
-    Parser.file Lexer.token lex
+    fileparser lex
   with
   | Failure s ->
       Printf.eprintf "Error near %s\n%s\n"

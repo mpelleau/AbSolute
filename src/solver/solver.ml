@@ -19,14 +19,14 @@ module Solve(Abs : AbstractCP) = struct
            let ls,lu = prune abs' cstrs in
            let res = List.fold_left (fun r x -> add_s r x) res ls in
            List.fold_left (fun res x ->
-                List.fold_left (fun res elem ->
-                     aux elem cstrs (incr_step res) (depth +1)
-                ) res (split x cstrs)
-	   ) res lu
+               List.fold_left (fun res elem ->
+                   aux elem cstrs (incr_step res) (depth +1)
+                 ) res (split x cstrs)
+	           ) res lu
          else
            List.fold_left (fun res elem ->
-                aux elem cstrs (incr_step res) (depth +1)
-	   ) res (split abs' cstrs)
+               aux elem cstrs (incr_step res) (depth +1)
+	           ) res (split abs' cstrs)
     in aux abs constrs empty_res 0
 
   let solving prob =
