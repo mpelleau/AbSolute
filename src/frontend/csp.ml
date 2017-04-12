@@ -50,6 +50,8 @@ type prog = { init: decls; objective : expr; constraints: constrs; to_draw : var
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
+let empty = {init = []; constraints= []; objective =Cst(0.); to_draw=[]}
+
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
 

@@ -57,7 +57,7 @@ let parse_const = float_of_string
 
 (* character classes *)
 let space = [' ' '\t' '\r']+
-let newline = "\n" | "\r" | "\r\n"
+let newline = "\n" | "\r" | "\r\n" | "subject to"
 let digit = ['0'-'9']
 let const = ( digit+ | "." digit+ | digit+ "." digit* )
 

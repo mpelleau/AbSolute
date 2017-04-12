@@ -19,7 +19,6 @@ module Env = Map.Make(struct type t = var let compare = compare end)
 module Vars = Set.Make(struct type t = var let compare = compare end)
 
 type env = {
-    vars : Vars.t;
     params : expr Env.t;
     paramsarray : expr array Env.t
   }
@@ -30,28 +29,13 @@ let param env p = Env.find p env.params
 
 let name v i = v^"_"^(string_of_int i)
 
-(*set the variable name associated to v[i] -> v_i*)
-let set_var_i env v i =
-  if Vars.mem (name v i) env.vars then
-    failwith ""
-  else
-    {env with vars = Vars.add (name v i) env.vars}
-
 let param_i env p i =
   let arr = Env.find p env.paramsarray in
   arr.(i)
 
-(*returns the variable name associated to v[i] -> v_i*)
-let get_var_i env v i =
-  let name = name v i in
-  try Vars.find name env.vars
-  with Not_found -> failwith ("can't find variable "^name)
-
 let get env name i =
   try param_i env name i
-  with Not_found ->
-       try Var (get_var_i env name i)
-       with Not_found -> failwith ("cantfind array "^name)
+  with Not_found -> failwith ("cantfind array "^name)
 
 (*replaces the param by the expression they represent*)
 let rec substitute env = function
@@ -131,6 +115,7 @@ type modstmt =
   (* v from e1 to e2 such that e3 <= v <= e4 ex:
      var x{1..4} >= 0.0, <= 5.0;*)
   | SubjectTo of var * bexpr
+  | Ignore
 
 type t = modstmt list
 
@@ -160,18 +145,12 @@ let toCsp m =
          in
          env,(loop l csp)
        else failwith ("vars with inf index greater than sup index : "^v)
+
    | SubjectTo (v, constr) ->
       let constr' = substitute_constr env constr in
       env,(add_constr csp (to_csp_constr constr'))
+   | Ignore -> env,csp
   in
-  let empty_csp =
-    Csp.({init = [];
-          constraints= [];
-          objective =Cst(0.);
-          to_draw=[]})
-  in
-  let empty_env = {vars=Vars.empty;
-                   params=Env.empty;
-                   paramsarray=Env.empty}
-  in
+  let empty_csp = Csp.empty in
+  let empty_env = {params=Env.empty; paramsarray=Env.empty} in
   List.fold_left add (empty_env,empty_csp) m |> snd

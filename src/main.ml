@@ -99,7 +99,7 @@ let parse_args () = Arg.parse speclist anonymous_arg ""
 (* entry point *)
 (***************)
 
-let _ =
+let go() =
   let open Constant in
   parse_args ();
   Format.printf "domain : %s\n" !domain;
@@ -126,8 +126,28 @@ let _ =
     (* | "boxNoct" -> SBoxNOct.go prob
     | "boxNpoly" -> SBoxNPoly.go prob
     | "octNpoly" -> SOctNPoly.go prob *)
-    | "boxNoct" -> let res = SBoxNOct.solving_various prob in Format.printf "solving done\n"
-    | "boxNpoly" -> let res = SBoxNPoly.solving_various prob in Format.printf "solving done\n"
-    | "octNpoly" -> let res = SOctNPoly.solving_various prob in Format.printf "solving done\n"
-    | "BandP" -> let res = SBoxAndPoly.solving_various prob in Format.printf "solving done\n"
+    | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"
+    | "boxNpoly" -> SBoxNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
+    | "octNpoly" -> SOctNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
+    | "BandP" -> SBoxAndPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
+
+
+let test_mod_parser() =
+  let dir = "problems/mods/" in
+  let children = Sys.readdir dir in
+  let cl = Array.to_list children in
+  let parse = List.filter (fun file ->
+                  try
+                    File_parser.parse (Some (dir^file)) |> ignore;
+                    true
+                  with Parsing.Parse_error -> false
+                ) cl
+  in
+  let size = List.length parse in
+  Format.printf "%i/%i readable files:\n" size (Array.length children);
+  List.iter (Format.printf "%s\n") parse
+
+let _ =
+  (* test_mod_parser ()*)
+  go()

@@ -5,6 +5,8 @@ open Lexing
 (*              AST CHECKING             *)
 (*****************************************)
 
+
+(*errors*)
 exception IllFormedAST of string
 
 let illegal_var_draw v =
@@ -16,6 +18,9 @@ let illegal_var_draw2 v1 v2 =
   Format.sprintf
     "Illegal variable to draw:%s and %s don't belong to the variables of the problem"
     v1 v2
+
+let illegal_constraint spec =
+  Format.sprintf "Illegal constraint: %s" spec
 
 let check_ast p =
   let h = Hashtbl.create 10 in
@@ -39,7 +44,10 @@ let check_ast p =
     in List.iter aux p.init
   and check_constrs () =
     let check_v = function
-      | Var v -> if not (Hashtbl.mem h v) then raise (IllFormedAST (Format.sprintf "Illegal constraint using a non-declared variable %s" v))
+      | Var v ->
+         if not (Hashtbl.mem h v) then
+           let msg = illegal_constraint ("non-declared variable "^v) in
+           raise (IllFormedAST msg)
       | _ -> ()
     in
     List.iter (iter_constr check_v (fun _ -> ())) p.constraints
@@ -68,9 +76,8 @@ let parse (filename:string option) : prog =
   let lex = from_channel f in
   let fileparser =
     let ext = Filename.extension filename in
-    Format.printf "%s\n%!" ext;
     if ext = ".mod" then begin
-        Format.printf "mod file detected. parsing with mod parser\n%!";
+        (* Format.printf "mod file detected. parsing with mod parser\n%!"; *)
         (fun lex -> ModParser.stmts ModLexer.token lex |> ModCsp.toCsp)
       end else Parser.file Lexer.token
   in
@@ -87,4 +94,4 @@ let parse (filename:string option) : prog =
 let parse fn =
   let p = parse fn in
   check_ast p;
-  {p with constraints = (*List.map power_unrolling_bexpr*) p.constraints}
+  {p with constraints = p.constraints}
