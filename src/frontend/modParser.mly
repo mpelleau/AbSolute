@@ -89,10 +89,6 @@ stmt:
   | PARAM ID COLONEQUAL expr                        { ModCsp.Param ($2,$4) }
   | SUBJECT_TO ID COLON bexpr                       { ModCsp.SubjectTo ($2,$4) }
   | ID COLON bexpr                                  { ModCsp.SubjectTo ($1,$3) }
-  | directive                                       { $1 }
-
-directive:
-  | SUBJECT_TO                     { ModCsp.Ignore }
 
 const:
   | FLOAT {$1}

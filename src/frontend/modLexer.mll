@@ -12,7 +12,6 @@ let _ =
     [
       "param",          PARAM;
       "var",            VAR;
-      "subject to",     SUBJECT_TO;
       "objective", 	    OBJ;
       "constraints",    CONSTR;
       "sqrt",           SQRT;
@@ -59,7 +58,8 @@ let parse_const = float_of_string
 let space = [' ' '\t' '\r']+
 let newline = "\n" | "\r" | "\r\n" | "subject to"
 let digit = ['0'-'9']
-let const = ( digit+ | "." digit+ | digit+ "." digit* )
+let const = digit* ('.' digit* )? (['e' 'E'] ['+' '-']? digit+ )?
+
 
 rule token = parse
 

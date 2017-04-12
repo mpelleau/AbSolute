@@ -145,9 +145,10 @@ let test_mod_parser() =
                 ) cl
   in
   let size = List.length parse in
-  Format.printf "%i/%i readable files:\n" size (Array.length children);
-  List.iter (Format.printf "%s\n") parse
+  List.iter (Format.printf "%s\n") parse;
+  Format.printf "\n%i/%i readable files\n" size (Array.length children)
+
 
 let _ =
-  (* test_mod_parser ()*)
+  (* test_mod_parser () *)
   go()
