@@ -1,8 +1,8 @@
 param m;
 param n;
 
-set N := 1..n;
-set M := 1..m;
+set N := 1 .. n;
+set M := 1 .. m;
 
 param A{M,N};
 var X{N};

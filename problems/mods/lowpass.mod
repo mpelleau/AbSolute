@@ -10,14 +10,14 @@ param alpha := 1.1;
 param omega_p := 0.12*pi;
 param omega_s := 0.24*pi;
 
-set OMEGA_P := {0..omega_p by pi/N};
-set OMEGA_S := {omega_s..pi by pi/N};
-set OMEGA_I := {omega_p..omega_s by pi/N};
+set OMEGA_P := {0 .. omega_p by pi/N};
+set OMEGA_S := {omega_s .. pi by pi/N};
+set OMEGA_I := {omega_p .. omega_s by pi/N};
 set OMEGA := OMEGA_P union OMEGA_S union OMEGA_I;
 
 var delta >= 0;
-var r {0..n-1};
-var R {o in OMEGA} = r[0] + sum{k in 1..n-1} 2*r[k]*cos(k*o);
+var r {0 .. n-1};
+var R {o in OMEGA} = r[0] + sum{k in 1 .. n-1} 2*r[k]*cos(k*o);
 
 minimize stop_band_signal_bnd: delta;
 

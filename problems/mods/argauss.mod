@@ -1,12 +1,12 @@
-param xinit{1..3};
-param rhs{1..15};
-var x{i in 1..3} := xinit[i];
+param xinit{1 .. 3};
+param rhs{1 .. 15};
+var x{i in 1 .. 3} := xinit[i];
 
 param best_val_found := 1.12793277e-08;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 
 subject to f:
-	sum {i in 1..15} (x[1]*exp(-0.5*x[2]*(0.5*(8-i)-x[3])^2) - rhs[i])^2 <= best_val_found + eps;
+	sum {i in 1 .. 15} (x[1]*exp(-0.5*x[2]*(0.5*(8-i)-x[3])^2) - rhs[i])^2 <= best_val_found + eps;
 
 data;
 param rhs:=

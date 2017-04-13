@@ -16,7 +16,7 @@
 # The global minimum is Fchi = -43.31586207 at x = (5.90133,0.5).
 
 param pi := 4*atan(1);
-var x{1..2};
+var x{1 .. 2};
 
 param best_val_found := 13.61533772;
 param eps := 1; 		# = max(1, 1% x best_val_found)

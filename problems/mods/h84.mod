@@ -1,8 +1,8 @@
 
-param a{1..21};
+param a{1 .. 21};
 
 var
-    x {1..5};
+    x {1 .. 5};
 param best_val_found := 5280335.111;
 param eps := 52803.35111; 		# = max(1, 1% x best_val_found)
 

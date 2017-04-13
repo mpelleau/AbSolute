@@ -11,9 +11,9 @@ param xn;		# final   position
 param v0;		# initial velocity
 param vn;		# final   velocity
 
-set Nx := {0..n};		# discrete times for position
-set Nv := {0.5..n-0.5 by 1};	# discrete times for velocity
-set Na := {1..n-1};		# discrete times for acceleration
+set Nx := {0 .. n};		# discrete times for position
+set Nv := {0.5 .. n-0.5 by 1};	# discrete times for velocity
+set Na := {1 .. n-1};		# discrete times for acceleration
 
 var x {Nx} ; 				# position
 var v {Nv} <= max_speed, >= -max_speed;	# velocity

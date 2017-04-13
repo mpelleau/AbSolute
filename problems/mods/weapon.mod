@@ -18,8 +18,8 @@
 param N integer > 0;
 param M integer > 0;
 
-set I := 1 .. N;
-set J := 1 .. M;
+set I := 1  ..  N;
+set J := 1  ..  M;
 set K;
 
 param b {K} >= 0;

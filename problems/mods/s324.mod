@@ -10,7 +10,7 @@
 # Objective convex separable quadratic
 # Quadratic constraints
 
-var x{1..2} := 2;
+var x{1 .. 2} := 2;
 
 param best_val_found := 5;
 param eps := 1; 		# = max(1, 1% x best_val_found)

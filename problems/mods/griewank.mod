@@ -13,7 +13,7 @@
 # The global minimum is Fgre = 0, x = (0,0). There are lots of local minima.
 
 
-var x{1..2} <= 100, >= -100, := 1;
+var x{1 .. 2} <= 100, >= -100, := 1;
 
 param best_val_found := 0;
 param eps := 1; 		# = max(1, 1% x best_val_found)

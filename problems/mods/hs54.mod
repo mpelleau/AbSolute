@@ -15,7 +15,7 @@
 # corrected by substituting 6.4E+7 by 6.4E+13 in h(x). The correct result
 # is different from the solution of the book.
 
-var x{1..6};
+var x{1 .. 6};
 var h = ((x[1] - 1E+6)^2 / 6.4E+13 + (x[1] - 1E+4) * (x[2] - 1) / 2E+4 +
          (x[2] - 1)^2) * (x[3] - 2E+6)^2 / (.96 * 4.9E+13) +
          (x[4] - 10)^2 / 2.5E+3 + (x[5] - 1E-3)^2 / 2.5E-3 +

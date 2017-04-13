@@ -14,15 +14,16 @@
 %token COMMA
 %token SEMICOLON
 %token COLON
+%token PPOINT
 %token PLUS
 %token MINUS
 %token MULTIPLY
 %token DIVIDE
 %token POW
-%token LESS
-%token GREATER
-%token LESS_EQUAL
-%token GREATER_EQUAL
+%token LT
+%token GT
+%token LTE
+%token GTE
 %token EQUAL_EQUAL
 %token NOT_EQUAL
 %token ASSIGN
@@ -85,10 +86,15 @@ stmts:
   | {[]}
 
 stmt:
-  | VAR ID GREATER_EQUAL expr COMMA LESS_EQUAL expr { ModCsp.Var ($2,$4,$7) }
-  | PARAM ID COLONEQUAL expr                        { ModCsp.Param ($2,$4) }
-  | SUBJECT_TO ID COLON bexpr                       { ModCsp.SubjectTo ($2,$4) }
-  | ID COLON bexpr                                  { ModCsp.SubjectTo ($1,$3) }
+  | VAR ID GTE expr COMMA LTE expr                 { Var ($2,$4,$7) }
+  | VAR ID set GTE expr COMMA LTE expr             { VarList ($2,$3,$5,$8) }
+  | PARAM ID COLONEQUAL expr                       { Param ($2,$4) }
+  | ID COLON bexpr                                 { SubjectTo ($1,$3) }
+
+
+set :
+  | LBRACE expr PPOINT expr RBRACE                 { ($2,$4) }
+
 
 const:
   | FLOAT {$1}
@@ -105,50 +111,50 @@ bexpr:
 expr:
   | LPAREN expr RPAREN              { $2 }
   | binop_expr                      { $1 }
-  | MINUS expr %prec unary_minus    { Unary (NEG, $2) }
-  | COS       expr                  { Unary (COS, $2) }
-  | SIN       expr                  { Unary (SIN, $2) }
-  | TAN       expr                  { Unary (TAN, $2) }
-  | COT       expr                  { Unary (COT, $2) }
-  | ASIN      expr                  { Unary (ASIN, $2) }
-  | ACOS      expr                  { Unary (ACOS, $2) }
-  | ATAN      expr                  { Unary (ATAN, $2) }
-  | ACOT      expr                  { Unary (ACOT, $2) }
-  | LN        expr                  { Unary (LN, $2) }
-  | LOG       expr                  { Unary (LOG, $2) }
-  | EXP       expr                  { Unary (EXP, $2) }
-  | SQRT      expr                  { Unary (SQRT,$2) }
-  | PIPE expr PIPE                  { Unary (ABS, $2) }
+  | MINUS expr %prec unary_minus    { Unary (Csp.NEG, $2) }
+  | COS       expr                  { Unary (Csp.COS, $2) }
+  | SIN       expr                  { Unary (Csp.SIN, $2) }
+  | TAN       expr                  { Unary (Csp.TAN, $2) }
+  | COT       expr                  { Unary (Csp.COT, $2) }
+  | ASIN      expr                  { Unary (Csp.ASIN, $2) }
+  | ACOS      expr                  { Unary (Csp.ACOS, $2) }
+  | ATAN      expr                  { Unary (Csp.ATAN, $2) }
+  | ACOT      expr                  { Unary (Csp.ACOT, $2) }
+  | LN        expr                  { Unary (Csp.LN, $2) }
+  | LOG       expr                  { Unary (Csp.LOG, $2) }
+  | EXP       expr                  { Unary (Csp.EXP, $2) }
+  | SQRT      expr                  { Unary (Csp.SQRT,$2) }
+  | PIPE expr PIPE                  { Unary (Csp.ABS, $2) }
   | leaf                            { $1 }
-
 
 leaf:
   | FLOAT                           { Cst $1 }
   | ID                              { Var $1 }
+  | ID LBRACKET FLOAT RBRACKET      { Array($1,(int_of_float $3)) }
 
 binop_expr:
-  | expr POW expr  {Binary (POW,$1,$3)}
-  | binop_expr2        {$1}
+  | expr POW expr  {Binary (Csp.POW,$1,$3)}
+  | binop_expr2    {$1}
 
 binop_expr2:
-  | expr DIVIDE   expr  {Binary(DIV,$1,$3)}
-  | expr MULTIPLY expr  {Binary(MUL,$1,$3)}
-  | binop_expr3             {$1}
+  | expr DIVIDE   expr  {Binary(Csp.DIV,$1,$3)}
+  | expr MULTIPLY expr  {Binary(Csp.MUL,$1,$3)}
+  | binop_expr3         {$1}
 
 binop_expr3:
-  | expr PLUS  expr {Binary(ADD,$1,$3)}
-  | expr MINUS expr {Binary(SUB,$1,$3)}
-  | binop_expr4             {$1}
+  | expr PLUS  expr   {Binary(Csp.ADD,$1,$3)}
+  | expr MINUS expr   {Binary(Csp.SUB,$1,$3)}
+  | binop_expr4       {$1}
 
 binop_expr4:
-  | MIN LPAREN expr COMMA expr RPAREN {Binary (MIN,$3,$5)}
-  | MAX LPAREN expr COMMA expr RPAREN {Binary (MAX,$3,$5)}
-  | NROOT LPAREN expr COMMA expr RPAREN {Binary (NROOT,$3,$5)}
+  | MIN LPAREN expr COMMA expr RPAREN    {Binary (Csp.MIN,$3,$5)}
+  | MAX LPAREN expr COMMA expr RPAREN    {Binary (Csp.MAX,$3,$5)}
+  | NROOT LPAREN expr COMMA expr RPAREN  {Binary (Csp.NROOT,$3,$5)}
 
 cmp:
-  | LESS                    { LT }
-  | GREATER                 { GT }
-  | LESS_EQUAL              { LEQ }
-  | GREATER_EQUAL           { GEQ }
-  | ASSIGN                  { EQ }
-  | NOT_EQUAL               { NEQ }
+  | LT                      { Csp.LT }
+  | GT                      { Csp.GT }
+  | LTE                     { Csp.LEQ }
+  | GTE                     { Csp.GEQ }
+  | ASSIGN                  { Csp.EQ }
+  | NOT_EQUAL               { Csp.NEQ }

@@ -11,7 +11,7 @@
 # Objective nonconvex
 # Linear constraints
 
-var x{1..3} >= 0, <= 1;
+var x{1 .. 3} >= 0, <= 1;
 
 param best_val_found := -26272.51449;
 param eps := 1; 		# = max(1, 1% x best_val_found)

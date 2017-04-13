@@ -26,8 +26,8 @@
 
 param N > 0 integer;
 param M > 0 integer;
-set I := 1 .. N;
-set J := 1 .. M;
+set I := 1  ..  N;
+set J := 1  ..  M;
 param y {j in J};
 param t {j in J} := 10 * (j - 1);
 

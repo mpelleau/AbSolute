@@ -14,10 +14,10 @@
 # Objective nonconvex
 
 param d > 0 integer default 2;	# space dimension
-set D := 1..d;
+set D := 1 .. d;
 param N > 0 integer default 10;	# number of atoms
-set I := {1..N};
-set P := {i in I, j in 1..i-1};	# pairs of atoms
+set I := {1 .. N};
+set P := {i in I, j in 1 .. i-1};	# pairs of atoms
 
 var x {i in I, D} default i;
 var r {(i,j) in P} =		# distance separating atoms i and j

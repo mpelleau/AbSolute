@@ -14,7 +14,7 @@
 # Nonlinear constraints
 
 param n := 10;
-set I := 1..n;
+set I := 1 .. n;
 
 param lb{I};
 param ub{i in I} > lb[i];

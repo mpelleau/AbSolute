@@ -1,5 +1,5 @@
 var
-  x {1..3} >= -4, <= 4;
+  x {1 .. 3} >= -4, <= 4;
 param best_val_found := 3.320547646e-07;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 

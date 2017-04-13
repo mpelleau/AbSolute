@@ -13,17 +13,17 @@ param omega_b := -2*pi*d_over_lambda*cos(pi/6);
 param omega_s := -2*pi*d_over_lambda*cos(pi/4);
 param omega_pi:= -2*pi*d_over_lambda*cos(pi);
 
-set OMEGA_P := {omega_0..omega_b  by omega_pi/N};
-set OMEGA_S := {omega_s..omega_pi by omega_pi/N};
-set OMEGA_I := {omega_b..omega_s  by omega_pi/N};
+set OMEGA_P := {omega_0 .. omega_b  by omega_pi/N};
+set OMEGA_S := {omega_s .. omega_pi by omega_pi/N};
+set OMEGA_I := {omega_b .. omega_s  by omega_pi/N};
 set OMEGA := OMEGA_P union OMEGA_S union OMEGA_I;
 
 var delta2 >= 0;
-var r_real {0..n-1};
-var r_imag {1..n-1};
+var r_real {0 .. n-1};
+var r_imag {1 .. n-1};
 var R {o in OMEGA} = 
     r_real[0] + 
-    2*sum {k in 1..n-1} (r_real[k]*cos(k*o) + r_imag[k]*sin(k*o));
+    2*sum {k in 1 .. n-1} (r_real[k]*cos(k*o) + r_imag[k]*sin(k*o));
 
 minimize stop_band_signal_bnd: delta2;
 

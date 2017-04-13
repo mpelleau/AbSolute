@@ -16,7 +16,7 @@
 # There are two global minima with Fhump = -1.031628453,
 # (0.089842,-0.712656) and (-0.089842, 0.712656).
 
-var x{1..2} >= -5, <= 5, := 1;
+var x{1 .. 2} >= -5, <= 5, := 1;
 
 param best_val_found := -1.031628453;
 param eps := 1; 		# = max(1, 1% x best_val_found)

@@ -13,12 +13,12 @@
 # Objective nonconvex
 # Linear constraints
 
-set I := 1 .. 235;
+set I := 1  ..  235;
 
 param PI := 4*atan(1);
 param y{I};
 
-var x{1..8};
+var x{1 .. 8};
 var a{i in I} = x[1] / x[6] * exp(-(y[i] - x[3])^2 / (2 * x[6]^2));
 var b{i in I} = x[2] / x[7] * exp(-(y[i] - x[4])^2 / (2 * x[7]^2));
 var c{i in I} = (1 - x[2] - x[1]) / x[8] *

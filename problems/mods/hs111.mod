@@ -11,7 +11,7 @@
 # Objective nonconvex
 # Nonlinear constraints
 
-set I := 1 .. 10;
+set I := 1  ..  10;
 
 param c{I};
 var x{I} <= 100, >= -100, := -2.3;

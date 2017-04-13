@@ -14,7 +14,7 @@
 
 # The global minimum is Fs = 0, x = (0,0,0,0,0).
 
-set I := {1..5};
+set I := {1 .. 5};
 
 var x{I} <= 0.4, >= -0.5, := .4;
 

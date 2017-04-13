@@ -1,4 +1,4 @@
-var x{1..4};
+var x{1 .. 4};
 
 param best_val_found := 5.74438491;
 param eps := 1; 		# = max(1, 1% x best_val_found)

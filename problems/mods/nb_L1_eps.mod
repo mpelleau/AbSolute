@@ -10,7 +10,7 @@ param D := 2; # dimension
 param pi := 4*atan(1);
 
 param d := 0.5;
-set Els := setof {i in -4..4, j in -4..4: -4 <= i+j && i+j <= 4 } 
+set Els := setof {i in -4 .. 4, j in -4 .. 4: -4 <= i+j && i+j <= 4 } 
 		(d*(i+j/2), d*j*sqrt(3)/2);
 
 #display card(Els);
@@ -19,10 +19,10 @@ param width := sqrt(card(Els));
 param delta := 1/(2*width);
 #display delta;
 
-#param x {1..D, Els};
+#param x {1 .. D, Els};
 
 param delmax := ceil(2/(sqrt(3)*delta));
-set P := setof {i in -delmax..delmax, j in -delmax..delmax:
+set P := setof {i in -delmax .. delmax, j in -delmax .. delmax:
 		(i + j/2)^2 + 3*j^2/4 <= 1/delta^2} 
 		(delta*(i+j/2), delta*j*sqrt(3)/2);
 
@@ -90,7 +90,7 @@ printf {(elx,ely) in Els}: "%6.2f %6.2f %6.2f %6.2f \n", elx, ely,
 # this finer grid is just for finer detail in the output
 param delta2 := delta/3;
 param delmax2 := ceil(2/(sqrt(3)*delta2));
-set P2 := setof {i in -delmax2..delmax2, j in -delmax2..delmax2:
+set P2 := setof {i in -delmax2 .. delmax2, j in -delmax2 .. delmax2:
 		(i + j/2)^2 + 3*j^2/4 <= 1/delta2^2} 
 		(delta2*(i+j/2), delta2*j*sqrt(3)/2);
 
@@ -107,10 +107,10 @@ let {(px,py) in P2} A2_imag[px,py] :=
 			   );
 
 param r;
-param x {0..1,0..1};
-param y {0..1,0..1};
-for {i in -delmax2-1..delmax2+1, j in -delmax2-1..delmax2+1} {
-    for {ii in 0..1, jj in 0..1} {
+param x {0 .. 1,0 .. 1};
+param y {0 .. 1,0 .. 1};
+for {i in -delmax2-1 .. delmax2+1, j in -delmax2-1 .. delmax2+1} {
+    for {ii in 0 .. 1, jj in 0 .. 1} {
         let x[ii,jj] := delta2*((i+ii)+(j+jj)/2);
         let y[ii,jj] := delta2*(j+jj)*sqrt(3)/2;
     }
@@ -118,7 +118,7 @@ for {i in -delmax2-1..delmax2+1, j in -delmax2-1..delmax2+1} {
         x[0,1]^2 + y[0,1]^2 <= 1 &&
         x[1,0]^2 + y[1,0]^2 <= 1) then {
 
-        for {ii in 0..1, jj in 0..1: ii+jj<=1} {
+        for {ii in 0 .. 1, jj in 0 .. 1: ii+jj<=1} {
             let r := max(10*log10(A2_real[x[ii,jj],y[ii,jj]]^2
                                 + A2_imag[x[ii,jj],y[ii,jj]]^2) + 50, 0);
             printf "%6.2f %6.2f %6.2f ", x[ii,jj], y[ii,jj], r > faces;
@@ -129,7 +129,7 @@ for {i in -delmax2-1..delmax2+1, j in -delmax2-1..delmax2+1} {
         x[0,1]^2 + y[0,1]^2 <= 1 &&
         x[1,0]^2 + y[1,0]^2 <= 1) then {
 
-        for {ii in 0..1, jj in 0..1: ii+jj>=1} {
+        for {ii in 0 .. 1, jj in 0 .. 1: ii+jj>=1} {
             let r := max(10*log10(A2_real[x[ii,jj],y[ii,jj]]^2
                                 + A2_imag[x[ii,jj],y[ii,jj]]^2) + 50, 0);
             printf "%6.2f %6.2f %6.2f ", x[ii,jj], y[ii,jj], r > faces;

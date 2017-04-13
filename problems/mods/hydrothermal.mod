@@ -6,13 +6,13 @@ param nd;
 param nt;
 param ni;
 
-set Nr := {1..nr};
-set Nd := {1..nd};
-set Nt := {1..nt};
-set Ni := {1..ni};
+set Nr := {1 .. nr};
+set Nd := {1 .. nd};
+set Nt := {1 .. nt};
+set Ni := {1 .. ni};
 
-set Ni0 := {0..ni};
-set Nr2 := {2..nr};
+set Ni0 := {0 .. ni};
+set Nr2 := {2 .. nr};
 
 param cl {Nt};
 param cq {Nt};

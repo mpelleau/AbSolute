@@ -15,8 +15,8 @@
 # Objective partially separable nonconvex
 # Linear constraints
 
-set CITIES := {1..9};
-set DEST := {1..6};
+set CITIES := {1 .. 9};
+set DEST := {1 .. 6};
 set TRIPS within (DEST cross DEST);
 set ROADS within (CITIES cross CITIES);
 param cost {(i,j) in ROADS} = cost[j,i], >= 0;

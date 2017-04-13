@@ -51,7 +51,7 @@ cons6:  2*x+2*y+2*z+2*t+2*u+v-1 = 0;
 # \sum_{i=-N}^N u(l)*u(m-l) = u(m)
 # \sum_{i=-N}^N u(l) = 1
 
-# with m in {-N+1,-N,..,N-1}, u(l) = u(-l),
+# with m in {-N+1,-N, .. ,N-1}, u(l) = u(-l),
 #  and u(l) = 0, for |l| > N,
 
 # The number of solutions for a given N is 2^N.

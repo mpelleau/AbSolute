@@ -58,7 +58,7 @@ let parse_const = float_of_string
 let space = [' ' '\t' '\r']+
 let newline = "\n" | "\r" | "\r\n" | "subject to"
 let digit = ['0'-'9']
-let const = digit* ('.' digit* )? (['e' 'E'] ['+' '-']? digit+ )?
+let const = digit+ ('.' digit* )? (['e' 'E'] ['+' '-']? digit+ )?
 
 
 rule token = parse
@@ -82,10 +82,10 @@ rule token = parse
 | "*"    { MULTIPLY }
 | "/"    { DIVIDE }
 | "^"    { POW }
-| "<"    { LESS }
-| ">"    { GREATER }
-| "<="   { LESS_EQUAL }
-| ">="   { GREATER_EQUAL }
+| "<"    { LT }
+| ">"    { GT }
+| "<="   { LTE }
+| ">="   { GTE }
 | "=="   { EQUAL_EQUAL }
 | "!="   { NOT_EQUAL }
 | "="    { ASSIGN }
@@ -95,6 +95,7 @@ rule token = parse
 | "!"    { NOT }
 | ":"    { COLON }
 | ":="   { COLONEQUAL }
+| ".."   { PPOINT }
 
 (* literals *)
 | const as c { FLOAT (float_of_string c) }

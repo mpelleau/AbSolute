@@ -1,18 +1,18 @@
 param N := 3;
 param M := 15;
 
-param y{1..M};
-param u{i in 1..M} := i;
-param v{i in 1..M} := 16-i;
-param w{i in 1..M} := min(u[i],v[i]);
+param y{1 .. M};
+param u{i in 1 .. M} := i;
+param v{i in 1 .. M} := 16-i;
+param w{i in 1 .. M} := min(u[i],v[i]);
 
-var x{1..N} := 1;
+var x{1 .. N} := 1;
 
 param best_val_found := 0.008214877307;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 
 subject to f:
-	sum {i in 1..M} ( y[i]-(x[1]+u[i]/(v[i]*x[2]+w[i]*x[3])) )^2 <= best_val_found + eps;
+	sum {i in 1 .. M} ( y[i]-(x[1]+u[i]/(v[i]*x[2]+w[i]*x[3])) )^2 <= best_val_found + eps;
 
 data;
 param y:=

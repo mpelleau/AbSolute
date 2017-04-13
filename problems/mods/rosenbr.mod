@@ -16,7 +16,7 @@
 # Objective nonseparable, nonconvex
 
 
-var x{1..2};
+var x{1 .. 2};
 var f1 = 10*(x[2] - x[1]^2);
 var f2 = 1 - x[1];
 

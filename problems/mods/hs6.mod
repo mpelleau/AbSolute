@@ -10,7 +10,7 @@
 # Objective quadratic
 # Nonlinear constraint
 
-var x{1..2};
+var x{1 .. 2};
 
 param best_val_found := 4.083108452e-20;
 param eps := 1; 		# = max(1, 1% x best_val_found)

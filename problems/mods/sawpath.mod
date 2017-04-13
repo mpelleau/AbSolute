@@ -7,8 +7,8 @@
 #simple. But we have to deal with three sets of conditions : 
 #
 #1) the polynomial must go througn the first point $(x_0, y_0)$  of 
-#   the list (easy...);
-#2) the initial slope of the curve $m_0$ is also known (easy too...); 
+#   the list (easy .. .);
+#2) the initial slope of the curve $m_0$ is also known (easy too .. .); 
 #
 #3) the radius of curvature at every point must exceed a given radius 
 #   $R$. In fact, I modified this last condition. I prefer choosing a 
@@ -30,22 +30,22 @@ param n;
 param R;
 param m_0;
 
-param x {0..n};
-param y {0..n};
+param x {0 .. n};
+param y {0 .. n};
 
-var a {0..4};
-var p {j in 0..n} = sum {i in 0..4} a[i]*x[j]^i;
-var pprime  {j in 0..n} = sum {i in 1..4} i*a[i]*x[j]^(i-1);
-var pprime2 {j in 0..n} = sum {i in 2..4} i*(i-1)*a[i]*x[j]^(i-2);
+var a {0 .. 4};
+var p {j in 0 .. n} = sum {i in 0 .. 4} a[i]*x[j]^i;
+var pprime  {j in 0 .. n} = sum {i in 1 .. 4} i*a[i]*x[j]^(i-1);
+var pprime2 {j in 0 .. n} = sum {i in 2 .. 4} i*(i-1)*a[i]*x[j]^(i-2);
 
 param best_val_found := 181.5729928;
 param eps := 1.815729928; 		# = max(1, 1% x best_val_found)
 
-subject to z: sum {j in 0..n} (p[j] - y[j])^2 <= best_val_found + eps;
+subject to z: sum {j in 0 .. n} (p[j] - y[j])^2 <= best_val_found + eps;
 
 subject to init_val: p[0] = y[0];
 subject to init_der: pprime[0] = m_0;
-subject to curvature {j in 0..n}: R^2 * pprime2[j]^2 <= ( 1 + pprime[j]^2)^3;
+subject to curvature {j in 0 .. n}: R^2 * pprime2[j]^2 <= ( 1 + pprime[j]^2)^3;
 
 data;
 

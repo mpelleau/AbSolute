@@ -12,7 +12,7 @@
 # Linear constraints
 
 
-var x{1..4} >= 0;
+var x{1 .. 4} >= 0;
 
 param best_val_found := -15;
 param eps := 1; 		# = max(1, 1% x best_val_found)

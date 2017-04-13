@@ -13,7 +13,7 @@
 # Nonlinear constraints
 
 param N integer, := 8;
-set I := {1..N};
+set I := {1 .. N};
 
 param a >= 0;
 param b >= 0;

@@ -15,8 +15,8 @@
 
 param ncomp > 0  integer;
 param neq > 0 integer;
-set I := {1..ncomp};
-set J := {1..neq};
+set I := {1 .. ncomp};
+set J := {1 .. neq};
 param a {i in I} > 0;
 param b {i in I} > 0;
 param c {i in J} > 0;

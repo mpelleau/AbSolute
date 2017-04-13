@@ -1,6 +1,6 @@
 param s2 := sqrt(2);
 var
-        x {1..5} >= 0, <= 4;
+        x {1 .. 5} >= 0, <= 4;
 param best_val_found := 0.2415051288;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 

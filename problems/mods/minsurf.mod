@@ -5,11 +5,11 @@
 param n0 := 31;
 param n  := n0+1;
 
-set X := {0..n};
-set Y := {0..n};
+set X := {0 .. n};
+set Y := {0 .. n};
 
-set X0 := {0..n0};
-set Y0 := {0..n0};
+set X0 := {0 .. n0};
+set Y0 := {0 .. n0};
 
 param xsize := 2;
 param ysize := 2;

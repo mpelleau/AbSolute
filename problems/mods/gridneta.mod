@@ -19,13 +19,13 @@
 param L default 2;
 param M := 2*L + 1;
 param nv := 2*M*(M+1);	# number of variables (for complicated bound spec.)
-set I  := 0 .. M;
-set I1 := 0 .. M-1;
+set I  := 0  ..  M;
+set I1 := 0  ..  M-1;
 node N{i in I, j in I}:
 	net_out == if i == 0 && j == 0 then +10 else
 		   if i == M && j == M then -10 else 0;
 
-set A := {i in I, j in I, k in 0..1: (i < M || k == 1) && (j < M || k == 0)};
+set A := {i in I, j in I, k in 0 .. 1: (i < M || k == 1) && (j < M || k == 0)};
 	  
 arc x{(i,j,k) in A} >= 0 from N[i,j] to N[i+1-k,j+k];
 
@@ -79,12 +79,12 @@ subject to Cost:
 				)^2)
 	    + (1/1200)*(10 + sum {(i,j,k) in A} sign[i,j,k]*x[i,j,k] )^4) <= best_val_found + eps;
 
-param ibounds integer in -1..1 default 0;	# bounds case
+param ibounds integer in -1 .. 1 default 0;	# bounds case
 
-set Border :=	1 .. 2*M-1 by 2 union
-		2*M+1 .. M*(2*M+1) by 2*M+1 union
-		2 .. 2 + (M-1)*(2*M+1) by 2*M+1 union
-		M*(2*M+1)+1 .. M*(2*M+2);
+set Border :=	1  ..  2*M-1 by 2 union
+		2*M+1  ..  M*(2*M+1) by 2*M+1 union
+		2  ..  2 + (M-1)*(2*M+1) by 2*M+1 union
+		M*(2*M+1)+1  ..  M*(2*M+2);
 
 s.t. bounds{(i,j,k) in A, n in {Number[i,j,k]}}:
 	if ibounds == -1 then

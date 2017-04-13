@@ -5,7 +5,7 @@ param B3 := -29.08;
 param B4 := -78.02;
 
 var
-   x  {1..6};
+   x  {1 .. 6};
 
 param best_val_found := 0.01561952524;
 param eps := 1; 		# = max(1, 1% x best_val_found)
@@ -14,7 +14,7 @@ subject to f:
       4.3 * x[1] + 31.8 * x[2] + 63.3 * x[3] + 15.8 * x[4] + 68.5 * x[5] + 4.7 * x[6] <= best_val_found + eps;
 
 subject to
-cons1 {i in 1..6}: x[i] >= 0;
+cons1 {i in 1 .. 6}: x[i] >= 0;
 cons2:       	x[1] <= 0.31; 
 cons3: 		x[2] <= 0.046; 
 cons4:		x[3] <= 0.068; 

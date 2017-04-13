@@ -15,7 +15,7 @@
 # The global minimum is Ftre = 0, x = (0,0).
 # There are saddle points at (-1,0) and (-2,0).
 
-var x{1..2} >= -5, <= 5;
+var x{1 .. 2} >= -5, <= 5;
 
 param best_val_found := -1.776355967e-15;
 param eps := 1; 		# = max(1, 1% x best_val_found)

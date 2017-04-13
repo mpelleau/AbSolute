@@ -16,7 +16,7 @@
 
 # The global minimum is Fgold = 3, x = (0,-1).
 
-var x{1..2} <= 2, >= -2;
+var x{1 .. 2} <= 2, >= -2;
 
 param best_val_found := 3;
 param eps := 1; 		# = max(1, 1% x best_val_found)

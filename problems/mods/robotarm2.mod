@@ -44,9 +44,9 @@ param rho_n;		# final   position
 param lon_n;		# final   position
 param lat_n;		# final   position
 
-set Np := {0..n};		# discrete times for position
-set Nv := {0.5..n-0.5 by 1};	# discrete times for velocity
-set Na := {1..n-1};		# discrete times for acceleration
+set Np := {0 .. n};		# discrete times for position
+set Nv := {0.5 .. n-0.5 by 1};	# discrete times for velocity
+set Na := {1 .. n-1};		# discrete times for acceleration
 
 var rho {Np}; # >= -L, <= L; 	# position
 var lon {Np}; # >= -pi, <= pi; 	# position

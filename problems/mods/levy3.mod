@@ -17,14 +17,14 @@
 
 # There are lots of local minima in the domain.
 
-set I := 1 .. 2;
+set I := 1  ..  2;
 var x{I} <= 10, >= -10;
 
 param best_val_found := -165.6596935;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 
 subject to Flevy:
-  - prod{i in I} sum {j in 1..5} (j*cos((j + 1)*x[i] + j)) <= best_val_found + eps;
+  - prod{i in I} sum {j in 1 .. 5} (j*cos((j + 1)*x[i] + j)) <= best_val_found + eps;
 
 data;
 

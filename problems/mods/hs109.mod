@@ -16,7 +16,7 @@ param b1;
 param b := sin(b1);
 param c := cos(b1);
 
-var x{1..9};
+var x{1 .. 9};
 
 param best_val_found := 5327.541669;
 param eps := 53.27541669; 		# = max(1, 1% x best_val_found)
@@ -52,13 +52,13 @@ s.t. C9:
 s.t. C10:
      x[5] * x[7] * cos(x[4] - .25) + x[6] * x[7] * cos(x[4] - x[3] - .25) -
      2 * c * x[7]^2 + 22.938 * a + .7533E-3 * a * x[7] ^2 = 0;
-s.t. C11 {i in {1..2}}:
+s.t. C11 {i in {1 .. 2}}:
      x[i] >= 0;
-s.t. C12 {i in {3..4}}:
+s.t. C12 {i in {3 .. 4}}:
      -.55 <= x[i] <= .55;
-s.t. C13 {i in {5..7}}:
+s.t. C13 {i in {5 .. 7}}:
      196 <= x[i] <= 252;
-s.t. C14 {i in {8..9}}:
+s.t. C14 {i in {8 .. 9}}:
      -400 <= x[i] <= 800;
 
 

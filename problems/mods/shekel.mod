@@ -18,8 +18,8 @@
 # Objective nonseparable nonconvex
 # Simple bound constraints
 
-set I := 1 .. 5;
-set J := 1 .. 4;
+set I := 1  ..  5;
+set J := 1  ..  4;
 param a {i in I, j in J};
 param c {I};
 var x{j in J} := j, >= 0, <= 10;

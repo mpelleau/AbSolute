@@ -21,7 +21,7 @@
 
 # Note: The Hessian of the objective is singular at x*.
 
-var x{1..4} >= -4, <= 5;
+var x{1 .. 4} >= -4, <= 5;
 
 param best_val_found := 2.858579228e-13;
 param eps := 1; 		# = max(1, 1% x best_val_found)

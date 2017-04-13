@@ -14,7 +14,7 @@
 
 
 param N > 0 integer, := 13;
-set I := 1 .. N;
+set I := 1  ..  N;
 
 var x {i in I} >= 0;
 

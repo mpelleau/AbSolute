@@ -10,7 +10,7 @@
 # Objective constant
 # Nonlinear constraints
 
-var x{1..2};
+var x{1 .. 2};
 
 param best_val_found := -1;
 param eps := 1; 		# = max(1, 1% x best_val_found)

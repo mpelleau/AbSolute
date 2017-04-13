@@ -137,13 +137,15 @@ let test_mod_parser() =
   let dir = "problems/mods/" in
   let children = Sys.readdir dir in
   let cl = Array.to_list children in
+  let move_to_good file = Unix.system ("mv problems/mods/"^file^" problems/mods/parse/") |> ignore in
   let parse = List.filter (fun file ->
                   try
                     File_parser.parse (Some (dir^file)) |> ignore;
                     true
-                  with Parsing.Parse_error -> false
+                  with _ -> false
                 ) cl
   in
+  List.iter move_to_good parse;
   let size = List.length parse in
   List.iter (Format.printf "%s\n") parse;
   Format.printf "\n%i/%i readable files\n" size (Array.length children)

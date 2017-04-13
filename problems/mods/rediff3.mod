@@ -27,7 +27,7 @@ cons3:  x2 - 2*x3      + 0.835634534*x3*(1-x3) = 0;
 
 #   alpha > 0, x_0 = x_{n+1} = 0
 
-#   f_k = x_{k-1} - 2*x_k + x_{k+1} + alpha*x_k*(1-x_k) = 0, k = 1,2,..,n.
+#   f_k = x_{k-1} - 2*x_k + x_{k+1} + alpha*x_k*(1-x_k) = 0, k = 1,2, .. ,n.
 
 # It stems from a reaction diffusion problem.
 # For general dimension n, there are 2^n solutions, with the number of

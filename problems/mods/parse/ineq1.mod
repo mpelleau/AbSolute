@@ -1,6 +1,6 @@
 
 var
-    x {1..4} >= -10, <= 5;
+    x {1 .. 4} >= -10, <= 5;
 
 param best_val_found := -0.4126055723;
 param eps := 1; 		# = max(1, 1% x best_val_found)

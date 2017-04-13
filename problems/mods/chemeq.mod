@@ -15,10 +15,10 @@
 # Since constraints 14 and 16 imply x[1,5]=x[2,5]=x[3,5]=x[1,7]=x[2,7]=0
 # these variables were removed from the original formulation of the problem
 
-set J := 1 .. 18;
-set K := 1 .. 7;
+set J := 1  ..  18;
+set K := 1  ..  7;
 set PAIRS in {J,K};
-set I := 1 .. 16;
+set I := 1  ..  16;
 param b {I} >= 0, default 0;
 param c {PAIRS};
 param E {PAIRS,I} integer;

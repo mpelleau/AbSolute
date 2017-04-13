@@ -15,7 +15,7 @@
 # (pi,2.275), (3*pi,2.475).
 
 param pi := 4*atan(1);
-var x{1..2};
+var x{1 .. 2};
 
 param best_val_found := 0.3978873577;
 param eps := 1; 		# = max(1, 1% x best_val_found)

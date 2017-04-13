@@ -1,23 +1,23 @@
-param f {1..5};
+param f {1 .. 5};
 
-param c {1..5, 1..5};
+param c {1 .. 5, 1 .. 5};
 
-param d {1..5};
+param d {1 .. 5};
 
-param a{1..10, 1..5};
+param a{1 .. 10, 1 .. 5};
 
-param b {1..10};
+param b {1 .. 10};
 
 var
-    x {1..5};
+    x {1 .. 5};
 param best_val_found := -43.47440554;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 
 subject to function: 
-        sum {j in 1..5} f[j]*x[j] + sum {i in 1..5} sum {j in 1..5} c[i,j]*x[i]*x[j] + sum {j in 1..5} d[j] * x[j]^3 <= best_val_found + eps;
+        sum {j in 1 .. 5} f[j]*x[j] + sum {i in 1 .. 5} sum {j in 1 .. 5} c[i,j]*x[i]*x[j] + sum {j in 1 .. 5} d[j] * x[j]^3 <= best_val_found + eps;
 subject to
-cons1 {i in 1..5}: x[i] >= 0;
-cons2 {i in 1..10}: sum {j in 1..5} a[i,j]*x[j] * x[j] - b[i] >= 0;
+cons1 {i in 1 .. 5}: x[i] >= 0;
+cons2 {i in 1 .. 10}: sum {j in 1 .. 5} a[i,j]*x[j] * x[j] - b[i] >= 0;
 
 data;
 param f := 

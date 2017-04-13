@@ -11,7 +11,7 @@
 # Nonlinear constraints
 
 
-var x{1..2} <= 50, >= -50;
+var x{1 .. 2} <= 50, >= -50;
 
 param best_val_found := 2;
 param eps := 1; 		# = max(1, 1% x best_val_found)

@@ -1,7 +1,7 @@
 param pi := 3.1415;
 
 var
-   x {1..6} >= 0, <= 2*pi;
+   x {1 .. 6} >= 0, <= 2*pi;
 
 subject to
 cons1:    sin(x[2])*cos(x[5])*sin(x[6]) - sin(x[3])*cos(x[5])*sin(x[6]) -

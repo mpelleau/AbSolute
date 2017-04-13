@@ -15,7 +15,7 @@
 # There are three global minima with Fprice = 0. x = (0,0), x = (2,4) and
 # x = (1.464352,-2.506012).
 
-var x{1..2} <= 10, >= -10;
+var x{1 .. 2} <= 10, >= -10;
 
 param best_val_found := 1.007582517e-13;
 param eps := 1; 		# = max(1, 1% x best_val_found)

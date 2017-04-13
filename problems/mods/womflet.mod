@@ -1,5 +1,5 @@
-param xinit{1..2};
-var x{i in 1..2} := xinit[i];
+param xinit{1 .. 2};
+var x{i in 1 .. 2} := xinit[i];
 var u := 7.5;
 
 param best_val_found := -4.770489559e-18;

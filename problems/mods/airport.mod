@@ -1,17 +1,17 @@
 param N:=42;
-param r{1..N};
-param cx{1..N};
-param cy{1..N};
+param r{1 .. N};
+param cx{1 .. N};
+param cy{1 .. N};
 
-var x{1..N} <= 10, >= -10;
-var y{1..N} <= 10, >= -10;
+var x{1 .. N} <= 10, >= -10;
+var y{1 .. N} <= 10, >= -10;
 
 param best_val_found := 47952.70168;
 param eps := 479.5270168; 		# = max(1, 1% x best_val_found)
 
 subject to f:
-	sum {i in 1..N-1, j in i+1..N} ( (x[i]-x[j])^2 + (y[i]-y[j])^2 ) <= best_val_found + eps;
-subject to cons1 {i in 1..N}:
+	sum {i in 1 .. N-1, j in i+1 .. N} ( (x[i]-x[j])^2 + (y[i]-y[j])^2 ) <= best_val_found + eps;
+subject to cons1 {i in 1 .. N}:
 	(x[i]-cx[i])^2 + (y[i]-cy[i])^2 - r[i] <= 0;
 
 data;

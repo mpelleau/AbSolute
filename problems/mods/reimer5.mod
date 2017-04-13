@@ -27,7 +27,7 @@ cons5: -1 + 2*x^6 - 2*y^6 + 2*z^6 - 2*t^6 + 2*u^6 = 0;
 # See the PoSSo test suite.
 # For general dimension n, the system looks like
 
-# -1/2 + \sum_{i=1}^{n}(-1)^(i+1)x_{i}^k = 0, k=2..n+1 
+# -1/2 + \sum_{i=1}^{n}(-1)^(i+1)x_{i}^k = 0, k=2 .. n+1 
 
 # GENERATORS OF SYMMETRY GROUP :
 

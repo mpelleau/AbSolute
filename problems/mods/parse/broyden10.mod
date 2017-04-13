@@ -1,5 +1,5 @@
 # Domains
-var x{1..10} >= -1.0e8, <= 1.0e8;
+var x{1 .. 10} >= -1.0e8, <= 1.0e8;
 
 subject to
 

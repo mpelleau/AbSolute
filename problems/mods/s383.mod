@@ -10,7 +10,7 @@
 # Objective separable convex
 # Linear constraints
 
-set I := 1 .. 14;
+set I := 1  ..  14;
 param positive_zero := 0.00001;
 
 param a{I};
@@ -26,9 +26,9 @@ subject to Obj:
 
 s.t. G1:
      sum {i in I} c[i] * x[i] == 1;
-s.t. B1 {i in {1..5}}:
+s.t. B1 {i in {1 .. 5}}:
      x[i] <= 0.04;
-s.t. B2 {i in {6..14}}:
+s.t. B2 {i in {6 .. 14}}:
      x[i] <= 0.03;
 
 data;

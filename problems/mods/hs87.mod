@@ -99,7 +99,7 @@ var x6 := 0.5;
 
 # Hock & Schittkowski have an incorrectly placed decimal point in
 # the x5 component of the solution they give, which should be
-# 21.307... rather than 213.07...
+# 21.307 .. . rather than 213.07 .. .
 
 # The formulation stated here has initial objective value
 # loss = 41490 and optimal value

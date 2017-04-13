@@ -1,25 +1,23 @@
-open Csp
-
 (* numeric expressions *)
 type expr =
-  | Unary of unop * expr
-  | Binary of binop * expr * expr
-  | Var of var
-  | Array of var * int
-  | Cst of i
+  | Unary of Csp.unop * expr
+  | Binary of Csp.binop * expr * expr
+  | Var of Csp.var
+  | Array of Csp.var * int
+  | Cst of Csp.i
 
 (* boolean expressions *)
 type bexpr =
-  | Cmp of cmpop * expr * expr
+  | Cmp of Csp.cmpop * expr * expr
   | And of bexpr * bexpr
   | Or of bexpr * bexpr
   | Not of bexpr
 
-module Env = Map.Make(struct type t = var let compare = compare end)
-module Vars = Set.Make(struct type t = var let compare = compare end)
+module Env = Map.Make(struct type t = Csp.var let compare = compare end)
+module Vars = Set.Make(struct type t = Csp.var let compare = compare end)
 
 type env = {
-    params : expr Env.t;
+    params      : expr Env.t;
     paramsarray : expr array Env.t
   }
 
@@ -27,7 +25,7 @@ let set_param env p e = {env with params = Env.add p e env.params}
 
 let param env p = Env.find p env.params
 
-let name v i = v^"_"^(string_of_int i)
+let name v i = v^(string_of_int i)
 
 let param_i env p i =
   let arr = Env.find p env.paramsarray in
@@ -39,7 +37,7 @@ let get env name i =
 
 (*replaces the param by the expression they represent*)
 let rec substitute env = function
-  | Unary (NEG, Cst i) -> Cst (-.i)
+  | Unary (Csp.NEG, Cst i) -> Cst (-.i)
   | Unary (u, e)-> Unary (u,substitute env e)
   | Binary (b, e1, e2)->
      let e1' = substitute env e1
@@ -64,16 +62,16 @@ let rec substitute_constr env =
 (* force evaluation of some expressions *)
 let evaluate env expr =
   let unary = function
-    | NEG -> fun x -> (-. x)
-    | x -> Format.printf "cant evaluate unary operator:%a\n" print_unop x;
+    | Csp.NEG -> fun x -> (-. x)
+    | x -> Format.printf "cant evaluate unary operator:%a\n" Csp.print_unop x;
            failwith "evaluation error"
   in
   let binary = function
-    | ADD -> (+.)
-    | SUB -> (-.)
-    | DIV -> (/.)
-    | MUL -> ( *. )
-    | x -> Format.printf "cant evaluate binary operator:%a\n" print_binop x;
+    | Csp.ADD -> (+.)
+    | Csp.SUB -> (-.)
+    | Csp.DIV -> (/.)
+    | Csp.MUL -> ( *. )
+    | x -> Format.printf "cant evaluate binary operator:%a\n" Csp.print_binop x;
            failwith "evaluation error"
   in
   let rec eval = function
@@ -89,7 +87,7 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Unary (NEG, Cst i)-> Csp.Cst (-.i)
+  | Unary (Csp.NEG, Cst i)-> Csp.Cst (-.i)
   | Unary (u, e)-> Csp.Unary (u,to_csp e)
   | Binary (b, e1, e2)->
      let e1' = to_csp e1
@@ -107,17 +105,23 @@ let rec to_csp_constr = function
   | Not b -> Csp.Not (to_csp_constr b)
 
 type modstmt =
-  | Param     of var * expr
-  | Var       of var * expr * expr
-  | ParamList of var * expr * expr
+  | Param     of Csp.var * expr
+  | Var       of Csp.var * expr * expr
+  | ParamList of Csp.var * set * expr * expr
   (* p from e1 to e2 *)
-  | VarList   of var * expr * expr * expr * expr
+  | VarList   of Csp.var * set * expr * expr
   (* v from e1 to e2 such that e3 <= v <= e4 ex:
      var x{1..4} >= 0.0, <= 5.0;*)
-  | SubjectTo of var * bexpr
+  | SubjectTo of Csp.var * bexpr
   | Ignore
 
+and set = expr * expr
+
 type t = modstmt list
+
+let eval_set env (inf,sup) =
+  (evaluate env inf |> int_of_float),
+  (evaluate env sup |> int_of_float)
 
 let toCsp m =
   let add (env,csp) = function
@@ -126,21 +130,31 @@ let toCsp m =
 
    | Var (v, e1, e2) ->
       let e1' = evaluate env e1 and e2' = evaluate env e2 in
-      (env,add_real_var csp v e1' e2')
+      (env,Csp.add_real_var csp v e1' e2')
 
-   | ParamList (v, e1, e2) ->
-      failwith "cant handle paramlist for now"
-
-   | VarList  (v, lower, upper, e1, e2) ->
-       let l = evaluate env lower |> int_of_float
-       and u = evaluate env upper |> int_of_float in
+   | ParamList (v, (lower, upper), e1, e2) ->
+       (* let l = evaluate env lower |> int_of_float *)
+       (* and u = evaluate env upper |> int_of_float in *)
+       (* if l < u then *)
+       (*   let e = evaluate env e1 and sup = evaluate env e2 in *)
+       (*   let rec loop i csp = *)
+       (*     if i > u then csp *)
+       (*     else *)
+       (*       let name = name v i in *)
+       (*       (set_param env name e) *)
+       (*   in *)
+       (*   (loop l env),csp *)
+       (* else failwith ("vars with inf index greater than sup index : "^v) *)
+      failwith "param list not implemented for now"
+   | VarList  (v, set, e1, e2) ->
+       let l,u = eval_set env set in
        if l < u then
          let inf = evaluate env e1 and sup = evaluate env e2 in
          let rec loop i csp =
-           if i = u then csp
+           if i > u then csp
            else
              let name = name v i in
-             let csp = add_real_var csp name inf sup in
+             let csp = Csp.add_real_var csp name inf sup in
              loop (i+1) csp
          in
          env,(loop l csp)
@@ -148,7 +162,7 @@ let toCsp m =
 
    | SubjectTo (v, constr) ->
       let constr' = substitute_constr env constr in
-      env,(add_constr csp (to_csp_constr constr'))
+      env,(Csp.add_constr csp (to_csp_constr constr'))
    | Ignore -> env,csp
   in
   let empty_csp = Csp.empty in

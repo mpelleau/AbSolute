@@ -1,8 +1,8 @@
 
-param a{1..12};
+param a{1 .. 12};
 
 var
-   x {1..5};
+   x {1 .. 5};
 param best_val_found := -30665.53867;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 
@@ -13,8 +13,8 @@ cons1:         x[1] >= 78;
 cons2:         x[1] <= 102;
 cons3:         x[2] >= 33;
 cons4:         x[2] <= 45;
-cons5 {i in 3..5}: x[i] >= 27;
-cons6 {i in 3..5}: x[i] <= 45;
+cons5 {i in 3 .. 5}: x[i] >= 27;
+cons6 {i in 3 .. 5}: x[i] <= 45;
 cons7:         92 >= a[1] + a[2]*x[2]*x[5] + a[3]*x[1]*x[4] - a[4]*x[3]*x[5];
 cons8:         a[1] + a[2]*x[2]*x[5] + a[3]*x[1]*x[4] - a[4]*x[3]*x[5] >= 0;
 cons9:         110 >=  a[5] + a[6]*x[2]*x[5] + a[7]*x[1]*x[2] + a[8]*x[3]^2;

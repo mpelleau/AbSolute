@@ -77,11 +77,11 @@ module SyntaxTranslator (D:ADomain) = struct
     let ivars = Array.map (fun v -> Var.to_string v) iv in
     let rvars = Array.map (fun v -> Var.to_string v) rv in
     (Array.to_list ivars, Array.to_list rvars)
-  
+
   let rec apron_to_expr texpr env =
     match texpr with
     | Texpr1.Cst c -> Cst (coeff_to_float c)
-    | Texpr1.Var v -> 
+    | Texpr1.Var v ->
       let e = match (Environment.typ_of_var env v) with
               | Environment.INT -> Var ((Var.to_string v)^"%")
               | Environment.REAL -> Var (Var.to_string v)
@@ -94,18 +94,19 @@ module SyntaxTranslator (D:ADomain) = struct
       in
       let e = apron_to_expr e env in
       Unary (o, e)
-    | Texpr1.Binop (op, e1, e2, _, _) -> 
+    | Texpr1.Binop (op, e1, e2, _, _) ->
       let o = match op with
-              | Texpr1.Add -> ADD
-              | Texpr1.Sub -> SUB
-              | Texpr1.Mul -> MUL
-              | Texpr1.Div -> DIV
-              | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
+        | Texpr1.Add -> ADD
+        | Texpr1.Sub -> SUB
+        | Texpr1.Mul -> MUL
+        | Texpr1.Div -> DIV
+        | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
+        | _ -> failwith "operation not yet supported with AbSolute"
       in
-      let e1 = apron_to_expr e1 env 
+      let e1 = apron_to_expr e1 env
       and e2 = apron_to_expr e2 env in
       Binary (o, e1, e2)
-    
+
   let apron_to_bexpr tcons env =
     let apron_to_cmp op =
       match op with
@@ -113,6 +114,7 @@ module SyntaxTranslator (D:ADomain) = struct
       | Tcons1.DISEQ -> NEQ
       | Tcons1.SUPEQ -> GEQ
       | Tcons1.SUP -> GT
+      | _ -> failwith "operation not yet supported with AbSolute"
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
@@ -122,13 +124,13 @@ module SyntaxTranslator (D:ADomain) = struct
     let abscons = Abstract1.to_tcons_array man abs in
     let earray = abscons.Tcons1.tcons0_array in
     let tenv = abscons.Tcons1.array_env in
-    Array.map (fun t -> 
+    Array.map (fun t ->
                 apron_to_bexpr (Tcons1.{tcons0 = t; env = tenv}) tenv
-              ) earray 
+              ) earray
     |> Array.to_list
-     
-    
-    
+
+
+
 
 end
 
@@ -155,7 +157,7 @@ module MAKE(AP:ADomain) = struct
     let env = Environment.add e ints reals in
     A.change_environment man abs env false
 
-  let is_bottom abs = 
+  let is_bottom abs =
     A.is_bottom man abs
 
   let is_singleton b v =
@@ -173,7 +175,7 @@ module MAKE(AP:ADomain) = struct
     with Exit -> false
 
   let join a b = A.join man a b
-  
+
   let prune a b =
     let work acc a c =
       let neg_c = Linconsext.neg c in

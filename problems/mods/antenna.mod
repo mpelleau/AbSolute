@@ -16,16 +16,16 @@ param lambda;			# wavelength
 param spacing, default 1;
 
 param n;
-set N := {1..n};
+set N := {1 .. n};
 param y {N};
 
-set DEGS0 	  := {-20..-4   by 0.5};  # sidelobe
-set DEGS1 	  := {-3.5..0   by 0.5};  # min lobe
-set DEGS2 	  := {0.5..27.5 by 0.5};  # mainlobe
-set DEGS3 	  := {28..60    by 0.5};  # sidelobe
+set DEGS0 	  := {-20 .. -4   by 0.5};  # sidelobe
+set DEGS1 	  := {-3.5 .. 0   by 0.5};  # min lobe
+set DEGS2 	  := {0.5 .. 27.5 by 0.5};  # mainlobe
+set DEGS3 	  := {28 .. 60    by 0.5};  # sidelobe
 set DEGS023       := DEGS0 union DEGS2 union DEGS3;
 set DEGS_EQUALITY := {10, 15, 20, 26};
-set DEGS 	  := {-20..60 by 0.5};
+set DEGS 	  := {-20 .. 60 by 0.5};
 param theta0, in DEGS;
 
 param up_bnd {DEGS023};

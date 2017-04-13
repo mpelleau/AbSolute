@@ -9,14 +9,14 @@ param pi := 4*atan(1);
 param omega_a := 0.01*pi;
 param omega_b := 1.00*pi;
 
-set OMEGA_0 := {0..omega_a by pi/N};
-set OMEGA_P := {omega_a..omega_b by pi/N};
-set OMEGA_1 := {omega_a..pi by pi/N};
+set OMEGA_0 := {0 .. omega_a by pi/N};
+set OMEGA_P := {omega_a .. omega_b by pi/N};
+set OMEGA_1 := {omega_a .. pi by pi/N};
 set OMEGA := OMEGA_0 union OMEGA_P union OMEGA_1;
 
 var alpha >= 0;
-var r {0..n-1};
-var R {o in OMEGA} = r[0] + sum{k in 1..n-1} 2*r[k]*cos(k*o);
+var r {0 .. n-1};
+var R {o in OMEGA} = r[0] + sum{k in 1 .. n-1} 2*r[k]*cos(k*o);
 
 minimize ripple: alpha;
 

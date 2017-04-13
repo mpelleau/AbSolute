@@ -1,8 +1,8 @@
-param x_up{1..50} default 0.1;
-param x_lo{1..50} default -0.1;
-var x{i in 1..50} <= x_up[i], >= x_lo[i];
-var d{i in 1..50, j in 1..50: i==j} = 0.5*x[i]*x[j];
-var o{i in 1..50, j in 1..50} = x[i]*x[j];
+param x_up{1 .. 50} default 0.1;
+param x_lo{1 .. 50} default -0.1;
+var x{i in 1 .. 50} <= x_up[i], >= x_lo[i];
+var d{i in 1 .. 50, j in 1 .. 50: i==j} = 0.5*x[i]*x[j];
+var o{i in 1 .. 50, j in 1 .. 50} = x[i]*x[j];
 param best_val_found := -3.790343233e-05;
 param eps := 1; 		# = max(1, 1% x best_val_found)
 

@@ -47,6 +47,7 @@ let check_ast p =
       | Var v ->
          if not (Hashtbl.mem h v) then
            let msg = illegal_constraint ("non-declared variable "^v) in
+           Hashtbl.iter (fun a _ -> Format.printf "%s\n" a) h;
            raise (IllFormedAST msg)
       | _ -> ()
     in
@@ -85,11 +86,13 @@ let parse (filename:string option) : prog =
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
     fileparser lex
   with
-  | Failure s ->
-      Printf.eprintf "Error near %s\n%s\n"
-        (string_of_position lex.lex_start_p)
-	s;
-      failwith "Parse error"
+  (* | Failure s -> *)
+  (*     Printf.eprintf "Error near %s\n%s\n" *)
+  (*       (string_of_position lex.lex_start_p) *)
+	(*       s; *)
+  (*     failwith "Parse error" *)
+  | Parsing.Parse_error -> failwith "Parse error"
+
 
 let parse fn =
   let p = parse fn in

@@ -11,7 +11,7 @@
 # Objective nonconvex
 # Nonlinear constraints
 
-var x{1..3} >= 1E-5, := 1;
+var x{1 .. 3} >= 1E-5, := 1;
 
 param best_val_found := 6299.842428;
 param eps := 62.99842428; 		# = max(1, 1% x best_val_found)

@@ -1,5 +1,5 @@
-param xinit{1..3};
-var x{i in 1..3} := xinit[i], >= 0;
+param xinit{1 .. 3};
+var x{i in 1 .. 3} := xinit[i], >= 0;
 
 param best_val_found := 2;
 param eps := 1; 		# = max(1, 1% x best_val_found)

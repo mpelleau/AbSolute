@@ -39,9 +39,9 @@ param rho_n;		# final   position
 param the_n;		# final   position
 param phi_n;		# final   position
 
-set Np := {0..n};		# discrete times for position
-set Nv := {0.5..n-0.5 by 1};	# discrete times for velocity
-set Na := {1..n-1};		# discrete times for acceleration
+set Np := {0 .. n};		# discrete times for position
+set Nv := {0.5 .. n-0.5 by 1};	# discrete times for velocity
+set Na := {1 .. n-1};		# discrete times for acceleration
 
 var rho {Np} >=0, <= L; 	# position
 var the {Np} >= -pi, <= pi; 	# position
@@ -131,13 +131,13 @@ let phi_n := pi/4;
 #let {i in Np} phi[i] := ((n-i)*phi_0 + i*phi_n)/n;
 
 let {i in Np} rho[i] 
-    := if (i in 0..n/2) then rho_0 + 2*(rho_n-rho_0)*i^2/n^2
+    := if (i in 0 .. n/2) then rho_0 + 2*(rho_n-rho_0)*i^2/n^2
 			else rho_n + 2*(rho_0-rho_n)*(i-n)^2/n^2;
 let {i in Np} the[i] 
-    := if (i in 0..n/2) then the_0 + 2*(the_n-the_0)*i^2/n^2
+    := if (i in 0 .. n/2) then the_0 + 2*(the_n-the_0)*i^2/n^2
 			else the_n + 2*(the_0-the_n)*(i-n)^2/n^2;
 let {i in Np} phi[i] 
-    := if (i in 0..n/2) then phi_0 + 2*(phi_n-phi_0)*i^2/n^2
+    := if (i in 0 .. n/2) then phi_0 + 2*(phi_n-phi_0)*i^2/n^2
 			else phi_n + 2*(phi_0-phi_n)*(i-n)^2/n^2;
 
 #display the;

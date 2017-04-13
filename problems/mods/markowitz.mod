@@ -2,7 +2,7 @@
 # Constraints: linear 
 
 set A;   		# asset categories
-set T := {1973..1994}; 	# years
+set T := {1973 .. 1994}; 	# years
 
 param mu default 200;
 

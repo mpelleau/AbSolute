@@ -15,7 +15,7 @@
 # hold with the given bounds on x. Therefore constraint C3 has been modified
 # to make the problem feasible.
 
-set I := 1 .. 10;
+set I := 1  ..  10;
 
 param c{I};
 var x{I} >= 1e-6, := .1;

@@ -23,12 +23,12 @@
 # The global minimum is Fko = 3.07486*10e-4,
 # x = (0.192833, 0.190836, 0.123117, 0.135766).
 
-set I := {1..11};
+set I := {1 .. 11};
 param a{I};
 param c{I};
 param b{i in I} := 1/c[i];
 
-var x{1..4} <= 0.42, >= 0, := .42;
+var x{1 .. 4} <= 0.42, >= 0, := .42;
 
 param best_val_found := 0.0003074859878;
 param eps := 1; 		# = max(1, 1% x best_val_found)
