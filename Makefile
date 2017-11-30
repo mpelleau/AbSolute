@@ -32,7 +32,7 @@ AUTOGEN =\
   src/frontend/parser.mli \
   src/frontend/modParser.ml \
   src/frontend/modLexer.ml \
-  src/frontend/modParser.mli
+  src/frontend/modParser.mli\
 
 # source files
 MLFILES = \

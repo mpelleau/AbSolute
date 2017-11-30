@@ -19,7 +19,7 @@ let lift_bot f x =
   match x with Bot -> Bot | Nb x -> Nb (f x)
       
 let merge_bot2 x y = 
-  match x,y with Bot,_ | _,Bot -> Bot | Nb a, Nb b -> Nb (a,b)
+match x,y with Bot,_  -> (*Format.printf "frist bot";*) Bot | _,Bot -> (*Format.printf "second bot\n";*) Bot | Nb a, Nb b -> Nb (a,b)
 
 let join_bot2 f x y = 
   match x,y with Bot,a | a,Bot -> a | Nb a,Nb b -> Nb (f a b)

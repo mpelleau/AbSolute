@@ -278,12 +278,22 @@ module Itv(B:BOUND) = struct
   let div_sign =
     mix4 bound_div_up bound_div_down
 
+  (*let printBot fmt i =
+    match i with
+     | Bot -> Format.fprintf fmt "Bot"
+     | Nb a -> Format.fprintf fmt "%a" print a*)
+
+
   (* return valid values (possibly Bot) + possible division by zero *)
   let div (i1:t) (i2:t) : t bot * bool =
     (* split into positive and negative dividends *)
+    (*Format.printf "\t\t%a / %a (%a / %a U %a / %a)\n" print i1 print i2 print i1 printBot (meet i2 positive) print i1 printBot (meet i2 negative);*)
     let pos = (lift_bot (div_sign i1)) (meet i2 positive)
     and neg = (lift_bot (div_sign i1)) (meet i2 negative) in
-    (* joins the result *)
+    (*Format.printf "\t\t\t%a and %a" printBot pos printBot neg;*)
+    (*let (r, bb) = join_bot2 join pos neg, contains i2 B.zero in
+    Format.printf " => %a\n" printBot r;*)
+    (* joins the result*)
     join_bot2 join pos neg,
     contains i2 B.zero
 
@@ -521,6 +531,7 @@ module Itv(B:BOUND) = struct
     else filter_geq i1 i2
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
+    (*Format.printf "%a = %a\n" print i1 print i2;*)
     lift_bot (fun x -> x,x) (meet i1 i2)
 
   let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
@@ -563,6 +574,34 @@ module Itv(B:BOUND) = struct
     else if B.sign ih <= 0 then meet i (neg r)
     else meet i (B.neg rh, rh)
 
+
+  (* r = i + c => i = r - c *)
+  let filter_add_f (i:t) (c:t) (r:t) : t bot =
+    meet i (sub r c)
+
+  (* r = i - c => i = r + c *)
+  let filter_sub_f (i:t) (c:t) (r:t) : t bot =
+    meet i (add c r)
+
+  (* r = i*c => (i = r/c \/ c=r=0) *)
+  let filter_mul_f (i:t) (c:t) (r:t) : t bot =
+    if contains r B.zero && contains c B.zero then Nb i
+    else match fst (div r c) with Bot -> Bot | Nb x -> meet i x
+
+  (* r = i/c => i = r*c *)
+  let filter_div_f (i:t) (c:t) (r:t) : t bot =
+    meet i (mul c r)
+
+  (* r = i ** n => i = nroot r *)
+  let filter_pow_f (i:t) n (r:t) =
+    meet_bot meet i (n_root r n)
+
+  (* r = nroot i => i = r ** n *)
+  let filter_root_f i r n =
+    meet i (pow r n)
+
+
+
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
   let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
@@ -570,6 +609,20 @@ module Itv(B:BOUND) = struct
   (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
   let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+
+  (* r = i*c => (i = r/c \/ c=r=0) *)
+  let filter_mul_cst (i:t) (c:t) (r:t) : (t*t) bot =
+    merge_bot2
+      (if contains r B.zero && contains c B.zero then Nb i
+      else match fst (div r c) with Bot -> Bot | Nb x -> meet i x)
+      (Nb c)
+
+  (* r = i*c => (i = r/c \/ c=r=0) *)
+  let filter_cst_mul (i:t) (c:t) (r:t) : (t*t) bot =
+    merge_bot2
+      (Nb c)
+      (if contains r B.zero && contains c B.zero then Nb i
+      else match fst (div r c) with Bot -> Bot | Nb x -> meet i x)
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
   let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
@@ -650,7 +703,7 @@ module Itv(B:BOUND) = struct
   let filter_tan i r =
     let atan_r = atan r in
     let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
-    Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);
+    (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
     match aux with
     | Bot -> Bot
     | Nb (p1,p2) ->

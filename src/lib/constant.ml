@@ -5,6 +5,7 @@ let max_iter        = ref 100000000
 let max_sol         = ref 10000000
 let problem         = ref None
 let domain          = ref "box"
+let split           = ref "default"
 let minimizing      = ref false
 let visualization   = ref false
 let obj             = ref false
@@ -49,3 +50,8 @@ let set_domain d =
   | "box" | "boxS" | "boxCP" | "oct" | "poly"
   | "boxNoct" | "boxNpoly" | "octNpoly" | "BandP" -> domain := d
   | x -> "domain "^x^" undefined" |> failwith
+
+let set_split s =
+  match s with
+  | "default" | "maxSmear" | "smear" -> split := s
+  | x -> "bisection "^x^" undefined" |> failwith

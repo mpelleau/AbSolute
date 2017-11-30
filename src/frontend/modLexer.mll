@@ -12,7 +12,7 @@ let _ =
     [
       "param",          PARAM;
       "var",            VAR;
-      "objective", 	    OBJ;
+      "objective", 	OBJ;
       "constraints",    CONSTR;
       "sqrt",           SQRT;
       "cos",            COS;

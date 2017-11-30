@@ -46,6 +46,7 @@ open Csp
 %token TOK_MIN
 %token TOK_MAX
 %token TOK_SQRT
+%token TOK_CST
 %token TOK_INIT
 %token TOK_OBJ
 %token TOK_CONSTR
@@ -82,14 +83,18 @@ open Csp
 
 file:
   annot
+  constants
   domains
   objective
   constraints
   TOK_EOF
-  {{init=$2;
-    objective=$3;
-    constraints=$4;
-    to_draw=$1}}
+  {{jacobian=[];
+    init=$3;
+    objective=$4;
+    constraints=$5;
+    to_draw=$1;
+    constants=$2
+    }}
 
 annot:
  | TOK_ANNOT TOK_LBRACE annot2 TOK_RBRACE {$3}
@@ -104,6 +109,21 @@ objective:
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
+
+constants:
+  | TOK_CST TOK_LBRACE csts TOK_RBRACE {$3}
+  | {[]}
+
+csts:
+  | cst csts {$1::$2}
+  | {[]}
+
+cst:
+  | TOK_id TOK_ASSIGN value TOK_SEMICOLON {($1, $3)}
+
+value:
+  | TOK_LBRACKET const TOK_SEMICOLON const TOK_RBRACKET {($2, $4)}
+  | const {($1, $1)}
 
 annot2:
  | TOK_DRAW TOK_COLON varlist {$3}

@@ -201,6 +201,17 @@ let split_along (a:t) (v:var) : t list =
 
   and bexpri = bexpr * i
 
+  (*let rec test_print fmt (b:bexpr) =
+    match b with
+    | BUnary (NEG, (bi,i)) ->
+      Format.fprintf fmt "(- %a) -> %a" test_print bi I.print i
+    | BUnary (u, (bi,i)) ->
+      Format.fprintf fmt "%a %a -> %a" print_unop u test_print bi I.print i
+    | BBinary (b, (e1,i1) , (e2,i2)) ->
+      Format.fprintf fmt "(%a -> %a) %a (%a -> %a)" test_print e1 I.print i1 print_binop b test_print e2 I.print i2
+    | BVar v -> Format.fprintf fmt "%s" v
+    | BCst c -> Format.fprintf fmt "cst %a" I.print c*)
+
   (* interval evaluation of an expression;
      returns the interval result but also an expression tree annotated with
      intermediate results (useful for test transfer functions
@@ -259,6 +270,31 @@ let split_along (a:t) (v:var) : t list =
        in
        BBinary (o,b1,b2), r
 
+  (* refines binary operator to handle constants *)
+  let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
+    match e1, e2, b with
+    | BCst c1, BCst c2, _ -> Nb (i1, i2)
+    | BCst c, _, true -> merge_bot2 (Nb (i1)) (f2 i2 i1 x)
+    | BCst c, _, false -> merge_bot2 (Nb (i1)) (f2 i2 x i1)
+    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb (i2))
+    | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
+    | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
+
+  (* u + v = r => u = r - v /\ v = r - u *)
+  let refine_add u v r =
+    refine_bop I.filter_add_f I.filter_add_f u v r true
+
+  (* u - v = r => u = r + v /\ v = u - r *)
+  let refine_sub u v r =
+    refine_bop I.filter_sub_f I.filter_add_f u v r false
+
+  (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
+  let refine_mul u v r =
+    refine_bop I.filter_mul_f I.filter_mul_f u v r true
+
+  (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
+  let refine_div u v r =
+    refine_bop I.filter_div_f I.filter_mul_f u v r false
 
   (* returns a box included in its argument, by removing points such that
      the evaluation is not in the interval;
@@ -266,6 +302,7 @@ let split_along (a:t) (v:var) : t list =
      iterating eval and refine can lead to better reults (but is more costly);
      can raise Bot_found *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
+    (* Format.printf "%a %a %a\n" print a test_print e I.print x;*)
     match e with
     | BVar v ->
         (try Env.add v (debot (I.meet x (fst (find v a)))) a
@@ -291,14 +328,14 @@ let split_along (a:t) (v:var) : t list =
         refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
         let j = match o with
-          | ADD -> I.filter_add i1 i2 x
-          | SUB -> I.filter_sub i1 i2 x
-          | MUL -> I.filter_mul i1 i2 x
-          | DIV -> I.filter_div i1 i2 x
-	  | POW -> I.filter_pow i1 i2 x
-	  | NROOT -> I.filter_root i1 i2 x
-	  | MIN -> I.filter_min i1 i2 x
-	  | MAX -> I.filter_max i1 i2 x
+          | ADD -> refine_add (e1,i1) (e2,i2) x
+          | SUB -> refine_sub (e1,i1) (e2,i2) x
+          | MUL -> refine_mul (e1,i1) (e2,i2) x
+          | DIV -> refine_div (e1,i1) (e2,i2) x
+	      | POW -> I.filter_pow i1 i2 x
+    	  | NROOT -> I.filter_root i1 i2 x
+	      | MIN -> I.filter_min i1 i2 x
+	      | MAX -> I.filter_max i1 i2 x
         in
         let j1,j2 = debot j in
         refine (refine a e1 j1) e2 j2
@@ -306,6 +343,7 @@ let split_along (a:t) (v:var) : t list =
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
+    (*Format.printf "%a, %a %a %a, %a\n" test_print b1 I.print i1   print_cmpop o   test_print b2 I.print i2;*)
     let j = match o with
     | EQ -> I.filter_eq i1 i2
     | LEQ -> I.filter_leq i1 i2
@@ -326,9 +364,12 @@ let split_along (a:t) (v:var) : t list =
     filter_bounds_bot aux
 
   let filter (a:t) (e1,binop,e2) : t =
+    (*Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;*)
     match test a e1 binop e2 with
-    | Bot -> raise Bot_found
-    | Nb e -> e
+    | Bot -> if !Constant.debug then
+               Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;
+             raise Bot_found
+    | Nb e -> (*Format.printf "  ==> %a\n" print e;*) e
 
   let filterl (a:t) (e1,binop,e2) : t =
     filter a (e1, binop, e2)

@@ -27,6 +27,9 @@ module type AbstractCP = sig
   (* adds an unconstrained variable to the environnement *)
   val add_var : t -> typ * var -> t
 
+  (* removes an unconstrained variable to the environnement *
+  val rem_var : t -> var -> t *)
+
   (*** PREDICATES ***)
 
   (* tests if an abstract element is too small to be cut *)

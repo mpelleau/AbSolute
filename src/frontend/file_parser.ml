@@ -29,6 +29,11 @@ let check_ast p =
 	raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
     ) p.init
+  and check_csts () =
+    List.iter (fun (v,_) -> if Hashtbl.mem h v then
+      raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
+      else Hashtbl.add h v true
+    ) p.constants
   and check_draw () =
     match p.to_draw with
     | [] -> ()
@@ -54,6 +59,7 @@ let check_ast p =
     List.iter (iter_constr check_v (fun _ -> ())) p.constraints
   in
   check_vars ();
+  check_csts ();
   check_dom ();
   check_draw ();
   check_constrs ()
@@ -97,4 +103,5 @@ let parse (filename:string option) : prog =
 let parse fn =
   let p = parse fn in
   check_ast p;
-  {p with constraints = p.constraints}
+  let j = Csp.compute_jacobian p in
+  {p with jacobian = j}

@@ -197,6 +197,8 @@ module type ITV = sig
   val filter_add: t -> t -> t -> (t*t) bot
   val filter_sub: t -> t -> t -> (t*t) bot
   val filter_mul: t -> t -> t -> (t*t) bot
+  val filter_mul_cst: t -> t -> t -> (t*t) bot
+  val filter_cst_mul: t -> t -> t -> (t*t) bot
   val filter_div: t -> t -> t -> (t*t) bot
 
   val filter_pow: t -> t -> t -> (t*t) bot
@@ -220,5 +222,13 @@ module type ITV = sig
 
 
   val filter_bounds: t -> t bot
+
+  (* Only filters the first argument *)
+  val filter_add_f: t -> t -> t -> t bot
+  val filter_sub_f: t -> t -> t -> t bot
+  val filter_mul_f: t -> t -> t -> t bot
+  val filter_div_f: t -> t -> t -> t bot
+  val filter_pow_f: t -> t -> t -> t bot
+  val filter_root_f: t -> t -> t -> t bot
 
 end

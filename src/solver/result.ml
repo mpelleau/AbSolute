@@ -31,6 +31,9 @@ module Make (A: AbstractCP) = struct
 
   (* adds an unsure element to a result *)
   let add_u res ?obj:fobj u =
+    match !Constant.sure with
+    | true -> res
+    | false -> (
     match fobj with
     | Some fobj -> 
        let (obj_value, _) = A.forward_eval u fobj in
@@ -53,6 +56,7 @@ module Make (A: AbstractCP) = struct
        {res with unsure     = u::res.unsure;
                  nb_unsure  = res.nb_unsure+1;
                  vol_unsure = res.vol_unsure+.A.volume u}
+    )
 
   (* adds a sure element to a result *)
   let add_s res ?obj:fobj s =

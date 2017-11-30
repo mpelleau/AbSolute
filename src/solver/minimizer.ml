@@ -37,7 +37,7 @@ module Minimize(Abs : AbstractCP) = struct
     let open Csp in
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);
-    let res =  explore abs prob.constraints prob.objective in
+    let res =  explore abs prob.jacobian prob.objective in
     Format.printf "\noptimization ends\n%!%a" Res.print res;
     res
 
@@ -47,14 +47,14 @@ module Minimize(Abs : AbstractCP) = struct
     let abs = init prob in
     printf "abs = %a" Abs.print abs;
     if not (Abs.is_bottom abs) then
-      let cons = List.filter (fun exp -> not (is_cons_linear exp)) prob.constraints in
+      let cons = List.filter (fun (exp, _) -> not (is_cons_linear exp)) prob.jacobian in
       printf "\nconstraints = [";
-      List.iter (Format.printf "%a ;" (print_bexpr)) prob.constraints;
+      List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) prob.jacobian;
       printf "]@.";
       printf "non linear constraints = [";
-      List.iter (Format.printf "%a ;" (print_bexpr)) cons;
+      List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) cons;
       printf "]@.";
-      let res = explore abs prob.constraints prob.objective in
+      let res = explore abs prob.jacobian prob.objective in
       printf "solving ends\n%!";
       let nb_sols = res.nb_sure + res.nb_unsure in
       match nb_sols with

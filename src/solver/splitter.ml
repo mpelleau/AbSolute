@@ -52,7 +52,7 @@ module Make (Abs : AbstractCP) = struct
     )  Abs.empty problem.init)
 
   type consistency = Full of Abs.t
-		     | Maybe of Abs.t * Csp.bexpr list
+		     | Maybe of Abs.t * Csp.ctrs
 		     | Empty
 
   let print_debug tab obj abs =
@@ -68,12 +68,12 @@ module Make (Abs : AbstractCP) = struct
     | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
     | None -> false
 
-  let rec consistency abs ?obj:objv constrs : consistency =
+  let rec consistency abs ?obj:objv (constrs:Csp.ctrs) : consistency =
     print_debug "" objv abs;
     try
-      let abs' = List.fold_left filter abs constrs in
+      let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
       if Abs.is_bottom abs' then Empty else
-	let unsat = List.filter (fun c -> not (sat_cons abs' c)) constrs in
+	let unsat = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in
 	match unsat with
 	| [] -> print_debug "\t=> sure:" objv abs'; Full abs'
 	| _ ->  if minimize_test objv abs' then
@@ -91,13 +91,14 @@ module Make (Abs : AbstractCP) = struct
     with Bot.Bot_found -> if !Constant.debug then Format.printf "\t=> bot\n"; Empty
 
   (* using elimination technique *)
-  let prune (abs:Abs.t) (constrs:Csp.constrs) =
+  let prune (abs:Abs.t) (constrs:Csp.ctrs) =
     let rec aux abs c_list is_sure sures unsures =
       match c_list with
       | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
       | h::tl ->
 	       try
-	         let neg = Csp.neg_bexpr h |> filter abs in
+             let (c, _) = h in
+	         let neg = Csp.neg_bexpr c |> filter abs in
 	         let s,u = Abs.prune abs neg in
 	         let s',u' = List.fold_left (fun (sures,unsures) elm ->
 	           aux elm tl is_sure sures unsures)
@@ -109,4 +110,48 @@ module Make (Abs : AbstractCP) = struct
 
   let split abs cstrs = Abs.split abs
 (* TODO: add other splits *)
+
+  let get_value abs v e =
+    let (lb, ub) = Abs.forward_eval abs e in
+    let slope = max (abs_float lb) (abs_float ub) in
+    let (xl, xu) = Abs.forward_eval abs (Csp.Var v) in
+    let diam = xu -. xl in
+    let value = slope *. diam in
+    (value, (xu +. xl) /. 2.)
+
+  let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
+    let (msmear, vsplit, mid) = List.fold_left (
+      fun (m', mv', mid') (_, l) ->
+        List.fold_left (
+          fun (m, mv, mid) (v, e) ->
+            let (value, half) = get_value abs v e in
+            if m < value then (value, v, half)
+            else (m, mv, mid)
+        ) (m', mv', mid') l
+    ) (-1., "", -1.) jacobian
+    in
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
+
+  module Smear = Map.Make(struct type t=Csp.var let compare=compare end)
+
+  let sum_smear abs (jacobian:Csp.ctrs) : Abs.t list =
+    let smear = List.fold_left (
+      fun map (_, l) ->
+        List.fold_left (
+          fun m (v, e) ->
+            let (value, half) = get_value abs v e in
+            match (Smear.find_opt v m) with
+            | None -> Smear.add v (value, half) m
+            | Some (s, _) -> Smear.add v (s +. value, half) m
+        ) map l
+    ) Smear.empty jacobian
+    in
+    let (msmear, vsplit, mid) =
+    Smear.fold (
+      fun var (smear, mi) (m, v, s) ->
+        if smear > m then (smear, var, mi)
+        else (m, v, s)
+    ) smear (-1., "", -1.)
+    in
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 end

@@ -66,8 +66,8 @@ module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
 let speclist =
   let open Constant in
   [
-  ("-visualization", Arg.Set visualization, "Enables visualization mode");
-  ("-precision"    , Arg.Float set_prec   , "Changes the precision. default is 1e-3");
+  ("-visualization", Arg.Set visualization   , "Enables visualization mode");
+  ("-precision"    , Arg.Float set_prec      , "Changes the precision. default is 1e-3");
   ("-max_sol"      , Arg.Int set_max_sol     , "Changes the maximum number of solutions. default is 1e6");
   ("-max_iter"     , Arg.Int set_max_iter    , "Changes the maximum number of iterations. default is 1e7");
   ("-domain"       , Arg.String set_domain   , "Changes the domain used for the solving. default is box");
@@ -80,6 +80,7 @@ let speclist =
   ("-iter"         , Arg.Set iter            , "Enables the loop for the propagation");
   ("-pruning_iter" , Arg.Int set_pruning_iter, "Changes the number of times the pruning process is applied");
   ("-debug"        , Arg.Set debug           , "Prints the execution for debug purpose");
+  ("-split"        , Arg.String set_split    , "Changes the splitting strategy used for the solving");
   (*********************************************** ALIASES ********************************************************)
   ("-m"            , Arg.Set minimizing      , "Alias for -minimize");
   ("-t"            , Arg.Set trace           , "Alias for -trace");
@@ -89,6 +90,7 @@ let speclist =
   ("-d"            , Arg.String set_domain   , "Alias for -domain");
   ("-i"            , Arg.Set iter            , "Alias for -iter");
   ("-pi"           , Arg.Int set_pruning_iter, "Alias for -pruning_iter");
+  ("-sp"           , Arg.String set_split    , "Alias for -split");
 ]
 
 let anonymous_arg = Constant.set_prob
