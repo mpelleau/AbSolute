@@ -55,8 +55,8 @@ module Make (D:Drawer) = struct
 	     D.draw3d fmt values vars
 
   let traceout sure unsure =
-    List.iter (Format.printf "sure:%a\n%!" D.print) sure;
-    List.iter (Format.printf "unsure:%a\n%!" D.print) unsure
+    List.iter (fun (e, c) -> Format.printf "sure: (), (%a %a)\n%!" D.print e Csp.print_all_csts c) sure;
+    List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp.print_all_csts c) unsure
 
   let draw_vars prob =
     let open Csp in
@@ -80,26 +80,29 @@ module Make (D:Drawer) = struct
     let open Result in
     let open Csp in
     let open Constant in
-    let unsure = if !sure then [] else res.unsure in
-    if !visualization then draw2d res.sure unsure (vars2D prob);
-    if !tex then print_latex res.sure unsure (vars2D prob);
-    if !obj then draw3d res.sure (vars3D prob);
-    if !trace then traceout res.sure unsure
+    let (s, _) = List.split res.sure in
+    let (u, c) = if !sure then ([], []) else List.split res.unsure in
+    if !visualization then draw2d s u (vars2D prob);
+    if !tex then print_latex s u (vars2D prob);
+    if !obj then draw3d s (vars3D prob);
+    let u = if !sure then [] else res.unsure in
+    if !trace then traceout res.sure u
 
   let trace_min sure unsure value =
     Format.printf "best value:%f\n%!" value;
-    List.iter (Format.printf "sure:%a\n%!" D.print) sure;
-    List.iter (Format.printf "unsure:%a\n%!" D.print) unsure
+    traceout sure unsure
 
   let out_min prob res =
     Format.printf "\ntime : %fs\n" (Sys.time ());
     let open Result in
     let open Csp in
     let open Constant in
-    let unsure = if !sure then [] else res.unsure in
-    if !visualization then draw2d res.sure unsure (vars2D prob);
-    if !tex then print_latex res.sure unsure (vars2D prob);
-    if !obj then draw3d res.sure (vars3D prob);
-    if !trace then trace_min res.sure unsure res.best_value
+    let (s, _) = List.split res.sure in
+    let (u, c) = if !sure then ([], []) else List.split res.unsure in
+    if !visualization then draw2d s u (vars2D prob);
+    if !tex then print_latex s u (vars2D prob);
+    if !obj then draw3d s (vars3D prob);
+    let u = if !sure then [] else res.unsure in
+    if !trace then trace_min res.sure u res.best_value
 
 end

@@ -32,6 +32,10 @@ module Box (I:ITV) = struct
 
   let is_integer var = var.[String.length var - 1] = '%'
 
+  let vars abs =
+    let (v, _) = List.split (Env.bindings abs) in
+    v
+
 
   (************************************************************************)
   (* PRINTING *)
@@ -378,6 +382,19 @@ let split_along (a:t) (v:var) : t list =
 
   let add_var abs (typ,var) : t =
     Env.add (if typ = INT then (var^"%") else var) I.top abs
+
+  let var_bounds abs var =
+    let (itv, _) = find var abs in
+    I.to_float_range itv
+
+  let bounded_vars abs =
+    let b = Env.bindings abs in
+    let l = List.map (fun (v, d) -> (v, I.to_float_range d)) b in
+    List.filter (fun (v, (l, u)) -> l = u) l
+
+
+  let rem_var abs var : t =
+    Env.remove var abs
 
   let is_enumerated a =
     Env.for_all (fun v i -> (is_integer v |> not) || I.is_singleton i) a

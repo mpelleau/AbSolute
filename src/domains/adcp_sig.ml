@@ -24,11 +24,20 @@ module type AbstractCP = sig
   (* returns an empty element *)
   val empty : t
 
+  (* returns the variables *)
+  val vars : t -> var list
+
   (* adds an unconstrained variable to the environnement *)
   val add_var : t -> typ * var -> t
 
-  (* removes an unconstrained variable to the environnement *
-  val rem_var : t -> var -> t *)
+  (* returns the bounds of a variable *)
+  val var_bounds : t -> var -> (float * float)
+
+  (* returns the bounded variables *)
+  val bounded_vars : t -> csts
+
+  (* removes an unconstrained variable to the environnement *)
+  val rem_var : t -> var -> t
 
   (*** PREDICATES ***)
 

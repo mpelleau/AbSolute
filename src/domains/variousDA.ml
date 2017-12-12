@@ -60,14 +60,14 @@ module BoxAndPoly : Reduction =
       let poly_env = Abstract1.env poly in
       let poly' = A.to_poly box poly_env in
       let poly' = Abstract1.meet B.man poly poly' in
-      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly;
+      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly';
       poly'
 
     let b_meet_a box poly =
       let box_env = Abstract1.env box in
       let box' = B.to_box poly box_env in
       let box' = Abstract1.meet BoxCP.man box box' in
-      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly;
+      Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box';
       box'
 
   end
@@ -124,6 +124,30 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let empty = A.empty,B.empty
 
     let add_var (abs,abs') v = (A.add_var abs v), (B.add_var abs' v)
+
+    let var_bounds (abs,abs') v  =
+      let (la, ha) = A.var_bounds abs v
+      and (lb, hb) = B.var_bounds abs' v in
+      ((max la lb), (min ha hb))
+
+    let rem_var (abs,abs') v =
+       let a = A.rem_var abs v
+       and b = B.rem_var abs' v in
+       (a, b)
+
+    let bounded_vars (abs,abs')  =
+      let la = A.bounded_vars abs
+      and lb = B.bounded_vars abs' in
+      let (tmp, _) = List.split lb in
+      let (same, diffa) = List.partition (fun (v, c) -> List.mem v tmp) la in
+      let (tmp, _) = List.split same in
+      let (_, diffb) = List.partition (fun (v, c) -> List.mem v tmp) lb in
+      List.append la diffb
+
+    let vars (abs, abs') =
+      let va = A.vars abs
+      and vb = B.vars abs' in
+      List.sort_uniq (compare) (va@vb)
 
     let is_small ((abs, abs'):t) = A.is_small abs
 

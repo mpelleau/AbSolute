@@ -27,7 +27,6 @@ module Boolean (Abs:AbstractCP) = struct
     | Not b -> filterl value (neg_bexpr b)
     | Cmp (binop,e1,e2) -> Abs.filterl value (e1,binop,e2)
 
-
   let rec sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
     match constr with
@@ -37,6 +36,27 @@ module Boolean (Abs:AbstractCP) = struct
     | _ ->
       try Abs.is_bottom (filter a (neg_bexpr constr))
       with Bot.Bot_found -> Abs.is_enumerated a
+
+  let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
+    let newc = Abs.bounded_vars a in
+
+    let tmp = Csp.get_vars_jacob constrs in
+    let ctrs = List.fold_left
+      (fun l (v, (a, b)) ->
+        Csp.replace_cst_jacob (v, a) l
+      ) tmp newc in
+    let newa = List.fold_left (fun a' (v, i) -> Abs.rem_var a' v) a newc in
+
+    let vars = Abs.vars newa in
+    let ctrs_vars = List.fold_left
+      ( fun s (c, v, j) -> Csp.Variables.union s v
+      ) Csp.Variables.empty ctrs in
+    let unconstrained = List.filter (fun v -> not (Csp.Variables.mem v ctrs_vars)) vars in
+    let abs = List.fold_left (fun a' v -> Abs.rem_var a' v) newa unconstrained in
+
+    let newctrs = List.map (fun (c, _, j) -> (c, j)) ctrs in
+    (abs, newctrs, newc@const)
+
 end
 
 (* Consistency computation and splitting strategy handling *)
@@ -52,7 +72,7 @@ module Make (Abs : AbstractCP) = struct
     )  Abs.empty problem.init)
 
   type consistency = Full of Abs.t
-		     | Maybe of Abs.t * Csp.ctrs
+		     | Maybe of Abs.t * Csp.ctrs * Csp.csts
 		     | Empty
 
   let print_debug tab obj abs =
@@ -68,7 +88,7 @@ module Make (Abs : AbstractCP) = struct
     | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
     | None -> false
 
-  let rec consistency abs ?obj:objv (constrs:Csp.ctrs) : consistency =
+  let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
     print_debug "" objv abs;
     try
       let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
@@ -79,15 +99,16 @@ module Make (Abs : AbstractCP) = struct
 	| _ ->  if minimize_test objv abs' then
                   (print_debug "\t*******=> sure:" objv abs'; Full abs')
                 else (
-                  print_debug "\t=> " objv abs'; 
+                  print_debug "\t=> " objv abs';
+                  let (abs'', unsat', const') = check_csts abs' unsat const in
                   if !Constant.iter then
-                    let ratio = (Abs.volume abs')/.(Abs.volume abs) in
-                    if ratio > 0.9 || abs = abs' then
-                      Maybe(abs', unsat)
+                    let ratio = (Abs.volume abs'')/.(Abs.volume abs) in
+                    if ratio > 0.9 || abs = abs'' then
+                      Maybe(abs'', unsat', const')
                     else
-                      consistency abs' unsat
+                      consistency abs'' unsat' const'
                   else
-                    Maybe(abs', unsat))
+                    Maybe(abs'', unsat', const'))
     with Bot.Bot_found -> if !Constant.debug then Format.printf "\t=> bot\n"; Empty
 
   (* using elimination technique *)

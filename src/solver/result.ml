@@ -2,8 +2,8 @@
 open Adcp_sig
 
 type 'a res = {
-    sure       : 'a list;   (* elements that satisfy the constraints *)
-    unsure     : 'a list;   (* elements that MAY satisfy the constraints *)
+    sure       : ('a * Csp.csts) list;   (* elements that satisfy the constraints *)
+    unsure     : ('a * Csp.csts) list;   (* elements that MAY satisfy the constraints *)
     nb_sure    : int;       (* size of sure list *)
     nb_unsure  : int;       (* size of unsure list *)
     vol_sure   : float;     (* volume of the elements in the sure list *)
@@ -30,7 +30,7 @@ module Make (A: AbstractCP) = struct
     }
 
   (* adds an unsure element to a result *)
-  let add_u res ?obj:fobj u =
+  let add_u res ?obj:fobj (u, c) =
     match !Constant.sure with
     | true -> res
     | false -> (
@@ -41,7 +41,7 @@ module Make (A: AbstractCP) = struct
          res
        else if obj_value < res.best_value then
          {sure       = [];
-          unsure     = [u]; 
+          unsure     = [(u, c)];
           best_value = obj_value; 
           nb_unsure  = 0; 
           nb_sure    = 1; 
@@ -49,24 +49,24 @@ module Make (A: AbstractCP) = struct
           vol_unsure = A.volume u;
           vol_sure   = 0.}
        else
-         {res with unsure     = u::res.unsure; 
+         {res with unsure     = (u, c)::res.unsure;
                    nb_unsure  = res.nb_unsure + 1;
                    vol_unsure = res.vol_unsure +. A.volume u}
     | None -> 
-       {res with unsure     = u::res.unsure;
+       {res with unsure     = (u, c)::res.unsure;
                  nb_unsure  = res.nb_unsure+1;
                  vol_unsure = res.vol_unsure+.A.volume u}
     )
 
   (* adds a sure element to a result *)
-  let add_s res ?obj:fobj s =
+  let add_s res ?obj:fobj (s, c) =
     match fobj with
     | Some fobj -> 
        let (obj_value, _) = A.forward_eval s fobj in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
-         {sure       = [s];
+         {sure       = [(s, c)];
           unsure     = []; 
           best_value = obj_value; 
           nb_sure    = 1; 
@@ -75,11 +75,11 @@ module Make (A: AbstractCP) = struct
           vol_sure   = A.volume s;
           vol_unsure = 0.}
        else
-         {res with sure     = s::res.sure; 
+         {res with sure     = (s, c)::res.sure;
                    nb_sure  = res.nb_sure + 1;
                    vol_sure = res.vol_sure +. A.volume s}
     | None ->
-       {res with sure     = s::res.sure;
+       {res with sure     = (s, c)::res.sure;
                  nb_sure  = res.nb_sure+1;
                  vol_sure = res.vol_sure +. A.volume s}
 

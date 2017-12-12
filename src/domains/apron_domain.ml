@@ -151,11 +151,35 @@ module MAKE(AP:ADomain) = struct
 
   let empty = A.top man (Environment.make [||] [||])
 
+  let vars abs =
+    let (ivars, rvars) = Environment.vars (A.env abs) in
+    let tmp = (Array.to_list ivars)@(Array.to_list rvars) in
+    let tmp' = List.map (Var.to_string) tmp in
+    List.sort_uniq (compare) tmp'
+
   let add_var abs (typ,v) =
     let e = A.env abs in
     let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
     let env = Environment.add e ints reals in
     A.change_environment man abs env false
+
+  let var_bounds abs v =
+    let var = Var.of_string v in
+    let i = A.bound_variable man abs var in
+    itv_to_float i
+
+  let bounded_vars abs =
+    let (ivars, rvars) = Environment.vars (A.env abs) in
+    let vars = (Array.to_list ivars)@(Array.to_list rvars) in
+    let itvs = List.fold_left (fun l v ->
+      (Var.to_string v, itv_to_float (A.bound_variable man abs v))::l
+      ) [] vars in
+    List.filter (fun (v, (l, u)) -> l = u) itvs
+
+  let rem_var abs v =
+    let var = Var.of_string v in
+    let e = Environment.remove (A.env abs) (Array.of_list [var]) in
+    A.change_environment man abs e false
 
   let is_bottom abs =
     A.is_bottom man abs

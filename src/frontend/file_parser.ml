@@ -92,6 +92,7 @@ let parse (filename:string option) : prog =
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
     fileparser lex
   with
+    | IllFormedAST s -> failwith s
   (* | Failure s -> *)
   (*     Printf.eprintf "Error near %s\n%s\n" *)
   (*       (string_of_position lex.lex_start_p) *)
@@ -103,5 +104,6 @@ let parse (filename:string option) : prog =
 let parse fn =
   let p = parse fn in
   check_ast p;
-  let j = Csp.compute_jacobian p in
-  {p with jacobian = j}
+  let prob = Csp.replace_cst p in
+  let j = Csp.compute_jacobian prob in
+  {prob with jacobian = j}

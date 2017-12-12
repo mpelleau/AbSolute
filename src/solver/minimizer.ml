@@ -11,33 +11,33 @@ module Minimize(Abs : AbstractCP) = struct
     let (obj_inf, obj_sup) = Abs.forward_eval a obj in
     obj_sup -. obj_inf <= !Constant.precision
 
-  let explore abs constrs obj =
+  let explore abs constrs obj consts =
     let open Res in
-    let rec aux abs cstrs obj res depth =
-      match consistency abs ~obj:obj cstrs with
+    let rec aux abs cstrs obj csts res depth =
+      match consistency abs ~obj:obj cstrs csts with
       | Empty -> res
-      | Full abs' -> add_s res ~obj:obj abs'
-      | Maybe(a,cstrs) when stop res a || is_small a obj -> add_u res ~obj:obj a
-      | Maybe(abs',cstrs)  ->
+      | Full abs' -> add_s res ~obj:obj (abs', csts)
+      | Maybe(a, cstrs, csts) when stop res a || is_small a obj -> add_u res ~obj:obj (a, csts)
+      | Maybe(abs', cstrs, csts)  ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
-           let res = List.fold_left (fun r x -> add_s r ~obj:obj x) res ls in
+           let res = List.fold_left (fun r x -> add_s r ~obj:obj (x, csts)) res ls in
            List.fold_left (fun res x ->
                 List.fold_left (fun res elem ->
-                     aux elem cstrs obj (incr_step res) (depth + 1)
+                     aux elem cstrs obj csts (incr_step res) (depth + 1)
                 ) res (split x cstrs)
 	   ) res lu
          else
            List.fold_left (fun res elem ->
-                aux elem cstrs obj (incr_step res) (depth + 1)
+                aux elem cstrs obj csts (incr_step res) (depth + 1)
 	   ) res (split abs' cstrs) in 
-    aux abs constrs obj (empty_obj_res abs obj) 0
+    aux abs constrs obj consts (empty_obj_res abs obj) 0
 
   let minimizing prob =
     let open Csp in
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);
-    let res =  explore abs prob.jacobian prob.objective in
+    let res =  explore abs prob.jacobian prob.objective prob.constants in
     Format.printf "\noptimization ends\n%!%a" Res.print res;
     res
 
@@ -54,7 +54,7 @@ module Minimize(Abs : AbstractCP) = struct
       printf "non linear constraints = [";
       List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) cons;
       printf "]@.";
-      let res = explore abs prob.jacobian prob.objective in
+      let res = explore abs prob.jacobian prob.objective prob.constants in
       printf "solving ends\n%!";
       let nb_sols = res.nb_sure + res.nb_unsure in
       match nb_sols with

@@ -48,10 +48,10 @@ type jacob = (var * expr) list
 type ctrs = (bexpr * jacob) list
 
 (* constants *)
-type cst = var * (i * i)
+type csts = (var * (i*i)) list
 
 (* program *)
-type prog = { init : decls; constants : cst list; objective : expr; constraints : constrs; jacobian : ctrs; to_draw : var list}
+type prog = { init : decls; constants : csts; objective : expr; constraints : constrs; jacobian : ctrs; to_draw : var list}
 
 
 
@@ -371,7 +371,34 @@ let replace_cst_cstrs (id, cst) cstrs =
                              else (c, vars)
   ) cstrs
 
-(*let get_cst_bexpr b =
+let replace_cst csp =
+  let p = get_csts csp in
+  let ctr_vars = get_vars_cstrs p.constraints in
+  let (ctrs, _) = List.split (List.fold_left
+    (fun l (v, (a, b)) ->
+      if a = b then replace_cst_cstrs (v, a) l
+      else l
+    ) ctr_vars p.constants) in
+  {p with constraints = ctrs}
+
+
+
+let get_vars_jacob jacob =
+  List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
+
+let replace_cst_jacob (id, cst) jacob =
+  List.map (fun (c, vars, j) ->
+    if Variables.mem id vars then
+      (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
+    else (c, vars, j)
+  ) jacob
+
+
+
+
+
+(*
+let get_cst_bexpr b =
   let b = simplify_bexpr b in
   match b with
   | Cmp (op,e1,e2) ->
@@ -382,27 +409,13 @@ let replace_cst_cstrs (id, cst) cstrs =
 
 let filter_cstrs cstrs =
   List.fold_left (fun (cstr, csts) (c, v) ->
-    if Variables.is_empty v then
-      (cstr, csts)
-    else if Variables.cardinal v = 1 then
+    if Variables.cardinal v = 1 then
       (cstr, )
     else ((c, v)::cstr, csts)
   ) ([], []) cstrs
 
 
-
-
-
-
-let replace_cst_cstr (id, cst) bexpr =
-  if List.exists (fun v -> v = id) (get_vars_bexpr bexpr) then
-    (replace_cst_bexpr (id, cst) bexpr, true)
-  else
-    (bexpr, false)
- *)
-
-
-(*let simplify csp =
+let simplify csp =
   let p = get_csts csp in
   let cstrs = List.fold_left (
                 (fun l c -> List.append l )
@@ -432,12 +445,16 @@ let add_constr csp c =
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
 let domain_to_constraints (_,v,d)  =
-  match d with
+  let c1, c2 = match d with
   | Finite (l,h) ->
-     let c1 = (Var v, GEQ, Cst l)
-     and c2 = (Var v, LEQ, Cst h)
-     in c1,c2
-  | _ -> failwith "cant handle non-finite domains"
+     (Var v, GEQ, Cst l), (Var v, LEQ, Cst h)
+  | Minf (i) ->
+     (Var v, GEQ, Cst neg_infinity), (Var v, LEQ, Cst i)
+  | Inf (i) ->
+     (Var v, GEQ, Cst i), (Var v, LEQ, Cst infinity)
+  | _ ->
+     (Var v, GEQ, Cst neg_infinity), (Var v, LEQ, Cst infinity)
+  in c1,c2
 
 (* iter on expr*)
 let rec iter_expr f = function
@@ -582,6 +599,18 @@ let print_cst fmt (a, b) =
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
 
+
+
+
+let print_aux_csts fmt (a, (b, c)) =
+  Format.fprintf fmt "%a:[%.2f; %.2f]" print_var a b c
+
+let rec print_all_csts fmt = function
+  | [] -> ()
+  | a::[] -> Format.fprintf fmt "%a" print_aux_csts a
+  | a::tl -> Format.fprintf fmt "%a " print_aux_csts a; print_all_csts fmt tl
+
+
 let rec print_expr fmt = function
   | Unary (NEG, e) ->
     Format.fprintf fmt "(- %a)" print_expr e
@@ -606,7 +635,7 @@ let print_jacob fmt (v, e) =
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; List.iter (print_jacob fmt) j; Format.fprintf fmt "\n"; print_jacobian fmt tl
+  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
 let print fmt prog =
   let rec aux f = function
@@ -614,6 +643,7 @@ let print fmt prog =
   | a::tl -> Format.fprintf fmt "%a;\n" f a; aux f tl
   in
   aux print_assign prog.init;
+  Format.fprintf fmt "\n";
   aux print_csts prog.constants;
   (*Format.fprintf fmt "\n";
   aux print_bexpr prog.constraints*)

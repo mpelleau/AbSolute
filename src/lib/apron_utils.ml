@@ -8,14 +8,14 @@ let scalar_to_mpqf = function
   | Scalar.Float x -> Mpqf.of_float x
   | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
 
-let scalar_to_float s =
-  let res = match s with
+let scalar_to_float = function
   | Scalar.Mpqf x -> Mpqf.to_float x
   | Scalar.Float x -> x
   | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
-  in res
 
 let scalar_to_int x = scalar_to_float x |> int_of_float
+
+let itv_to_float i = (scalar_to_float i.Interval.inf, scalar_to_float i.Interval.sup)
 
 let coeff_to_float = function
   | Coeff.Scalar x -> scalar_to_float x
