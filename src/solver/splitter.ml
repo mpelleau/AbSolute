@@ -52,10 +52,11 @@ module Boolean (Abs:AbstractCP) = struct
       ( fun s (c, v, j) -> Csp.Variables.union s v
       ) Csp.Variables.empty ctrs in
     let unconstrained = List.filter (fun v -> not (Csp.Variables.mem v ctrs_vars)) vars in
+    let v_unconst = List.map (fun v -> (v, Abs.var_bounds newa v)) unconstrained in
     let abs = List.fold_left (fun a' v -> Abs.rem_var a' v) newa unconstrained in
 
     let newctrs = List.map (fun (c, _, j) -> (c, j)) ctrs in
-    (abs, newctrs, newc@const)
+    (abs, newctrs, v_unconst@(newc@const))
 
 end
 
@@ -83,6 +84,13 @@ module Make (Abs : AbstractCP) = struct
          Format.printf "%sabs = %a\tobjective = (%f, %f)@." tab Abs.print abs inf sup
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
+  let print_debug_const tab cstrs csts =
+    if !Constant.debug then
+      Format.printf "%sconstraints:\n" tab;
+      List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
+      Format.printf "%sconstants:\n" tab;
+      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts
+
   let minimize_test obj abs =
     match obj with
     | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
@@ -100,7 +108,9 @@ module Make (Abs : AbstractCP) = struct
                   (print_debug "\t*******=> sure:" objv abs'; Full abs')
                 else (
                   print_debug "\t=> " objv abs';
+                  print_debug_const "\t  " unsat const;
                   let (abs'', unsat', const') = check_csts abs' unsat const in
+                  print_debug_const "\t  " unsat' const';
                   if !Constant.iter then
                     let ratio = (Abs.volume abs'')/.(Abs.volume abs) in
                     if ratio > 0.9 || abs = abs'' then

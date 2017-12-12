@@ -370,8 +370,8 @@ let split_along (a:t) (v:var) : t list =
   let filter (a:t) (e1,binop,e2) : t =
     (*Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;*)
     match test a e1 binop e2 with
-    | Bot -> if !Constant.debug then
-               Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;
+    | Bot -> (* if !Constant.debug then
+               Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;*)
              raise Bot_found
     | Nb e -> (*Format.printf "  ==> %a\n" print e;*) e
 
