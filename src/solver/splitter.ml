@@ -86,10 +86,10 @@ module Make (Abs : AbstractCP) = struct
 
   let print_debug_const tab cstrs csts =
     if !Constant.debug then
-      Format.printf "%sconstraints:\n" tab;
+      (Format.printf "%sconstraints:\n" tab;
       List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
       Format.printf "%sconstants:\n" tab;
-      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts
+      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts)
 
   let minimize_test obj abs =
     match obj with
