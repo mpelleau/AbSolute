@@ -18,7 +18,7 @@ module Solve(Abs : AbstractCP) = struct
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
       | Empty -> res
-      | Full abs' -> add_s res (abs', csts)
+      | Full (abs', const) -> add_s res (abs', const)
       | Maybe(a, cstrs, csts) when stop res a -> res
       | Maybe(a, cstrs, csts) when Abs.is_small a -> add_u res (a, csts)
       | Maybe(abs', cstrs, csts) ->

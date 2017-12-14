@@ -16,7 +16,7 @@ module Minimize(Abs : AbstractCP) = struct
     let rec aux abs cstrs obj csts res depth =
       match consistency abs ~obj:obj cstrs csts with
       | Empty -> res
-      | Full abs' -> add_s res ~obj:obj (abs', csts)
+      | Full (abs', const) -> add_s res ~obj:obj (abs', const)
       | Maybe(a, cstrs, csts) when stop res a || is_small a obj -> add_u res ~obj:obj (a, csts)
       | Maybe(abs', cstrs, csts)  ->
          if !Constant.pruning && depth < !Constant.pruning_iter then

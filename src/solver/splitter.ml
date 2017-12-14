@@ -29,13 +29,13 @@ module Boolean (Abs:AbstractCP) = struct
 
   let rec sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
-    match constr with
+    (* match constr with
     | Or (b1,b2) -> sat_cons a b1 || sat_cons a b2
     | And (b1,b2) -> sat_cons a b1 && sat_cons a b2
     | Not b -> sat_cons a (neg_bexpr b)
-    | _ ->
-      try Abs.is_bottom (filter a (neg_bexpr constr))
-      with Bot.Bot_found -> Abs.is_enumerated a
+    | _ -> *)
+     try Abs.is_bottom (filter a (neg_bexpr constr))
+      with Bot.Bot_found -> true
 
   let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
     let newc = Abs.bounded_vars a in
@@ -72,7 +72,7 @@ module Make (Abs : AbstractCP) = struct
       Abs.filter (Abs.filter abs c1) c2
     )  Abs.empty problem.init)
 
-  type consistency = Full of Abs.t
+  type consistency = Full of Abs.t * Csp.csts
 		     | Maybe of Abs.t * Csp.ctrs * Csp.csts
 		     | Empty
 
@@ -98,18 +98,22 @@ module Make (Abs : AbstractCP) = struct
 
   let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
     print_debug "" objv abs;
+    print_debug_const "" constrs const;
     try
       let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
       if Abs.is_bottom abs' then Empty else
 	let unsat = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in
 	match unsat with
-	| [] -> print_debug "\t=> sure:" objv abs'; Full abs'
+	| [] -> print_debug "\t=> sure:" objv abs'; Full (abs', const)
 	| _ ->  if minimize_test objv abs' then
-                  (print_debug "\t*******=> sure:" objv abs'; Full abs')
+                  (print_debug "\t*******=> sure:" objv abs'; Full (abs', const))
                 else (
                   print_debug "\t=> " objv abs';
                   print_debug_const "\t  " unsat const;
                   let (abs'', unsat', const') = check_csts abs' unsat const in
+                  match Abs.vars abs'' with
+                  | [] -> print_debug "\t=> sure:" objv abs''; Full (abs'', const')
+                  | _ -> (
                   print_debug_const "\t  " unsat' const';
                   if !Constant.iter then
                     let ratio = (Abs.volume abs'')/.(Abs.volume abs) in
@@ -118,7 +122,7 @@ module Make (Abs : AbstractCP) = struct
                     else
                       consistency abs'' unsat' const'
                   else
-                    Maybe(abs'', unsat', const'))
+                    Maybe(abs'', unsat', const')))
     with Bot.Bot_found -> if !Constant.debug then Format.printf "\t=> bot\n"; Empty
 
   (* using elimination technique *)
