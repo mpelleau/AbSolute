@@ -621,3 +621,4 @@ module Make(B:BOUND) = struct
 end
 
 module Test = Make(Bound_float)
+module TestQ = Make(Bound_mpqf)

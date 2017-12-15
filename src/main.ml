@@ -32,27 +32,36 @@ end
 
 (* built-in instances *)
 (* interval domain instance. Only large constraints *)
-module SBox      = GoS (Abstract_box.BoxF)(Box_drawer)
-module MBox      = GoM (Abstract_box.BoxF)(Box_drawer)
+module SBox       = GoS (Abstract_box.BoxF)(Box_drawer.Make(Abstract_box.BoxF))
+module MBox       = GoM (Abstract_box.BoxF)(Box_drawer.Make(Abstract_box.BoxF))
 
 (* interval domain instance. Both large and strict constraints *)
 module SBoxStrict = GoS (Abstract_box.BoxStrict)(Realbox_drawer)
 module MBoxStrict = GoM (Abstract_box.BoxStrict)(Realbox_drawer)
 
+(* interval domain with rational bounds instance. Only large constraints *)
+module SBoxQ      = GoS (Abstract_box.BoxQ)(Box_drawer.Make(Abstract_box.BoxQ))
+module MBoxQ      = GoM (Abstract_box.BoxQ)(Box_drawer.Make(Abstract_box.BoxQ))
+
+(* interval domain with rational bounds instance. Both large and strict constraints *)
+module SBoxQS     = GoS (Abstract_box.BoxQStrict)(Box_drawer.Make(Abstract_box.BoxQStrict))
+module MBoxQS     = GoM (Abstract_box.BoxQStrict)(Box_drawer.Make(Abstract_box.BoxQStrict))
+
+
 (* apron domain based instances *)
-module SBoxCP    = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
-module MBoxCP    = GoM (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
-module SOctCP    = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
-module MOctCP    = GoM (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
-module SPolyCP   = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
-module MPolyCP   = GoM (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+module SBoxCP     = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
+module MBoxCP     = GoM (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
+module SOctCP     = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
+module MOctCP     = GoM (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
+module SPolyCP    = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+module MPolyCP    = GoM (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 
 (* reduced product based instances*)
-(* module SBoxNOct  = GoS (VariousDA.BoxNOct)(Apron_drawer.OctDrawer)
+(* module SBoxNOct = GoS (VariousDA.BoxNOct)(Apron_drawer.OctDrawer)
 module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.PolyDrawer)
 module SOctNPoly = GoS (VariousDA.OctNPoly)(Apron_drawer.PolyDrawer) *)
 
-module SBoxNOct = Solver.Solve(VariousDA.BoxNOct)
+module SBoxNOct  = Solver.Solve(VariousDA.BoxNOct)
 module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
 (*module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.BoxNPolyDrawer)*)
 module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
@@ -111,6 +120,8 @@ let go() =
     match !domain with
     | "box" -> MBox.go prob
     | "boxS" -> MBoxStrict.go prob
+    | "boxQ" -> MBoxQ.go prob
+    | "boxQS" -> MBoxQS.go prob
     | "boxCP" -> MBoxCP.go prob
     | "oct" -> MOctCP.go prob
     | "poly" -> MPolyCP.go prob
@@ -122,6 +133,8 @@ let go() =
     match !domain with
     | "box" -> SBox.go prob
     | "boxS" -> SBoxStrict.go prob
+    | "boxQ" -> SBoxQ.go prob
+    | "boxQS" -> SBoxQS.go prob
     | "boxCP" -> SBoxCP.go prob
     | "oct" -> SOctCP.go prob
     | "poly" -> SPolyCP.go prob

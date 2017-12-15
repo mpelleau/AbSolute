@@ -3,6 +3,8 @@ type t = Mpqf.t
       
 (* ordering *)
 
+let name = "rational"
+
 let compare (a:t) (b:t) = Mpqf.cmp a b
 let equal (a:t) (b:t) = Mpqf.equal a b
 let leq (x:t) (y:t) : bool = (Mpqf.cmp x y) <= 0

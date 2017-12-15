@@ -16,7 +16,7 @@ module type BOUND = sig
         
 
   (* ordering *)
-  (* ******** *)      
+  (* ******** *)
 
   val compare: t -> t -> int
 

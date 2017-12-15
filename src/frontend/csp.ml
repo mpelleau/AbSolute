@@ -603,7 +603,7 @@ let print_csts fmt (a, b) =
 
 
 let print_aux_csts fmt (a, (b, c)) =
-  Format.fprintf fmt "%a:[%.2f; %.2f]" print_var a b c
+  Format.fprintf fmt "%a:[%.2f;%.2f]" print_var a b c
 
 let rec print_all_csts fmt = function
   | [] -> ()

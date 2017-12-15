@@ -42,15 +42,12 @@ module Box (I:ITV) = struct
   (************************************************************************)
 
   let print fmt a =
-    let first = ref true in
-    Env.iter
-      (fun v i ->
-	Format.fprintf fmt "%s%s:%a"
-	  (if !first then "" else " ")
-	  v
-	  I.print i;
-	first := false
-      ) a
+    let rec aux fmt = function
+      | [] -> ()
+      | (v,d)::[] -> Format.fprintf fmt "%s:%s" v (I.to_string d)
+      | (v,d)::tl -> Format.fprintf fmt "%s:%s " v (I.to_string d); aux fmt tl
+    in
+    aux fmt (Env.bindings a)
 
   let float_bounds a v =
     let ((l,h), _) = find v a in
@@ -389,8 +386,8 @@ let split_along (a:t) (v:var) : t list =
 
   let bounded_vars abs =
     let b = Env.bindings abs in
-    let l = List.map (fun (v, d) -> (v, I.to_float_range d)) b in
-    List.filter (fun (v, (l, u)) -> l = u) l
+    let l = List.filter (fun (v, d) -> I.is_singleton d) b in
+    List.map (fun (v, d) -> (v, I.to_float_range d)) l
 
 
   let rem_var abs var : t =
@@ -431,3 +428,5 @@ end
 
 module BoxF = Box(Itv.ItvF)
 module BoxStrict = Box(Newitv.Test)
+module BoxQ = Box(Itv.ItvQ)
+module BoxQStrict = Box(Newitv.TestQ)

@@ -86,13 +86,13 @@ module Itv(B:BOUND) = struct
   (* PRINTING *)
   (************************************************************************)
 
-    (*
-  let to_string ((l,h):t) : string =
-    Printf.sprintf "[%s;%s]" (B.to_string l) (B.to_string h)
-     *)
 
   let to_string ((l,h):t) : string =
-    Printf.sprintf "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
+    Printf.sprintf "[%s;%s]" (B.to_string l) (B.to_string h)
+
+
+  (* let to_string ((l,h):t) : string =
+    Printf.sprintf "[%f;%f]" (B.to_float_down l) (B.to_float_up h) *)
 
 
   (* printing *)
@@ -786,4 +786,4 @@ module Itv(B:BOUND) = struct
 end
 
 module ItvF = Itv(Bound_float)
-(* module ItvQ = Itv(Bound_rational) *)
+module ItvQ = Itv(Bound_mpqf)
