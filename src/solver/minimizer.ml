@@ -7,11 +7,17 @@ module Minimize(Abs : AbstractCP) = struct
   include Splitter.Make(Abs)
   module Res = Result.Make(Abs)
 
+  let splitting_strategy =
+    match !Constant.split with
+    | "maxSmear" -> max_smear
+    | "smear" -> sum_smear
+    | _ -> split
+
   let is_small a obj =
     let (obj_inf, obj_sup) = Abs.forward_eval a obj in
     obj_sup -. obj_inf <= !Constant.precision
 
-  let explore abs constrs obj consts =
+  let explore abs constrs obj consts splitting =
     let open Res in
     let rec aux abs cstrs obj csts res depth =
       match consistency abs ~obj:obj cstrs csts with
@@ -25,19 +31,19 @@ module Minimize(Abs : AbstractCP) = struct
            List.fold_left (fun res x ->
                 List.fold_left (fun res elem ->
                      aux elem cstrs obj csts (incr_step res) (depth + 1)
-                ) res (split x cstrs)
+                ) res (splitting x cstrs)
 	   ) res lu
          else
            List.fold_left (fun res elem ->
                 aux elem cstrs obj csts (incr_step res) (depth + 1)
-	   ) res (split abs' cstrs) in 
+	   ) res (splitting abs' cstrs) in 
     aux abs constrs obj consts (empty_obj_res abs obj) 0
 
   let minimizing prob =
     let open Csp in
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);
-    let res =  explore abs prob.jacobian prob.objective prob.constants in
+    let res =  explore abs prob.jacobian prob.objective prob.constants splitting_strategy in
     Format.printf "\noptimization ends\n%!%a" Res.print res;
     res
 
@@ -54,7 +60,7 @@ module Minimize(Abs : AbstractCP) = struct
       printf "non linear constraints = [";
       List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) cons;
       printf "]@.";
-      let res = explore abs prob.jacobian prob.objective prob.constants in
+      let res = explore abs prob.jacobian prob.objective prob.constants splitting_strategy in
       printf "solving ends\n%!";
       let nb_sols = res.nb_sure + res.nb_unsure in
       match nb_sols with

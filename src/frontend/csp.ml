@@ -88,6 +88,11 @@ let rec to_cst c b = function
   | (Cst a)::t -> if b then to_cst (c +. a) b t else to_cst (c *. a) b t
   | h::t -> to_cst c b t
 
+let rec to_fcst c = function
+  | [] -> c
+  | (Cst a)::t -> to_fcst (c +. a) t
+  | h::t -> to_fcst c t
+
 let rec equal_expr e1 e2 =
   match (e1, e2) with
   | (Cst a, Cst b) -> a = b
@@ -96,7 +101,7 @@ let rec equal_expr e1 e2 =
   | (Binary (op1, a, b), Binary (op2, c, d)) -> op1 = op2 && (((equal_expr a c) && (equal_expr b d)) || ((equal_expr a d) && (equal_expr b c)))
   | _ -> false
 
-let symp_expr e1 e2 =
+let simp_expr e1 e2 =
   if equal_expr e1 e2 then
     1
   else
@@ -104,30 +109,30 @@ let symp_expr e1 e2 =
     | Unary (NEG, e) -> if equal_expr e1 e then -1 else 0
     | _ -> 0
 
-let rec symp_lexpr e n rest = function
+let rec simp_lexpr e n rest = function
   | [] -> (e, n, rest)
   | h::t ->
-      let d = symp_expr e h in
+      let d = simp_expr e h in
       if d = 0 then
-        symp_lexpr e n (h::rest) t
+        simp_lexpr e n (h::rest) t
       else
-        symp_lexpr e (n + d) rest t
+        simp_lexpr e (n + d) rest t
 
-let rec symplify_lexpr newl = function
+let rec simplify_lexpr newl = function
   | [] -> newl
   | h::t ->
-      let (_, n, r) = symp_lexpr h 1 [] t in
+      let (_, n, r) = simp_lexpr h 1 [] t in
       match n with
-      | 1 -> symplify_lexpr (h::newl) r
-      | _ -> symplify_lexpr ((Binary(MUL, Cst (float n), h))::newl) r
+      | 1 -> simplify_lexpr (h::newl) r
+      | _ -> simplify_lexpr ((Binary(MUL, Cst (float n), h))::newl) r
 
-let rec symplify_qexpr newl = function
+let rec simplify_qexpr newl = function
   | [] -> newl
   | h::t ->
-      let (_, n, r) = symp_lexpr h 1 [] t in
+      let (_, n, r) = simp_lexpr h 1 [] t in
       match n with
-      | 1 -> symplify_qexpr (h::newl) r
-      | _ -> symplify_qexpr ((Binary(POW, h, Cst (float n)))::newl) r
+      | 1 -> simplify_qexpr (h::newl) r
+      | _ -> simplify_qexpr ((Binary(POW, h, Cst (float n)))::newl) r
 
 let rec expr_from_list op neutre = function
   | [] -> neutre
@@ -157,7 +162,7 @@ let rec get_add_terms_expr = function
   | Unary (NEG, e) -> neg_list (get_add_terms_expr e)
   | Binary (ADD, e1, e2) -> List.append (get_add_terms_expr e1) (get_add_terms_expr e2)
   | Binary (SUB, e1, e2) -> List.append (get_add_terms_expr e1) (neg_list (get_add_terms_expr e2))
-  | Binary (MUL, e1, e2) as e -> let l = get_mul_terms_expr e in [get_lexpr l symplify_qexpr MUL one]
+  | Binary (MUL, e1, e2) as e -> let l = get_mul_terms_expr e in [get_lexpr l simplify_qexpr MUL one]
   | _ as e -> [e]
 
 (* simplifies elementary function *)
@@ -230,7 +235,7 @@ let rec simplify_fp expr =
     simplify_fp e
   else
     (let lexpr = get_add_terms_expr e in
-    get_lexpr lexpr symplify_lexpr ADD zero)
+    get_lexpr lexpr simplify_lexpr ADD zero)
 
 
 let rec simplify_bexpr = function
@@ -249,12 +254,6 @@ let rec left_hand = function
   | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
   | And (b1,b2) | Or (b1,b2) -> left_hand b1
   | Not b -> left_hand b
-
-(*let rec left_hand = function
-  | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
-  | And (b1,b2) -> And (left_hand b1, left_hand b2)
-  | Or (b1,b2) -> Or (left_hand b1, left_hand b2)
-  | Not b -> Not (left_hand b)*)
 
 
 (* derives a function regarding a variable *)
@@ -300,11 +299,19 @@ let rec derivative bexpr var =
   | Or (b1,b2) -> Or (derivative b1 var, derivative b2 var)
   | Not b -> Not (derivative b var)
 
+let is_arith = function
+  | Cmp (_, _, _) -> true
+  | _ -> false
+
 let ctr_jacobian c vars =
   List.fold_left (
     fun l (_, v, _) ->
-      let new_c = simplify_bexpr (derivative c v) in
-      let (op, expr) = left_hand new_c in
+      let expr = if is_arith c then
+          let new_c = simplify_bexpr (derivative c v) in
+          let (op, e) = left_hand new_c in
+          e
+        else Cst 0.
+      in
     (v, expr)::l
   ) [] vars
 
@@ -371,18 +378,86 @@ let replace_cst_cstrs (id, cst) cstrs =
                              else (c, vars)
   ) cstrs
 
-let replace_cst csp =
-  let p = get_csts csp in
-  let ctr_vars = get_vars_cstrs p.constraints in
-  let (ctrs, _) = List.split (List.fold_left
+let replace_cst ctrs csts =
+  List.fold_left
     (fun l (v, (a, b)) ->
       if a = b then replace_cst_cstrs (v, a) l
       else l
-    ) ctr_vars p.constants) in
-  {p with constraints = ctrs}
+    ) ctrs csts
 
 
+let get_c_expr l f op neutre =
+  let (c, e) = List.partition is_cst l in
+  let cst = to_fcst 0. c in
+  let le = f [] e in
+  (cst, expr_from_list op neutre le)
 
+let rec simp_fp expr =
+  let (e, b) = simplify_expr expr false in
+  if b then
+    simp_fp e
+  else
+    (let lexpr = get_add_terms_expr e in
+    get_c_expr lexpr simplify_lexpr ADD zero)
+
+let lh (op, e1, e2) =
+  match e1, e2 with
+  | Cst 0., _ -> let (c, e) = simp_fp e2 in (inv op, c, e)
+  | _, Cst 0. -> let (c, e) = simp_fp e1 in (op, c, e)
+  | _, _ -> let (c, e) = simp_fp (Binary (SUB, e1, e2)) in (op, c, e)
+
+
+                                                         
+
+let filter_cstrs ctr_vars consts =
+  List.fold_left (fun (cstr, csts, b) (c, v) ->
+  if Variables.cardinal v = 1 then
+    match c with
+    | Cmp (op, e1, e2) ->
+      (let (op', cst, e) = lh (op, e1, e2) in
+      if op' = EQ then
+        (let negc = if cst = 0. then 0. else -. cst in
+        match e with
+        | Var var -> (cstr, (var, (negc, negc))::csts, true)
+        | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts, true)
+        | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (negc/.a, negc/.a))::csts, true)
+        | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (cst/.a, cst/.a))::csts, true)
+        | _ -> ((c, v)::cstr, csts, b))
+      else ((c, v)::cstr, csts, b))
+    | _ -> ((c, v)::cstr, csts, b)
+  else ((c, v)::cstr, csts, b)
+  ) ([], consts, false) ctr_vars
+
+let rec repeat ctr_vars csts =
+  let ctrs = replace_cst ctr_vars csts in
+  let (ctrs', csts', b) = filter_cstrs ctrs csts in
+  if b then
+    repeat ctrs' csts'
+  else
+    let (cstrs, _) = List.split ctrs' in
+    (cstrs, csts')
+
+let simplify csp =
+  let p = get_csts csp in
+  let ctr_vars = get_vars_cstrs p.constraints in
+  let (ctrs, csts) = repeat ctr_vars p.constants in
+  let (cons, _) = List.split csts in
+  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) p.init in
+  {p with init = vars; constants = csts; constraints = ctrs}
+
+
+let get_views ctr_vars =
+  List.fold_left (fun (cstr, views, b) (c, v) ->
+  if Variables.cardinal v = 2 then
+    match c with
+    | Cmp (EQ, e1, e2) -> ((c, v)::cstr, views, b)
+    | _ -> ((c, v)::cstr, views, b)
+  else ((c, v)::cstr, views, b)
+    ) ([], [], false) ctr_vars
+  
+
+
+  
 let get_vars_jacob jacob =
   List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
 
@@ -393,33 +468,6 @@ let replace_cst_jacob (id, cst) jacob =
     else (c, vars, j)
   ) jacob
 
-
-
-
-
-(*
-let get_cst_bexpr b =
-  let b = simplify_bexpr b in
-  match b with
-  | Cmp (op,e1,e2) ->
-      let (o, e) = left_hand_side (op, e1, e2) in
-
-  | And (b1,b2) | Or (b1,b2) -> left_hand b1
-  | Not b -> left_hand b
-
-let filter_cstrs cstrs =
-  List.fold_left (fun (cstr, csts) (c, v) ->
-    if Variables.cardinal v = 1 then
-      (cstr, )
-    else ((c, v)::cstr, csts)
-  ) ([], []) cstrs
-
-
-let simplify csp =
-  let p = get_csts csp in
-  let cstrs = List.fold_left (
-                (fun l c -> List.append l )
-              ) [] p.constraints in*)
 
 
 (*****************************************)
@@ -593,8 +641,8 @@ let print_assign fmt (a,b,c) =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%.2f" a
-  | (a, b) -> Format.fprintf fmt "[%.2f; %.2f]" a b
+  | (a, b)  when a = b ->  Format.fprintf fmt "%f" a
+  | (a, b) -> Format.fprintf fmt "[%f; %f]" a b
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
@@ -603,7 +651,7 @@ let print_csts fmt (a, b) =
 
 
 let print_aux_csts fmt (a, (b, c)) =
-  Format.fprintf fmt "%a:[%.2f;%.2f]" print_var a b c
+  Format.fprintf fmt "%a:[%f;%f]" print_var a b c
 
 let rec print_all_csts fmt = function
   | [] -> ()
@@ -649,4 +697,5 @@ let print fmt prog =
   aux print_bexpr prog.constraints*)
   Format.fprintf fmt "\n";
   print_jacobian fmt prog.jacobian;
-  Format.fprintf fmt "\n";
+  Format.fprintf fmt "\n"
+

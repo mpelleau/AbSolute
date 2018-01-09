@@ -34,7 +34,7 @@ let of_string_up = of_string
 let of_string_down = of_string
     
 (* Note: adds 0. to favor positive 0 *)
-let to_string x = Mpqf.to_string x
+let to_string x = string_of_float (Mpqf.to_float x)
 
 let to_float_up x : float = Mpqf.to_float x
 let to_float_down x : float = -. (Mpqf.to_float (Mpqf.neg x))

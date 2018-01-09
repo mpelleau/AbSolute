@@ -64,7 +64,6 @@ module Make(B:BOUND) = struct
   (* check if a value is in a half space *)
   let in_half (k,b) dir v : bool = v |> half_space (k,b) dir
 
-  (* compare two low bounds *)
   let cmp_low ((_,b1) as l1) ((_,b2) as l2) =
     if in_half l1 true b2 then -1
     else if in_half l2 true b1 then 1
@@ -162,10 +161,10 @@ module Make(B:BOUND) = struct
   (************************************************************************)
   let to_string (((kl,l),(kh,h)):t) : string =
     Printf.sprintf
-      "%c%f;%f%c"
+      "%c%a;%a%c"
       (if kl = Strict then ']' else '[')
-      (B.to_float_down l)
-      (B.to_float_up h)
+      B.sprint l
+      B.sprint h
       (if kh = Large then ']' else '[')
 
   (* printing *)
