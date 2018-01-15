@@ -694,7 +694,7 @@ let rec print_expr fmt = function
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
-  | Cst c -> Format.fprintf fmt "%.2f" c
+  | Cst c -> Format.fprintf fmt "%f" c
 
 let rec print_bexpr fmt = function
   | Cmp (c,e1,e2) ->
@@ -752,9 +752,13 @@ let rec find_all_views ctrs =
     (views@v, c)
   else
     ([], ctrs)
-  
-                  
-  
+
+let to_domains (e, d) =
+  match d with
+  | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
+  | Minf (i) -> [Cmp(LEQ, e, Cst i)]
+  | Inf (i) -> [Cmp(GEQ, e, Cst i)]
+  | _ -> []
 
 let simplify csp =
   let p = get_csts csp in
@@ -767,7 +771,16 @@ let simplify csp =
   let (ctrs, _) = List.split ctrs' in
   let (cons, _) = List.split csts in
   let (view, _) = List.split views in
-  let not_vars = cons@view in
-  let vars = List.filter (fun (t, v, d) -> not(List.mem v not_vars)) p.init in
-  {p with init = vars; constants = csts; constraints = ctrs; view = views}
+  
+
+  let (var_view, vars') = List.partition (fun (t, v, d) -> List.mem v view) p.init in
+  
+  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) vars' in
+
+  let view_ctrs = List.fold_left (
+                      fun l (_, v, d) ->
+                      let e = List.assoc v views in
+                      List.append (to_domains (e, d)) l) [] var_view in
+  
+  {p with init = vars; constants = csts; constraints = ctrs@view_ctrs; view = views}
 
