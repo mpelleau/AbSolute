@@ -88,7 +88,7 @@ file:
   objective
   constraints
   TOK_EOF
-  {{jacobian=[];
+    {{jacobian=[];view=[];
     init=$3;
     objective=$4;
     constraints=$5;

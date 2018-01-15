@@ -109,5 +109,7 @@ let parse fn =
   let prob = Csp.simplify p in
   List.iter (fun c -> Format.printf "  ++ %a\n" Csp.print_bexpr c) prob.Csp.constraints;
   List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
+  List.iter (fun (v, e) -> Format.printf "  // %s = %a\n" v Csp.print_expr e) prob.Csp.view;
+  Format.printf "\n";
   let j = Csp.compute_jacobian prob in
   {prob with jacobian = j}

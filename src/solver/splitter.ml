@@ -3,7 +3,9 @@ open Adcp_sig
 (* Boolean expressions abstractions *)
 module Boolean (Abs:AbstractCP) = struct
 
-  let rec filter (value:Abs.t) = let open Csp in function
+  let rec filter (value:Abs.t) c =
+    let open Csp in
+    match c with
     | And (b1,b2) -> filter (filter value b2) b1
     | Or (b1,b2) ->
       let a1 = try Some(filter value b1) with Bot.Bot_found -> None

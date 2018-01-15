@@ -51,7 +51,37 @@ type ctrs = (bexpr * jacob) list
 type csts = (var * (i*i)) list
 
 (* program *)
-type prog = { init : decls; constants : csts; objective : expr; constraints : constrs; jacobian : ctrs; to_draw : var list}
+type prog = { init : decls; constants : csts; objective : expr; constraints : constrs; jacobian : ctrs; to_draw : var list; view : jacob}
+
+
+(*************************************************************)
+(*                         PREDICATES                        *)
+(*************************************************************)
+
+(* checks if an expression contains a variable *)
+let rec has_variable = function
+  | Unary (u, e) -> has_variable e
+  | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
+  | Var _ -> true
+  | Cst _ -> false
+
+(* checks if an expression is linear *)
+let rec is_linear = function
+  | Unary (NEG,e) -> is_linear e
+  | Binary(MUL, e1, e2) | Binary(DIV, e1, e2)
+    -> not (has_variable e1 && has_variable e2) && is_linear e1 && is_linear e2
+  | Binary(POW, e1, e2)
+    -> not (has_variable e1 || has_variable e2)
+  | Binary(_, e1, e2) -> is_linear e1 && is_linear e2
+  | Var _ | Cst _ -> true
+  | _ -> false
+
+(* checks if a constraints is linear *)
+let rec is_cons_linear = function
+  | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
+  | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
+  | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
+  | Not b -> is_cons_linear b
 
 
 
@@ -344,11 +374,11 @@ let rec replace_cst_expr (id, cst) expr =
   | Binary (op, e1, e2) -> Binary (op, replace_cst_expr (id, cst) e1, replace_cst_expr (id, cst) e2)
   | _ as e -> e
 
-let rec replace_cst_bexpr (id, cst) = function
-  | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr (id, cst) e1, replace_cst_expr (id, cst) e2)
-  | And (b1, b2) -> And (replace_cst_bexpr (id, cst) b1, replace_cst_bexpr (id, cst) b2)
-  | Or (b1, b2) -> Or (replace_cst_bexpr (id, cst) b1, replace_cst_bexpr (id, cst) b2)
-  | Not b -> Not (replace_cst_bexpr (id, cst) b)
+let rec replace_cst_bexpr cst = function
+  | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr cst e1, replace_cst_expr cst e2)
+  | And (b1, b2) -> And (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
+  | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
+  | Not b -> Not (replace_cst_bexpr cst b)
 
 
 module Variables = Set.Make(struct type t=var let compare=compare end)
@@ -413,17 +443,15 @@ let filter_cstrs ctr_vars consts =
   List.fold_left (fun (cstr, csts, b) (c, v) ->
   if Variables.cardinal v = 1 then
     match c with
-    | Cmp (op, e1, e2) ->
-      (let (op', cst, e) = lh (op, e1, e2) in
-      if op' = EQ then
-        (let negc = if cst = 0. then 0. else -. cst in
+    | Cmp (EQ, e1, e2) ->
+       (let (op', cst, e) = lh (EQ, e1, e2) in
+        let negc = if cst = 0. then 0. else -. cst in
         match e with
         | Var var -> (cstr, (var, (negc, negc))::csts, true)
-        | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts, true)
+        | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
         | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (negc/.a, negc/.a))::csts, true)
         | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (cst/.a, cst/.a))::csts, true)
         | _ -> ((c, v)::cstr, csts, b))
-      else ((c, v)::cstr, csts, b))
     | _ -> ((c, v)::cstr, csts, b)
   else ((c, v)::cstr, csts, b)
   ) ([], consts, false) ctr_vars
@@ -434,27 +462,56 @@ let rec repeat ctr_vars csts =
   if b then
     repeat ctrs' csts'
   else
-    let (cstrs, _) = List.split ctrs' in
-    (cstrs, csts')
-
-let simplify csp =
-  let p = get_csts csp in
-  let ctr_vars = get_vars_cstrs p.constraints in
-  let (ctrs, csts) = repeat ctr_vars p.constants in
-  let (cons, _) = List.split csts in
-  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) p.init in
-  {p with init = vars; constants = csts; constraints = ctrs}
+    (ctrs', csts')
 
 
-let get_views ctr_vars =
-  List.fold_left (fun (cstr, views, b) (c, v) ->
-  if Variables.cardinal v = 2 then
-    match c with
-    | Cmp (EQ, e1, e2) -> ((c, v)::cstr, views, b)
-    | _ -> ((c, v)::cstr, views, b)
-  else ((c, v)::cstr, views, b)
-    ) ([], [], false) ctr_vars
   
+let rec view e1 e2 =
+  match e1, e2 with
+  | Var(v), _ ->(v, e2)
+  | _, Var(v) -> (v, e1)
+  | Unary(NEG, n), e -> view n (simplify_fp (Unary(NEG, e)))
+  | Binary(ADD, a1, a2), e ->
+     if has_variable a1 then view a1 (simplify_fp (Binary(SUB, e, a2)))
+     else view a2 (simplify_fp (Binary(SUB, e, a1)))
+  | Binary(SUB, s1, s2), e -> 
+     if has_variable s1 then view s1 (simplify_fp (Binary(ADD, e, s2)))
+     else view s2 (simplify_fp (Binary(SUB, s1, e)))
+  | Binary(MUL, m1, m2), e -> 
+     if has_variable m1 then view m1 (simplify_fp (Binary(DIV, e, m2)))
+     else view m2 (simplify_fp (Binary(DIV, e, m1)))
+  | Binary(DIV, d1, d2), e -> 
+     if has_variable d1 then view d1 (simplify_fp (Binary(MUL, e, d2)))
+     else view d2 (simplify_fp (Binary(MUL, e, d1)))
+  | _, _ -> Format.printf "NOOOOOOOOOOOOO\n"; ("NOPE", Binary(SUB, e1, e2))
+
+let rec replace_view_expr ((id, e) as view) expr =
+  match expr with
+  | Var v when v = id -> e
+  | Unary (op, u) -> Unary (op, replace_view_expr view u)
+  | Binary (op, b1, b2) -> Binary (op, replace_view_expr view b1, replace_view_expr view b2)
+  | _ as expr -> expr
+
+let rec replace_view_bexpr view = function
+  | Cmp (op, e1, e2) -> Cmp(op, replace_view_expr view e1, replace_view_expr view e2)
+  | And (b1, b2) -> And (replace_view_bexpr view b1, replace_view_bexpr view b2)
+  | Or (b1, b2) -> Or (replace_view_bexpr view b1, replace_view_bexpr view b2)
+  | Not b -> Not (replace_view_bexpr view b)
+
+let replace_view_ctr ((id, e) as view) ctrs =
+  List.map (fun (c, vars) -> if Variables.mem id vars then
+                               (replace_view_bexpr view c, Variables.remove id vars)
+                             else (c, vars)
+    ) ctrs
+
+let replace_view ctrs views =
+  List.fold_left (fun l v -> replace_view_ctr v l) ctrs views
+
+let rec rep_view view views =
+  List.map (fun (id, e) -> (id, replace_view_expr view e)) views
+
+let rep_in_view (id, e) views =
+  List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) (id, e) views
 
 
   
@@ -474,7 +531,7 @@ let replace_cst_jacob (id, cst) jacob =
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-let empty = {init = []; constraints= []; constants=[]; objective =Cst(0.); to_draw=[]; jacobian = []}
+let empty = {init = []; constraints= []; constants=[]; objective =Cst(0.); to_draw=[]; jacobian = []; view = []}
 
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
@@ -554,36 +611,6 @@ let rec neg_bexpr = function
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
-
-
-(*************************************************************)
-(*                         PREDICATES                        *)
-(*************************************************************)
-
-(* checks if an expression contains a variable *)
-let rec has_variable = function
-  | Unary (u, e) -> has_variable e
-  | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
-  | Var _ -> true
-  | Cst _ -> false
-
-(* checks if an expression is linear *)
-let rec is_linear = function
-  | Unary (NEG,e) -> is_linear e
-  | Binary(MUL, e1, e2) | Binary(DIV, e1, e2)
-    -> not (has_variable e1 && has_variable e2) && is_linear e1 && is_linear e2
-  | Binary(POW, e1, e2)
-    -> not (has_variable e1 || has_variable e2)
-  | Binary(_, e1, e2) -> is_linear e1 && is_linear e2
-  | Var _ | Cst _ -> true
-  | _ -> false
-
-(* checks if a constraints is linear *)
-let rec is_cons_linear = function
-  | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
-  | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
-  | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
-  | Not b -> is_cons_linear b
 
 
 (*************************************************************)
@@ -685,6 +712,10 @@ let rec print_jacobian fmt = function
   | [] -> ()
   | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
+
+let print_view fmt (v, e) =
+  Format.fprintf fmt "%a = %a" print_var v print_expr e
+
 let print fmt prog =
   let rec aux f = function
   | [] -> ()
@@ -693,9 +724,50 @@ let print fmt prog =
   aux print_assign prog.init;
   Format.fprintf fmt "\n";
   aux print_csts prog.constants;
-  (*Format.fprintf fmt "\n";
-  aux print_bexpr prog.constraints*)
+  Format.fprintf fmt "\n";
+  aux print_view prog.view;
   Format.fprintf fmt "\n";
   print_jacobian fmt prog.jacobian;
   Format.fprintf fmt "\n"
+
+let get_views ctr_vars =
+  List.fold_left (fun (ctrs, views) (c, v) ->
+  if ((is_cons_linear c) && (Variables.cardinal v = 2)) then
+    match c with
+    | Cmp (EQ, e1, e2) ->
+       let (_, cst, e) = lh (EQ, e1, e2) in
+       let value = if cst = 0. then 0. else -. cst in
+       let new_view = rep_in_view (view e (Cst value)) views in
+       let views' = rep_view new_view views in
+      (ctrs, new_view::views')
+    | _ -> ((c, v)::ctrs, views)
+  else ((c, v)::ctrs, views)
+    ) ([], []) ctr_vars
+  
+let rec find_all_views ctrs =
+  let (ctrs, views) = get_views ctrs in
+  if List.length views > 0 then
+    let ctrs' = replace_view ctrs views in
+    let (v, c) = find_all_views ctrs' in
+    (views@v, c)
+  else
+    ([], ctrs)
+  
+                  
+  
+
+let simplify csp =
+  let p = get_csts csp in
+  let ctr_vars = get_vars_cstrs p.constraints in
+  let (ctrs, csts) = repeat ctr_vars p.constants in
+
+  let (views, ctrs') = find_all_views ctrs in
+  
+  
+  let (ctrs, _) = List.split ctrs' in
+  let (cons, _) = List.split csts in
+  let (view, _) = List.split views in
+  let not_vars = cons@view in
+  let vars = List.filter (fun (t, v, d) -> not(List.mem v not_vars)) p.init in
+  {p with init = vars; constants = csts; constraints = ctrs; view = views}
 
