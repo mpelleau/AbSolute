@@ -32,13 +32,21 @@ module Make (A: AbstractCP) = struct
                
     
   let to_abs abs consts views =
+    Format.printf "\n ---------- \n";
+    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs);
     let csts_expr = Csp.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
+    Format.printf "\n ********** \n";
+    List.iter (fun v -> Format.printf "%a " Csp.print_var v) csts_vars;
 
     let (views_vars, views_expr) = List.split views in  
+    Format.printf "\n vvvvvvvvvv \n";
+    List.iter (fun v -> Format.printf "%a " Csp.print_var v) views_vars;
 
     let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars@views_vars) in
     let new_a = List.fold_left (A.add_var) abs new_vars in
+    Format.printf "\n !!!!!!!!!! \n";
+    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars new_a);
 
     let new_a' = List.fold_left (fun a c -> A.filter a c) new_a csts_expr in
 
@@ -51,8 +59,12 @@ module Make (A: AbstractCP) = struct
                             else ((v, d)::a, c)
                           ) ([], []) views in
     let to_add = Csp.csts_to_expr (vars@csts) in
+    Format.printf "\n ////////// \n";
+    List.iter (fun (v, d) -> Format.printf "%a " Csp.print_var v) vars;
+    Format.printf "\n ?????????? \n";
+    List.iter (fun (v, d) -> Format.printf "%a " Csp.print_var v) csts;
 
-    (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts)
+    (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
     
 
   let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
@@ -63,9 +75,14 @@ module Make (A: AbstractCP) = struct
       | None -> 0.
     in   
 
+    Format.printf "\n $$$$$$$$$$ \n";
+    List.iter (fun (v, d) -> Format.printf "%a " Csp.print_var v) csts;
     let abs' = List.fold_left (fun a (id, _) -> A.rem_var a id) abs' csts in
+    Format.printf "\n ;;;;;;;;;; \n";
+    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs');
+    Format.printf "\n";
     
-    (abs', csts@consts, volume, obj_value)
+    (abs', csts, volume, obj_value)
 
 
   (* adds an unsure element to a result *)
