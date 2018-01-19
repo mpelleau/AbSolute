@@ -2,6 +2,8 @@ module type Drawer = sig
 
   type t
 
+  val is_empty : t -> bool
+    
   val bound : t -> Csp.var -> float * float
 
   val draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit

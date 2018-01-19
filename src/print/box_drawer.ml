@@ -5,6 +5,8 @@ module Make(A:Adcp_sig.AbstractCP) = struct
 
   let bound = A.var_bounds
 
+  let is_empty = A.is_empty
+               
   let draw draw_f fillpol abs (v1,v2) col =
     let ((xl,xu) as i1) = bound abs v1 and ((yl,yu) as i2) = bound abs v2 in
     fillpol [(xl,yl);(xl,yu);(xu,yu);(xu,yl)] col;

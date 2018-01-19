@@ -513,8 +513,60 @@ let rec rep_view view views =
 let rep_in_view (id, e) views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) (id, e) views
 
-
+let get_views ctr_vars =
+  List.fold_left (fun (ctrs, views) (c, v) ->
+  if ((is_cons_linear c) && (Variables.cardinal v = 2)) then
+    match c with
+    | Cmp (EQ, e1, e2) ->
+       let (_, cst, e) = lh (EQ, e1, e2) in
+       let value = if cst = 0. then 0. else -. cst in
+       let new_view = rep_in_view (view e (Cst value)) views in
+       let views' = rep_view new_view views in
+      (ctrs, new_view::views')
+    | _ -> ((c, v)::ctrs, views)
+  else ((c, v)::ctrs, views)
+    ) ([], []) ctr_vars
   
+let rec find_all_views ctrs =
+  let (ctrs, views) = get_views ctrs in
+  if List.length views > 0 then
+    let ctrs' = replace_view ctrs views in
+    let (v, c) = find_all_views ctrs' in
+    (views@v, c)
+  else
+    ([], ctrs)
+
+let to_domains (e, d) =
+  match d with
+  | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
+  | Minf (i) -> [Cmp(LEQ, e, Cst i)]
+  | Inf (i) -> [Cmp(GEQ, e, Cst i)]
+  | _ -> []
+
+let simplify csp =
+  let p = get_csts csp in
+  let ctr_vars = get_vars_cstrs p.constraints in
+  let (ctrs, csts) = repeat ctr_vars p.constants in
+
+  let (views, ctrs') = find_all_views ctrs in
+  
+  
+  let (ctrs, _) = List.split ctrs' in
+  let (cons, _) = List.split csts in
+  let (view, _) = List.split views in
+  
+
+  let (var_view, vars') = List.partition (fun (t, v, d) -> List.mem v view) p.init in
+  
+  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) vars' in
+
+  let view_ctrs = List.fold_left (
+                      fun l (_, v, d) ->
+                      let e = List.assoc v views in
+                      List.append (to_domains (e, d)) l) [] var_view in
+  
+  {p with init = vars; constants = csts; constraints = ctrs@view_ctrs; view = views}
+
 let get_vars_jacob jacob =
   List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
 
@@ -525,6 +577,13 @@ let replace_cst_jacob (id, cst) jacob =
     else (c, vars, j)
   ) jacob
 
+
+let from_cst_to_expr (id, (l, u)) =
+  if l = u then [(Var id, EQ, Cst l)]
+  else [(Var id, GEQ, Cst l); (Var id, LEQ, Cst u)]
+
+let csts_to_expr csts =
+  List.fold_left (fun l cst -> List.append (from_cst_to_expr cst) l) [] csts
 
 
 (*****************************************)
@@ -729,58 +788,3 @@ let print fmt prog =
   Format.fprintf fmt "\n";
   print_jacobian fmt prog.jacobian;
   Format.fprintf fmt "\n"
-
-let get_views ctr_vars =
-  List.fold_left (fun (ctrs, views) (c, v) ->
-  if ((is_cons_linear c) && (Variables.cardinal v = 2)) then
-    match c with
-    | Cmp (EQ, e1, e2) ->
-       let (_, cst, e) = lh (EQ, e1, e2) in
-       let value = if cst = 0. then 0. else -. cst in
-       let new_view = rep_in_view (view e (Cst value)) views in
-       let views' = rep_view new_view views in
-      (ctrs, new_view::views')
-    | _ -> ((c, v)::ctrs, views)
-  else ((c, v)::ctrs, views)
-    ) ([], []) ctr_vars
-  
-let rec find_all_views ctrs =
-  let (ctrs, views) = get_views ctrs in
-  if List.length views > 0 then
-    let ctrs' = replace_view ctrs views in
-    let (v, c) = find_all_views ctrs' in
-    (views@v, c)
-  else
-    ([], ctrs)
-
-let to_domains (e, d) =
-  match d with
-  | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
-  | Minf (i) -> [Cmp(LEQ, e, Cst i)]
-  | Inf (i) -> [Cmp(GEQ, e, Cst i)]
-  | _ -> []
-
-let simplify csp =
-  let p = get_csts csp in
-  let ctr_vars = get_vars_cstrs p.constraints in
-  let (ctrs, csts) = repeat ctr_vars p.constants in
-
-  let (views, ctrs') = find_all_views ctrs in
-  
-  
-  let (ctrs, _) = List.split ctrs' in
-  let (cons, _) = List.split csts in
-  let (view, _) = List.split views in
-  
-
-  let (var_view, vars') = List.partition (fun (t, v, d) -> List.mem v view) p.init in
-  
-  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) vars' in
-
-  let view_ctrs = List.fold_left (
-                      fun l (_, v, d) ->
-                      let e = List.assoc v views in
-                      List.append (to_domains (e, d)) l) [] var_view in
-  
-  {p with init = vars; constants = csts; constraints = ctrs@view_ctrs; view = views}
-

@@ -12,8 +12,7 @@ module Make (D:Drawer) = struct
       | None -> Some(l,h)
       | Some(l',h') -> Some((min l l'),(max h h'))
 	  ) info_init abs_list
-    in
-    let onlysure = aux v None sure in
+    in    let onlysure = aux v None sure in
     if !Constant.sure |> not then aux v onlysure unsure
     else onlysure
 
@@ -52,10 +51,14 @@ module Make (D:Drawer) = struct
 	     let out = ("out/"^(Filename.chop_extension out)^".obj") in
        let out = open_out out in
        let fmt = Format.formatter_of_out_channel out in
-	     D.draw3d fmt values vars
-
+       D.draw3d fmt values vars
+       
   let traceout sure unsure =
-    List.iter (fun (e, c) -> Format.printf "sure: (), (%a %a)\n%!" D.print e Csp.print_all_csts c) sure;
+    List.iter (fun (e, c) ->
+        if D.is_empty e then
+          Format.printf "sure: (), (%a)\n%!" Csp.print_all_csts c
+        else
+          Format.printf "sure: (), (%a %a)\n%!" D.print e Csp.print_all_csts c) sure;
     List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp.print_all_csts c) unsure
 
   let draw_vars prob =

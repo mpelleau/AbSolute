@@ -25,6 +25,8 @@ module Make(AP:ADomain) = struct
     let open Interval in
     Apron_utils.(scalar_to_float i.inf,scalar_to_float i.sup)
 
+    let is_empty = A.is_bottom man
+
   let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
     let get_indexes env (x,y) = Environment.(
       dim_of_var env (Var.of_string x),

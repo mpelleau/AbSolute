@@ -377,6 +377,8 @@ let split_along (a:t) (v:var) : t list =
 
   let empty : t = Env.empty
 
+  let is_empty abs = Env.is_empty abs
+
   let add_var abs (typ,var) : t =
     Env.add (if typ = INT then (var^"%") else var) I.top abs
 

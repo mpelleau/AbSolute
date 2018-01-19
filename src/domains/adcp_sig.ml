@@ -44,6 +44,8 @@ module type AbstractCP = sig
   (* tests if an abstract element is too small to be cut *)
   val is_small : t -> bool
 
+  val is_empty : t -> bool
+
   val is_bottom : t -> bool
 
   val is_enumerated : t -> bool

@@ -184,6 +184,8 @@ module MAKE(AP:ADomain) = struct
   let is_bottom abs =
     A.is_bottom man abs
 
+  let is_empty a = is_bottom a 
+
   let is_singleton b v =
     let man = A.manager b in
     if A.is_bottom man b then true

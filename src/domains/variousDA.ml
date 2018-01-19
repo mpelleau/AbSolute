@@ -162,6 +162,8 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
 
     let is_bottom ((abs, _):t) = A.is_bottom abs
 
+    let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
+
     let is_enumerated (abs, abs') =
       A.is_enumerated abs && B.is_enumerated abs'
 

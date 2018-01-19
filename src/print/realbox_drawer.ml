@@ -7,6 +7,8 @@ let print = Abstract_box.BoxStrict.print
 
 let bound abs v = find v abs |> fst |> I.to_float_range
 
+let is_empty = Abstract_box.BoxStrict.is_empty
+             
 let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
   let (xl,xu) = bound abs v1 and (yl,yu) = bound abs v2 in
   fillpol [(xl,yl);(xl,yu);(xu,yu);(xu,yl)] col;

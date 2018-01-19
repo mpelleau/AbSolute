@@ -29,14 +29,47 @@ module Make (A: AbstractCP) = struct
       best_value = 0.
     }
 
+  let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
+    let csts_expr = Csp.csts_to_expr consts in
+    let (csts_vars, _) = List.split consts in
+
+    let (views_vars, views_expr) = List.split views in  
+
+    let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars@views_vars) in
+    let new_a = List.fold_left (A.add_var) abs new_vars in
+
+    let new_a' = List.fold_left (fun a c -> A.filter a c) new_a csts_expr in
+
+    let (vars, csts) = List.fold_left (
+                            fun (a, c) (v, e) ->
+                            let (l, u) as d = A.forward_eval new_a' e in
+                            let id = List.hd (Csp.get_vars_expr e) in
+                            if List.mem id csts_vars
+                            then (a, (v, d)::c)
+                            else ((v, d)::a, c)
+                          ) ([], []) views in
+    let to_add = Csp.csts_to_expr (vars@csts) in
+
+    let new_a'' = List.fold_left (fun a c -> A.filter a c) new_a' to_add in
+    let volume = A.volume new_a'' in
+    let obj_value = match fobj with
+      | Some fobj -> let (l, _) = A.forward_eval new_a'' fobj in l
+      | None -> 0.
+    in   
+
+    let abs' = List.fold_left (fun a (id, _) -> A.rem_var a id) new_a'' csts in
+    
+    (abs', csts@consts, volume, obj_value)
+
+
   (* adds an unsure element to a result *)
-  let add_u res ?obj:fobj (u, c) =
+  let add_u res ?obj:fobj (u, c, v) =
     match !Constant.sure with
     | true -> res
     | false -> (
     match fobj with
-    | Some fobj -> 
-       let (obj_value, _) = A.forward_eval u fobj in
+    | Some fobj ->
+       let (u, c, v, obj_value) = get_solution v ~obj:fobj u c in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
@@ -46,42 +79,47 @@ module Make (A: AbstractCP) = struct
           nb_unsure  = 0; 
           nb_sure    = 1; 
           nb_steps   = res.nb_steps;
-          vol_unsure = A.volume u;
+          vol_unsure = v;
           vol_sure   = 0.}
        else
          {res with unsure     = (u, c)::res.unsure;
                    nb_unsure  = res.nb_unsure + 1;
-                   vol_unsure = res.vol_unsure +. A.volume u}
-    | None -> 
+                   vol_unsure = res.vol_unsure +. v}
+    | None ->
+       let (u, c, v, obj_value) = get_solution v u c in
        {res with unsure     = (u, c)::res.unsure;
                  nb_unsure  = res.nb_unsure+1;
-                 vol_unsure = res.vol_unsure+.A.volume u}
+                 vol_unsure = res.vol_unsure+.v}
     )
 
   (* adds a sure element to a result *)
-  let add_s res ?obj:fobj (s, c) =
+  let add_s res ?obj:fobj (s, c, v) =
+    let vars = A.vars s in
+    let const = List.map (fun v -> (v, A.var_bounds s v)) vars in
+    let c = const@c in
     match fobj with
     | Some fobj -> 
-       let (obj_value, _) = A.forward_eval s fobj in
+       let (s, c, v, obj_value) = get_solution v ~obj:fobj s c in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
-         {sure       = [(s, c)];
+         {sure       = [(A.empty, c)];
           unsure     = []; 
           best_value = obj_value; 
           nb_sure    = 1; 
           nb_unsure  = 0; 
           nb_steps   = res.nb_steps;
-          vol_sure   = A.volume s;
+          vol_sure   = v;
           vol_unsure = 0.}
        else
-         {res with sure     = (s, c)::res.sure;
+         {res with sure     = (A.empty, c)::res.sure;
                    nb_sure  = res.nb_sure + 1;
                    vol_sure = res.vol_sure +. A.volume s}
     | None ->
-       {res with sure     = (s, c)::res.sure;
+       let (u, c, v, obj_value) = get_solution v s c in
+       {res with sure     = (A.empty, c)::res.sure;
                  nb_sure  = res.nb_sure+1;
-                 vol_sure = res.vol_sure +. A.volume s}
+                 vol_sure = res.vol_sure +. v}
 
   (* increments the step number of the solving process *)
   let incr_step res = {res with nb_steps = res.nb_steps+1}
@@ -104,13 +142,10 @@ module Make (A: AbstractCP) = struct
   let print fmt res =
     Format.fprintf fmt "\n#inner boxes: %d\n#boundary boxes: %d\n#created nodes: %d\n\ninner volume = %f\nboundary volume = %f\ntotal volume = %f%!\n"
                    res.nb_sure
-                   (if !Constant.sure then 0
-                    else res.nb_unsure)
+                   res.nb_unsure
                    res.nb_steps
                    res.vol_sure
-                   (if !Constant.sure then 0.
-                    else res.vol_unsure)
-                   (if !Constant.sure then res.vol_sure
-                    else res.vol_sure +. res.vol_unsure)
+                   res.vol_unsure
+                   (res.vol_sure +. res.vol_unsure)
 
 end
