@@ -83,8 +83,8 @@ module Make (D:Drawer) = struct
     let open Result in
     let open Csp in
     let open Constant in
-    let (s, _) = List.split res.sure in
-    let (u, c) = if !sure then ([], []) else List.split res.unsure in
+    let s = List.map D.to_abs res.sure in
+    let u = if !sure then [] else List.map D.to_abs res.unsure in
     if !visualization then draw2d s u (vars2D prob);
     if !tex then print_latex s u (vars2D prob);
     if !obj then draw3d s (vars3D prob);

@@ -29,7 +29,9 @@ module Make (A: AbstractCP) = struct
       best_value = 0.
     }
 
-  let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
+               
+    
+  let to_abs abs consts views =
     let csts_expr = Csp.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
 
@@ -50,14 +52,18 @@ module Make (A: AbstractCP) = struct
                           ) ([], []) views in
     let to_add = Csp.csts_to_expr (vars@csts) in
 
-    let new_a'' = List.fold_left (fun a c -> A.filter a c) new_a' to_add in
-    let volume = A.volume new_a'' in
+    (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts)
+    
+
+  let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
+    let (abs', csts) = to_abs abs consts views in
+    let volume = A.volume abs' in
     let obj_value = match fobj with
-      | Some fobj -> let (l, _) = A.forward_eval new_a'' fobj in l
+      | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
       | None -> 0.
     in   
 
-    let abs' = List.fold_left (fun a (id, _) -> A.rem_var a id) new_a'' csts in
+    let abs' = List.fold_left (fun a (id, _) -> A.rem_var a id) abs' csts in
     
     (abs', csts@consts, volume, obj_value)
 

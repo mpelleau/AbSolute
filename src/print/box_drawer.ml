@@ -6,6 +6,16 @@ module Make(A:Adcp_sig.AbstractCP) = struct
   let bound = A.var_bounds
 
   let is_empty = A.is_empty
+
+  let to_abs (abs, consts) =
+    let csts_expr = Csp.csts_to_expr consts in
+    let (csts_vars, _) = List.split consts in
+
+    let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars) in
+    let a = List.fold_left (A.add_var) abs new_vars in
+
+    List.fold_left (fun a c -> A.filter a c) a csts_expr
+
                
   let draw draw_f fillpol abs (v1,v2) col =
     let ((xl,xu) as i1) = bound abs v1 and ((yl,yu) as i2) = bound abs v2 in

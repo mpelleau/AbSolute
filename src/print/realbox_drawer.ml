@@ -8,6 +8,15 @@ let print = Abstract_box.BoxStrict.print
 let bound abs v = find v abs |> fst |> I.to_float_range
 
 let is_empty = Abstract_box.BoxStrict.is_empty
+
+let to_abs (abs, consts) =
+  let csts_expr = Csp.csts_to_expr consts in
+  let (csts_vars, _) = List.split consts in
+
+  let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars) in
+  let a = List.fold_left (Abstract_box.BoxStrict.add_var) abs new_vars in
+
+  List.fold_left (fun a c -> Abstract_box.BoxStrict.filter a c) a csts_expr
              
 let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
   let (xl,xu) = bound abs v1 and (yl,yu) = bound abs v2 in

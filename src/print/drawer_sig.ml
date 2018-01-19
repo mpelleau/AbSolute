@@ -3,6 +3,8 @@ module type Drawer = sig
   type t
 
   val is_empty : t -> bool
+
+  val to_abs : t * Csp.csts -> t
     
   val bound : t -> Csp.var -> float * float
 
