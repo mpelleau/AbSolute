@@ -60,7 +60,8 @@ let parse_const = float_of_string
 let space = [' ' '\t' '\r']+
 let newline = "\n" | "\r" | "\r\n"
 let digit = ['0'-'9']
-let const = ( digit+ | "." digit+ | digit+ "." digit* )
+let cst = ( digit+ | "." digit+ | digit+ "." digit*)
+let const = (cst | cst "e" digit+ | cst "e+" digit+ | cst "e-" digit+)
 
 rule token = parse
 
