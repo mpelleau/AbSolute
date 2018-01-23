@@ -55,6 +55,124 @@ type prog = { init : decls; constants : csts; objective : expr; constraints : co
 
 
 (*************************************************************)
+(*                    PRINTING UTILITIES                     *)
+(*************************************************************)
+
+let print_unop fmt = function
+  | NEG -> Format.fprintf fmt "-"
+  | SQRT -> Format.fprintf fmt "sqrt"
+  | COS -> Format.fprintf fmt "cos"
+  | SIN -> Format.fprintf fmt "sin"
+  | TAN -> Format.fprintf fmt "tan"
+  | COT -> Format.fprintf fmt "cot"
+  | ASIN -> Format.fprintf fmt "asin"
+  | ACOS -> Format.fprintf fmt "acos"
+  | ATAN -> Format.fprintf fmt "atan"
+  | ACOT -> Format.fprintf fmt "acot"
+  | LN -> Format.fprintf fmt "ln"
+  | LOG -> Format.fprintf fmt "log"
+  | EXP -> Format.fprintf fmt "exp"
+  | ABS -> Format.fprintf fmt "abs"
+
+let print_binop fmt = function
+  | ADD -> Format.fprintf fmt "+"
+  | SUB -> Format.fprintf fmt "-"
+  | MUL -> Format.fprintf fmt "*"
+  | DIV -> Format.fprintf fmt "/"
+  | POW -> Format.fprintf fmt "^"
+  | MIN -> Format.fprintf fmt "min"
+  | MAX -> Format.fprintf fmt "max"
+  | NROOT -> Format.fprintf fmt "nroot"
+
+let print_cmpop fmt = function
+  | EQ -> Format.fprintf fmt "="
+  | LEQ -> Format.fprintf fmt "<="
+  | GEQ -> Format.fprintf fmt ">="
+  | NEQ -> Format.fprintf fmt "<>"
+  | GT ->  Format.fprintf fmt ">"
+  | LT -> Format.fprintf fmt "<"
+
+let print_typ fmt = function
+  | INT ->  Format.fprintf fmt "int"
+  | REAL ->  Format.fprintf fmt "real"
+
+let print_var fmt s = Format.fprintf fmt "%s" s
+
+let print_dom fmt = function
+  | Finite (a,b) ->  Format.fprintf fmt "[%.2f; %.2f]" a b
+  | Minf i -> Format.fprintf fmt "[-oo; %.2f]" i
+  | Inf i -> Format.fprintf fmt "[%.2f; 00]" i
+  | Top -> Format.fprintf fmt "[-oo; 00]"
+
+let print_assign fmt (a,b,c) =
+  Format.fprintf fmt "%a %a=%a" print_typ a print_var b print_dom c
+
+let print_cst fmt (a, b) =
+  match (a, b) with
+  | (a, b)  when a = b ->  Format.fprintf fmt "%f" a
+  | (a, b) -> Format.fprintf fmt "[%f; %f]" a b
+
+let print_csts fmt (a, b) =
+  Format.fprintf fmt "%a = %a" print_var a print_cst b
+
+
+
+
+let print_aux_csts fmt (a, (b, c)) =
+  Format.fprintf fmt "%a:[%f;%f]" print_var a b c
+
+let rec print_all_csts fmt = function
+  | [] -> ()
+  | a::[] -> Format.fprintf fmt "%a" print_aux_csts a
+  | a::tl -> Format.fprintf fmt "%a " print_aux_csts a; print_all_csts fmt tl
+
+
+let rec print_expr fmt = function
+  | Unary (NEG, e) ->
+    Format.fprintf fmt "(- %a)" print_expr e
+  | Unary (u, e) ->
+    Format.fprintf fmt "%a (%a)" print_unop u print_expr e
+  | Binary (b, e1 , e2) ->
+    Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
+  | Var v -> Format.fprintf fmt "%s" v
+  | Cst c -> Format.fprintf fmt "%f" c
+
+let rec print_bexpr fmt = function
+  | Cmp (c,e1,e2) ->
+    Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
+  | And (b1,b2) ->
+    Format.fprintf fmt "%a && %a" print_bexpr b1 print_bexpr b2
+  | Or  (b1,b2) ->
+    Format.fprintf fmt "%a || %a" print_bexpr b1 print_bexpr b2
+  | Not b -> Format.fprintf fmt "not %a" print_bexpr b
+
+let print_jacob fmt (v, e) =
+  Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e
+
+let rec print_jacobian fmt = function
+  | [] -> ()
+  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+
+
+let print_view fmt (v, e) =
+  Format.fprintf fmt "%a = %a" print_var v print_expr e
+
+let print fmt prog =
+  let rec aux f = function
+  | [] -> ()
+  | a::tl -> Format.fprintf fmt "%a;\n" f a; aux f tl
+  in
+  aux print_assign prog.init;
+  Format.fprintf fmt "\n";
+  aux print_csts prog.constants;
+  Format.fprintf fmt "\n";
+  aux print_view prog.view;
+  Format.fprintf fmt "\n";
+  print_jacobian fmt prog.jacobian;
+  Format.fprintf fmt "\n"
+
+
+(*************************************************************)
 (*                         PREDICATES                        *)
 (*************************************************************)
 
@@ -128,15 +246,37 @@ let rec equal_expr e1 e2 =
   | (Cst a, Cst b) -> a = b
   | (Var v1, Var v2) -> v1 = v2
   | (Unary (op1, e1), Unary (op2, e2)) -> op1 = op2 && equal_expr e1 e2
-  | (Binary (op1, a, b), Binary (op2, c, d)) -> op1 = op2 && (((equal_expr a c) && (equal_expr b d)) || ((equal_expr a d) && (equal_expr b c)))
+  | (Binary (op1, a, b), Binary (op2, c, d)) when (op1 = ADD) || (op1 = MUL) || (op1 = MIN) || (op1 = MAX) -> op1 = op2 && (((equal_expr a c) && (equal_expr b d)) || ((equal_expr a d) && (equal_expr b c)))
+  | (Binary (op1, a, b), Binary (op2, c, d)) -> op1 = op2 && (equal_expr a c) && (equal_expr b d)
   | _ -> false
 
+let rec distribute (op, c) = function
+  | Cst a -> Binary(op, Cst a, c)
+  | Var v -> Binary(op, Var v, c)
+  | Unary(NEG, e) -> Unary(NEG, distribute (op, c) e)
+  | Unary(unop, e) as expr -> Binary(op, expr, c)
+  | Binary(binop, _, _) as expr when binop = POW || binop = NROOT -> Binary(op, expr, c)
+  | Binary(binop, e, Cst a) when binop = op -> Binary(op, e, Binary(MUL, Cst a, c))
+  | Binary(binop, Cst a, e) when binop = op -> Binary(op, Binary(op, Cst a, c), e)
+  | Binary(DIV|MUL as binop, Cst a, e) -> Binary(binop, Binary(op, Cst a, c), e)
+  | Binary(DIV, e, Cst a) -> Binary(op, e, Binary(DIV, c, Cst a))
+  | Binary(MUL, e, Cst a) -> Binary(MUL, e, Binary(op, Cst a, c))
+  | Binary(binop, e1, e2) -> Binary(binop, distribute (op, c) e1, distribute (op, c) e2)
+
+let rec expand = function
+  | Cst c -> Cst c
+  | Var v -> Var v
+  | Unary(unop, e) -> Unary(unop, expand e)
+  | Binary(MUL, Cst c, e) | Binary(MUL, e, Cst c) -> distribute (MUL, Cst c) e
+  | Binary(DIV, e, Cst c) -> distribute (DIV, Cst c) e
+  | Binary(binop, e1, e2) -> Binary(binop, expand e1, expand e2)
+       
 let simp_expr e1 e2 =
   if equal_expr e1 e2 then
     1
   else
     match e2 with
-    | Unary (NEG, e) -> if equal_expr e1 e then -1 else 0
+    | Unary (NEG, e) when  equal_expr e1 e -> -1
     | _ -> 0
 
 let rec simp_lexpr e n rest = function
@@ -192,7 +332,7 @@ let rec get_add_terms_expr = function
   | Unary (NEG, e) -> neg_list (get_add_terms_expr e)
   | Binary (ADD, e1, e2) -> List.append (get_add_terms_expr e1) (get_add_terms_expr e2)
   | Binary (SUB, e1, e2) -> List.append (get_add_terms_expr e1) (neg_list (get_add_terms_expr e2))
-  | Binary (MUL, e1, e2) as e -> let l = get_mul_terms_expr e in [get_lexpr l simplify_qexpr MUL one]
+  | Binary (MUL, e1, e2) as e -> [get_lexpr (get_mul_terms_expr e) simplify_qexpr MUL one]
   | _ as e -> [e]
 
 (* simplifies elementary function *)
@@ -216,6 +356,8 @@ let rec simplify_expr expr change =
         | Cst a, Cst b -> (Cst (a +. b), true)
         | Cst 0., _ -> simplify_expr e2 change
         | _, Cst 0. -> simplify_expr e1 change
+        | _, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
+        | Unary(NEG, e), _ -> simplify_expr (Binary(SUB, e2, e)) true
         | _, _ -> apply simplify_expr e1 e2 change ADD
        )
      | SUB ->
@@ -223,6 +365,8 @@ let rec simplify_expr expr change =
         | Cst a, Cst b -> (Cst (a -. b), true)
         | Cst 0., _ -> let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
         | _, Cst 0. -> simplify_expr e1 change
+        | _, Unary(NEG, e) -> simplify_expr (Binary(ADD, e1, e)) true
+        | Unary(NEG, e), _ -> simplify_expr (Unary(NEG, (Binary(ADD, e, e2)))) true
         | _, _ -> apply simplify_expr e1 e2 change SUB
        )
      | MUL ->
@@ -231,6 +375,7 @@ let rec simplify_expr expr change =
         | Cst 0., _ | _, Cst 0. -> (Cst 0., true)
         | Cst 1., _ -> simplify_expr e2 change
         | _, Cst 1. -> simplify_expr e1 change
+        | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
         | _, _ -> apply simplify_expr e1 e2 change MUL
        )
      | DIV ->
@@ -239,6 +384,7 @@ let rec simplify_expr expr change =
         | Cst 0., _ -> (Cst 0., true)
         | Cst a, Cst b -> (Cst (a /. b), true)
         | _, Cst 1. -> simplify_expr e1 change
+        | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
         | _, _ -> apply simplify_expr e1 e2 change DIV
        )
      | POW ->
@@ -265,7 +411,10 @@ let rec simplify_fp expr =
     simplify_fp e
   else
     (let lexpr = get_add_terms_expr e in
-    get_lexpr lexpr simplify_lexpr ADD zero)
+     let e' = get_lexpr lexpr simplify_lexpr ADD zero in
+     let (e', _) = simplify_expr e' false in
+     e'
+    )
 
 
 let rec simplify_bexpr = function
@@ -424,6 +573,7 @@ let get_c_expr l f op neutre =
 
 let rec simp_fp expr =
   let (e, b) = simplify_expr expr false in
+  (*Format.printf "%a --> %a\n" print_expr expr print_expr e;*)
   if b then
     simp_fp e
   else
@@ -498,7 +648,7 @@ let rec replace_view_bexpr view = function
   | Or (b1, b2) -> Or (replace_view_bexpr view b1, replace_view_bexpr view b2)
   | Not b -> Not (replace_view_bexpr view b)
 
-let replace_view_ctr ((id, e) as view) ctrs =
+let replace_view_ctr ((id, _) as view) ctrs =
   List.map (fun (c, vars) -> if Variables.mem id vars then
                                (replace_view_bexpr view c, Variables.remove id vars)
                              else (c, vars)
@@ -513,12 +663,17 @@ let rec rep_view view views =
 let rep_in_view (id, e) views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) (id, e) views
 
+
+let replace_view_ctr (Cmp(EQ, e1, e2) as ctr) views =
+  List.fold_left (fun c view -> replace_view_bexpr view c) ctr views
+
 let get_views ctr_vars =
   List.fold_left (fun (ctrs, views) (c, v) ->
   if ((is_cons_linear c) && (Variables.cardinal v = 2)) then
     match c with
     | Cmp (EQ, e1, e2) ->
-       let (_, cst, e) = lh (EQ, e1, e2) in
+       let Cmp (_, e1', e2') = replace_view_ctr c views in
+       let (_, cst, e) = lh (EQ, e1', e2') in
        let value = if cst = 0. then 0. else -. cst in
        let new_view = rep_in_view (view e (Cst value)) views in
        let views' = rep_view new_view views in
@@ -528,7 +683,10 @@ let get_views ctr_vars =
     ) ([], []) ctr_vars
   
 let rec find_all_views ctrs =
-  let (ctrs, views) = get_views ctrs in
+  let (ctrs, vws) = get_views ctrs in
+  let views = List.map (fun (id, e) -> (id, simplify_fp (expand e))) vws in
+  List.iter (fun (id, e) -> Format.printf "%a = %a -> %a => %a\n" print_var id print_expr e print_expr (expand e) print_expr (simplify_fp  e)) views;
+  Format.printf "\n";
   if List.length views > 0 then
     let ctrs' = replace_view ctrs views in
     let (v, c) = find_all_views ctrs' in
@@ -670,121 +828,3 @@ let rec neg_bexpr = function
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
-
-
-(*************************************************************)
-(*                    PRINTING UTILITIES                     *)
-(*************************************************************)
-
-let print_unop fmt = function
-  | NEG -> Format.fprintf fmt "-"
-  | SQRT -> Format.fprintf fmt "sqrt"
-  | COS -> Format.fprintf fmt "cos"
-  | SIN -> Format.fprintf fmt "sin"
-  | TAN -> Format.fprintf fmt "tan"
-  | COT -> Format.fprintf fmt "cot"
-  | ASIN -> Format.fprintf fmt "asin"
-  | ACOS -> Format.fprintf fmt "acos"
-  | ATAN -> Format.fprintf fmt "atan"
-  | ACOT -> Format.fprintf fmt "acot"
-  | LN -> Format.fprintf fmt "ln"
-  | LOG -> Format.fprintf fmt "log"
-  | EXP -> Format.fprintf fmt "exp"
-  | ABS -> Format.fprintf fmt "abs"
-
-let print_binop fmt = function
-  | ADD -> Format.fprintf fmt "+"
-  | SUB -> Format.fprintf fmt "-"
-  | MUL -> Format.fprintf fmt "*"
-  | DIV -> Format.fprintf fmt "/"
-  | POW -> Format.fprintf fmt "^"
-  | MIN -> Format.fprintf fmt "min"
-  | MAX -> Format.fprintf fmt "max"
-  | NROOT -> Format.fprintf fmt "nroot"
-
-let print_cmpop fmt = function
-  | EQ -> Format.fprintf fmt "="
-  | LEQ -> Format.fprintf fmt "<="
-  | GEQ -> Format.fprintf fmt ">="
-  | NEQ -> Format.fprintf fmt "<>"
-  | GT ->  Format.fprintf fmt ">"
-  | LT -> Format.fprintf fmt "<"
-
-let print_typ fmt = function
-  | INT ->  Format.fprintf fmt "int"
-  | REAL ->  Format.fprintf fmt "real"
-
-let print_var fmt s = Format.fprintf fmt "%s" s
-
-let print_dom fmt = function
-  | Finite (a,b) ->  Format.fprintf fmt "[%.2f; %.2f]" a b
-  | Minf i -> Format.fprintf fmt "[-oo; %.2f]" i
-  | Inf i -> Format.fprintf fmt "[%.2f; 00]" i
-  | Top -> Format.fprintf fmt "[-oo; 00]"
-
-let print_assign fmt (a,b,c) =
-  Format.fprintf fmt "%a %a=%a" print_typ a print_var b print_dom c
-
-let print_cst fmt (a, b) =
-  match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%f" a
-  | (a, b) -> Format.fprintf fmt "[%f; %f]" a b
-
-let print_csts fmt (a, b) =
-  Format.fprintf fmt "%a = %a" print_var a print_cst b
-
-
-
-
-let print_aux_csts fmt (a, (b, c)) =
-  Format.fprintf fmt "%a:[%f;%f]" print_var a b c
-
-let rec print_all_csts fmt = function
-  | [] -> ()
-  | a::[] -> Format.fprintf fmt "%a" print_aux_csts a
-  | a::tl -> Format.fprintf fmt "%a " print_aux_csts a; print_all_csts fmt tl
-
-
-let rec print_expr fmt = function
-  | Unary (NEG, e) ->
-    Format.fprintf fmt "(- %a)" print_expr e
-  | Unary (u, e) ->
-    Format.fprintf fmt "%a (%a)" print_unop u print_expr e
-  | Binary (b, e1 , e2) ->
-    Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
-  | Var v -> Format.fprintf fmt "%s" v
-  | Cst c -> Format.fprintf fmt "%f" c
-
-let rec print_bexpr fmt = function
-  | Cmp (c,e1,e2) ->
-    Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
-  | And (b1,b2) ->
-    Format.fprintf fmt "%a && %a" print_bexpr b1 print_bexpr b2
-  | Or  (b1,b2) ->
-    Format.fprintf fmt "%a || %a" print_bexpr b1 print_bexpr b2
-  | Not b -> Format.fprintf fmt "not %a" print_bexpr b
-
-let print_jacob fmt (v, e) =
-  Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e
-
-let rec print_jacobian fmt = function
-  | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
-
-
-let print_view fmt (v, e) =
-  Format.fprintf fmt "%a = %a" print_var v print_expr e
-
-let print fmt prog =
-  let rec aux f = function
-  | [] -> ()
-  | a::tl -> Format.fprintf fmt "%a;\n" f a; aux f tl
-  in
-  aux print_assign prog.init;
-  Format.fprintf fmt "\n";
-  aux print_csts prog.constants;
-  Format.fprintf fmt "\n";
-  aux print_view prog.view;
-  Format.fprintf fmt "\n";
-  print_jacobian fmt prog.jacobian;
-  Format.fprintf fmt "\n"

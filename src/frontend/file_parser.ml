@@ -105,11 +105,11 @@ let parse (filename:string option) : prog =
 let parse fn =
   let p = parse fn in
   check_ast p;
-  List.iter (fun c -> Format.printf "  -- %a\n" Csp.print_bexpr c) p.Csp.constraints;
+  (*List.iter (fun c -> Format.printf "  -- %a\n" Csp.print_bexpr c) p.Csp.constraints;*)
   let prob = Csp.simplify p in
-  List.iter (fun c -> Format.printf "  ++ %a\n" Csp.print_bexpr c) prob.Csp.constraints;
-  List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
+  (*List.iter (fun c -> Format.printf "  ++ %a\n" Csp.print_bexpr c) prob.Csp.constraints;*)
+  (*List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
   List.iter (fun (v, e) -> Format.printf "  // %s = %a\n" v Csp.print_expr e) prob.Csp.view;
-  Format.printf "\n";
+  Format.printf "\n";*)
   let j = Csp.compute_jacobian prob in
   {prob with jacobian = j}
