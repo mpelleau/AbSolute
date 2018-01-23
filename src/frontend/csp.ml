@@ -685,8 +685,6 @@ let get_views ctr_vars =
 let rec find_all_views ctrs =
   let (ctrs, vws) = get_views ctrs in
   let views = List.map (fun (id, e) -> (id, simplify_fp (expand e))) vws in
-  List.iter (fun (id, e) -> Format.printf "%a = %a -> %a => %a\n" print_var id print_expr e print_expr (expand e) print_expr (simplify_fp  e)) views;
-  Format.printf "\n";
   if List.length views > 0 then
     let ctrs' = replace_view ctrs views in
     let (v, c) = find_all_views ctrs' in
