@@ -354,11 +354,11 @@ let rec simplify_expr expr change =
      | ADD ->
        (match e1, e2 with
         | Cst a, Cst b -> (Cst (a +. b), true)
-        | Cst 0., _ -> simplify_expr e2 change
-        | _, Cst 0. -> simplify_expr e1 change
-        | _, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
-        | Unary(NEG, e), _ -> simplify_expr (Binary(SUB, e2, e)) true
-        | _, _ -> apply simplify_expr e1 e2 change ADD
+        | Cst 0., e2 -> simplify_expr e2 change
+        | e1, Cst 0. -> simplify_expr e1 change
+        | e1, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
+        | Unary(NEG, e), e2 -> simplify_expr (Binary(SUB, e2, e)) true
+        | e1, e2 -> apply simplify_expr e1 e2 change ADD
        )
      | SUB ->
        (match e1, e2 with
@@ -382,7 +382,9 @@ let rec simplify_expr expr change =
        (match e1, e2 with
         | _, Cst 0. -> (Cst 0., true) (* TODO treat NaN *)
         | Cst 0., _ -> (Cst 0., true)
-        | Cst a, Cst b -> (Cst (a /. b), true)
+        | Cst a, Cst b when a = b -> (Cst 1., true)
+        | Cst a, Cst b when a = (-.b) -> (Cst (-. 1.), true)
+        (*| Cst a, Cst b -> (Cst (a /. b), true)*)
         | _, Cst 1. -> simplify_expr e1 change
         | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
         | _, _ -> apply simplify_expr e1 e2 change DIV
@@ -406,14 +408,14 @@ let rec simplify_expr expr change =
     )
 
 let rec simplify_fp expr =
-  let (e, b) = simplify_expr expr false in
+  let (e, b) = simplify_expr (expand expr) false in
   if b then
     simplify_fp e
   else
     (let lexpr = get_add_terms_expr e in
      let e' = get_lexpr lexpr simplify_lexpr ADD zero in
-     let (e', _) = simplify_expr e' false in
-     e'
+     let (e'', _) = simplify_expr (expand e') false in
+     e''
     )
 
 
@@ -684,7 +686,7 @@ let get_views ctr_vars =
   
 let rec find_all_views ctrs =
   let (ctrs, vws) = get_views ctrs in
-  let views = List.map (fun (id, e) -> (id, simplify_fp (expand e))) vws in
+  let views = List.map (fun (id, e) -> (id, e)) vws in
   if List.length views > 0 then
     let ctrs' = replace_view ctrs views in
     let (v, c) = find_all_views ctrs' in
