@@ -66,13 +66,12 @@ open Csp
 %left TOK_PLUS TOK_MINUS
 %left TOK_MULTIPLY  TOK_DIVIDE
 %nonassoc unary_minus
-%nonassoc TOK_COS TOK_SIN TOK_TAN TOK_COT 
-%nonassoc TOK_ASIN TOK_ACOS TOK_ATAN TOK_ACOT 
+%nonassoc TOK_COS TOK_SIN TOK_TAN TOK_COT
+%nonassoc TOK_ASIN TOK_ACOS TOK_ATAN TOK_ACOT
 %nonassoc TOK_LN TOK_LOG TOK_EXP TOK_NROOT TOK_SQRT TOK_POW
 
 %type <typ> typ
 %type <dom> init
-%type <assign> decl
 %type <bexpr> bexpr
 %type <Csp.prog> file
 
@@ -88,13 +87,17 @@ file:
   objective
   constraints
   TOK_EOF
-    {{jacobian=[];view=[];
-    init=$3;
-    objective=$4;
-    constraints=$5;
-    to_draw=$1;
-    constants=$2
-    }}
+  {
+    {
+      jacobian=[];
+      view=[];
+      init=$3;
+      objective=$4;
+      constraints=$5;
+      to_draw=$1;
+      constants=$2
+    }
+  }
 
 annot:
  | TOK_ANNOT TOK_LBRACE annot2 TOK_RBRACE {$3}
@@ -115,11 +118,9 @@ constants:
   | {[]}
 
 csts:
-  | cst csts {$1::$2}
+  | TOK_id TOK_ASSIGN value TOK_SEMICOLON csts {($1, $3)::$5}
+  | TOK_id TOK_ASSIGN value {[($1, $3)]}
   | {[]}
-
-cst:
-  | TOK_id TOK_ASSIGN value TOK_SEMICOLON {($1, $3)}
 
 value:
   | TOK_LBRACKET const TOK_SEMICOLON const TOK_RBRACKET {($2, $4)}
@@ -133,20 +134,18 @@ varlist:
   | {[]}
 
 decls:
-  | decl decls {$1::$2}
+  | typ TOK_id TOK_ASSIGN init TOK_SEMICOLON decls {($1,$2,$4)::$6}
+  | typ TOK_id TOK_ASSIGN init {[($1, $2, $4)]}
   | {[]}
 
 bexprs:
   | bexpr TOK_SEMICOLON bexprs {$1::$3}
+  | bexpr {[$1]}
   | {[]}
 
 typ:
   | TOK_INT       {INT}
   | TOK_REAL      {REAL}
-
-decl:
-  | typ TOK_id TOK_ASSIGN init TOK_SEMICOLON
-    { ($1, $2, $4) }
 
 init:
   | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Top}

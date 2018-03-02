@@ -51,7 +51,15 @@ type ctrs = (bexpr * jacob) list
 type csts = (var * (i*i)) list
 
 (* program *)
-type prog = { init : decls; constants : csts; objective : expr; constraints : constrs; jacobian : ctrs; to_draw : var list; view : jacob}
+type prog = {
+    init        : decls;
+    constants   : csts;
+    objective   : expr;
+    constraints : constrs;
+    jacobian    : ctrs;
+    to_draw     : var list;
+    view        : jacob
+  }
 
 
 (*************************************************************)
@@ -270,7 +278,7 @@ let rec expand = function
   | Binary(MUL, Cst c, e) | Binary(MUL, e, Cst c) -> distribute (MUL, Cst c) e
   | Binary(DIV, e, Cst c) -> distribute (DIV, Cst c) e
   | Binary(binop, e1, e2) -> Binary(binop, expand e1, expand e2)
-       
+
 let simp_expr e1 e2 =
   if equal_expr e1 e2 then
     1
@@ -513,8 +521,10 @@ let get_csts csp =
        | _ -> false
     ) csp.init in
   let cst = List.map
-    (fun (_, v, d) -> match d with
-       | Finite (a, b) when a=b -> (v, (a, b))
+              (fun (_, v, d) ->
+                match d with
+                | Finite (a, b) when a=b -> (v, (a, b))
+                | _ -> assert false
     ) csts in
   {csp with init = vars; constants = cst@csp.constants}
 
@@ -589,7 +599,7 @@ let lh (op, e1, e2) =
   | _, _ -> let (c, e) = simp_fp (Binary (SUB, e1, e2)) in (op, c, e)
 
 
-                                                         
+
 
 let filter_cstrs ctr_vars consts =
   List.fold_left (fun (cstr, csts, b) (c, v) ->
@@ -617,7 +627,7 @@ let rec repeat ctr_vars csts =
     (ctrs', csts')
 
 
-  
+
 let rec view e1 e2 =
   match e1, e2 with
   | Var(v), _ ->(v, e2)
@@ -626,13 +636,13 @@ let rec view e1 e2 =
   | Binary(ADD, a1, a2), e ->
      if has_variable a1 then view a1 (simplify_fp (Binary(SUB, e, a2)))
      else view a2 (simplify_fp (Binary(SUB, e, a1)))
-  | Binary(SUB, s1, s2), e -> 
+  | Binary(SUB, s1, s2), e ->
      if has_variable s1 then view s1 (simplify_fp (Binary(ADD, e, s2)))
      else view s2 (simplify_fp (Binary(SUB, s1, e)))
-  | Binary(MUL, m1, m2), e -> 
+  | Binary(MUL, m1, m2), e ->
      if has_variable m1 then view m1 (simplify_fp (Binary(DIV, e, m2)))
      else view m2 (simplify_fp (Binary(DIV, e, m1)))
-  | Binary(DIV, d1, d2), e -> 
+  | Binary(DIV, d1, d2), e ->
      if has_variable d1 then view d1 (simplify_fp (Binary(MUL, e, d2)))
      else view d2 (simplify_fp (Binary(MUL, e, d1)))
   | _, _ -> Format.printf "NOOOOOOOOOOOOO\n"; ("NOPE", Binary(SUB, e1, e2))
@@ -665,7 +675,6 @@ let rec rep_view view views =
 let rep_in_view (id, e) views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) (id, e) views
 
-
 let replace_view_ctr (Cmp(EQ, e1, e2) as ctr) views =
   List.fold_left (fun c view -> replace_view_bexpr view c) ctr views
 
@@ -683,7 +692,7 @@ let get_views ctr_vars =
     | _ -> ((c, v)::ctrs, views)
   else ((c, v)::ctrs, views)
     ) ([], []) ctr_vars
-  
+
 let rec find_all_views ctrs =
   let (ctrs, vws) = get_views ctrs in
   let views = List.map (fun (id, e) -> (id, e)) vws in
@@ -707,22 +716,22 @@ let simplify csp =
   let (ctrs, csts) = repeat ctr_vars p.constants in
 
   let (views, ctrs') = find_all_views ctrs in
-  
-  
+
+
   let (ctrs, _) = List.split ctrs' in
   let (cons, _) = List.split csts in
   let (view, _) = List.split views in
-  
+
 
   let (var_view, vars') = List.partition (fun (t, v, d) -> List.mem v view) p.init in
-  
+
   let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) vars' in
 
   let view_ctrs = List.fold_left (
                       fun l (_, v, d) ->
                       let e = List.assoc v views in
                       List.append (to_domains (e, d)) l) [] var_view in
-  
+
   {p with init = vars; constants = csts; constraints = ctrs@view_ctrs; view = views}
 
 let get_vars_jacob jacob =
