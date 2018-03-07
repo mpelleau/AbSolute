@@ -142,32 +142,19 @@ module type ITV = sig
 
   (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)
   val pow: t -> t -> t
-  val n_root: t -> t -> t bot
 
-  val cos: t -> t
-  val sin: t -> t
-  val tan: t -> t
-  val cot: t -> t
-  val acos: t -> t bot
-  val asin: t -> t bot
-  val atan: t -> t
-  val acot: t -> t
-
-  val ln: t -> t bot
-  val log: t -> t bot
-  val exp: t -> t
-
-  val min: t -> t -> t
-  val max: t -> t -> t
+  (* function calls (sqrt, exp, ln ...) are handled here :
+     given a function name and and a list of argument,
+     it returns a possibly bottom result *)
+  val eval_fun : string -> t list -> t bot
 
   (************************************************************************)
-  (* FILTERING (TEST TRANSFER FUNCTIONS) *)
+  (* FILTERING (TEST TRANSFER FUNCTIONS)                                  *)
   (************************************************************************)
 
   (* given two interval arguments, return a subset of each argument
      by removing points that cannot satisfy the predicate;
-     may also return Bot if no point can satisfy the predicate
-   *)
+     may also return Bot if no point can satisfy the predicate *)
 
   val filter_leq: t -> t -> (t * t) bot
   val filter_geq: t -> t -> (t * t) bot
@@ -181,14 +168,12 @@ module type ITV = sig
   val filter_gt_int: t -> t -> (t * t) bot
   val filter_neq_int: t -> t -> (t * t) bot
 
-
   (* given the interval argument(s) and the expected interval result of
      a numeric operation, returns refined interval argument(s) where
      points that cannot contribute to a value in the result are
      removed;
      may also return Bot if no point in an argument can lead to a
-     point in the result
-   *)
+     point in the result *)
 
   val filter_neg: t -> t -> t bot
   val filter_abs: t -> t -> t bot
@@ -202,24 +187,12 @@ module type ITV = sig
   val filter_div: t -> t -> t -> (t*t) bot
 
   val filter_pow: t -> t -> t -> (t*t) bot
-  val filter_root: t -> t -> t -> (t*t) bot
 
-  val filter_cos: t -> t -> t bot
-  val filter_sin: t -> t -> t bot
-  val filter_tan: t -> t -> t bot
-  val filter_cot: t -> t -> t bot
-  val filter_acos: t -> t -> t bot
-  val filter_asin: t -> t -> t bot
-  val filter_atan: t -> t -> t bot
-  val filter_acot: t -> t -> t bot
-
-  val filter_ln: t -> t -> t bot
-  val filter_log: t -> t -> t bot
-  val filter_exp: t -> t -> t bot
-
-  val filter_min: t -> t -> t -> (t*t) bot
-  val filter_max: t -> t -> t -> (t*t) bot
-
+  (* filtering function calls like (sqrt, exp, ln ...) is done here :
+     given a function name, a list of argument, and a result,
+     it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
+     it returns a possibly bottom result *)
+  val filter_fun: string -> t list -> t -> (t list) bot
 
   val filter_bounds: t -> t bot
 

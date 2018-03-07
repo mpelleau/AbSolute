@@ -54,14 +54,14 @@ module Box (I:ITV) = struct
     (B.to_float_down l),(B.to_float_up h)
 
   let to_expr abs =
-    Env.fold (fun v x lexp -> 
+    Env.fold (fun v x lexp ->
                let ((cl, l), (ch, h)) = I.to_expr x in
                List.append lexp [(Csp.Var(v), cl, l);
                                  (Csp.Var(v), ch, h)]
              ) abs []
 
   let to_expr abs vars : (Csp.expr * Csp.cmpop * Csp.expr) list =
-    Env.fold (fun v x lexp -> 
+    Env.fold (fun v x lexp ->
                if List.exists (fun vn -> String.equal v vn) vars then
                  let ((cl, l), (ch, h)) = I.to_expr x in
                  List.append lexp [(Csp.Var(v), cl, l);
@@ -195,10 +195,11 @@ let split_along (a:t) (v:var) : t list =
 
   (* trees with nodes annotated with evaluation *)
   type bexpr =
-    | BUnary of unop * bexpri
-    | BBinary of binop * bexpri * bexpri
-    | BVar of var
-    | BCst of i
+    | BFuncall of string * bexpri list
+    | BUnary   of unop * bexpri
+    | BBinary  of binop * bexpri * bexpri
+    | BVar     of var
+    | BCst     of i
 
   and bexpri = bexpr * i
 
@@ -223,6 +224,11 @@ let split_along (a:t) (v:var) : t list =
    *)
   let rec eval (a:t) (e:expr) : bexpri =
     match e with
+    | Funcall(name,args) ->
+       let bargs = List.map (eval a) args in
+       let iargs = List.map snd bargs in
+       let r = debot (I.eval_fun name iargs) in
+       BFuncall(name, bargs),r
     | Var v ->
         let (r, n) =
           try find v a
@@ -236,19 +242,6 @@ let split_along (a:t) (v:var) : t list =
         let _,i1 as b1 = eval a e1 in
         let r = match o with
           | NEG -> I.neg i1
-	  | ABS -> I.abs i1
-          | SQRT -> debot (I.sqrt i1)
-	  | COS -> I.cos i1
-	  | SIN -> I.sin i1
-	  | TAN -> I.tan i1
-	  | COT -> I.cot i1
-	  | ACOS -> debot (I.acos i1)
-	  | ASIN -> debot (I.asin i1)
-	  | ATAN -> I.atan i1
-	  | ACOT -> I.acot i1
-	  | LN -> debot (I.ln i1)
-	  | LOG -> debot (I.log i1)
-	  | EXP -> I.exp i1
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
@@ -265,9 +258,6 @@ let split_along (a:t) (v:var) : t list =
               debot (I.meet r I.positive)
             else r
 	 | POW -> I.pow i1 i2
-	 | NROOT -> debot (I.n_root i1 i2)
-	 | MIN -> I.min i1 i2
-	 | MAX -> I.max i1 i2
        in
        BBinary (o,b1,b2), r
 
@@ -305,41 +295,29 @@ let split_along (a:t) (v:var) : t list =
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     (* Format.printf "%a %a %a\n" print a test_print e I.print x;*)
     match e with
+    | BFuncall(name,args) ->
+       let bexpr,itv = List.split args in
+       let res = I.filter_fun name itv x in
+       List.fold_left2 (fun acc e1 e2 ->
+           refine acc e2 e1) a (debot res) bexpr
     | BVar v ->
         (try Env.add v (debot (I.meet x (fst (find v a)))) a
         with Not_found -> failwith ("variable not found: "^v))
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
-        let j = match o with
-          | NEG -> I.filter_neg i1 x
-          | ABS -> I.filter_abs i1 x
-          | SQRT -> I.filter_sqrt i1 x
-	  | COS -> I.filter_cos i1 x
-	  | SIN -> I.filter_sin i1 x
-	  | TAN -> I.filter_tan i1 x
-	  | COT -> I.filter_cot i1 x
-	  | ACOS -> I.filter_acos i1 x
-	  | ASIN -> I.filter_asin i1 x
-	  | ATAN -> I.filter_atan i1 x
-	  | ACOT -> I.filter_acot i1 x
-	  | LN -> I.filter_ln i1 x
-	  | LOG -> I.filter_log i1 x
-	  | EXP -> I.filter_exp i1 x
-        in
-        refine a e1 (debot j)
+       let j = match o with
+         | NEG -> I.filter_neg i1 x
+        in refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
-        let j = match o with
-          | ADD -> refine_add (e1,i1) (e2,i2) x
-          | SUB -> refine_sub (e1,i1) (e2,i2) x
-          | MUL -> refine_mul (e1,i1) (e2,i2) x
-          | DIV -> refine_div (e1,i1) (e2,i2) x
-	      | POW -> I.filter_pow i1 i2 x
-    	  | NROOT -> I.filter_root i1 i2 x
-	      | MIN -> I.filter_min i1 i2 x
-	      | MAX -> I.filter_max i1 i2 x
-        in
-        let j1,j2 = debot j in
-        refine (refine a e1 j1) e2 j2
+       let j = match o with
+         | ADD -> refine_add (e1,i1) (e2,i2) x
+         | SUB -> refine_sub (e1,i1) (e2,i2) x
+         | MUL -> refine_mul (e1,i1) (e2,i2) x
+         | DIV -> refine_div (e1,i1) (e2,i2) x
+	       | POW -> I.filter_pow i1 i2 x
+       in
+       let j1,j2 = debot j in
+       refine (refine a e1 j1) e2 j2
 
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
@@ -401,24 +379,27 @@ let split_along (a:t) (v:var) : t list =
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
     I.to_float_range bounds
-   
+
 
   let rec is_applicable abs (e:expr) : bool =
     match e with
-    | Var v -> let (var, name) = try find v abs with 
-                                   Not_found -> (I.zero, "")
-               in
-               let res = match name with
-                 | "" -> false
-                 | _ -> true
-               in
-               res
+    | Var v ->
+       let (var, name) =
+         try find v abs with
+           Not_found -> (I.zero, "")
+       in
+       let res = match name with
+         | "" -> false
+         | _ -> true
+       in
+       res
     | Cst _ -> true
     | Unary (_, e1) -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
+    | Funcall (name, args) -> false (* check if sound *)
 
   let lfilter (a:t) l : t =
-    let la = List.filter (fun (e1, op, e2) -> 
+    let la = List.filter (fun (e1, op, e2) ->
                            (is_applicable a e1) && (is_applicable a e2)) l in
     List.fold_left (fun a' e -> filter a' e) a la
 

@@ -14,6 +14,13 @@ module SyntaxTranslator (D:ADomain) = struct
   let rec expr_to_apron a (e:expr) : Texpr1.expr =
     let env = Abstract1.env a in
     match e with
+    | Funcall (name,args) ->
+       (match name,args with
+        | "sqrt",[x] ->
+           let e1 = expr_to_apron a x in
+           Texpr1.Unop (Texpr1.Sqrt, e1, Texpr1.Real, Texpr1.Near)
+        | _ -> failwith ("function not supported"^name)
+       )
     | Var v ->
       let var = Var.of_string v in
       if not (Environment.mem_var env var)
@@ -23,19 +30,6 @@ module SyntaxTranslator (D:ADomain) = struct
     | Unary (o,e1) ->
       let r = match o with
 	      | NEG  -> Texpr1.Neg
-	      | SQRT -> Texpr1.Sqrt
-	      | COS  -> failwith "COS unsupported with apron"
-        | SIN  -> failwith "SIN unsupported with apron"
-        | TAN  -> failwith "TAN unsupported with apron"
-	      | COT  -> failwith "COT unsupported with apron"
-	      | ACOS -> failwith "ACOS unsupported with apron"
-        | ASIN -> failwith "ASIN unsupported with apron"
-        | ATAN -> failwith "ATAN unsupported with apron"
-	      | ACOT -> failwith "ACOT unsupported with apron"
-	      | ABS  -> failwith "ABS unsupported with apron"
-        | LN   -> failwith "LN unsupported with apron"
-        | LOG  -> failwith "LOG unsupported with apron"
-        | EXP  -> failwith "EXP unsupported with apron"
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
@@ -46,9 +40,6 @@ module SyntaxTranslator (D:ADomain) = struct
 	       | DIV -> Texpr1.Div
 	       | MUL -> Texpr1.Mul
 	       | POW -> Texpr1.Pow
-               | MIN -> failwith "MIN unsupported with apron"
-               | MAX -> failwith "MAX unsupported with apron"
-               | NROOT -> failwith "NROOT unsupported with apron"
        in
        let e1 = expr_to_apron a e1
        and e2 = expr_to_apron a e2 in
@@ -86,14 +77,13 @@ module SyntaxTranslator (D:ADomain) = struct
               | Environment.INT -> Var ((Var.to_string v)^"%")
               | Environment.REAL -> Var (Var.to_string v)
       in e
-    | Texpr1.Unop (op, e, _, _) ->
-      let o = match op with
-              | Texpr1.Neg -> NEG
-              | Texpr1.Sqrt -> SQRT
-              | Texpr1.Cast -> failwith "Cast unsupported with AbSolute"
-      in
+    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
+       let e = apron_to_expr e env in
+       Funcall ("sqrt",[e])
+    | Texpr1.(Unop (Neg, e, _, _)) ->
       let e = apron_to_expr e env in
-      Unary (o, e)
+      Unary (NEG, e)
+    | Texpr1.(Unop (Cast, e, _, _)) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
       let o = match op with
         | Texpr1.Add -> ADD
@@ -184,7 +174,7 @@ module MAKE(AP:ADomain) = struct
   let is_bottom abs =
     A.is_bottom man abs
 
-  let is_empty a = is_bottom a 
+  let is_empty a = is_bottom a
 
   let is_singleton b v =
     let man = A.manager b in

@@ -176,13 +176,13 @@ module Make(B:BOUND) = struct
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_float_down l)), 
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
                            (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_float_down l)), 
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
                           (Csp.LEQ, Csp.Cst(B.to_float_up h)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)), 
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
                           (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)), 
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
                          (Csp.LEQ, Csp.Cst(B.to_float_up h)))
 
    (************************************************************************)
@@ -434,7 +434,7 @@ module Make(B:BOUND) = struct
     match itv' with
     | Bot -> Bot
     | Nb i -> fst (div i i_ln10)
-    
+
 
   (* interval min *)
   let min ((l1, u1):t) ((l2, u2):t) = failwith "todo min"
@@ -442,7 +442,10 @@ module Make(B:BOUND) = struct
 
   (* interval max *)
   let max ((l1, u1):t) ((l2, u2):t) = failwith "todo max"
-    (* validate (B.max l1 l2, B.max u1 u2) *)
+  (* validate (B.max l1 l2, B.max u1 u2) *)
+
+  (** runtime functions **)
+  let eval_fun name args : t bot = assert false
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -612,6 +615,8 @@ module Make(B:BOUND) = struct
 
   (* r = max (i1, i2) *)
   let filter_max i1 i2 r = failwith "todo filter_max"
+
+  let filter_fun name args r : (t list) bot =  assert false
 
   let filter_bounds (l,h) = failwith "todo filter_bound"
 

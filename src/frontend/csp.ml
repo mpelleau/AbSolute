@@ -5,11 +5,12 @@ type var = string
 type i = float
 
 (* unary arithmetic operators *)
-type unop = NEG | SQRT | ABS | COS | SIN | TAN | COT
-	  | ASIN | ACOS | ATAN | ACOT | LN | LOG | EXP
+type unop = NEG
+(*  | SQRT | ABS | COS | SIN | TAN | COT *)
+(* | ASIN | ACOS | ATAN | ACOT | LN | LOG | EXP *)
 
 (* binary arithmetic operators *)
-type binop = ADD | SUB | MUL | DIV | POW | NROOT | MIN | MAX
+type binop = ADD | SUB | MUL | DIV | POW
 
 (* arithmetic comparison operators *)
 type cmpop =
@@ -17,21 +18,25 @@ type cmpop =
 
 (* numeric expressions *)
 type expr =
-  | Unary of unop * expr
-  | Binary of binop * expr * expr
-  | Var of var
-  | Cst of i
+  | Funcall of var * expr list
+  | Unary   of unop * expr
+  | Binary  of binop * expr * expr
+  | Var     of var
+  | Cst     of i
 
 (* boolean expressions *)
 type bexpr =
   | Cmp of cmpop * expr * expr
   | And of bexpr * bexpr
-  | Or of bexpr * bexpr
+  | Or  of bexpr * bexpr
   | Not of bexpr
 
 type typ = INT | REAL
 
-type dom = Finite of i*i | Minf of i | Inf of i | Top
+type dom = Finite of i * i
+         | Minf   of i
+         | Inf    of i
+         | Top
 
 (* assign *)
 type assign = (typ * var * dom)
@@ -68,19 +73,19 @@ type prog = {
 
 let print_unop fmt = function
   | NEG -> Format.fprintf fmt "-"
-  | SQRT -> Format.fprintf fmt "sqrt"
-  | COS -> Format.fprintf fmt "cos"
-  | SIN -> Format.fprintf fmt "sin"
-  | TAN -> Format.fprintf fmt "tan"
-  | COT -> Format.fprintf fmt "cot"
-  | ASIN -> Format.fprintf fmt "asin"
-  | ACOS -> Format.fprintf fmt "acos"
-  | ATAN -> Format.fprintf fmt "atan"
-  | ACOT -> Format.fprintf fmt "acot"
-  | LN -> Format.fprintf fmt "ln"
-  | LOG -> Format.fprintf fmt "log"
-  | EXP -> Format.fprintf fmt "exp"
-  | ABS -> Format.fprintf fmt "abs"
+  (* | SQRT -> Format.fprintf fmt "sqrt" *)
+  (* | COS -> Format.fprintf fmt "cos" *)
+  (* | SIN -> Format.fprintf fmt "sin" *)
+  (* | TAN -> Format.fprintf fmt "tan" *)
+  (* | COT -> Format.fprintf fmt "cot" *)
+  (* | ASIN -> Format.fprintf fmt "asin" *)
+  (* | ACOS -> Format.fprintf fmt "acos" *)
+  (* | ATAN -> Format.fprintf fmt "atan" *)
+  (* | ACOT -> Format.fprintf fmt "acot" *)
+  (* | LN -> Format.fprintf fmt "ln" *)
+  (* | LOG -> Format.fprintf fmt "log" *)
+  (* | EXP -> Format.fprintf fmt "exp" *)
+  (* | ABS -> Format.fprintf fmt "abs" *)
 
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
@@ -88,9 +93,6 @@ let print_binop fmt = function
   | MUL -> Format.fprintf fmt "*"
   | DIV -> Format.fprintf fmt "/"
   | POW -> Format.fprintf fmt "^"
-  | MIN -> Format.fprintf fmt "min"
-  | MAX -> Format.fprintf fmt "max"
-  | NROOT -> Format.fprintf fmt "nroot"
 
 let print_cmpop fmt = function
   | EQ -> Format.fprintf fmt "="
@@ -136,10 +138,15 @@ let rec print_all_csts fmt = function
 
 
 let rec print_expr fmt = function
+  | Funcall(name,args) ->
+     let print_args fmt =
+       Format.pp_print_list
+         ~pp_sep:(fun fmt () -> Format.fprintf fmt ",")
+         print_expr fmt
+     in
+     Format.fprintf fmt "%s(%a)" name print_args args
   | Unary (NEG, e) ->
     Format.fprintf fmt "(- %a)" print_expr e
-  | Unary (u, e) ->
-    Format.fprintf fmt "%a (%a)" print_unop u print_expr e
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
@@ -186,6 +193,7 @@ let print fmt prog =
 
 (* checks if an expression contains a variable *)
 let rec has_variable = function
+  | Funcall(name,args) -> List.exists has_variable args
   | Unary (u, e) -> has_variable e
   | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
@@ -208,8 +216,6 @@ let rec is_cons_linear = function
   | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
-
-
 
 (*****************************************)
 (*        SYMBOLIC TRANSFORMATION        *)
@@ -254,16 +260,16 @@ let rec equal_expr e1 e2 =
   | (Cst a, Cst b) -> a = b
   | (Var v1, Var v2) -> v1 = v2
   | (Unary (op1, e1), Unary (op2, e2)) -> op1 = op2 && equal_expr e1 e2
-  | (Binary (op1, a, b), Binary (op2, c, d)) when (op1 = ADD) || (op1 = MUL) || (op1 = MIN) || (op1 = MAX) -> op1 = op2 && (((equal_expr a c) && (equal_expr b d)) || ((equal_expr a d) && (equal_expr b c)))
+  | (Binary (op1, a, b), Binary (op2, c, d)) when (op1 = ADD) || (op1 = MUL) -> op1 = op2 && (((equal_expr a c) && (equal_expr b d)) || ((equal_expr a d) && (equal_expr b c)))
   | (Binary (op1, a, b), Binary (op2, c, d)) -> op1 = op2 && (equal_expr a c) && (equal_expr b d)
   | _ -> false
 
 let rec distribute (op, c) = function
+  | Funcall (name,args) ->  Binary(op,Funcall(name,args),c)
   | Cst a -> Binary(op, Cst a, c)
   | Var v -> Binary(op, Var v, c)
   | Unary(NEG, e) -> Unary(NEG, distribute (op, c) e)
-  | Unary(unop, e) as expr -> Binary(op, expr, c)
-  | Binary(binop, _, _) as expr when binop = POW || binop = NROOT -> Binary(op, expr, c)
+  | Binary(binop, _, _) as expr when binop = POW -> Binary(op, expr, c)
   | Binary(binop, e, Cst a) when binop = op -> Binary(op, e, Binary(MUL, Cst a, c))
   | Binary(binop, Cst a, e) when binop = op -> Binary(op, Binary(op, Cst a, c), e)
   | Binary(DIV|MUL as binop, Cst a, e) -> Binary(binop, Binary(op, Cst a, c), e)
@@ -272,6 +278,7 @@ let rec distribute (op, c) = function
   | Binary(binop, e1, e2) -> Binary(binop, distribute (op, c) e1, distribute (op, c) e2)
 
 let rec expand = function
+  | Funcall (name,args) -> Funcall (name,args)
   | Cst c -> Cst c
   | Var v -> Var v
   | Unary(unop, e) -> Unary(unop, expand e)
@@ -324,7 +331,6 @@ let get_lexpr l f op neutre =
   if cst = neutre then expr_from_list op neutre le
   else expr_from_list op neutre (cst::le)
 
-
 let neg_expr = function
   | Cst c -> Cst (-. c)
   | Unary (NEG, e) -> e
@@ -346,6 +352,7 @@ let rec get_add_terms_expr = function
 (* simplifies elementary function *)
 let rec simplify_expr expr change =
   match expr with
+  | Funcall (name,args) -> (Funcall (name,args),change)
   | Cst c -> (Cst c, change)
   | Var v -> (Var v, change)
   | Unary (NEG, e) ->
@@ -355,10 +362,8 @@ let rec simplify_expr expr change =
       | Unary (NEG, e') -> simplify_expr e' true
       | _ -> let (e', b) = simplify_expr e change in (Unary (NEG, e'), b)
     )
-  | Unary (u, e) -> let (e, b) = simplify_expr e change in (Unary (u, e), b)
   | Binary (b, e1, e2) ->
     (match b with
-     | MIN | MAX -> apply simplify_expr e1 e2 change b
      | ADD ->
        (match e1, e2 with
         | Cst a, Cst b -> (Cst (a +. b), true)
@@ -405,14 +410,6 @@ let rec simplify_expr expr change =
         | _, Cst 1. -> simplify_expr e1 change
         | _, _ -> apply simplify_expr e1 e2 change POW
        )
-     | NROOT ->
-       (match e1, e2 with
-        | Cst 0., _ -> (Cst 0., true)
-        | _, Cst 0. -> (Cst 1., true)
-        | Cst a, Cst b -> (Cst (a ** (1. /.b)), true)
-        | _, Cst 1. -> simplify_expr e1 change
-        | _, _ -> apply simplify_expr e1 e2 change NROOT
-       )
     )
 
 let rec simplify_fp expr =
@@ -425,7 +422,6 @@ let rec simplify_fp expr =
      let (e'', _) = simplify_expr (expand e') false in
      e''
     )
-
 
 let rec simplify_bexpr = function
   | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
@@ -449,37 +445,31 @@ let rec left_hand = function
 let rec derivate expr var =
   match expr with
   | Cst _ -> Cst 0.
-  | Var v -> if String.equal var v then
-               Cst 1.
-             else
-               Cst 0.
-  | Unary (u, e) ->
-    (match u with
-     | NEG -> Unary (NEG, derivate e var)
-     | SQRT -> Binary (DIV, derivate e var, Binary (MUL, Cst 2., Unary (SQRT, e)))
-     | COS -> Unary (NEG, Binary (MUL, derivate e var, Unary (SIN, e)))
-     | SIN -> Binary (MUL, derivate e var, Unary (COS, e))
-     | TAN -> Binary (MUL, derivate e var, plus_one (sqr (Unary (TAN, e))))
-     | COT -> Unary (NEG, Binary (MUL, derivate e var, plus_one (sqr (Unary (COT, e)))))
-     | ASIN -> Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e))))
-     | ACOS -> Unary (NEG, Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e)))))
-     | ATAN -> Binary (DIV, derivate e var, plus_one (sqr e))
-     | ACOT -> Unary (NEG, Binary (DIV, derivate e var, plus_one (sqr e)))
-     | LN -> Binary (DIV, derivate e var, e)
-     | LOG -> Binary (DIV, derivate e var, Binary (MUL, e, Unary (LN, Cst 10.)))
-     | EXP -> Binary (MUL, derivate e var, Unary (EXP, e))
-     | ABS -> (* TODO: depends if the variable is positive or negative *) derivate e var
-    )
+  | Var v -> if var = v then Cst 1.
+             else Cst 0.
+  | Unary (NEG, e) ->  Unary (NEG, derivate e var)
+     (* | SQRT -> Binary (DIV, derivate e var, Binary (MUL, Cst 2., Unary (SQRT, e))) *)
+     (* | COS -> Unary (NEG, Binary (MUL, derivate e var, Unary (SIN, e))) *)
+     (* | SIN -> Binary (MUL, derivate e var, Unary (COS, e)) *)
+     (* | TAN -> Binary (MUL, derivate e var, plus_one (sqr (Unary (TAN, e)))) *)
+     (* | COT -> Unary (NEG, Binary (MUL, derivate e var, plus_one (sqr (Unary (COT, e))))) *)
+     (* | ASIN -> Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e)))) *)
+     (* | ACOS -> Unary (NEG, Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e))))) *)
+     (* | ATAN -> Binary (DIV, derivate e var, plus_one (sqr e)) *)
+     (* | ACOT -> Unary (NEG, Binary (DIV, derivate e var, plus_one (sqr e))) *)
+     (* | LN -> Binary (DIV, derivate e var, e) *)
+     (* | LOG -> Binary (DIV, derivate e var, Binary (MUL, e, Unary (LN, Cst 10.))) *)
+     (* | EXP -> Binary (MUL, derivate e var, Unary (EXP, e)) *)
+     (* | ABS -> (\* TODO: depends if the variable is positive or negative *\) derivate e var *)
   | Binary (b, e1, e2) ->
     (match b with
      | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)
      | SUB -> Binary (SUB, derivate e1 var, derivate e2 var)
      | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
      | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
-     | POW -> Binary (MUL, Binary (POW, e1, Binary (SUB, e2, one)), Binary (ADD, Binary (MUL, derivate e2 var, Binary (MUL, e1, Unary (LN, e1))), Binary (MUL, e2, derivate e1 var)))
-     | NROOT -> Binary (DIV, derivate e1 var, Binary (MUL, e2, Binary (NROOT, Binary (POW, e1, Binary (SUB, e2, one)), e2)))
-     | MIN | MAX -> Cst 0. (* TODO IMPLENTATION *)
+     | POW -> Cst 0. (* TODO IMPLENTATION *)
     )
+  | Funcall _ -> Cst 0. (* TODO IMPLEMENTATION *)
 
 let rec derivative bexpr var =
   match bexpr with
@@ -545,10 +535,11 @@ let rec replace_cst_bexpr cst = function
 module Variables = Set.Make(struct type t=var let compare=compare end)
 
 let rec get_vars_expr = function
-  | Var v -> [v]
-  | Cst c -> []
-  | Unary (_, e) -> get_vars_expr e
-  | Binary (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
+  | Cst c              -> []
+  | Var v              -> [v]
+  | Unary (_, e)       -> get_vars_expr e
+  | Binary (_, e1, e2) -> List.rev_append (get_vars_expr e1) (get_vars_expr e2)
+  | Funcall (_,args)   -> List.concat (List.map get_vars_expr args)
 
 let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
 
@@ -597,8 +588,6 @@ let lh (op, e1, e2) =
   | Cst 0., _ -> let (c, e) = simp_fp e2 in (inv op, c, e)
   | _, Cst 0. -> let (c, e) = simp_fp e1 in (op, c, e)
   | _, _ -> let (c, e) = simp_fp (Binary (SUB, e1, e2)) in (op, c, e)
-
-
 
 
 let filter_cstrs ctr_vars consts =
@@ -675,15 +664,18 @@ let rec rep_view view views =
 let rep_in_view (id, e) views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) (id, e) views
 
-let replace_view_ctr (Cmp(EQ, e1, e2) as ctr) views =
-  List.fold_left (fun c view -> replace_view_bexpr view c) ctr views
+let replace_view_ctr ctr views =
+  let replaced = List.fold_left (fun c v -> replace_view_bexpr v c) ctr views in
+  match replaced with
+  | Cmp (_, e1', e2') -> e1',e2'
+  | _ -> assert false
 
 let get_views ctr_vars =
   List.fold_left (fun (ctrs, views) (c, v) ->
   if ((is_cons_linear c) && (Variables.cardinal v = 2)) then
     match c with
     | Cmp (EQ, e1, e2) ->
-       let Cmp (_, e1', e2') = replace_view_ctr c views in
+       let (e1', e2') = replace_view_ctr c views in
        let (_, cst, e) = lh (EQ, e1', e2') in
        let value = if cst = 0. then 0. else -. cst in
        let new_view = rep_in_view (view e (Cst value)) views in
@@ -795,41 +787,27 @@ let rec iter_expr f = function
 
 (* iter on constraints *)
 let rec iter_constr f_expr f_constr = function
-  | Cmp (c,e1,e2) as constr -> f_constr constr; iter_expr f_expr e1; iter_expr f_expr e2
-  | And (b1,b2) as constr -> f_constr constr; iter_constr f_expr f_constr b1; iter_constr f_expr f_constr b2
-  | Or  (b1,b2) as constr -> f_constr constr; iter_constr f_expr f_constr b1; iter_constr f_expr f_constr b2
-  | Not b as constr -> f_constr constr; iter_constr f_expr f_constr b
-
-(* power unrolling on exprs *)
-let rec power_unrolling expr : expr =
-  let rec doit res e1 i =
-    match i with
-    | 0 -> Cst 1.
-    | 1 -> res
-    | _ -> doit (Binary(MUL,res,res)) e1 (i-1)
-  in
-  match expr with
-  | Binary (POW,e1,Cst x) when ceil x = x && x >= 0. -> doit e1 e1 (int_of_float x)
-  | Unary (u, e) -> Unary (u,(power_unrolling e))
-  | Binary (b,e1,e2) -> Binary(b,(power_unrolling e1), (power_unrolling e2))
-  | x -> x
-
-(* power unrolling on bexprs *)
-let rec power_unrolling_bexpr bexpr : bexpr =
-  match bexpr with
-  | Cmp (c,e1,e2) -> Cmp(c, (power_unrolling e1), (power_unrolling e2))
-  | And (b1,b2) -> And (power_unrolling_bexpr b1, power_unrolling_bexpr b2)
-  | Or  (b1,b2) -> Or (power_unrolling_bexpr b1, power_unrolling_bexpr b2)
-  | Not b -> Not (power_unrolling_bexpr b)
+  | Cmp (c,e1,e2) as constr ->
+     f_constr constr;
+     iter_expr f_expr e1;
+     iter_expr f_expr e2
+  | (And (b1,b2) as constr)
+  | (Or  (b1,b2) as constr) ->
+     f_constr constr;
+     iter_constr f_expr f_constr b1;
+     iter_constr f_expr f_constr b2
+  | Not b as constr ->
+     f_constr constr;
+     iter_constr f_expr f_constr b
 
 (* cmp operator negation *)
 let neg = function
-  | EQ -> NEQ
-  | LEQ ->GT
-  | GEQ ->LT
-  | NEQ ->EQ
-  | GT -> LEQ
-  | LT -> GEQ
+  | EQ  -> NEQ
+  | LEQ -> GT
+  | GEQ -> LT
+  | NEQ -> EQ
+  | GT  -> LEQ
+  | LT  -> GEQ
 
 (* constraint negation *)
 let rec neg_bexpr = function

@@ -107,24 +107,10 @@ bexpr:
   | NOT bexpr                       {Not ($2)}
   | LPAREN bexpr RPAREN             { $2 }
 
-
 expr:
   | LPAREN expr RPAREN              { $2 }
   | binop_expr                      { $1 }
   | MINUS expr %prec unary_minus    { Unary (Csp.NEG, $2) }
-  | COS       expr                  { Unary (Csp.COS, $2) }
-  | SIN       expr                  { Unary (Csp.SIN, $2) }
-  | TAN       expr                  { Unary (Csp.TAN, $2) }
-  | COT       expr                  { Unary (Csp.COT, $2) }
-  | ASIN      expr                  { Unary (Csp.ASIN, $2) }
-  | ACOS      expr                  { Unary (Csp.ACOS, $2) }
-  | ATAN      expr                  { Unary (Csp.ATAN, $2) }
-  | ACOT      expr                  { Unary (Csp.ACOT, $2) }
-  | LN        expr                  { Unary (Csp.LN, $2) }
-  | LOG       expr                  { Unary (Csp.LOG, $2) }
-  | EXP       expr                  { Unary (Csp.EXP, $2) }
-  | SQRT      expr                  { Unary (Csp.SQRT,$2) }
-  | PIPE expr PIPE                  { Unary (Csp.ABS, $2) }
   | leaf                            { $1 }
 
 leaf:
@@ -144,12 +130,6 @@ binop_expr2:
 binop_expr3:
   | expr PLUS  expr   {Binary(Csp.ADD,$1,$3)}
   | expr MINUS expr   {Binary(Csp.SUB,$1,$3)}
-  | binop_expr4       {$1}
-
-binop_expr4:
-  | MIN LPAREN expr COMMA expr RPAREN    {Binary (Csp.MIN,$3,$5)}
-  | MAX LPAREN expr COMMA expr RPAREN    {Binary (Csp.MAX,$3,$5)}
-  | NROOT LPAREN expr COMMA expr RPAREN  {Binary (Csp.NROOT,$3,$5)}
 
 cmp:
   | LT                      { Csp.LT }

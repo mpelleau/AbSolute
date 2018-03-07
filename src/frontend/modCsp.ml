@@ -61,11 +61,7 @@ let rec substitute_constr env =
 
 (* force evaluation of some expressions *)
 let evaluate env expr =
-  let unary = function
-    | Csp.NEG -> fun x -> (-. x)
-    | x -> Format.printf "cant evaluate unary operator:%a\n" Csp.print_unop x;
-           failwith "evaluation error"
-  in
+  let unary = function Csp.NEG -> fun x -> (-. x) in
   let binary = function
     | Csp.ADD -> (+.)
     | Csp.SUB -> (-.)

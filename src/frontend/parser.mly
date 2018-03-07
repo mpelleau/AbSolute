@@ -4,56 +4,41 @@ open Csp
 
 
 /* tokens */
-%token TOK_LBRACE
-%token TOK_RBRACE
-%token TOK_LBRACKET
-%token TOK_RBRACKET
-%token TOK_LPAREN
-%token TOK_RPAREN
-%token TOK_PIPE
-%token TOK_COMMA
-%token TOK_SEMICOLON
-%token TOK_COLON
-%token TOK_PLUS
-%token TOK_MINUS
-%token TOK_MULTIPLY
-%token TOK_DIVIDE
-%token TOK_POW
-%token TOK_LESS
-%token TOK_GREATER
-%token TOK_LESS_EQUAL
-%token TOK_GREATER_EQUAL
-%token TOK_EQUAL_EQUAL
-%token TOK_NOT_EQUAL
-%token TOK_ASSIGN
-%token TOK_AND
-%token TOK_OR
-%token TOK_NOT
-%token TOK_INT
-%token TOK_REAL
-%token TOK_COS
-%token TOK_SIN
-%token TOK_TAN
-%token TOK_COT
-%token TOK_ASIN
-%token TOK_ACOS
-%token TOK_ATAN
-%token TOK_ACOT
-%token TOK_LN
-%token TOK_LOG
-%token TOK_EXP
-%token TOK_NROOT
-%token TOK_MIN
-%token TOK_MAX
-%token TOK_SQRT
-%token TOK_CST
-%token TOK_INIT
-%token TOK_OBJ
-%token TOK_CONSTR
-%token TOK_ANNOT
-%token TOK_DRAW
-%token TOK_MINF
-%token TOK_INF
+%token TOK_LBRACE        /* { */
+%token TOK_RBRACE        /* } */
+%token TOK_LBRACKET      /* [ */
+%token TOK_RBRACKET      /* ] */
+%token TOK_LPAREN        /* ( */
+%token TOK_RPAREN        /* ) */
+%token TOK_PIPE          /* | */
+%token TOK_COMMA         /* , */
+%token TOK_SEMICOLON     /* ; */
+%token TOK_COLON         /* : */
+%token TOK_PLUS          /* + */
+%token TOK_MINUS         /* - */
+%token TOK_MULTIPLY      /* * */
+%token TOK_DIVIDE        /* / */
+%token TOK_POW           /* ^ */
+%token TOK_LESS          /* < */
+%token TOK_GREATER       /* > */
+%token TOK_LESS_EQUAL    /* <= */
+%token TOK_GREATER_EQUAL /* >= */
+%token TOK_EQUAL_EQUAL   /* == */
+%token TOK_NOT_EQUAL     /* != */
+%token TOK_ASSIGN        /* = */
+%token TOK_AND           /* && */
+%token TOK_OR            /* || */
+%token TOK_NOT           /* ! */
+%token TOK_INT           /* int */
+%token TOK_REAL          /* real */
+%token TOK_CST           /* constants */
+%token TOK_INIT          /* init */
+%token TOK_OBJ           /* objective */
+%token TOK_CONSTR        /* constraints */
+%token TOK_ANNOT         /* constraints */
+%token TOK_DRAW          /* draw */
+%token TOK_MINF          /* -oo */
+%token TOK_INF           /* oo */
 
 %token <string> TOK_id
 %token <float> TOK_const
@@ -171,29 +156,19 @@ bexpr:
 
 
 expr:
+  | TOK_id TOK_LPAREN args TOK_RPAREN   { Funcall ($1,$3) }
   | TOK_LPAREN expr TOK_RPAREN          { $2 }
   | binop_expr                          { $1 }
   | TOK_MINUS expr %prec unary_minus    { Unary (NEG, $2) }
-  | TOK_COS       expr                  { Unary (COS, $2) }
-  | TOK_SIN       expr                  { Unary (SIN, $2) }
-  | TOK_TAN       expr                  { Unary (TAN, $2) }
-  | TOK_COT       expr                  { Unary (COT, $2) }
-  | TOK_ASIN      expr                  { Unary (ASIN, $2) }
-  | TOK_ACOS      expr                  { Unary (ACOS, $2) }
-  | TOK_ATAN      expr                  { Unary (ATAN, $2) }
-  | TOK_ACOT      expr                  { Unary (ACOT, $2) }
-  | TOK_LN        expr                  { Unary (LN, $2) }
-  | TOK_LOG       expr                  { Unary (LOG, $2) }
-  | TOK_EXP       expr                  { Unary (EXP, $2) }
-  | TOK_SQRT      expr                  { Unary (SQRT,$2) }
-  | TOK_PIPE expr TOK_PIPE              { Unary (ABS, $2) }
   | leaf                                { $1 }
+
+args:
+  | expr                {[$1]}
+  | expr TOK_COMMA args {$1::$3}
 
 leaf:
   | TOK_const                           { Cst $1 }
   | TOK_id                              { Var $1 }
-  /* | TOK_const TOK_id                    {Binary(MUL,(Cst $1),(Var $2))} */
-  /* | TOK_id TOK_const                    {Binary(MUL,(Var $1),(Cst $2))} */
 
 binop_expr:
   | expr TOK_POW expr  {Binary (POW,$1,$3)}
@@ -207,12 +182,6 @@ binop_expr2:
 binop_expr3:
   | expr TOK_PLUS  expr {Binary(ADD,$1,$3)}
   | expr TOK_MINUS expr {Binary(SUB,$1,$3)}
-  | binop_expr4             {$1}
-
-binop_expr4:
-  | TOK_MIN TOK_LPAREN expr TOK_COMMA expr TOK_RPAREN {Binary (MIN,$3,$5)}
-  | TOK_MAX TOK_LPAREN expr TOK_COMMA expr TOK_RPAREN {Binary (MAX,$3,$5)}
-  | TOK_NROOT TOK_LPAREN expr TOK_COMMA expr TOK_RPAREN {Binary (NROOT,$3,$5)}
 
 cmp:
   | TOK_LESS                    { LT }
