@@ -73,19 +73,6 @@ type prog = {
 
 let print_unop fmt = function
   | NEG -> Format.fprintf fmt "-"
-  (* | SQRT -> Format.fprintf fmt "sqrt" *)
-  (* | COS -> Format.fprintf fmt "cos" *)
-  (* | SIN -> Format.fprintf fmt "sin" *)
-  (* | TAN -> Format.fprintf fmt "tan" *)
-  (* | COT -> Format.fprintf fmt "cot" *)
-  (* | ASIN -> Format.fprintf fmt "asin" *)
-  (* | ACOS -> Format.fprintf fmt "acos" *)
-  (* | ATAN -> Format.fprintf fmt "atan" *)
-  (* | ACOT -> Format.fprintf fmt "acot" *)
-  (* | LN -> Format.fprintf fmt "ln" *)
-  (* | LOG -> Format.fprintf fmt "log" *)
-  (* | EXP -> Format.fprintf fmt "exp" *)
-  (* | ABS -> Format.fprintf fmt "abs" *)
 
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
@@ -95,15 +82,15 @@ let print_binop fmt = function
   | POW -> Format.fprintf fmt "^"
 
 let print_cmpop fmt = function
-  | EQ -> Format.fprintf fmt "="
+  | EQ  -> Format.fprintf fmt "="
   | LEQ -> Format.fprintf fmt "<="
   | GEQ -> Format.fprintf fmt ">="
   | NEQ -> Format.fprintf fmt "<>"
-  | GT ->  Format.fprintf fmt ">"
-  | LT -> Format.fprintf fmt "<"
+  | GT  ->  Format.fprintf fmt ">"
+  | LT  -> Format.fprintf fmt "<"
 
 let print_typ fmt = function
-  | INT ->  Format.fprintf fmt "int"
+  | INT  ->  Format.fprintf fmt "int"
   | REAL ->  Format.fprintf fmt "real"
 
 let print_var fmt s = Format.fprintf fmt "%s" s
