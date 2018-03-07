@@ -36,13 +36,9 @@ AUTOGEN =\
 
 # source files
 MLFILES = \
-  src/frontend/csp.ml \
-  src/frontend/parser.ml \
-  src/frontend/lexer.ml \
-  src/frontend/modCsp.ml \
-  src/frontend/modParser.ml \
-  src/frontend/modLexer.ml \
-  src/frontend/file_parser.ml \
+  src/lib/mapext.ml \
+	src/lib/tools.ml \
+	src/lib/polynom.ml \
 	src/lib/array_maker.ml \
 	src/lib/linconsext.ml \
 	src/lib/tconsext.ml \
@@ -50,13 +46,19 @@ MLFILES = \
   src/lib/constant.ml \
   src/lib/apron_utils.ml \
   src/lib/bot.ml \
-  src/lib/mapext.ml \
   src/lib/bound_sig.ml \
   src/lib/bound_mpqf.ml \
   src/lib/bound_float.ml \
   src/lib/itv_sig.ml \
   src/lib/itv.ml \
 	src/lib/newitv.ml \
+  src/frontend/csp.ml \
+  src/frontend/parser.ml \
+  src/frontend/lexer.ml \
+  src/frontend/modCsp.ml \
+  src/frontend/modParser.ml \
+  src/frontend/modLexer.ml \
+  src/frontend/file_parser.ml \
   src/domains/apron_domain.ml \
   src/domains/abstract_box.ml \
   src/domains/adcp_sig.ml \
