@@ -1,0 +1,12 @@
+/* simple test using a set as initial domain */
+
+init {
+  real x = {-10; -5; -1; 0; 1; 2};
+  /*real x = [-1;2];*/
+  real y = [1;2];
+}
+
+constraints {
+  x^2 > 1;
+  y < 2;
+}

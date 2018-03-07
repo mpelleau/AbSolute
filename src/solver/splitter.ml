@@ -69,9 +69,9 @@ module Make (Abs : AbstractCP) = struct
 
   let init (problem:Csp.prog) : Abs.t =
     Csp.(List.fold_left (fun abs (t,v,d) ->
-      let c1,c2 = domain_to_constraints (t,v,d) in
+      let c = domain_to_constraints (t,v,d) in
       let abs = Abs.add_var abs (t,v) in
-      Abs.filter (Abs.filter abs c1) c2
+      filter abs c
     )  Abs.empty problem.init)
 
   type consistency = Full of Abs.t * Csp.csts
@@ -81,7 +81,7 @@ module Make (Abs : AbstractCP) = struct
   let print_debug tab obj abs =
     if !Constant.debug then
       match obj with
-      | Some obj -> 
+      | Some obj ->
          let (inf, sup) = Abs.forward_eval abs obj in
          Format.printf "%sabs = %a\tobjective = (%f, %f)@." tab Abs.print abs inf sup
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs

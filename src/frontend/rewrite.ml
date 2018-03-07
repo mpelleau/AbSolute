@@ -23,7 +23,12 @@ let fresh_name =
 
 (* We convert a tree expression to a polynomial form.
    sub-expression does not correspond to a polynom are bound to fresh
-   variables *)
+   variables.
+   for example:
+   2*x^2 + cos(x) + (cos(x))^2=y
+   is rewritten into :
+   2*x^2 + %reserved_1 + %reserved_1^2 = y
+*)
 let rec simplify env expr : (PI.t * string CoEnv.t) =
   let check_var e env =
     try
@@ -50,9 +55,10 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
          (match PI.div p1 p2 with
          | Some p -> p,env''
          | None ->
-           let e1 = polynom_to_expr p1 env'' and e2 = polynom_to_expr p2 env'' in
-           let e = Binary (DIV,e1,e2) in
-           check_var e env'')
+            let e1 = polynom_to_expr p1 env''
+            and e2 = polynom_to_expr p2 env'' in
+            let e = Binary (DIV,e1,e2) in
+            check_var e env'')
       | POW ->
          (* only constant exponentiation *)
          (match PI.pow p1 p2 with

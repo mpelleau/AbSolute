@@ -33,10 +33,12 @@ type bexpr =
 
 type typ = INT | REAL
 
-type dom = Finite of i * i
-         | Minf   of i
-         | Inf    of i
-         | Top
+
+type dom = Finite of i * i   (* [a;b] *)
+         | Minf   of i       (* [-oo; a] *)
+         | Inf    of i       (* [a; +oo] *)
+         | Set    of i list  (* {x1; x2; ...; xn} *)
+         | Top               (* [-oo; +oo] *)
 
 (* assign *)
 type assign = (typ * var * dom)
@@ -99,6 +101,13 @@ let print_dom fmt = function
   | Finite (a,b) ->  Format.fprintf fmt "[%.2f; %.2f]" a b
   | Minf i -> Format.fprintf fmt "[-oo; %.2f]" i
   | Inf i -> Format.fprintf fmt "[%.2f; 00]" i
+  | Set l ->
+     let print_set =
+       (Format.pp_print_list
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+          (fun fmt f -> Format.fprintf fmt "%.2f" f))
+     in
+     Format.fprintf fmt "{%a}" print_set l
   | Top -> Format.fprintf fmt "[-oo; 00]"
 
 let print_assign fmt (a,b,c) =
@@ -755,17 +764,18 @@ let add_constr csp c =
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
 (* converts a domain representation to a couple of constraints *)
-let domain_to_constraints (_,v,d)  =
-  let c1, c2 = match d with
-  | Finite (l,h) ->
-     (Var v, GEQ, Cst l), (Var v, LEQ, Cst h)
-  | Minf (i) ->
-     (Var v, GEQ, Cst neg_infinity), (Var v, LEQ, Cst i)
-  | Inf (i) ->
-     (Var v, GEQ, Cst i), (Var v, LEQ, Cst infinity)
-  | _ ->
-     (Var v, GEQ, Cst neg_infinity), (Var v, LEQ, Cst infinity)
-  in c1,c2
+let domain_to_constraints : assign -> bexpr =
+  let of_singleton v f = Cmp (EQ, Var v, Cst f) in
+  fun (_,v,d) ->
+  match d with
+  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst l), (Cmp (LEQ, Var v, Cst h)))
+  | Minf (i) -> Cmp(LEQ, Var v, Cst i)
+  | Inf (i) -> Cmp(GEQ, Var v, Cst i)
+  | Set (h::tl) ->
+     List.fold_left (fun acc e ->
+         Or(acc, of_singleton v e)
+       ) (of_singleton v h) tl
+  | _ -> assert false
 
 (* iter on expr*)
 let rec iter_expr f = function
