@@ -754,6 +754,7 @@ let add_constr csp c =
   ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
+(* converts a domain representation to a couple of constraints *)
 let domain_to_constraints (_,v,d)  =
   let c1, c2 = match d with
   | Finite (l,h) ->
@@ -786,6 +787,16 @@ let rec iter_constr f_expr f_constr = function
   | Not b as constr ->
      f_constr constr;
      iter_constr f_expr f_constr b
+
+
+(* boolean formules map *)
+let rec map_constr f = function
+  | Cmp (op,e1,e2) ->
+     let op',e1',e2' = f (op,e1,e2) in
+     Cmp(op',e1',e2')
+  | And (b1,b2) -> Or (map_constr f b1, map_constr f b2)
+  | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
+  | Not b -> Not (map_constr f b)
 
 (* cmp operator negation *)
 let neg = function

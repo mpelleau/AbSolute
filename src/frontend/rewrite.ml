@@ -9,8 +9,8 @@ module PI    = Polynom.Int
 
 let reverse_map (m1 : string CoEnv.t) : expr VarMap.t =
   CoEnv.fold (fun k v env ->
-      VMap.add v k env
-    ) m1 VMap.empty
+      VarMap.add v k env
+    ) m1 VarMap.empty
 
 exception Empty
 
@@ -64,12 +64,8 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
   | Unary (u,e) ->
      let p,env = simplify env e in
      (match u with
-      | NEG -> (PI.neg p),env
-      | ABS ->
-         let e = polynom_to_expr p env in
-         let e = Unary(ABS,e) in
-         check_var e env)
-  | FunCall(name,args) ->
+      | NEG -> (PI.neg p),env)
+  | Funcall(name,args) ->
      let p_args,env' =
        List.fold_left (fun (pargs,env) arg ->
            let p,e = simplify env arg in
@@ -77,7 +73,7 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
          ) ([],env) args
      in
      let args' = List.rev_map (fun p -> polynom_to_expr p env') p_args in
-     let e = FunCall (name, args') in
+     let e = Funcall (name, args') in
      check_var e env'
   in (PI.clean p),env
 
@@ -85,7 +81,7 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
 and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
   let fake_vars = reverse_map fake_vars in
   let of_id id =
-    try VMap.find id fake_vars
+    try VarMap.find id fake_vars
     with Not_found -> Var id
   in
   let var_to_expr ((id,exp):PI.var) : expr =
@@ -125,3 +121,9 @@ let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
   let simplified_left = polynom_to_expr polynom env2 in
   let e2 = Cst 0. in
   (cmp,simplified_left,e2)
+
+
+(* rewriting main function *)
+let rewrite_csp (p:Csp.prog) : Csp.prog =
+  let res = List.map (Csp.map_constr rewrite) p.constraints in
+  {p with constraints = res}

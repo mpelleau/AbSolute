@@ -16,6 +16,7 @@ let pruning         = ref false
 let sure            = ref false
 let iter            = ref false
 let pruning_iter    = ref 100000000
+let rewrite         = ref true
 
 (* let parse_prec p = *)
 (*   try Scanf.sscanf p "%f%%" (fun f -> *)

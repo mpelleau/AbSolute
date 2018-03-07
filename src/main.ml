@@ -90,6 +90,7 @@ let speclist =
   ("-pruning_iter" , Arg.Int set_pruning_iter, "Changes the number of times the pruning process is applied");
   ("-debug"        , Arg.Set debug           , "Prints the execution for debug purpose");
   ("-split"        , Arg.String set_split    , "Changes the splitting strategy used for the solving");
+  ("-no-rewrite"   , Arg.Clear rewrite       , "Disables the constraint rewriting");
   (*********************************************** ALIASES ********************************************************)
   ("-m"            , Arg.Set minimizing      , "Alias for -minimize");
   ("-t"            , Arg.Set trace           , "Alias for -trace");

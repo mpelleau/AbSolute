@@ -22,6 +22,31 @@ let illegal_var_draw2 v1 v2 =
 let illegal_constraint spec =
   Format.sprintf "Illegal constraint: %s" spec
 
+(* allowed functions and their arity *)
+let runtime = [
+    ("sqrt",1);
+    ("exp",1);
+    ("ln",1);
+    ("pow",1);
+    ("cos",1);
+    ("sin",1);
+    ("tan",1);
+    ("acos",1);
+    ("asin",1);
+    ("atan",1);
+    ("max",2);
+    ("min",2);
+  ]
+
+let illegal_funcall func arity =
+  if List.exists (fun (name,_) -> name = func) runtime then
+    Format.sprintf "Illegal funcall: %s expects %d arguments but was given %d"
+                   func
+                   (List.assoc func runtime)
+                   arity
+  else Format.sprintf "Illegal funcall: unknown function %s" func
+
+
 let check_ast p =
   let h = Hashtbl.create 10 in
   let check_vars () =
@@ -53,6 +78,13 @@ let check_ast p =
          if not (Hashtbl.mem h v) then
            let msg = illegal_constraint ("non-declared variable "^v) in
            Hashtbl.iter (fun a _ -> Format.printf "%s\n" a) h;
+           raise (IllFormedAST msg)
+      | Funcall(name,args) ->
+         let nb_args = List.length args in
+         if not (List.exists (fun (funname,arrity) ->
+             name = funname && nb_args = arrity
+                   ) runtime) then
+           let msg = illegal_funcall name nb_args in
            raise (IllFormedAST msg)
       | _ -> ()
     in
@@ -107,6 +139,7 @@ let parse fn =
   check_ast p;
   (*List.iter (fun c -> Format.printf "  -- %a\n" Csp.print_bexpr c) p.Csp.constraints;*)
   let prob = Csp.simplify p in
+  let prob = if !Constant.rewrite then Rewrite.rewrite_csp prob else prob in
   (*List.iter (fun c -> Format.printf "  ++ %a\n" Csp.print_bexpr c) prob.Csp.constraints;*)
   (*List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
   List.iter (fun (v, e) -> Format.printf "  // %s = %a\n" v Csp.print_expr e) prob.Csp.view;
