@@ -6,6 +6,6 @@ init{
 }
 
 constraints{
-  y < sin x;
-  y > cos x;
+  y < sin(x);
+  y > cos (x);
 }
