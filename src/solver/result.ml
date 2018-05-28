@@ -12,7 +12,7 @@ type 'a res = {
     best_value : float      (* best value found during the optimization *)
   }
 
-(* the abstract result type we'll be manipulating *)
+(* the abstract result type we will be manipulating *)
 module Make (A: AbstractCP) = struct
 
   type t = A.t res
@@ -29,8 +29,8 @@ module Make (A: AbstractCP) = struct
       best_value = 0.
     }
 
-               
-    
+
+
   let to_abs abs consts views =
     (*Format.printf "\n ---------- \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs);*)
@@ -39,7 +39,7 @@ module Make (A: AbstractCP) = struct
     (*Format.printf "\n ********** \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) csts_vars;*)
 
-    let (views_vars, views_expr) = List.split views in  
+    let (views_vars, views_expr) = List.split views in
     (*Format.printf "\n vvvvvvvvvv \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) views_vars;*)
 
@@ -67,10 +67,10 @@ module Make (A: AbstractCP) = struct
     Format.printf "\n\n %%%%%%%%%% \n";
     Format.printf "%a " A.print new_a';
     Format.printf "\n %%%%%%%%%% \n";*)
-    
+
 
     (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
-    
+
 
   let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
     let (abs', csts) = to_abs abs consts views in
@@ -78,7 +78,7 @@ module Make (A: AbstractCP) = struct
     let obj_value = match fobj with
       | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
       | None -> 0.
-    in   
+    in
 
     (*Format.printf "\n $$$$$$$$$$ \n";
     List.iter (fun (v, d) -> Format.printf "%a " Csp.print_var v) csts;*)
@@ -86,7 +86,7 @@ module Make (A: AbstractCP) = struct
     (*Format.printf "\n ;;;;;;;;;; \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs');
     Format.printf "\n";*)
-    
+
     (abs', csts, volume, obj_value)
 
 
@@ -103,9 +103,9 @@ module Make (A: AbstractCP) = struct
        else if obj_value < res.best_value then
          {sure       = [];
           unsure     = [(u, c)];
-          best_value = obj_value; 
-          nb_unsure  = 0; 
-          nb_sure    = 1; 
+          best_value = obj_value;
+          nb_unsure  = 0;
+          nb_sure    = 1;
           nb_steps   = res.nb_steps;
           vol_unsure = v;
           vol_sure   = 0.}
@@ -126,16 +126,16 @@ module Make (A: AbstractCP) = struct
     let const = List.map (fun v -> (v, A.var_bounds s v)) vars in
     let c = const@c in
     match fobj with
-    | Some fobj -> 
+    | Some fobj ->
        let (s, c, v, obj_value) = get_solution v ~obj:fobj s c in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
          {sure       = [(A.empty, c)];
-          unsure     = []; 
-          best_value = obj_value; 
-          nb_sure    = 1; 
-          nb_unsure  = 0; 
+          unsure     = [];
+          best_value = obj_value;
+          nb_sure    = 1;
+          nb_unsure  = 0;
           nb_steps   = res.nb_steps;
           vol_sure   = v;
           vol_unsure = 0.}
