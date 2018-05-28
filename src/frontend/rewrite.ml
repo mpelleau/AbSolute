@@ -5,7 +5,7 @@ open Csp
 open Tools
 
 module CoEnv = Map.Make(struct type t = expr let compare = compare end)
-module PI    = Polynom.Int
+module PI    = Polynom.Float
 
 let reverse_map (m1 : string CoEnv.t) : expr VarMap.t =
   CoEnv.fold (fun k v env ->
@@ -44,12 +44,14 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
   | Var v -> (PI.of_var v),env
   | Cst c -> (PI.of_float c),env
   | Binary (op,e1,e2) ->
+     (*Format.printf "===== %a, %a@." print_expr e1 print_expr e2;*)
      let p1,env' = simplify env e1 in
      let p2,env'' = simplify env' e2 in
+     (*Format.printf "!!!!! %a, %a@." print_expr (polynom_to_expr p1 env') print_expr (polynom_to_expr p2 env'');*)
      (match op with
-      | ADD -> (PI.add p1 p2),env''
-      | SUB -> (PI.sub p1 p2),env''
-      | MUL -> (PI.mul p1 p2),env''
+      | ADD -> (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.add p1 p2) env'');*) (PI.add p1 p2),env''
+      | SUB -> (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.sub p1 p2) env'');*) (PI.sub p1 p2),env''
+      | MUL -> (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.mul p1 p2) env'');*) (PI.mul p1 p2),env''
       | DIV ->
          (* only division by a constant to make sure we do not shadow any dbz *)
          (match PI.div p1 p2 with
@@ -95,13 +97,13 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
       | 0 -> acc
       | n -> iter (Binary(MUL,acc,(of_id id))) (n-1)
     in
-    match exp with
+    match (int_of_float exp) with
     | 0 -> Cst 1.
-    | n -> iter (of_id id) (n-1)
+    | n -> iter (of_id id) (n - 1)
   in
   let cell_to_expr ((c,v) as m) =
-    if PI.is_monom_constant m then Cst (float_of_int c)
-    else if c = 1 then
+    if PI.is_monom_constant m then Cst c
+    else if c = 1. then
       match v with
       | h::tl -> List.fold_left (fun acc e ->
           Binary(MUL,acc,(var_to_expr e))
@@ -110,7 +112,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
     else
       List.fold_left (fun acc e ->
           Binary(MUL,acc,(var_to_expr e))
-        ) (Cst (float_of_int c)) v
+        ) (Cst c) v
   in
   match p with
   | [] -> Cst 0.
@@ -121,12 +123,18 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
 (* simplify the polynomial part of a constraint *)
 let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
   (* we move e2 to left side to perform potentially more simplifications *)
-  let p1,env1 = simplify CoEnv.empty e1 in
-  let p2,env2 = simplify env1 e2 in
+  let e1', e2' = (expand e1, expand e2) in
+  (*Format.printf "------ %a = %a@." print_expr e1' print_expr e2';*)
+  let p1, env1 = simplify CoEnv.empty e1' in
+  let p2, env2 = simplify env1 e2' in
+  (*Format.printf "********** %a = %a@." print_expr (polynom_to_expr p1 env1) print_expr (polynom_to_expr p2 env2);*)
   let polynom = PI.clean (PI.sub p1 p2) in
   let simplified_left = polynom_to_expr polynom env2 in
+  (*Format.printf "------ %a = 0@." print_expr simplified_left;*)
+  let simp_left = Csp.simplify_fp simplified_left in
+  (*Format.printf "------ %a = 0@." print_expr simp_left;*)
   let e2 = Cst 0. in
-  (cmp,simplified_left,e2)
+  (cmp,simp_left,e2)
 
 
 (* rewriting main function *)

@@ -58,7 +58,8 @@ MLFILES = \
   src/frontend/modCsp.ml \
   src/frontend/modParser.ml \
   src/frontend/modLexer.ml \
-	src/frontend/rewrite.ml \
+  src/frontend/rewrite.ml \
+  src/frontend/preprocessing.ml \
   src/frontend/file_parser.ml \
   src/domains/apron_domain.ml \
   src/domains/abstract_box.ml \

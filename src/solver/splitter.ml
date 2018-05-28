@@ -5,6 +5,7 @@ module Boolean (Abs:AbstractCP) = struct
 
   let rec filter (value:Abs.t) c =
     let open Csp in
+    (* Format.printf "%a@." print_bexpr c;*)
     match c with
     | And (b1,b2) -> filter (filter value b2) b1
     | Or (b1,b2) ->
@@ -87,11 +88,11 @@ module Make (Abs : AbstractCP) = struct
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
   let print_debug_const tab cstrs csts =
-    if !Constant.debug then
-      (Format.printf "%sconstraints:\n" tab;
+    if !Constant.debug then Format.printf "#constraints = %d@." (List.length cstrs)
+      (*Format.printf "%sconstraints:\n" tab;
       List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
       Format.printf "%sconstants:\n" tab;
-      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts)
+      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts*)
 
   let minimize_test obj abs =
     match obj with
@@ -116,7 +117,7 @@ module Make (Abs : AbstractCP) = struct
                   match Abs.vars abs'' with
                   | [] -> print_debug "\t=> sure:" objv abs''; Full (abs'', const')
                   | _ -> (
-                  print_debug_const "\t  " unsat' const';
+                     print_debug_const "\t  " unsat' const';
                   if !Constant.iter then
                     let ratio = (Abs.volume abs'')/.(Abs.volume abs) in
                     if ratio > 0.9 || abs = abs'' then
