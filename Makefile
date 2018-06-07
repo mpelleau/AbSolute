@@ -96,19 +96,19 @@ all: $(TARGETS)
 	@mkdir -p out
 
 solver.opt: $(OFILES) $(CMXFILES)
-	$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
+	$(OCAMLOPT) $(PROF) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
 #minimizer.opt: $(CMXFILES)
-#	$(OCAMLOPT) -o $@ $(OCAMLOPTFLAGS) $(OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
+#	$(OCAMLOPT) -o $@ (OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
 %.cmx: %.ml %.cmi
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC) -c $*.ml
+	$(OCAMLOPT) $(PROF) $(OCAMLINC) -c $*.ml
 
 %.cmi: %.mli %.ml
-	$(OCAMLC) $(OCAMLFLAGS) $(OCAMLINC) -c $*.mli
+	$(OCAMLOPT) $(PROF) $(OCAMLINC) -c $*.mli
 
 %.cmx: %.ml
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINC)  -c $*.ml
+	$(OCAMLOPT) $(PROF) $(OCAMLINC)  -c $*.ml
 
 %.ml: %.mll
 	$(OCAMLLEX) $*.mll

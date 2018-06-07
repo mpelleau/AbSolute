@@ -52,7 +52,7 @@ module Make (D:Drawer) = struct
        let out = open_out out in
        let fmt = Format.formatter_of_out_channel out in
        D.draw3d fmt values vars
-       
+
   let traceout sure unsure =
     List.iter (fun (e, c) ->
         if D.is_empty e then
@@ -83,13 +83,14 @@ module Make (D:Drawer) = struct
     let open Result in
     let open Csp in
     let open Constant in
-    let s = List.map D.to_abs res.sure in
-    let u = if !sure then [] else List.map D.to_abs res.unsure in
-    if !visualization then draw2d s u (vars2D prob);
-    if !tex then print_latex s u (vars2D prob);
-    if !obj then draw3d s (vars3D prob);
-    let u = if !sure then [] else res.unsure in
-    if !trace then traceout res.sure u
+    if !visualization || !tex || !obj then
+      let s = List.rev_map D.to_abs res.sure in
+      let u = if !sure then [] else List.rev_map D.to_abs res.unsure in
+      if !visualization then draw2d s u (vars2D prob);
+      if !tex then print_latex s u (vars2D prob);
+      if !obj then draw3d s (vars3D prob);
+      let u = if !sure then [] else res.unsure in
+      if !trace then traceout res.sure u
 
   let trace_min sure unsure value =
     Format.printf "best value:%f\n%!" value;
