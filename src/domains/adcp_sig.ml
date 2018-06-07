@@ -31,7 +31,7 @@ module type AbstractCP = sig
   val add_var : t -> typ * var -> t
 
   (* returns the bounds of a variable *)
-  val var_bounds : t -> var -> (float * float)
+  val var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
 
   (* returns the bounded variables *)
   val bounded_vars : t -> csts
@@ -63,7 +63,7 @@ module type AbstractCP = sig
 
   val filterl : t -> (expr * cmpop * expr) -> t
 
-  val forward_eval : t -> expr -> (float * float)
+  val forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
 
   (* printing *)
   val print : Format.formatter -> t -> unit

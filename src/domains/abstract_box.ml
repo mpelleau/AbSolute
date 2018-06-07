@@ -236,7 +236,7 @@ let split_along (a:t) (v:var) : t list =
         in
         BVar n, r
     | Cst c ->
-        let r = I.of_float c in
+        let r = I.of_rat c in
         BCst r, r
     | Unary (o,e1) ->
         let _,i1 as b1 = eval a e1 in
@@ -362,12 +362,12 @@ let split_along (a:t) (v:var) : t list =
 
   let var_bounds abs var =
     let (itv, _) = find var abs in
-    I.to_float_range itv
+    I.to_rational_range itv
 
   let bounded_vars abs =
     let b = Env.bindings abs in
     let l = List.filter (fun (v, d) -> I.is_singleton d) b in
-    List.map (fun (v, d) -> (v, I.to_float_range d)) l
+    List.map (fun (v, d) -> (v, I.to_rational_range d)) l
 
 
   let rem_var abs var : t =
@@ -378,7 +378,7 @@ let split_along (a:t) (v:var) : t list =
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
-    I.to_float_range bounds
+    I.to_rational_range bounds
 
 
   let rec is_applicable abs (e:expr) : bool =

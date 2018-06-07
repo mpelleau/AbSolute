@@ -49,13 +49,13 @@ module type ITV = sig
 
   val of_bounds: bound -> bound -> t
   val of_ints: int -> int -> t
-  (* val of_rats: Q.t -> Q.t -> t *)
+  val of_rats: Mpqf.t -> Mpqf.t -> t
   val of_floats: float -> float -> t
   (* [a,b] *)
 
   val of_bound: bound -> t
   val of_int: int -> t
-  (* val of_rat: Q.t -> t *)
+  val of_rat: Mpqf.t -> t
   val of_float: float -> t
   (* {a} *)
 
@@ -67,6 +67,7 @@ module type ITV = sig
   (************************************************************************)
 
   val to_float_range : t -> float * float
+  val to_rational_range : t -> Mpqf.t * Mpqf.t
 
   val to_string: t -> string
   val output: out_channel -> t -> unit

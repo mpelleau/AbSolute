@@ -116,6 +116,7 @@ let go() =
   parse_args ();
   Format.printf "domain : %s\n" !domain;
   let prob = File_parser.parse !problem in
+  Format.printf "file parsed\n";
   if !trace then Format.printf "%a" Csp.print prob;
   if !minimizing then
     match !domain with

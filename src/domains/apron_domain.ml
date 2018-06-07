@@ -26,7 +26,7 @@ module SyntaxTranslator (D:ADomain) = struct
       if not (Environment.mem_var env var)
       then failwith ("variable not found: "^v);
       Texpr1.Var var
-    | Cst c -> Texpr1.Cst (Coeff.s_of_float c)
+    | Cst c -> Texpr1.Cst (Coeff.s_of_mpqf c)
     | Unary (o,e1) ->
       let r = match o with
 	      | NEG  -> Texpr1.Neg
@@ -71,7 +71,7 @@ module SyntaxTranslator (D:ADomain) = struct
 
   let rec apron_to_expr texpr env =
     match texpr with
-    | Texpr1.Cst c -> Cst (coeff_to_float c)
+    | Texpr1.Cst c -> Cst (coeff_to_mpqf c)
     | Texpr1.Var v ->
       let e = match (Environment.typ_of_var env v) with
               | Environment.INT -> Var ((Var.to_string v)^"%")
@@ -108,7 +108,7 @@ module SyntaxTranslator (D:ADomain) = struct
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
-    (exp, typ, Cst (0.))
+    (exp, typ, zero)
 
   let apron_to_bexpr abs =
     let abscons = Abstract1.to_tcons_array man abs in
@@ -156,13 +156,13 @@ module MAKE(AP:ADomain) = struct
   let var_bounds abs v =
     let var = Var.of_string v in
     let i = A.bound_variable man abs var in
-    itv_to_float i
+    itv_to_mpqf i
 
   let bounded_vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->
-      (Var.to_string v, itv_to_float (A.bound_variable man abs v))::l
+      (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
       ) [] vars in
     List.filter (fun (v, (l, u)) -> l = u) itvs
 
@@ -243,7 +243,7 @@ module MAKE(AP:ADomain) = struct
     let obj_itv = A.bound_texpr man abs ap_expr in
     let obj_inf = obj_itv.Interval.inf
     and obj_sup = obj_itv.Interval.sup in
-    (scalar_to_float obj_inf, scalar_to_float obj_sup)
+    (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
 
     (* utilties for splitting *)
 

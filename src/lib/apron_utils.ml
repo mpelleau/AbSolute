@@ -17,9 +17,15 @@ let scalar_to_int x = scalar_to_float x |> int_of_float
 
 let itv_to_float i = (scalar_to_float i.Interval.inf, scalar_to_float i.Interval.sup)
 
+let itv_to_mpqf i = (scalar_to_mpqf i.Interval.inf, scalar_to_mpqf i.Interval.sup)
+
 let coeff_to_float = function
   | Coeff.Scalar x -> scalar_to_float x
   | Coeff.Interval i -> scalar_to_float i.Interval.inf
+
+let coeff_to_mpqf = function
+  | Coeff.Scalar x -> scalar_to_mpqf x
+  | Coeff.Interval i -> scalar_to_mpqf i.Interval.inf
 
 let coeff_to_int x = coeff_to_float x |> int_of_float
 

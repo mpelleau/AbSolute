@@ -114,7 +114,7 @@ expr:
   | leaf                            { $1 }
 
 leaf:
-  | FLOAT                           { Cst $1 }
+  | FLOAT                           { Cst (Mpqf.of_float $1) }
   | ID                              { Var $1 }
   | ID LBRACKET FLOAT RBRACKET      { Array($1,(int_of_float $3)) }
 

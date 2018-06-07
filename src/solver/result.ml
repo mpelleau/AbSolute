@@ -9,7 +9,7 @@ type 'a res = {
     vol_sure   : float;     (* volume of the elements in the sure list *)
     vol_unsure : float;     (* volume of the elements in the unsure list *)
     nb_steps   : int;       (* number of steps of the solving process *)
-    best_value : float      (* best value found during the optimization *)
+    best_value : Mpqf.t      (* best value found during the optimization *)
   }
 
 (* the abstract result type we will be manipulating *)
@@ -26,7 +26,7 @@ module Make (A: AbstractCP) = struct
       vol_sure   = 0.;
       vol_unsure = 0.;
       nb_steps   = 0;
-      best_value = 0.
+      best_value = Csp.zero_val
     }
 
 
@@ -77,7 +77,7 @@ module Make (A: AbstractCP) = struct
     let volume = A.volume abs' in
     let obj_value = match fobj with
       | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
-      | None -> 0.
+      | None -> Csp.zero_val
     in
 
     (*Format.printf "\n $$$$$$$$$$ \n";

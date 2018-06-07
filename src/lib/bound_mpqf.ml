@@ -26,6 +26,8 @@ let of_int_up a = Mpqf.of_int a
 let of_int_down a = Mpqf.of_int a
 let of_float_up a : t = Mpqf.of_float a
 let of_float_down a : t = Mpqf.of_float a
+let of_rat_up a : t = a
+let of_rat_down a : t = a
 
 let of_string x = Mpqf.of_string x
 
@@ -38,6 +40,7 @@ let to_string x = string_of_float (Mpqf.to_float x)
 
 let to_float_up x : float = Mpqf.to_float x
 let to_float_down x : float = -. (Mpqf.to_float (Mpqf.neg x))
+let to_rat x = x
     
 (* printing *)
 let output chan x = output_string chan (to_string x)

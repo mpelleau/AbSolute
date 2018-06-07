@@ -147,6 +147,10 @@ module Make(B:BOUND) = struct
 
   let of_float (x:float) : t = of_floats x x
 
+  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
+
+  let of_rat (x:Mpqf.t) = of_rats x x
+
   let hull (x:B.t) (y:B.t) : t =
     try large x y
     with Failure _ -> large y x
@@ -176,14 +180,14 @@ module Make(B:BOUND) = struct
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
-                           (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
-                          (Csp.LEQ, Csp.Cst(B.to_float_up h)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-                          (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-                         (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l)),
+                           (Csp.LT, Csp.Cst(B.to_rat h)))
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l)),
+                          (Csp.LEQ, Csp.Cst(B.to_rat h)))
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+                          (Csp.LT, Csp.Cst(B.to_rat h)))
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+                         (Csp.LEQ, Csp.Cst(B.to_rat h)))
 
    (************************************************************************)
   (* SET-THEORETIC *)
@@ -621,6 +625,8 @@ module Make(B:BOUND) = struct
   let filter_bounds (l,h) = failwith "todo filter_bound"
 
   let to_float_range ((_,l),(_,h)) = (B.to_float_down l),(B.to_float_up h)
+
+  let to_rational_range ((_,l),(_,h)) = (B.to_rat l),(B.to_rat h)
 
 end
 

@@ -5,7 +5,7 @@ type t = Abstract_box.BoxStrict.t
 
 let print = Abstract_box.BoxStrict.print
 
-let bound abs v = find v abs |> fst |> I.to_float_range
+let bound abs v = find v abs |> fst |> I.to_rational_range
 
 let is_empty = Abstract_box.BoxStrict.is_empty
 
@@ -41,11 +41,11 @@ let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
 let print_latex fmt =
   Latex.(draw (drawseg fmt) (draw_dashed_seg fmt) (fillpol fmt))
 
-let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly)
+let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly_mpqf)
 
 let draw3d fmt abs_list (v1,v2,v3) =
   let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
-  let cube e = make_cube (bound e v1) (bound e v2) (bound e v3) in
+  let cube e = make_cube (View.to_float(bound e v1)) (View.to_float(bound e v2)) (View.to_float(bound e v3)) in
   let cubes = List.rev_map (fun e -> cube e) abs_list in
   let o = Objgen.build_cube_list cubes in
   Format.fprintf fmt "%a" Objgen.print o

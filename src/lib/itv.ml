@@ -70,9 +70,9 @@ module Itv(B:BOUND) = struct
 
   let of_int (x:int) = of_ints x x
 
-  (* let of_rats (l:Q.t) (h:Q.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h) *)
+  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
 
-  (* let of_rat (x:Q.t) = of_rats x x *)
+  let of_rat (x:Mpqf.t) = of_rats x x
 
   let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
 
@@ -108,8 +108,8 @@ module Itv(B:BOUND) = struct
     | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
 
   let to_expr ((l, h):t) =
-    ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-     (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+    ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+     (Csp.LEQ, Csp.Cst(B.to_rat h)))
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -856,6 +856,9 @@ module Itv(B:BOUND) = struct
 
   let to_float_range (l,h) =
     (B.to_float_down l),(B.to_float_up h)
+
+  let to_rational_range (l, h) =
+    (B.to_rat l), (B.to_rat h)
 
 
 end

@@ -41,7 +41,7 @@ open Csp
 %token TOK_INF           /* oo */
 
 %token <string> TOK_id
-%token <float> TOK_const
+%token <Mpqf.t> TOK_const
 
 %token TOK_EOF
 
@@ -93,7 +93,7 @@ domains:
 
 objective:
  | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
- | {Cst(0.)}
+ | {zero}
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
@@ -151,7 +151,7 @@ consts:
 
 const:
   | TOK_const {$1}
-  | TOK_MINUS TOK_const {(-.$2)}
+  | TOK_MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpr:
   | expr cmp expr                       {Cmp ($2, $1, $3)}

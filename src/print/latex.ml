@@ -26,6 +26,7 @@ let draw_dashed_seg fmt (x1,y1) (x2,y2) col =
 
 let fillpol fmt l col =
   let c = rgb_to_latex_col col in
+  let l = View.l_to_float l in
 	fff fmt "\\fill[%s] " c;
 	List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."
@@ -38,4 +39,6 @@ let filldraw fmt l col =
 
 let filldrawbox fmt (xl, yl) (xu, yu) col =
   let c = rgb_to_latex_col col in
+  let (xl, yl) = View.to_float (xl, yl) and
+      (xu, yu) = View.to_float (xu, yu) in
   fff fmt "\\filldraw[%s, fill opacity = 0.3] (%f, %f) rectangle (%f, %f);@." c xl yl xu yu

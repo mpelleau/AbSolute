@@ -33,10 +33,10 @@ let _ =
     let x = (String.sub c 0 p)^(String.sub c (p+1) p') in
     div10 (float_of_string x) p'
   with Not_found ->
-    float_of_string c
+    Mpqf.of_string c
 *)
 
-let parse_const = float_of_string
+let parse_const c = Mpqf.of_float (float_of_string c)
 }
 
 
@@ -82,7 +82,7 @@ rule token = parse
 | "!"    { TOK_NOT }
 | ":"    { TOK_COLON }
 (* literals *)
-| const as c { TOK_const (float_of_string c) }
+| const as c { TOK_const (Mpqf.of_float (float_of_string c)) }
 
 (* spaces, comments *)
 | "/*" { comment lexbuf; token lexbuf }

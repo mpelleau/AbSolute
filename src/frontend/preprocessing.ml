@@ -43,28 +43,30 @@ let rec get_cst_value expr c =
   match expr with
   | Binary (ADD, e1, e2) ->
      (match e1, e2 with
-      | Cst a, e | e, Cst a -> (e, c +. a)
+      | Cst a, e | e, Cst a -> (e, Mpqf.add c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
-         (Binary (ADD, e1', e2'), c1 +. c2)
+         (Binary (ADD, e1', e2'), Mpqf.add c1 c2)
      )
   | Binary (SUB, e1, e2) ->
      (match e1, e2 with
-      | Cst a, e -> (Unary (NEG, e), c +. a)
-      | e, Cst a -> (e, c -. a) 
+      | Cst a, e -> (Unary (NEG, e), Mpqf.add c a)
+      | e, Cst a -> (e, Mpqf.sub c a) 
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
-         (Binary (SUB, e1', e2'), c1 -. c2)
+         (Binary (SUB, e1', e2'), Mpqf.sub c1 c2)
      )
   | _ -> (expr, c)
 
 
 let rewrite_ctr (op, e1, e2) =
-  let (_, e1', ttt) = rewrite (op, expand e1, expand e2) in
-  let (e, cst) = get_cst_value e1' 0. in
-  let neg_cst = if cst = 0. then 0. else -. cst in
+  let (_, e1', _) = rewrite (op, expand e1, expand e2) in
+  (* Format.printf "\t\t%a ; %a\n" print_expr e1' print_expr ttt; *)
+  let (e, cst) = get_cst_value e1' zero_val in
+  let neg_cst = if is_zero cst then cst else Mpqf.neg cst in
+  (* Format.printf "\t\t%a ; %s\n" print_expr e (Mpqf.to_string neg_cst); *)
   (e, cst, neg_cst)
 
 let rewrite_constraint = function
@@ -75,19 +77,21 @@ let rewrite_constraint = function
 
 let filter_cstrs ctr_vars consts =
   List.fold_left (fun (cstr, csts, b) (c, v) ->
-  if Variables.cardinal v = 1 then
-    match c with
-    | Cmp (EQ, e1, e2) ->
-        (let (e, cst, negc) = rewrite_ctr (EQ, e1, e2) in
-        match e with
-        | Var var -> (cstr, (var, (negc, negc))::csts, true)
-        | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
-        | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (negc/.a, negc/.a))::csts, true)
-        | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (cst/.a, cst/.a))::csts, true)
-        | _ -> ((c, v)::cstr, csts, b))
-    | _ -> ((c, v)::cstr, csts, b)
-  else ((c, v)::cstr, csts, b)
-  ) ([], consts, false) ctr_vars
+      if Variables.cardinal v = 1 then
+        match c with
+        | Cmp (EQ, e1, e2) ->
+           ((* Format.printf "%a@." print_bexpr c; *)
+            let (e, cst, negc) = rewrite_ctr (EQ, e1, e2) in
+            (* Format.printf "%a ===== (%s) %s@." print_expr e (Mpqf.to_string cst) (Mpqf.to_string negc); *)
+            match e with
+            | Var var -> (cstr, (var, (negc, negc))::csts, true)
+            | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
+            | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
+            | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
+            | _ -> ((c, v)::cstr, csts, b))
+        | _ -> ((c, v)::cstr, csts, b)
+      else ((c, v)::cstr, csts, b)
+    ) ([], consts, false) ctr_vars
 
   
 let rec repeat ctr_vars csts =
@@ -257,16 +261,19 @@ let rec preprocess csp =
   let all_ctrs = (*List.map (rewrite_constraint)*) ctrs@ view_ctrs in
   let all_views = csp.view@views in
 
-  (*Format.printf "\n---------- Constants ----------\n";
+  let prob = {p with init = vars; constants = csts; constraints = all_ctrs; view = all_views} in
+  let nb_eq' = get_nb_eq prob in
+
+  (* Format.printf "\n--------------------\n";
+  Format.printf "\n%i -> %i" nb_eq nb_eq';
+  Format.printf "\n--------------------\n";
+  Format.printf "\n---------- Constants ----------\n";
   List.iter (Format.printf "%a@." print_csts) csts;
   Format.printf "\n---------- Views ----------\n";
   List.iter (Format.printf "%a@." print_view) views;
   Format.printf "\n---------- Constraints ----------\n";
   List.iter (Format.printf "%a@." print_bexpr) all_ctrs;
-  Format.printf "\n--------------------\n";*)
-
-  let prob = {p with init = vars; constants = csts; constraints = all_ctrs; view = all_views} in
-  let nb_eq' = get_nb_eq prob in
+  Format.printf "\n--------------------\n"; *)
 
   if nb_eq = nb_eq' then prob
   else preprocess prob

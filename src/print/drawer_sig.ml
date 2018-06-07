@@ -6,7 +6,7 @@ module type Drawer = sig
 
   val to_abs : t * Csp.csts -> t
     
-  val bound : t -> Csp.var -> float * float
+  val bound : t -> Csp.var -> Mpqf.t * Mpqf.t
 
   val draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
 

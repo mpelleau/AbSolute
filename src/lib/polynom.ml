@@ -13,6 +13,9 @@ module type Ring = sig
 
   (* None if the value cannot be converted exactly to an integer *)
   val to_int : t -> int option
+  val to_float : t -> float
+  val to_rational : t -> Mpqf.t
+  val floor : t -> int
 
   val zero  : t
   val one   : t
@@ -20,6 +23,7 @@ module type Ring = sig
   (* entry points *)
   val of_int : int -> t
   val of_float : float -> t
+  val of_rational : Mpqf.t -> t
 
   (* printintg *)
   val print : Format.formatter -> t -> unit
@@ -70,6 +74,11 @@ module Make(R:Ring) = struct
   (* empty list of variable means constant *)
   let of_int x : t = [(R.of_int x),[]]
   let of_float x : t = [(R.of_float x),[]]
+  let of_rational x : t = [(R.of_rational x), []]
+
+  let to_int = R.floor
+  let to_float = R.to_float
+  let to_rational = R.to_rational
 
   let monomzero : cell = R.zero,[]
 
@@ -198,9 +207,13 @@ module IntRing = struct
   let div x y = if y <> 0 && x mod y = 0 then Some (x/y) else None
 
   let to_int x = Some x
+  let to_float = float_of_int
+  let to_rational = Mpqf.of_int
+  let floor x = x
 
   let of_int x = x
   let of_float = int_of_float
+  let of_rational x = of_float (Mpqf.to_float x)
 
   let print fmt x = Format.fprintf fmt "%i" x
 
@@ -221,13 +234,46 @@ module FloatRing = struct
     let xi = int_of_float x in
     if float xi = x then Some xi
     else None
+  let to_float x = x
+  let to_rational = Mpqf.of_float
+  let floor = int_of_float
 
   let of_int = float_of_int
   let of_float x = x
+  let of_rational = Mpqf.to_float
 
   let print fmt x = Format.fprintf fmt "%f" x
 
 end
 
+module RationalRing = struct
+
+  type t = Mpqf.t
+  let add = Mpqf.add
+  let mul = Mpqf.mul
+  let zero = Mpqf.of_int 0
+  let one = Mpqf.of_int 1
+
+  let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
+
+  let to_int x =
+    let xi = int_of_float (Mpqf.to_float x) in
+    if Mpqf.equal x (Mpqf.of_int xi) then Some xi
+    else None
+  let to_float = Mpqf.to_float
+  let to_rational x = x
+  let floor x = to_float x |> int_of_float
+
+  let of_int = Mpqf.of_int
+  let of_float = Mpqf.of_float
+  let of_rational x = x
+
+  let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
+               
+          
+end
+               
+
 module Int = Make(IntRing)
 module Float = Make(FloatRing)
+module Rational = Make(RationalRing)
