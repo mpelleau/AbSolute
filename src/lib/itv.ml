@@ -316,7 +316,7 @@ module Itv(B:BOUND) = struct
   let ln10 = B.of_float_up 2.3025850
 
   (*the two closest floating boundaries of pi*)
-  let pi_up = B.of_float_up 3.14159265358979356
+  let pi_up   = B.of_float_up   3.14159265358979356
   let pi_down = B.of_float_down 3.14159265358979312
 
   (* it improves soundness to use those *)
@@ -333,6 +333,16 @@ module Itv(B:BOUND) = struct
 		  | AroundPi
 		  | AroundThreePiHalf
 		  | AroundTwoPi
+
+  let print_q = function
+    | One -> "One"
+    | Two -> "Two"
+    | Three -> "Three"
+    | Four -> "Four"
+    | AroundPiHalf -> "AroundPiHalf"
+    | AroundPi -> "AroundPi"
+    | AroundThreePiHalf -> "AroundThreePiHalf"
+    | AroundTwoPi -> "AroundTwoPi"
 
   let might_intersect a b =
     match a,b with
@@ -388,7 +398,8 @@ module Itv(B:BOUND) = struct
       | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
       | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
       | Four, Two -> (B.sin_down l',B.one)
-      | _ -> failwith ("Should not occur")
+      | _  -> (B.min (B.sin_down l') (B.sin_down h'), B.max (B.sin_up l') (B.sin_up h'))
+       (*| _ -> failwith ("Should not occur"))*)
 
   (* interval cos *)
   let cos itv = sin (itv +@ i_pi_half)
