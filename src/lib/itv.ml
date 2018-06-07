@@ -409,7 +409,8 @@ module Itv(B:BOUND) = struct
         | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
 	  (B.tan_down l',B.tan_up h')
         | (One | Two | Three | Four), (One | Two | Three | Four) -> top
-        | _ -> failwith ("Should not occur")
+        | _  -> (B.min (B.tan_down l') (B.tan_down h'), B.max (B.tan_up l') (B.tan_up h'))
+  (* | _ -> failwith ("Should not occur")*)
 
   (* interval cot *)
   let cot itv =
