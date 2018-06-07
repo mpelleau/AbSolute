@@ -388,7 +388,7 @@ module Itv(B:BOUND) = struct
       | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
       | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
       | Four, Two -> (B.sin_down l',B.one)
-      | _ -> failwith ("Should not occur")
+      | _  -> (B.min (B.sin_down l') (B.sin_down h'), B.max (B.sin_up l') (B.sin_up h'))
 
   (* interval cos *)
   let cos itv = sin (itv +@ i_pi_half)
