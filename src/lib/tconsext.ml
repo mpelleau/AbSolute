@@ -19,12 +19,12 @@ let to_lincons env tc =
     ) in
     let s' = Bytes.of_string s in
     Bytes.iteri (fun i c ->
-      if c = '<' && i < Bytes.length s - 2 && s.[i+1] = '>' then begin
+      if c = '<' && i < Bytes.length s' - 2 && s.[i+1] = '>' then begin
       Bytes.set s' i '<';
       Bytes.set s' (i+1)  '='
     end
-    ) s;
-    s'
+    ) s';
+    Bytes.to_string s'
   in
   let lin = Apron.Parser.lincons1_of_string env (to_string tc) in
   Apron.Lincons1.set_typ lin (Apron.Tcons1.get_typ tc);
