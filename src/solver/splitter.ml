@@ -80,7 +80,7 @@ module Make (Abs : AbstractCP) = struct
 		     | Empty
 
   let print_debug tab obj abs =
-    if !Constant.debug then
+    if !Constant.debug > 0 then
       match obj with
       | Some obj ->
          let (inf, sup) = Abs.forward_eval abs obj in
@@ -88,7 +88,7 @@ module Make (Abs : AbstractCP) = struct
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
   let print_debug_const tab cstrs csts =
-    if !Constant.debug then Format.printf "#constraints = %d@." (List.length cstrs)
+    if !Constant.debug > 0 then Format.printf "#constraints = %d@." (List.length cstrs)
       (*Format.printf "%sconstraints:\n" tab;
       List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
       Format.printf "%sconstants:\n" tab;
@@ -105,10 +105,10 @@ module Make (Abs : AbstractCP) = struct
     try
       let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
       if Abs.is_bottom abs' then Empty else
-	let unsat = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in
-	match unsat with
-	| [] -> print_debug "\t=> sure:" objv abs'; Full (abs', const)
-	| _ ->  if minimize_test objv abs' then
+	      let unsat = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in
+	      match unsat with
+	      | [] -> print_debug "\t=> sure:" objv abs'; Full (abs', const)
+	      | _ ->  if minimize_test objv abs' then
                   (print_debug "\t*******=> sure:" objv abs'; Full (abs', const))
                 else (
                   print_debug "\t=> " objv abs';
@@ -126,7 +126,7 @@ module Make (Abs : AbstractCP) = struct
                       consistency abs'' unsat' const'
                   else
                     Maybe(abs'', unsat', const')))
-    with Bot.Bot_found -> if !Constant.debug then Format.printf "\t=> bot\n"; Empty
+    with Bot.Bot_found -> if !Constant.debug > 1 then Format.printf "\t=> bot\n"; Empty
 
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =

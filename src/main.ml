@@ -74,38 +74,45 @@ module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
 
 let speclist =
   let open Constant in
+  let open Argext in
   [
-  ("-visualization", Arg.Set visualization   , "Enables visualization mode");
-  ("-precision"    , Arg.Float set_prec      , "Changes the precision. default is 1e-3");
-  ("-max_sol"      , Arg.Int set_max_sol     , "Changes the maximum number of solutions. default is 1e6");
-  ("-max_iter"     , Arg.Int set_max_iter    , "Changes the maximum number of iterations. default is 1e7");
-  ("-domain"       , Arg.String set_domain   , "Changes the domain used for the solving. default is box");
-  ("-obj"          , Arg.Set obj             , "Generates an .obj file (for 3D visualization)");
-  ("-tex"          , Arg.Set tex             , "Prints the solutions in latex format on stadard output");
-  ("-pruning"      , Arg.Set pruning         , "Enables the \"pruning\" during the solving process");
-  ("-trace"        , Arg.Set trace           , "Prints the solutions on standard output");
-  ("-sure"         , Arg.Set sure            , "Keeps only the sure solutions");
-  ("-minimize"     , Arg.Set minimizing      , "Specify that the problem is a minimization problem");
-  ("-iter"         , Arg.Set iter            , "Enables the loop for the propagation");
-  ("-pruning_iter" , Arg.Int set_pruning_iter, "Changes the number of times the pruning process is applied");
-  ("-debug"        , Arg.Set debug           , "Prints the execution for debug purpose");
-  ("-split"        , Arg.String set_split    , "Changes the splitting strategy used for the solving");
-  ("-no-rewrite"   , Arg.Clear rewrite       , "Disables the constraint rewriting");
-  (*********************************************** ALIASES ********************************************************)
-  ("-m"            , Arg.Set minimizing      , "Alias for -minimize");
-  ("-t"            , Arg.Set trace           , "Alias for -trace");
-  ("-s"            , Arg.Set sure            , "Alias for -sure");
-  ("-v"            , Arg.Set visualization   , "Alias for -visualization");
-  ("-p"            , Arg.Float set_prec      , "Alias for -precision");
-  ("-d"            , Arg.String set_domain   , "Alias for -domain");
-  ("-i"            , Arg.Set iter            , "Alias for -iter");
-  ("-pi"           , Arg.Int set_pruning_iter, "Alias for -pruning_iter");
-  ("-sp"           , Arg.String set_split    , "Alias for -split");
+  ("-visualization", Arg.Set visualization    , "Enables visualization mode");
+  ("-precision"    , Arg.Float set_prec       , default_float "Sets the precision" precision);
+  ("-max_sol"      , Arg.Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
+  ("-max_iter"     , Arg.Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
+  ("-domain"       , Arg.String set_domain    , default_string "Changes the domain used for the solving" domain);
+  ("-obj"          , Arg.Set obj              , "Generates an .obj file (for 3D visualization)");
+  ("-tex"          , Arg.Set tex              , "Prints the solutions in latex format on stadard output");
+  ("-pruning"      , Arg.Set pruning          , "Enables the \"pruning\" during the solving process");
+  ("-trace"        , Arg.Set trace            , "Prints the solutions on standard output");
+  ("-sure"         , Arg.Set sure             , "Keeps only the sure solutions");
+  ("-minimize"     , Arg.Set minimizing       , "Specify that the problem is a minimization problem");
+  ("-iter"         , Arg.Set iter             , "Enables the loop for the propagation");
+  ("-pruning_iter" , Arg.Int set_pruning_iter , "Changes the number of times the pruning process is applied");
+  ("-debug"        , Arg.Unit set_debug       , "Prints the execution for debug purpose");
+  ("-debug_lv"     , Arg.Int set_debug_lv     , "Set the debug level. The higher, most print you get");
+  ("-split"        , Arg.String set_split     , "Changes the splitting strategy used for the solving");
+  ("-no-rewrite"   , Arg.Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
 ]
 
-let anonymous_arg = Constant.set_prob
+(*************** ALIASES ******************)
+let aliases =
+  [
+  ("-m", "-minimize");
+  ("-t", "-trace");
+  ("-s", "-sure");
+  ("-v", "-visualization");
+  ("-p", "-precision");
+  ("-d", "-domain");
+  ("-i", "-iter");
+  ("-pi","-pruning_iter");
+  ("-sp","-split");
+  ]
 
-let parse_args () = Arg.parse speclist anonymous_arg ""
+let globaldescr =
+  "AbSolute is a constraint solver based on abstract domains. For more info, check out https://github.com/mpelleau/AbSolute\n"
+
+let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr
 
 (***************)
 (* entry point *)
@@ -148,25 +155,4 @@ let go() =
     | "BandP" -> SBoxAndPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
 
-
-let test_mod_parser() =
-  let dir = "problems/mods/" in
-  let children = Sys.readdir dir in
-  let cl = Array.to_list children in
-  let move_to_good file = Unix.system ("mv problems/mods/"^file^" problems/mods/parse/") |> ignore in
-  let parse = List.filter (fun file ->
-                  try
-                    File_parser.parse (Some (dir^file)) |> ignore;
-                    true
-                  with _ -> false
-                ) cl
-  in
-  List.iter move_to_good parse;
-  let size = List.length parse in
-  List.iter (Format.printf "%s\n") parse;
-  Format.printf "\n%i/%i readable files\n" size (Array.length children)
-
-
-let _ =
-  (* test_mod_parser () *)
-  go()
+let _ = go()

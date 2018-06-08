@@ -1,6 +1,6 @@
 (* type precision = Relative of float | Absolute of float *)
 (* let precision       = ref (Absolute(0.001)) *)
-let precision       = ref 0.001
+let precision       = ref 0.01
 let max_iter        = ref 100000000
 let max_sol         = ref 10000000
 let problem         = ref None
@@ -11,7 +11,7 @@ let visualization   = ref false
 let obj             = ref false
 let tex             = ref false
 let trace           = ref false
-let debug           = ref false
+let debug           = ref 0
 let pruning         = ref false
 let sure            = ref false
 let iter            = ref false
@@ -25,6 +25,12 @@ let rewrite         = ref true
 (*   with _ -> *)
 (*     try precision := Absolute(float_of_string p) *)
 (*     with _ -> failwith "precision must be a float or of the form : x%" *)
+
+let set_debug_lv lv =
+  if lv < 0 then debug := lv
+  else failwith "debug level must be positive"
+
+let set_debug () = debug := 0
 
 let set_prec f =
   if f > 0. then precision := f

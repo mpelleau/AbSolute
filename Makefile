@@ -37,6 +37,7 @@ AUTOGEN =\
 # source files
 MLFILES = \
   src/lib/mapext.ml \
+  src/lib/argext.ml \
 	src/lib/tools.ml \
 	src/lib/polynom.ml \
 	src/lib/array_maker.ml \
