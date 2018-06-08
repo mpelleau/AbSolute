@@ -76,26 +76,26 @@ let speclist =
   let open Constant in
   let open Argext in
   [
-  ("-visualization", Arg.Set visualization    , "Enables visualization mode");
-  ("-precision"    , Arg.Float set_prec       , default_float "Sets the precision" precision);
-  ("-max_sol"      , Arg.Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
-  ("-max_iter"     , Arg.Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-  ("-domain"       , Arg.String set_domain    , default_string "Changes the domain used for the solving" domain);
-  ("-obj"          , Arg.Set obj              , "Generates an .obj file (for 3D visualization)");
-  ("-tex"          , Arg.Set tex              , "Prints the solutions in latex format on stadard output");
-  ("-pruning"      , Arg.Set pruning          , "Enables the \"pruning\" during the solving process");
-  ("-trace"        , Arg.Set trace            , "Prints the solutions on standard output");
-  ("-sure"         , Arg.Set sure             , "Keeps only the sure solutions");
-  ("-minimize"     , Arg.Set minimizing       , "Specify that the problem is a minimization problem");
-  ("-iter"         , Arg.Set iter             , "Enables the loop for the propagation");
-  ("-pruning_iter" , Arg.Int set_pruning_iter , "Changes the number of times the pruning process is applied");
-  ("-debug"        , Arg.Unit set_debug       , "Prints the execution for debug purpose");
-  ("-debug_lv"     , Arg.Int set_debug_lv     , "Set the debug level. The higher, most print you get");
-  ("-split"        , Arg.String set_split     , "Changes the splitting strategy used for the solving");
-  ("-no-rewrite"   , Arg.Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
+  ("-visualization", Set visualization    , "Enables visualization mode");
+  ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
+  ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
+  ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
+  ("-domain"       , String set_domain    , default_string "Changes the domain used for the solving" domain);
+  ("-obj"          , Set obj              , "Generates an .obj file (for 3D visualization)");
+  ("-tex"          , Set tex              , "Prints the solutions in latex format on stadard output");
+  ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
+  ("-trace"        , Set trace            , "Prints the solutions on standard output");
+  ("-sure"         , Set sure             , "Keeps only the sure solutions");
+  ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
+  ("-iter"         , Set iter             , "Enables the loop for the propagation");
+  ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
+  ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
+  ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
+  ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
+  ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
 ]
 
-(*************** ALIASES ******************)
+(*************** ALIASES ************)
 let aliases =
   [
   ("-m", "-minimize");

@@ -18,16 +18,8 @@ let iter            = ref false
 let pruning_iter    = ref 100000000
 let rewrite         = ref true
 
-(* let parse_prec p = *)
-(*   try Scanf.sscanf p "%f%%" (fun f -> *)
-(*     if f > 0. then precision := Relative f *)
-(*     else failwith "precision must be >= 0% and < 100%") *)
-(*   with _ -> *)
-(*     try precision := Absolute(float_of_string p) *)
-(*     with _ -> failwith "precision must be a float or of the form : x%" *)
-
 let set_debug_lv lv =
-  if lv < 0 then debug := lv
+  if lv >= 0 then debug := lv
   else failwith "debug level must be positive"
 
 let set_debug () = debug := 0

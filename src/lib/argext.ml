@@ -19,11 +19,12 @@ let default_bool descr bref=
 let default_string descr sref=
   Format.asprintf "%s. default is %s." descr !sref
 
-(* Augments the options with the aliases *)
-let parse_args_aliases speclist aliases anonymous globaldescr =
+type alias = string * string
+
+(* Augments the options list with the aliases *)
+let parse_args_aliases speclist (aliases:alias list) anonymous globaldescr =
   let find (alias,name) =
-    let _,behav,descr = List.find (fun (n,_,_) -> n=name) speclist
-    in
+    let _,behav,descr = List.find (fun (n,_,_) -> n=name) speclist in
     alias,behav,("Alias for "^name^": "^descr)
   in
   let aliases = List.map find aliases in
