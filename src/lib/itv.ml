@@ -378,17 +378,35 @@ module Itv(B:BOUND) = struct
       and q_sup = quadrant h'
       and diam = range (l,h) in
       if might_intersect q_inf q_sup && B.geq diam pi then minus_one_one else
-      match q_inf, q_sup with
-      | One, One | Four, One | Four, Four | _,AroundPiHalf -> (B.sin_down l',B.sin_up h')
-      | Two, Two | Two, Three | Three, Three | AroundPiHalf,_ -> (B.sin_down h',B.sin_up l')
-      | Three, Two | One, Four -> minus_one_one
-      | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
-      | Two, One | Three, Four -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
-      | One, Three -> (B.sin_down h',B.one)
-      | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
-      | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
-      | Four, Two -> (B.sin_down l',B.one)
-      | _  -> (B.min (B.sin_down l') (B.sin_down h'), B.max (B.sin_up l') (B.sin_up h'))
+        match q_inf, q_sup with
+        | a, b when a = b && B.gt l' h' -> (B.minus_one, B.one)
+                                         
+        | One, One -> (B.sin_down l', B.sin_up h')
+        | Two, Two -> (B.sin_down h', B.sin_up l')
+        | Three, Three -> (B.sin_down h', B.sin_up l')
+        | Four, Four -> (B.sin_down l', B.sin_up h')
+                                       
+        | AroundPi, AroundPi -> (B.sin_down h', B.sin_up l')
+        | AroundThreePiHalf, AroundThreePiHalf -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+        | AroundTwoPi, AroundTwoPi -> (B.sin_down l', B.sin_up h')
+
+        | (One | AroundPiHalf | Four), AroundPiHalf | AroundPiHalf, (Two | AroundPi | Three)
+          -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
+        | (Two | AroundPi | Three), AroundThreePiHalf | AroundThreePiHalf, (Four | One)
+          -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+                                
+        | (One | Two), AroundPi -> (B.sin_down h', B.sin_up l')
+        | AroundPi, (Three | Four) -> (B.sin_down h', B.sin_up l')
+                                        
+        | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
+        | Two, One | Three, Four -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+        | Two, Three -> (B.sin_down h', B.sin_up l')
+        | Four, One -> (B.sin_down l', B.sin_up h')
+        | One, Three -> (B.sin_down h', B.one)
+        | Two, Four -> (B.minus_one, B.sin_up l')
+        | Three, One -> (B.minus_one, B.sin_up h')
+        | Four, Two -> (B.sin_down l', B.one)
+        | _ -> (B.minus_one, B.one)
 
   (* interval cos *)
   let cos itv = sin (itv +@ i_pi_half)
