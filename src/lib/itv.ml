@@ -275,8 +275,13 @@ module Itv(B:BOUND) = struct
   let bound_div_down = B.bound_div B.div_down
 
   (* helper: assumes i2 has constant sign *)
-  let div_sign =
-    mix4 bound_div_up bound_div_down
+  let div_sign ((l1,h1) as i1) ((l2,h2) as i2) =
+    if  B.sign h2 = 0 then
+      B.minus_inf, B.max (bound_div_up l1 l2) (bound_div_up h1 l2)
+    else if B.sign l2 = 0 then
+      B.min (bound_div_down l1 h2) (bound_div_down h1 h2), B.inf
+    else
+    mix4 bound_div_up bound_div_down i1 i2
 
   (*let printBot fmt i =
     match i with
@@ -389,17 +394,34 @@ module Itv(B:BOUND) = struct
       and diam = range (l,h) in
       if might_intersect q_inf q_sup && B.geq diam pi then minus_one_one else
       match q_inf, q_sup with
-      | One, One | Four, One | Four, Four | _,AroundPiHalf -> (B.sin_down l',B.sin_up h')
-      | Two, Two | Two, Three | Three, Three | AroundPiHalf,_ -> (B.sin_down h',B.sin_up l')
-      | Three, Two | One, Four -> minus_one_one
-      | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'),B.one)
-      | Two, One | Three, Four -> (B.minus_one,B.max (B.sin_up l') (B.sin_up h'))
-      | One, Three -> (B.sin_down h',B.one)
-      | Two, Four | _,AroundThreePiHalf -> (B.minus_one,B.sin_up l')
-      | Three, One | AroundThreePiHalf,_ -> (B.minus_one,B.sin_up h')
-      | Four, Two -> (B.sin_down l',B.one)
-      | _  -> (B.min (B.sin_down l') (B.sin_down h'), B.max (B.sin_up l') (B.sin_up h'))
-       (*| _ -> failwith ("Should not occur"))*)
+        | a, b when a = b && B.gt l' h' -> (B.minus_one, B.one)
+                                         
+        | One, One -> (B.sin_down l', B.sin_up h')
+        | Two, Two -> (B.sin_down h', B.sin_up l')
+        | Three, Three -> (B.sin_down h', B.sin_up l')
+        | Four, Four -> (B.sin_down l', B.sin_up h')
+                                       
+        | AroundPi, AroundPi -> (B.sin_down h', B.sin_up l')
+        | AroundThreePiHalf, AroundThreePiHalf -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+        | AroundTwoPi, AroundTwoPi -> (B.sin_down l', B.sin_up h')
+
+        | (One | AroundPiHalf | Four), AroundPiHalf | AroundPiHalf, (Two | AroundPi | Three)
+          -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
+        | (Two | AroundPi | Three), AroundThreePiHalf | AroundThreePiHalf, (Four | One)
+          -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+                                
+        | (One | Two), AroundPi -> (B.sin_down h', B.sin_up l')
+        | AroundPi, (Three | Four) -> (B.sin_down h', B.sin_up l')
+                                        
+        | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
+        | Two, One | Three, Four -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
+        | Two, Three -> (B.sin_down h', B.sin_up l')
+        | Four, One -> (B.sin_down l', B.sin_up h')
+        | One, Three -> (B.sin_down h', B.one)
+        | Two, Four -> (B.minus_one, B.sin_up l')
+        | Three, One -> (B.minus_one, B.sin_up h')
+        | Four, Two -> (B.sin_down l', B.one)
+        | _ -> (B.minus_one, B.one)
 
   (* interval cos *)
   let cos itv = sin (itv +@ i_pi_half)
@@ -420,7 +442,8 @@ module Itv(B:BOUND) = struct
         | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
 	  (B.tan_down l',B.tan_up h')
         | (One | Two | Three | Four), (One | Two | Three | Four) -> top
-        | _ -> failwith ("Should not occur")
+        | _  -> (B.min (B.tan_down l') (B.tan_down h'), B.max (B.tan_up l') (B.tan_up h'))
+  (* | _ -> failwith ("Should not occur")*)
 
   (* interval cot *)
   let cot itv =
@@ -703,14 +726,14 @@ module Itv(B:BOUND) = struct
 
   let compute_itv itv itv' i i' =
     let aux =
-      if i mod 2 = 0 then add itv' (mul (of_bound pi) (of_int i))
-      else sub (mul (of_bound pi) (of_int i')) itv'
+      if i mod 2 = 0 then add itv' (mul i_pi (of_int i))
+      else sub (mul i_pi (of_int i')) itv'
     in meet itv aux
 
   (* r = sin i => i = arcsin r *)
   let filter_sin i r =
     let asin_r = asin r in
-    let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
+    let (aux, _) = div (add i i_pi_half) i_pi in
     match (aux, asin_r) with
     | Bot, _ | _, Bot -> Bot
     | Nb (p1,p2), Nb ((l,h) as a_r) ->
@@ -734,7 +757,7 @@ module Itv(B:BOUND) = struct
   (* r = cos i => i = arccos r *)
   let filter_cos (i:t) (r:t) : t bot =
     let acos_r = acos r in
-    let (aux, _) = div i (of_bound pi) in
+    let (aux, _) = div i i_pi in
     match (aux, acos_r) with
     | Bot, _ | _, Bot -> Bot
     | Nb (p1,p2), Nb ((l,h) as a_r) ->
@@ -758,25 +781,25 @@ module Itv(B:BOUND) = struct
   (* r = tan i => i = arctan r *)
   let filter_tan i r =
     let atan_r = atan r in
-    let (aux, _) = div (add i (of_bound pi_half)) (of_bound pi) in
+    let (aux, _) = div (add i i_pi_half) i_pi in
     (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
     match aux with
     | Bot -> Bot
     | Nb (p1,p2) ->
       let idx = ref ((int_of_float (B.to_float_up (B.floor p1))) - 1) in
-      let itv = ref (meet i (add atan_r (mul (of_bound pi) (of_int !idx)))) in
+      let itv = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
       while !idx < (int_of_float (B.to_float_down p2)) && is_Bot !itv do
         idx := !idx + 1;
-        itv := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
+        itv := meet i (add atan_r (mul i_pi (of_int !idx)));
       done;
       if (is_Bot !itv) then
         Bot
       else
         let idx = ref ((int_of_float (B.to_float_up (B.floor p2))) + 1) in
-        let itv' = ref (meet i (add atan_r (mul (of_bound pi) (of_int !idx)))) in
+        let itv' = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
         while !idx > (int_of_float (B.to_float_down p1)) && is_Bot !itv' do
           idx := !idx - 1;
-          itv' := meet i (add atan_r (mul (of_bound pi) (of_int !idx)));
+          itv' := meet i (add atan_r (mul i_pi (of_int !idx)));
         done;
         Bot.join_bot2 join !itv !itv'
 

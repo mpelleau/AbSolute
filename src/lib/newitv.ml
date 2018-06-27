@@ -44,9 +44,10 @@ module Make(B:BOUND) = struct
 
   let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_down
 
-  let ( /@ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_up
+  let ( /@ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_up
 
-  let ( /$ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_down
+  (*let ( /$ ) rb1 rb2 = *)
+  let ( /$ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_down
 
   type t = real_bound * real_bound
 
@@ -336,8 +337,15 @@ module Make(B:BOUND) = struct
     max_up  (max_up  (l1 *@ l2) (l1 *@ h2)) (max_up  (h1 *@ l2) (h1 *@ h2))
 
   let div_sgn ((l1,h1):t) ((l2,h2):t) : t =
-    min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
-    max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
+    if  B.sign (snd h2) = 0 then
+      (Large, B.minus_inf), 
+      max_up  (l1 /@ l2) (h1 /@ l2)
+    else if B.sign (snd l2) = 0 then
+      (min_low  (l1 /$ h2) (h1 /$ h2)),
+      (Large, B.inf)
+    else
+      min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
+      max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
 
   let div (i1:t) (i2:t) : t bot * bool =
     let pos = (lift_bot (div_sgn i1)) (meet i2 positive) in
@@ -398,25 +406,121 @@ module Make(B:BOUND) = struct
   let i_two_pi = add i_pi i_pi
   let i_three_half_of_pi = div (add i_two_pi i_pi) (of_int 2) |> fst |> debot
 
+  let b_one = (Large, B.one)
+  let b_minus_one = (Large, B.minus_one)
+            
 
-  let cos (((kl,l),(kh,h)):t) : t = failwith "todo cos"
+  type quadrant = | One
+		  | Two
+		  | Three
+		  | Four
+                  
+  (* Returns the quadrant in which the bound is. the value must be in [0, 2pi[ *)
+  let quadrant value =
+    if B.leq value (snd (fst i_pi_half)) then One
+    else if B.leq value pi_down then Two
+    else if B.leq value (snd (fst i_three_half_of_pi)) then Three
+    else Four
 
-  let sin (((kl,l),(kh,h)):t) : t = failwith "todo sin"
+  (* A bound is scaled to the range [0, 2pi[ *)
+  let scale_to_two_pi value =
+    let q = B.floor (B.div_up value (snd (fst i_two_pi))) in
+    B.sub_up value (B.mul_up (snd (fst i_two_pi)) q)
 
-  let tan (((kl,l),(kh,h)):t) = failwith "todo tan"
+  (* The interval is scaled to the range [0, 2pi[ *)
+  let scale_to_two_pi_itv (l, h) =
+    if B.geq l B.zero && B.lt h (snd (fst i_two_pi)) then (l,h)
+    else (scale_to_two_pi l, scale_to_two_pi h)
+
+
+  let bfg f g (k1, v1) (k2, v2) =
+    let v1' = g v1
+    and v2' = g v2 in
+    if B.equal (f v1' v2') v1' then (k1, v1')
+    else (k2, v2')
+
+  let bf f (k1, v1) (k2, v2) =
+    if B.equal (f v1 v2) v1 then (k1, v1)
+    else (k2, v2)
+    
+
+  let uf f (k, v) =
+    (k, f v)
+    
+
+  let sin ((((kl,l) as lb), ((kh,h) as lh)):t) : t =
+    let diam = range (lb, lh) in
+    if B.geq diam (B.add_down pi_down pi_down) then minus_one_one
+    else
+      let (l', h') = scale_to_two_pi_itv (l, h) in
+      let q_inf = quadrant l'
+      and q_sup = quadrant h' in
+      match q_inf, q_sup with
+      | a, b when a = b && B.gt l' h' -> (b_minus_one, b_one)
+                                       
+      | One, One | Four, Four | Four, One
+        -> mon_incr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
+      | Two, Two | Three, Three | Two, Three
+        -> mon_decr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
+                                     
+      | One, Two | Four, Three -> (bfg B.min B.sin_down (kl  , l') (kh, h'), (Large, B.one))
+      | Two, One | Three, Four -> (b_minus_one, bfg B.max B.sin_up (kl, l') (kh, h'))
+                             
+      | One, Three -> (uf B.sin_down (kh, h'), b_one)
+      | Two, Four -> (b_minus_one, uf B.sin_up (kl, l'))
+      | Three, One -> (b_minus_one, uf B.sin_up (kh, h'))
+      | Four, Two -> (uf B.sin_down (kl, l'), b_one)
+                   
+      | _ -> (b_minus_one, b_one)
+
+  let cos (itv:t) : t = sin (add itv i_pi_half)
+
+  let tan (((kl, l), (kh, h) as itv):t) =
+    let diam = range itv in
+    if B.geq diam (snd (fst i_pi)) then top
+    else
+      let (l',h') = scale_to_two_pi_itv (l, h) in
+      let diam = range itv
+      and q_inf = quadrant l'
+      and q_sup = quadrant h' in
+      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then top
+      else
+        match q_inf, q_sup with
+        | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
+	   mon_incr (B.tan_down, B.tan_up) ((kl, l'), (kh, h'))
+        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
+  (*| _  -> (bfg B.min B.tan_down (kl, l') (kh, h'), bfg B.max B.tan_up (kl, l') (kh, h'))*)
 
   (* interval cot *)
   let cot itv =
     let itv' = tan (add itv i_pi_half) in
     neg itv'
 
-  let asin (((kl,l),(kh,h)):t) : t bot = failwith "todo asin"
+  let asin (((kl, l), (kh, h)):t) : t bot = 
+    if B.lt h B.minus_one || B.gt l B.one then Bot
+    else
+      let is_minus_one = B.lt l B.minus_one
+      and is_plus_one = B.gt h B.one in
+      match (is_minus_one, is_plus_one) with
+      | true, true -> Nb ((uf B.neg (fst i_pi_half)), (snd i_pi_half))
+      | true, false -> Nb ((uf B.neg (fst i_pi_half)), (uf B.asin_up (kh, h)))
+      | false, true -> Nb ((uf B.asin_down (kl, l)), (snd i_pi_half))
+      | false, false -> Nb (mon_incr (B.asin_down, B.asin_up) ((kl, l), (kh, h)))
 
-  let acos (((kl,l),(kh,h)):t) : t bot = failwith "todo acos"
+  let acos (((kl, l), (kh, h)):t) : t bot =
+    if B.lt h B.minus_one || B.gt l B.one then Bot
+    else
+      let is_minus_one = B.lt l B.minus_one
+      and is_plus_one = B.gt h B.one in
+      match (is_minus_one, is_plus_one) with
+      | true, true -> Nb ((Large, B.zero), (snd i_pi))
+      | true, false -> Nb ((uf B.acos_down (kh, h)), (snd i_pi))
+      | false, true -> Nb ((Large, B.zero), (uf B.acos_up (kl, l)))
+      | false, false -> Nb (mon_decr (B.acos_down, B.acos_up) ((kl, l), (kh, h)))
 
-  let atan (((kl,l),(kh,h)):t) = failwith "todo atan"
+  let atan ((l, h):t) = mon_incr (B.atan_down, B.atan_up) (l, h)
 
-  let acot (((kl,l),(kh,h)):t) : t = failwith "todo acot"
+  let acot (itv:t) : t = add (atan (neg itv)) i_pi_half
 
   let ln (i:t) : t bot =
     match meet i positive with
@@ -449,7 +553,49 @@ module Make(B:BOUND) = struct
   (* validate (B.max l1 l2, B.max u1 u2) *)
 
   (** runtime functions **)
-  let eval_fun name args : t bot = assert false
+  let eval_fun name args : t bot = 
+    let arity_1 (f: t -> t) : t bot =
+       match args with
+       | [i] -> Nb (f i)
+      | _ -> failwith (Format.sprintf "%s expect one argument" name)
+    in
+    let arity_1_bot (f: t -> t bot) : t bot =
+      match args with
+      | [i] ->
+         (match f i with
+          | Bot -> Bot
+          | Nb i -> Nb i)
+      | _ -> failwith (Format.sprintf "%s expect one argument" name)
+    in
+    let arity_2 (f: t -> t -> t) : t bot  =
+      match args with
+      | [i1;i2] -> Nb (f i1 i2)
+      | _ -> failwith (Format.sprintf "%s expect two arguments" name)
+    in
+    let arity_2_bot (f: t -> t -> t bot) : t bot  =
+      match args with
+      | [i1;i2] ->
+         (match f i1 i2 with
+          | Bot -> Bot
+          | Nb(i) -> Nb i)
+      | _ -> failwith (Format.sprintf "%s expect two arguments" name)
+    in
+    match name with
+    | "pow"   -> arity_2 pow
+    | "nroot" -> arity_2_bot n_root
+    | "sqrt"  -> arity_1_bot sqrt
+    | "exp"   -> arity_1 exp
+    | "ln"    -> arity_1_bot ln
+    | "log"   -> arity_1_bot log
+    (* trigonometry *)
+    | "cos"   -> arity_1 cos
+    | "sin"   -> arity_1 sin
+    | "acos"  -> arity_1_bot acos
+    | "asin"  -> arity_1_bot asin
+    (* min max *)
+    | "max"   -> arity_2 max
+    | "min"   -> arity_2 min
+    | s -> failwith (Format.sprintf "unknown eval function : %s" s)
 
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
@@ -515,7 +661,9 @@ module Make(B:BOUND) = struct
   (* r = i*c => (i = r/c \/ c=r=0) *)
   let filter_mul_f (i:t) (c:t) (r:t) : t bot =
     if contains r B.zero && contains c B.zero then Nb i
-    else match fst (div r c) with Bot -> Bot | Nb x -> meet i x
+    else match fst (div r c) with
+         | Bot -> Bot
+         | Nb x -> meet i x
 
   (* r = i/c => i = r*c *)
   let filter_div_f (i:t) (c:t) (r:t) : t bot =
@@ -573,14 +721,83 @@ module Make(B:BOUND) = struct
     if B.sign il > 0 || (B.sign il = 0 && k_il = Large) then meet i rr
     else meet i ((Strict,B.minus_inf), snd rr)
 
+  let compute_itv itv itv' i i' =
+    let aux =
+      if i mod 2 = 0 then add itv' (mul i_pi (of_int i))
+      else sub (mul i_pi (of_int i')) itv'
+    in meet itv aux
+
   (* r = sin i => i = arcsin r *)
-  let filter_sin i r = failwith "todo filter_sin"
+  let filter_sin i r = 
+    let asin_r = asin r in
+    let (aux, _) = div (add i i_pi_half) i_pi in
+    match (aux, asin_r) with
+    | Bot, _ | _, Bot -> Bot
+    | Nb (p1, p2), Nb ((l, h) as a_r) ->
+      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
+      let itv = ref (compute_itv i a_r !idx !idx) in
+      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := compute_itv i a_r !idx !idx;
+      done;
+      if (is_Bot !itv) then Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
+        let itv' = ref (compute_itv i a_r !idx !idx) in
+        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := compute_itv i a_r !idx !idx;
+        done;
+        (Bot.join_bot2 join !itv !itv')
 
   (* r = cos i => i = arccos r *)
-  let filter_cos i r = failwith "todo filter_cos"
+  let filter_cos i r = 
+    let acos_r = acos r in
+    let (aux, _) = div i i_pi in
+    match (aux, acos_r) with
+    | Bot, _ | _, Bot -> Bot
+    | Nb (p1,p2), Nb ((l,h) as a_r) ->
+      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
+      let itv = ref (compute_itv i a_r !idx (!idx+1)) in
+      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := compute_itv i a_r !idx (!idx+1);
+      done;
+      if (is_Bot !itv) then
+        Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
+        let itv' = ref (compute_itv i a_r !idx (!idx+1)) in
+        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := compute_itv i a_r !idx (!idx+1);
+        done;
+        (Bot.join_bot2 join !itv !itv')
 
   (* r = atan i => i = tan r *)
-  let filter_tan i r = failwith "todo filter_tan"
+  let filter_tan i r = 
+    let atan_r = atan r in
+    let (aux, _) = div (add i i_pi_half) i_pi in
+    (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
+    match aux with
+    | Bot -> Bot
+    | Nb (p1,p2) ->
+      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
+      let itv = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
+      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
+        idx := !idx + 1;
+        itv := meet i (add atan_r (mul i_pi (of_int !idx)));
+      done;
+      if (is_Bot !itv) then
+        Bot
+      else
+        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
+        let itv' = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
+        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
+          idx := !idx - 1;
+          itv' := meet i (add atan_r (mul i_pi (of_int !idx)));
+        done;
+        Bot.join_bot2 join !itv !itv'
 
   (* r = cot i => i = arccot r *)
   let filter_cot i r = failwith "todo filter_cot"
@@ -615,12 +832,41 @@ module Make(B:BOUND) = struct
     merge_bot2 (meet i (pow r n)) (Nb n)
 
   (* r = min (i1, i2) *)
-  let filter_min i1 i2 r = failwith "todo filter_min"
+  let filter_min (l1, u1) (l2, u2) (lr, ur) = 
+    merge_bot2 (check_bot (bf B.max l1 lr, bf B.max u1 ur)) (check_bot (bf B.max l2 lr, bf B.max u2 ur))
 
   (* r = max (i1, i2) *)
-  let filter_max i1 i2 r = failwith "todo filter_max"
+  let filter_max (l1, u1) (l2, u2) (lr, ur) =
+    merge_bot2 (check_bot (bf B.min l1 lr, bf B.min u1 ur)) (check_bot (bf B.min l2 lr, bf B.min u2 ur))
 
-  let filter_fun name args r : (t list) bot =  assert false
+  let filter_fun name args r : (t list) bot = 
+    let arity_1 (f: t -> t -> t bot) : (t list) bot =
+      match args with
+      | [i] ->
+         (match f i r with
+         | Bot -> Bot
+         | Nb i -> Nb [i])
+      | _ -> failwith (Format.sprintf "%s expect one argument" name)
+    in
+    let arity_2 (f: t -> t -> t -> (t*t) bot) : (t list) bot  =
+      match args with
+      | [i1;i2] ->
+         (match f i1 i2 r with
+          | Bot -> Bot
+          | Nb(i1,i2) -> Nb[i1;i2])
+      | _ -> failwith (Format.sprintf "%s expect two arguments" name)
+    in
+    match name with
+    | "sqrt" -> arity_1 filter_sqrt
+    | "exp"  -> arity_1 filter_exp
+    | "cos"  -> arity_1 filter_cos
+    | "sin"  -> arity_1 filter_sin
+    | "acos" -> arity_1 filter_acos
+    | "asin" -> arity_1 filter_asin
+    | "ln"   -> arity_1 filter_ln
+    | "max"  -> arity_2 filter_max
+    | "min"  -> arity_2 filter_min
+    | s -> failwith (Format.sprintf "unknown filter function : %s" s)
 
   let filter_bounds (l,h) = failwith "todo filter_bound"
 
