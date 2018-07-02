@@ -115,8 +115,8 @@ let print_assign fmt (a,b,c) =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (string_of_float (Mpqf.to_float a)) (* (Mpqf.to_string a) *)
-  | (a, b) -> Format.fprintf fmt "[%s; %s]" (string_of_float (Mpqf.to_float a)) (string_of_float (Mpqf.to_float b)) (* (Mpqf.to_string a) (Mpqf.to_string b) *)
+  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (*(string_of_float (Mpqf.to_float a))*) (Mpqf.to_string a) 
+  | (a, b) -> Format.fprintf fmt "[%s; %s]" (*(string_of_float (Mpqf.to_float a)) (string_of_float (Mpqf.to_float b))*) (Mpqf.to_string a) (Mpqf.to_string b) 
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
