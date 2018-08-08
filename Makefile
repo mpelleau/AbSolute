@@ -136,4 +136,4 @@ MLSOURCES = $(MLFILES) $(MLIFILES)
 
 .phony:	all clean
 
-include .depend
+-include .depend
