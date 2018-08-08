@@ -108,10 +108,6 @@ let draw_string x y str col =
   moveto (int_of_float x) (int_of_float y);
   draw_string str
 
-let set_font_size (size:int) : unit =
-  let font = Format.asprintf "-*-fixed-medium-r-semicondensed--%i-*-*-*-*-*-iso8859-1" size in
-  set_font font
-
 let init (xl,xu) (yl,yu) =
   x_min := xl;
   x_max := xu;
@@ -135,8 +131,6 @@ let loop state =
   loop_at_exit [] (fun _ -> ())
 
 let create_window width height =
-  Format.printf "setting font\n%!";
-  set_font_size 100;
   Format.sprintf " %ix%i" width height |> open_graph;
   sx := size_x() |> float;
   sy := size_y() - 10 |> float;

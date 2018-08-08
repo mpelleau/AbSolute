@@ -30,7 +30,6 @@ module Make (D:Drawer) = struct
     View.draw_end ()
 
   let print_latex sure unsure (v1,v2) =
-    Latex.create 8. 6.5;
     match !Constant.problem with
     | None -> assert false
     | Some s ->
@@ -38,12 +37,7 @@ module Make (D:Drawer) = struct
        let out = ("out/"^name^".tex") in
        let name = Latex.escape name in
        let fmt = Format.formatter_of_out_channel (open_out out) in
-       let v1_b = bound_dim v1 sure unsure
-       and v2_b = bound_dim v2 sure unsure in
-       (match v1_b,v2_b with
-        | None, None -> failwith "nothing to draw"
-        | Some(a,b),None | None, Some(a,b) -> Latex.init (a,b) (1.,1.)
-        | Some(a,b),Some(c,d) -> Latex.init (a,b) (c,d));
+       Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\begin{tikzpicture}[scale=0.6]\n";
        List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
        if !Constant.sure |> not then
          List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
