@@ -8,5 +8,5 @@ init{
 
 constraints{
   x^2 + y^2 +z^2 <= 100;
-  sin (x)^2+sin (y)^2+sin(z)^2 <= 0.9;
+  sin(x)^2+sin(y)^2+sin(z)^2 <= 0.9;
 }

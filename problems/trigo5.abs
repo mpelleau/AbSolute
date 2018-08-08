@@ -1,4 +1,4 @@
-/* simple example with tangeante */
+/* simple example with arctan */
 
 init{
   real x = [-20;20];
@@ -6,5 +6,5 @@ init{
 }
 
 constraints{
-  y < tan(x);
+  y < atan(x);
 }

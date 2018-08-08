@@ -1,0 +1,16 @@
+/* octagon with a hole */
+
+init{
+  real x = [-1;1];
+  real y = [0;5];
+}
+
+constraints{
+  2*y * 89*x + y*y - 20*y + 66*x -18 < y - x + x*x + 18;
+  x + 2*cos(x) - y < x + cos(x);
+  (x+1)*(x-2) - (x-1)*x < 0;
+  (x+1)^2 > 0;
+  (x+x)/(x-x+2) > 0;
+  x^2-x=0;
+  sin(x^2 + y^2) = sin(y^2 + x^2);
+}

@@ -1,6 +1,6 @@
 init {
-  real x1 = [0;1.6];
-  real x2 = [-oo;oo];
+  real x1 = [0.5;1.35];
+  real x2 = [0;2.33];
 }
 
 constraints{
