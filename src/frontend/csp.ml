@@ -70,6 +70,12 @@ type prog = {
     view        : jacob
   }
 
+(* the instance type *)
+(* we associate a float value to each variable *)
+module SMAP = Mapext.Make(String)
+
+type instance = float SMAP.t
+
 
 (*************************************************************)
 (*                    PRINTING UTILITIES                     *)

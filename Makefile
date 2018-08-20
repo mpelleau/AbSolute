@@ -1,3 +1,6 @@
+# this configuration file is generated from configure.make
+-include Makefile.config
+
 OPAMBIN   := $(shell opam config var bin)
 OCAMLC    := $(OPAMBIN)/ocamlc.opt
 OCAMLOPT  := $(OPAMBIN)/ocamlopt.opt
@@ -63,6 +66,7 @@ MLFILES = \
   src/frontend/preprocessing.ml \
   src/frontend/file_parser.ml \
   src/domains/apron_domain.ml \
+  src/domains/vpl_domain.ml \
   src/domains/abstract_box.ml \
   src/domains/adcp_sig.ml \
   src/domains/ADCP.ml \
@@ -78,6 +82,7 @@ MLFILES = \
 	src/print/box_drawer.ml \
   src/print/realbox_drawer.ml \
 	src/print/apron_drawer.ml \
+	src/print/vpl_drawer.ml \
   src/print/out.ml \
 	src/main.ml
 
