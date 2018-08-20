@@ -4,6 +4,8 @@ type var = string
 (* constants are rationals (the domain of the variable *)
 type i = Mpqf.t
 
+type annot = Int | Real
+
 (* unary arithmetic operators *)
 type unop = NEG
 (*  | SQRT | ABS | COS | SIN | TAN | COT *)
@@ -22,7 +24,7 @@ type expr =
   | Unary   of unop * expr
   | Binary  of binop * expr * expr
   | Var     of var
-  | Cst     of i
+  | Cst     of i * annot
 
 (* boolean expressions *)
 type bexpr =
@@ -115,12 +117,12 @@ let print_assign fmt (a,b,c) =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (*(string_of_float (Mpqf.to_float a))*) (Mpqf.to_string a) 
-  | (a, b) -> Format.fprintf fmt "[%s; %s]" (*(string_of_float (Mpqf.to_float a)) (string_of_float (Mpqf.to_float b))*) (Mpqf.to_string a) (Mpqf.to_string b) 
+  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (*(string_of_float (Mpqf.to_float a))*) (Mpqf.to_string a)
+  | (a, b) -> Format.fprintf fmt "[%s; %s]" (*(string_of_float (Mpqf.to_float a)) (string_of_float (Mpqf.to_float b))*) (Mpqf.to_string a) (Mpqf.to_string b)
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
-  
+
 
 let rec print_all_csts fmt = function
   | [] -> ()
@@ -141,7 +143,7 @@ let rec print_expr fmt = function
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
-  | Cst c -> Format.fprintf fmt "%s" (Mpqf.to_string c)
+  | Cst (c,_) -> Format.fprintf fmt "%s" (Mpqf.to_string c)
 
 let rec print_bexpr fmt = function
   | Cmp (c,e1,e2) ->
@@ -226,9 +228,10 @@ let is_zero = Mpqf.equal zero_val
 let is_neg c = Mpqf.cmp zero_val c > 0
 let one_val = Mpqf.of_int 1
 
-let one = Cst one_val
-let zero = Cst zero_val
-let sqr expr = Binary (POW, expr, Cst (Mpqf.of_int 2))
+let one = Cst (one_val,Int)
+let zero = Cst (zero_val,Int)
+let two  = Cst ((Mpqf.of_int 2),Int)
+let sqr expr = Binary (POW, expr, two)
 let plus_one expr = Binary (ADD, one, expr)
 
 let power a b = Mpqf.of_float ((Mpqf.to_float a) ** (Mpqf.to_float b))
@@ -243,52 +246,57 @@ let is_cst = function
   | _ -> false
 
 let rec to_cst c b = function
-  | [] -> Cst c
-  | (Cst a)::t -> if b then to_cst (Mpqf.add c a) b t else to_cst (Mpqf.mul c a) b t
+  | [] -> Cst (c,Real)
+  | (Cst (a, _))::t -> if b then to_cst (Mpqf.add c a) b t else to_cst (Mpqf.mul c a) b t
   | h::t -> to_cst c b t
 
 let rec to_fcst c = function
   | [] -> c
-  | (Cst a)::t -> to_fcst (Mpqf.add c a) t
+  | (Cst (a,annt))::t -> to_fcst (Mpqf.add c a) t
   | h::t -> to_fcst c t
 
-          
+
 let rec distribute (op, c) = function
   | Funcall (name, args) ->  Binary (op, Funcall(name, args), c)
-  | Cst a -> Binary (op, Cst a, c)
+  | Cst (a,annt) -> Binary (op, Cst (a,annt), c)
   | Var v -> Binary (op, Var v, c)
   | Unary (NEG, e) -> Unary (NEG, distribute (op, c) e)
   | Binary (binop, _, _) as expr when binop = POW -> Binary (op, expr, c)
-  | Binary (binop, e, Cst a) when binop = op -> Binary (op, e, Binary (MUL, Cst a, c))
-  | Binary (binop, Cst a, e) when binop = op -> Binary (op, Binary (op, Cst a, c), e)
-  | Binary (DIV|MUL as binop, Cst a, e) -> Binary (binop, Binary (op, Cst a, c), e)
-  | Binary (DIV, e, Cst a) -> Binary (op, e, Binary (DIV, c, Cst a))
-  | Binary (MUL, e, Cst a) -> Binary (MUL, e, Binary (op, Cst a, c))
+  | Binary (binop, e, Cst (a,annt)) when binop = op -> Binary (op, e, Binary (MUL, Cst (a,annt), c))
+  | Binary (binop, Cst (a,annt), e) when binop = op -> Binary (op, Binary (op, Cst (a,annt), c), e)
+  | Binary (DIV|MUL as binop, Cst (a,annt), e) -> Binary (binop, Binary (op, Cst (a,annt), c), e)
+  | Binary (DIV, e, Cst (a,annt)) -> Binary (op, e, Binary (DIV, c, Cst (a,annt)))
+  | Binary (MUL, e, Cst (a,annt)) -> Binary (MUL, e, Binary (op, Cst (a,annt), c))
   | Binary (binop, e1, e2) -> Binary (binop, distribute (op, c) e1, distribute (op, c) e2)
 
 let rec expand = function
   | Funcall (name, args) -> Funcall (name, args)
-  | Cst c -> Cst c
+  | Cst (c,ant) -> Cst (c,ant)
   | Var v -> Var v
   | Unary (unop, e) -> Unary (unop, expand e)
-  | Binary (MUL, Cst c, e) | Binary (MUL, e, Cst c) -> distribute (MUL, Cst c) e
-  | Binary (DIV, e, Cst c) -> distribute (DIV, Cst c) e
+  | Binary (MUL, Cst (c,ant), e) | Binary (MUL, e, Cst (c,ant)) -> distribute (MUL, Cst (c,ant)) e
+  | Binary (DIV, e, Cst (c,ant)) -> distribute (DIV, Cst (c,ant)) e
   | Binary (binop, e1, e2) -> Binary (binop, expand e1, expand e2)
 
+
+let join_annot a b =
+  match a,b with
+  | Int,Int -> Int
+  | _ -> Real
 
 (* simplifies elementary function *)
 let rec simplify_expr expr change =
   (* Format.printf "  --> %a@." print_expr expr; *)
   match expr with
   | Funcall (name, args) -> (Funcall (name, args), change)
-  | Cst c -> (Cst c, change)
+  | Cst (c,ant) -> (Cst (c,ant), change)
   | Var v -> (Var v, change)
   | Unary (NEG, e) ->
     (match e with
-     | Cst a when is_zero a -> (zero, true)
-     | Cst a -> (Cst (Mpqf.neg a), true)
+     | Cst (c,ant) when is_zero c -> (zero, true)
+     | Cst (c,ant) -> (Cst ((Mpqf.neg c),ant), true)
      | Unary (NEG, e') -> simplify_expr e' true
-     | Binary (SUB, Cst a, Cst b) -> (Cst (Mpqf.sub b a), true)
+     | Binary (SUB, Cst (a,ant), Cst (b,ant')) -> (Cst ((Mpqf.sub b a),ant), true)
      | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
      | _ -> let (e', b) = simplify_expr e change in (Unary (NEG, e'), b)
     )
@@ -296,57 +304,60 @@ let rec simplify_expr expr change =
     (match b with
      | ADD ->
        (match e1, e2 with
-        | Cst a, Cst b -> (Cst (Mpqf.add a b), true)
-        | Cst z, e2 when is_zero z -> simplify_expr e2 change
-        | e1, Cst z when is_zero z -> simplify_expr e1 change
-        | e1 , Cst c when is_neg c -> simplify_expr (Binary(SUB, e1, Cst (Mpqf.neg c))) true
-        | Cst c, e1 when is_neg c -> simplify_expr (Binary(SUB, e1, Cst (Mpqf.neg c))) true
+        | Cst (a,ant), Cst (b,ant') -> (Cst ((Mpqf.add a b),join_annot ant ant'), true)
+        | Cst (z,annot), e2 when is_zero z -> simplify_expr e2 change
+        | e1, Cst (z,annot) when is_zero z -> simplify_expr e1 change
+        | e1 , Cst (c,annot) when is_neg c ->
+           simplify_expr (Binary(SUB, e1, Cst ((Mpqf.neg c),annot))) true
+        | Cst (c,annot), e1 when is_neg c ->
+           simplify_expr (Binary(SUB, e1, Cst ((Mpqf.neg c),annot))) true
         | e1, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
         | Unary(NEG, e), e2 -> simplify_expr (Binary(SUB, e2, e)) true
         | e1, e2 -> apply simplify_expr e1 e2 change ADD
        )
      | SUB ->
        (match e1, e2 with
-        | Cst a, Cst b -> (Cst (Mpqf.sub a b), true)
-        | Cst c, _ when is_zero c-> let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
-        | _, Cst c when is_zero c -> simplify_expr e1 change
-        | e1 , Cst c when is_neg c -> simplify_expr (Binary(ADD, e1, Cst (Mpqf.neg c))) true
-        | Cst c, e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(ADD, e1, Cst (Mpqf.neg c)))) true
+        | Cst (a,ant), Cst (b,ant') -> (Cst ((Mpqf.sub a b),(join_annot ant ant')), true)
+        | Cst (c,annt), _ when is_zero c->
+           let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
+        | _, Cst (c,ant) when is_zero c -> simplify_expr e1 change
+        | e1 , Cst (c,ant') when is_neg c -> simplify_expr (Binary(ADD, e1, Cst ((Mpqf.neg c),ant'))) true
+        | Cst (c,ant), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(ADD, e1, Cst ((Mpqf.neg c),ant)))) true
         | _, Unary(NEG, e) -> simplify_expr (Binary(ADD, e1, e)) true
         | Unary(NEG, e), _ -> simplify_expr (Unary(NEG, (Binary(ADD, e, e2)))) true
         | _, _ -> apply simplify_expr e1 e2 change SUB
        )
      | MUL ->
        (match e1, e2 with
-        | Cst a, Cst b -> (Cst (Mpqf.mul a b), true)
-        | Cst c, _ when is_zero c -> (zero, true)
-        | _, Cst c when is_zero c -> (zero, true)
-        | Cst c, _ when Mpqf.equal one_val c -> simplify_expr e2 change
-        | _, Cst c when Mpqf.equal one_val c -> simplify_expr e1 change
-        | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst (Mpqf.neg c))))) true
-        | Cst c, e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst (Mpqf.neg c)))) true
+        | Cst (a,ant), Cst (b,ant') -> (Cst ((Mpqf.mul a b),join_annot ant ant'), true)
+        | Cst (c,annot), _ when is_zero c -> (zero, true)
+        | _, Cst (c,annot) when is_zero c -> (zero, true)
+        | Cst (c,annot), _ when Mpqf.equal one_val c -> simplify_expr e2 change
+        | _, Cst (c,annot) when Mpqf.equal one_val c -> simplify_expr e1 change
+        | e1 , Cst (c,annot) when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst ((Mpqf.neg c),annot))))) true
+        | Cst (c,annt), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst ((Mpqf.neg c),annt)))) true
         | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
         | _, _ -> apply simplify_expr e1 e2 change MUL
        )
      | DIV ->
        (match e1, e2 with
-        | _, Cst c when is_zero c -> (zero, true) (* TODO treat NaN *)
-        | Cst c, _ when is_zero c -> (zero, true)
-        | Cst a, Cst b when Mpqf.equal a b -> (one, true)
-        | Cst a, Cst b when Mpqf.equal a (Mpqf.neg b) -> (Cst (Mpqf.of_int (-1)), true)
-        | Cst a, Cst b -> (Cst (Mpqf.div a b), true)
-        | _, Cst c when Mpqf.equal c one_val -> simplify_expr e1 change
-        | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
-        | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(DIV, e1, Cst (Mpqf.neg c))))) true
-        | Cst c, e2 when is_neg c -> simplify_expr (Unary(NEG, Binary(DIV, Cst (Mpqf.neg c), e2))) true
+        | _, Cst (c,ant) when is_zero c -> (zero, true) (* TODO treat NaN *)
+        | Cst (c,ant), _ when is_zero c -> (zero, true)
+        (* | Cst a, Cst b when Mpqf.equal a b -> (one, true)
+         * | Cst a, Cst b when Mpqf.equal a (Mpqf.neg b) -> (Cst (Mpqf.of_int (-1)), true)
+         * | Cst a, Cst b -> (Cst (Mpqf.div a b), true)
+         * | _, Cst c when Mpqf.equal c one_val -> simplify_expr e1 change
+         * | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
+         * | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(DIV, e1, Cst (Mpqf.neg c))))) true
+         * | Cst c, e2 when is_neg c -> simplify_expr (Unary(NEG, Binary(DIV, Cst (Mpqf.neg c), e2))) true *)
         | _, _ -> apply simplify_expr e1 e2 change DIV
        )
      | POW ->
        (match e1, e2 with
-        | Cst a, Cst b -> (Cst (power a b), true)
-        | Cst c, _ when is_zero c -> (zero, true)
-        | _, Cst c when is_zero c -> (one, true)
-        | _, Cst c when Mpqf.equal one_val c -> simplify_expr e1 change
+        (* | Cst a, Cst b -> (Cst (power a b), true)
+         * | Cst c, _ when is_zero c -> (zero, true)
+         * | _, Cst c when is_zero c -> (one, true)
+         * | _, Cst c when Mpqf.equal one_val c -> simplify_expr e1 change *)
         | _, _ -> apply simplify_expr e1 e2 change POW
        )
     )
@@ -366,8 +377,8 @@ let rec simplify_bexpr = function
 
 let left_hand_side (op, e1, e2) =
   match e1, e2 with
-  | Cst c, _  when is_zero c-> (inv op, e2)
-  | _, Cst c when is_zero c -> (op, e1)
+  | Cst (c,ant), _  when is_zero c-> (inv op, e2)
+  | _, Cst (c,ant) when is_zero c -> (op, e1)
   | _, _ -> (op, simplify_fp (Binary (SUB, e1, e2)))
 
 let rec left_hand = function
@@ -459,17 +470,17 @@ let add_constr csp c =
 
 (* converts a domain representation to a couple of constraints *)
 let domain_to_constraints : assign -> bexpr =
-  let of_singleton v f = Cmp (EQ, Var v, Cst f) in
+  let of_singleton v f = Cmp (EQ, Var v, Cst (f,Real)) in
   fun (_,v,d) ->
   match d with
-  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst l), (Cmp (LEQ, Var v, Cst h)))
-  | Minf (i) -> Cmp(LEQ, Var v, Cst i)
-  | Inf (i) -> Cmp(GEQ, Var v, Cst i)
+  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst (l,Real)), (Cmp (LEQ, Var v, Cst (h,Real))))
+  | Minf (i) -> Cmp(LEQ, Var v, Cst (i,Real))
+  | Inf (i) -> Cmp(GEQ, Var v, Cst (i,Real))
   | Set (h::tl) ->
      List.fold_left (fun acc e ->
          Or(acc, of_singleton v e)
        ) (of_singleton v h) tl
-  | _ -> Cmp(EQ, Cst (Mpqf.of_int 1), Cst (Mpqf.of_int 1))
+  | _ -> Cmp(EQ, Cst ((Mpqf.of_int 1),Int), (Cst ((Mpqf.of_int 1),Int)))
 
 (* iter on expr*)
 let rec iter_expr f = function
@@ -528,7 +539,7 @@ let rec neg_bexpr = function
 
 let rec replace_cst_expr (id, cst) expr =
   match expr with
-  | Var v when v = id -> Cst cst
+  | Var v when v = id -> Cst (cst,Real)
   | Unary (op, e) -> Unary (op, replace_cst_expr (id, cst) e)
   | Binary (op, e1, e2) -> Binary (op, replace_cst_expr (id, cst) e1, replace_cst_expr (id, cst) e2)
   | Funcall (v, e) -> Funcall (v, List.map(replace_cst_expr (id, cst))e)
@@ -539,16 +550,16 @@ let rec replace_cst_bexpr cst = function
   | And (b1, b2) -> And (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Not b -> Not (replace_cst_bexpr cst b)
-           
+
 module Variables = Set.Make(struct type t=var let compare=compare end)
 
 let rec get_vars_expr = function
-  | Cst c              -> []
+  | Cst (c,_)          -> []
   | Var v              -> [v]
   | Unary (_, e)       -> get_vars_expr e
   | Binary (_, e1, e2) -> List.rev_append (get_vars_expr e1) (get_vars_expr e2)
   | Funcall (_,args)   -> List.concat (List.map get_vars_expr args)
-                        
+
 let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
 
 let rec get_vars_bexpr = function
@@ -571,8 +582,8 @@ let replace_cst_jacob (id, cst) jacob =
 
 
 let from_cst_to_expr (id, (l, u)) =
-  if l = u then [(Var id, EQ, Cst l)]
-  else [(Var id, GEQ, Cst l); (Var id, LEQ, Cst u)]
+  if l = u then [(Var id, EQ, Cst (l,Real))]
+  else [(Var id, GEQ, Cst (l,Real)); (Var id, LEQ, Cst (u,Real))]
 
 let csts_to_expr csts =
   List.fold_left (fun l cst -> List.append (from_cst_to_expr cst) l) [] csts

@@ -181,14 +181,14 @@ module Make(B:BOUND) = struct
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l)),
-                           (Csp.LT, Csp.Cst(B.to_rat h)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l)),
-                          (Csp.LEQ, Csp.Cst(B.to_rat h)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
-                          (Csp.LT, Csp.Cst(B.to_rat h)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
-                         (Csp.LEQ, Csp.Cst(B.to_rat h)))
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l,Real)),
+                           (Csp.LT, Csp.Cst(B.to_rat h,Real)))
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l,Real)),
+                          (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
+                          (Csp.LT, Csp.Cst(B.to_rat h,Real)))
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
+                         (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
 
    (************************************************************************)
   (* SET-THEORETIC *)
@@ -338,7 +338,7 @@ module Make(B:BOUND) = struct
 
   let div_sgn ((l1,h1):t) ((l2,h2):t) : t =
     if  B.sign (snd h2) = 0 then
-      (Large, B.minus_inf), 
+      (Large, B.minus_inf),
       max_up  (l1 /@ l2) (h1 /@ l2)
     else if B.sign (snd l2) = 0 then
       (min_low  (l1 /$ h2) (h1 /$ h2)),
@@ -408,13 +408,13 @@ module Make(B:BOUND) = struct
 
   let b_one = (Large, B.one)
   let b_minus_one = (Large, B.minus_one)
-            
+
 
   type quadrant = | One
 		  | Two
 		  | Three
 		  | Four
-                  
+
   (* Returns the quadrant in which the bound is. the value must be in [0, 2pi[ *)
   let quadrant value =
     if B.leq value (snd (fst i_pi_half)) then One
@@ -442,11 +442,11 @@ module Make(B:BOUND) = struct
   let bf f (k1, v1) (k2, v2) =
     if B.equal (f v1 v2) v1 then (k1, v1)
     else (k2, v2)
-    
+
 
   let uf f (k, v) =
     (k, f v)
-    
+
 
   let sin ((((kl,l) as lb), ((kh,h) as lh)):t) : t =
     let diam = range (lb, lh) in
@@ -457,20 +457,20 @@ module Make(B:BOUND) = struct
       and q_sup = quadrant h' in
       match q_inf, q_sup with
       | a, b when a = b && B.gt l' h' -> (b_minus_one, b_one)
-                                       
+
       | One, One | Four, Four | Four, One
         -> mon_incr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
       | Two, Two | Three, Three | Two, Three
         -> mon_decr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
-                                     
+
       | One, Two | Four, Three -> (bfg B.min B.sin_down (kl  , l') (kh, h'), (Large, B.one))
       | Two, One | Three, Four -> (b_minus_one, bfg B.max B.sin_up (kl, l') (kh, h'))
-                             
+
       | One, Three -> (uf B.sin_down (kh, h'), b_one)
       | Two, Four -> (b_minus_one, uf B.sin_up (kl, l'))
       | Three, One -> (b_minus_one, uf B.sin_up (kh, h'))
       | Four, Two -> (uf B.sin_down (kl, l'), b_one)
-                   
+
       | _ -> (b_minus_one, b_one)
 
   let cos (itv:t) : t = sin (add itv i_pi_half)
@@ -496,7 +496,7 @@ module Make(B:BOUND) = struct
     let itv' = tan (add itv i_pi_half) in
     neg itv'
 
-  let asin (((kl, l), (kh, h)):t) : t bot = 
+  let asin (((kl, l), (kh, h)):t) : t bot =
     if B.lt h B.minus_one || B.gt l B.one then Bot
     else
       let is_minus_one = B.lt l B.minus_one
@@ -728,7 +728,7 @@ module Make(B:BOUND) = struct
     in meet itv aux
 
   (* r = sin i => i = arcsin r *)
-  let filter_sin i r = 
+  let filter_sin i r =
     let asin_r = asin r in
     let (aux, _) = div (add i i_pi_half) i_pi in
     match (aux, asin_r) with
@@ -751,7 +751,7 @@ module Make(B:BOUND) = struct
         (Bot.join_bot2 join !itv !itv')
 
   (* r = cos i => i = arccos r *)
-  let filter_cos i r = 
+  let filter_cos i r =
     let acos_r = acos r in
     let (aux, _) = div i i_pi in
     match (aux, acos_r) with
@@ -775,7 +775,7 @@ module Make(B:BOUND) = struct
         (Bot.join_bot2 join !itv !itv')
 
   (* r = atan i => i = tan r *)
-  let filter_tan i r = 
+  let filter_tan i r =
     let atan_r = atan r in
     let (aux, _) = div (add i i_pi_half) i_pi in
     (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
@@ -832,14 +832,14 @@ module Make(B:BOUND) = struct
     merge_bot2 (meet i (pow r n)) (Nb n)
 
   (* r = min (i1, i2) *)
-  let filter_min (l1, u1) (l2, u2) (lr, ur) = 
+  let filter_min (l1, u1) (l2, u2) (lr, ur) =
     merge_bot2 (check_bot (bf B.max l1 lr, bf B.max u1 ur)) (check_bot (bf B.max l2 lr, bf B.max u2 ur))
 
   (* r = max (i1, i2) *)
   let filter_max (l1, u1) (l2, u2) (lr, ur) =
     merge_bot2 (check_bot (bf B.min l1 lr, bf B.min u1 ur)) (check_bot (bf B.min l2 lr, bf B.min u2 ur))
 
-  let filter_fun name args r : (t list) bot = 
+  let filter_fun name args r : (t list) bot =
     let arity_1 (f: t -> t -> t bot) : (t list) bot =
       match args with
       | [i] ->
