@@ -177,7 +177,7 @@ args:
   | expr TOK_COMMA args {$1::$3}
 
 leaf:
-  | TOK_const                           { Cst $1 }
+  | TOK_const                           { Cst ($1,Real) }
   | TOK_id                              { Var $1 }
 
 binop_expr:

@@ -236,7 +236,7 @@ let split_along (a:t) (v:var) : t list =
           with Not_found -> failwith ("variable not found: "^v)
         in
         BVar n, r
-    | Cst c ->
+    | Cst (c,_) ->
         let r = I.of_rat c in
         BCst r, r
     | Unary (o,e1) ->

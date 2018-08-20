@@ -108,8 +108,8 @@ module Itv(B:BOUND) = struct
     | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
 
   let to_expr ((l, h):t) =
-    ((Csp.GEQ, Csp.Cst(B.to_rat l)),
-     (Csp.LEQ, Csp.Cst(B.to_rat h)))
+    ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
+     (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -395,12 +395,12 @@ module Itv(B:BOUND) = struct
       if might_intersect q_inf q_sup && B.geq diam pi then minus_one_one else
         match q_inf, q_sup with
         | a, b when a = b && B.gt l' h' -> (B.minus_one, B.one)
-                                         
+
         | One, One -> (B.sin_down l', B.sin_up h')
         | Two, Two -> (B.sin_down h', B.sin_up l')
         | Three, Three -> (B.sin_down h', B.sin_up l')
         | Four, Four -> (B.sin_down l', B.sin_up h')
-                                       
+
         | AroundPi, AroundPi -> (B.sin_down h', B.sin_up l')
         | AroundThreePiHalf, AroundThreePiHalf -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
         | AroundTwoPi, AroundTwoPi -> (B.sin_down l', B.sin_up h')
@@ -409,10 +409,10 @@ module Itv(B:BOUND) = struct
           -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
         | (Two | AroundPi | Three), AroundThreePiHalf | AroundThreePiHalf, (Four | One)
           -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
-                                
+
         | (One | Two), AroundPi -> (B.sin_down h', B.sin_up l')
         | AroundPi, (Three | Four) -> (B.sin_down h', B.sin_up l')
-                                        
+
         | One, Two | Four, Three -> (B.min (B.sin_down l') (B.sin_down h'), B.one)
         | Two, One | Three, Four -> (B.minus_one, B.max (B.sin_up l') (B.sin_up h'))
         | Two, Three -> (B.sin_down h', B.sin_up l')

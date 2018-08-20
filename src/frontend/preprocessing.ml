@@ -43,7 +43,7 @@ let rec get_cst_value expr c =
   match expr with
   | Binary (ADD, e1, e2) ->
      (match e1, e2 with
-      | Cst a, e | e, Cst a -> (e, Mpqf.add c a)
+      | Cst (a,annot), e | e, Cst (a,annot) -> (e, Mpqf.add c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
@@ -51,8 +51,8 @@ let rec get_cst_value expr c =
      )
   | Binary (SUB, e1, e2) ->
      (match e1, e2 with
-      | Cst a, e -> (Unary (NEG, e), Mpqf.add c a)
-      | e, Cst a -> (e, Mpqf.sub c a) 
+      | Cst (a,annot), e -> (Unary (NEG, e), Mpqf.add c a)
+      | e, Cst (a,annot) -> (e, Mpqf.sub c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
@@ -72,7 +72,7 @@ let rewrite_ctr (op, e1, e2) =
 let rewrite_constraint = function
   | Cmp (op, e1, e2) ->
      let (e, c, negc) = rewrite_ctr (op, e1, e2) in
-     Cmp (op, e, Cst negc)
+     Cmp (op, e, Cst (negc,Real))
   | _ as c -> c
 
 let filter_cstrs ctr_vars consts =
@@ -86,14 +86,14 @@ let filter_cstrs ctr_vars consts =
             match e with
             | Var var -> (cstr, (var, (negc, negc))::csts, true)
             | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
-            | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
-            | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
+            | Binary(MUL, Var var, Cst (a,annot)) | Binary(MUL, Cst (a,annot), Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
+            | Unary(NEG, (Binary(MUL, Var var, Cst (a,annot)))) |  Unary(NEG, (Binary(MUL, Cst (a,annot), Var var))) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
             | _ -> ((c, v)::cstr, csts, b))
         | _ -> ((c, v)::cstr, csts, b)
       else ((c, v)::cstr, csts, b)
     ) ([], consts, false) ctr_vars
 
-  
+
 let rec repeat ctr_vars csts =
   let ctrs = replace_cst ctr_vars csts in
   let (ctrs', csts', b) = filter_cstrs ctrs csts in
@@ -104,7 +104,7 @@ let rec repeat ctr_vars csts =
 
 
 
-  
+
 
 
 let rec view e1 e2 =
@@ -136,7 +136,7 @@ let rec view e1 e2 =
 
 
 
-            
+
 let rec replace_view_expr ((id, e) as view) expr =
   match expr with
   | Var v when v = id -> e
@@ -180,18 +180,18 @@ let rec aux_view ctrs views = function
   | [] -> (ctrs, views)
   | (Cmp (EQ, e1, e2) as c, v)::t when is_cons_linear c && Variables.cardinal v = 2 ->
      let (e, _, value) = rewrite_ctr (EQ, e1, e2) in
-     let (tmp, tmp2) as new_view = rep_in_view (view e (Cst value)) views in
+     let (tmp, tmp2) as new_view = rep_in_view (view e (Cst (value,Real))) views in
      let views' = rep_view new_view views in
      let t' = rep_view_ctr new_view t in
      aux_view ctrs (new_view::views') t'
   | (c, v)::t ->
      aux_view ((c, v)::ctrs) views t
-  
+
 
 let get_views ctr_vars =
   aux_view [] [] ctr_vars
 
-  
+
 let rec find_all_views ctrs =
   let (ctrs, vws) = get_views ctrs in
   let views = List.map (fun (id, e) -> (id, e)) vws in
@@ -201,13 +201,13 @@ let rec find_all_views ctrs =
     (views@v, c)
   else
     ([], ctrs)
-  
+
 
 let to_domains (e, d) =
   match d with
-  | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
-  | Minf (i) -> [Cmp(LEQ, e, Cst i)]
-  | Inf (i) -> [Cmp(GEQ, e, Cst i)]
+  | Finite (l,h) -> [Cmp(GEQ, e, Cst (l,Real)); Cmp(LEQ, e, Cst (h,Real))]
+  | Minf (i) -> [Cmp(LEQ, e, Cst (i,Real))]
+  | Inf (i) -> [Cmp(GEQ, e, Cst (i,Real))]
   | _ -> []
 
 
@@ -229,19 +229,19 @@ let no_views csp =
   let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) p.init in
 
   {p with init = vars; constants = csts; constraints = ctrs}
-  
 
-  
+
+
 
 let rec preprocess csp =
   let nb_eq = get_nb_eq csp in
-  
+
   let p = get_csts csp in
   let ctr_vars = get_vars_cstrs p.constraints in
   let (ctrs, csts) = repeat ctr_vars p.constants in
-  
 
-  
+
+
   let (views, ctrs') = find_all_views ctrs in
 
   let (ctrs, _) = List.split ctrs' in

@@ -83,14 +83,14 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Unary (Csp.NEG, Cst i)-> Csp.Cst (Mpqf.neg i)
+  | Unary (Csp.NEG, Cst i)-> Csp.Cst (Mpqf.neg i,Real)
   | Unary (u, e)-> Csp.Unary (u,to_csp e)
   | Binary (b, e1, e2)->
      let e1' = to_csp e1
      and e2' = to_csp e2
      in Csp.Binary (b,e1',e2')
   | Var v -> Csp.Var v
-  | Cst i -> Csp.Cst i
+  | Cst i -> Csp.Cst (i,Real)
   | Array (v,i) -> failwith ("can't convert "^v^"["^(string_of_int i)^"]")
 
 (* to csp expr conversion *)
