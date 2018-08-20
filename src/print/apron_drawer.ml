@@ -20,10 +20,10 @@ module Make(AP:ADomain) = struct
 
   let print = Abstract1.print
 
-  let bound abs v :(float * float) =
+  let bound abs v =
     let i = A.bound_variable man abs (Apron.Var.of_string v) in
     let open Interval in
-    Apron_utils.(scalar_to_float i.inf,scalar_to_float i.sup)
+    Apron_utils.(scalar_to_mpqf i.inf,scalar_to_mpqf i.sup)
 
   let is_empty = A.is_bottom man
 

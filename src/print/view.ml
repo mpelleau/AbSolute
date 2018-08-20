@@ -8,6 +8,11 @@ and y_max = ref 0.
 and sx = ref 0.
 and sy = ref 0.
 
+let to_float (a, b) =
+  (Mpqf.to_float a, Mpqf.to_float b)
+
+let l_to_float l = List.map (to_float) l
+
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
 
@@ -56,8 +61,18 @@ let normalize p =
   to_coord (!x_min,!x_max) (!y_min,!y_max) p
 
 let fill_circle a b r =
+  let a, b = to_float (a, b) in
   let a,b = normalize (a,b) in
   fill_circle a b r
+
+let fill_poly_mpqf l col =
+  set_color col;
+  let l = l_to_float l in
+  let l = graham_sort l in
+  let n = List.length l in
+  let arr = Array.make n (0,0) in
+  List.iteri (fun i (x,y) -> arr.(i) <- normalize (x,y)) l;
+  fill_poly arr
 
 let fill_poly l col =
   set_color col;
@@ -74,6 +89,14 @@ let draw_poly l col =
   let arr = Array.make n (0,0) in
   List.iteri (fun i (x,y) -> arr.(i) <- normalize (x,y)) l;
   draw_poly arr
+
+let draw_seg_mpqf p1 p2 col =
+  set_color col;
+  let p1 = to_float p1 and
+      p2 = to_float p2 in
+  let x1,y1 = normalize p1
+  and x2,y2 = normalize p2
+  in draw_segments [|(x1, y1, x2, y2)|]
 
 let draw_seg p1 p2 col =
   set_color col;

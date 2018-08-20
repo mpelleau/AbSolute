@@ -37,7 +37,7 @@ let get env name i =
 
 (*replaces the param by the expression they represent*)
 let rec substitute env = function
-  | Unary (Csp.NEG, Cst i) -> Cst (-.i)
+  | Unary (Csp.NEG, Cst i) -> Cst (Mpqf.neg i)
   | Unary (u, e)-> Unary (u,substitute env e)
   | Binary (b, e1, e2)->
      let e1' = substitute env e1
@@ -61,12 +61,12 @@ let rec substitute_constr env =
 
 (* force evaluation of some expressions *)
 let evaluate env expr =
-  let unary = function Csp.NEG -> fun x -> (-. x) in
+  let unary = function Csp.NEG -> fun x -> (Mpqf.neg x) in
   let binary = function
-    | Csp.ADD -> (+.)
-    | Csp.SUB -> (-.)
-    | Csp.DIV -> (/.)
-    | Csp.MUL -> ( *. )
+    | Csp.ADD -> (Mpqf.add)
+    | Csp.SUB -> (Mpqf.sub)
+    | Csp.DIV -> (Mpqf.div)
+    | Csp.MUL -> (Mpqf.mul)
     | x -> Format.printf "cant evaluate binary operator:%a\n" Csp.print_binop x;
            failwith "evaluation error"
   in
@@ -83,7 +83,7 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Unary (Csp.NEG, Cst i)-> Csp.Cst (-.i)
+  | Unary (Csp.NEG, Cst i)-> Csp.Cst (Mpqf.neg i)
   | Unary (u, e)-> Csp.Unary (u,to_csp e)
   | Binary (b, e1, e2)->
      let e1' = to_csp e1
@@ -116,8 +116,8 @@ and set = expr * expr
 type t = modstmt list
 
 let eval_set env (inf,sup) =
-  (evaluate env inf |> int_of_float),
-  (evaluate env sup |> int_of_float)
+  (evaluate env inf |> Mpqf.to_float |> int_of_float),
+  (evaluate env sup |> Mpqf.to_float |> int_of_float)
 
 let toCsp m =
   let add (env,csp) = function

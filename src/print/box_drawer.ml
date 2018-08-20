@@ -16,7 +16,7 @@ module Make(A:Adcp_sig.AbstractCP) = struct
 
     List.fold_left (fun a c -> A.filter a c) a csts_expr
 
-               
+    
   let draw draw_f fillpol abs (v1,v2) col =
     let ((xl,xu) as i1) = bound abs v1 and ((yl,yu) as i2) = bound abs v2 in
     fillpol [(xl,yl);(xl,yu);(xu,yu);(xu,yl)] col;
@@ -33,13 +33,14 @@ module Make(A:Adcp_sig.AbstractCP) = struct
     let (xl,xu) = bound abs v1 and (yl,yu) = bound abs v2 in
     fillbox (xl,yl) (xu,yu) col
 
-  let draw2d = View.(draw draw_seg fill_poly)
+  let draw2d =
+    draw View.draw_seg_mpqf View.fill_poly_mpqf
 
   let print_latex fmt = Latex.(fill (filldrawbox fmt))
 
   let draw3d fmt abs_list (v1,v2,v3) =
     let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
-    let cube e = make_cube (bound e v1) (bound e v2) (bound e v3) in
+    let cube e = make_cube (View.to_float (bound e v1)) (View.to_float (bound e v2)) (View.to_float (bound e v3)) in
     let cubes = List.rev_map (fun e -> cube e) abs_list in
     let o = Objgen.build_cube_list cubes in
     Format.fprintf fmt "%a" Objgen.print o

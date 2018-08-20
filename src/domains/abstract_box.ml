@@ -203,16 +203,17 @@ let split_along (a:t) (v:var) : t list =
 
   and bexpri = bexpr * i
 
-  (*let rec test_print fmt (b:bexpr) =
+  let rec print_bexpri fmt (b, i) =
     match b with
-    | BUnary (NEG, (bi,i)) ->
-      Format.fprintf fmt "(- %a) -> %a" test_print bi I.print i
-    | BUnary (u, (bi,i)) ->
-      Format.fprintf fmt "%a %a -> %a" print_unop u test_print bi I.print i
-    | BBinary (b, (e1,i1) , (e2,i2)) ->
-      Format.fprintf fmt "(%a -> %a) %a (%a -> %a)" test_print e1 I.print i1 print_binop b test_print e2 I.print i2
+    | BUnary (u, bi) ->
+      Format.fprintf fmt "(%a %a) -> %a" print_unop u print_bexpri bi I.print i
+    | BBinary (op, e1, e2) ->
+      Format.fprintf fmt "(%a %a %a) -> %a" print_bexpri e1 print_binop op print_bexpri e2 I.print i
     | BVar v -> Format.fprintf fmt "%s" v
-    | BCst c -> Format.fprintf fmt "cst %a" I.print c*)
+    | BCst c -> Format.fprintf fmt "cst %a" I.print c
+    | BFuncall (f, l) -> Format.fprintf fmt "%s (" f;
+                         List.iter (print_bexpri fmt) l;
+                         Format.fprintf fmt ") -> %a" I.print i
 
   (* interval evaluation of an expression;
      returns the interval result but also an expression tree annotated with
@@ -236,7 +237,7 @@ let split_along (a:t) (v:var) : t list =
         in
         BVar n, r
     | Cst c ->
-        let r = I.of_float c in
+        let r = I.of_rat c in
         BCst r, r
     | Unary (o,e1) ->
         let _,i1 as b1 = eval a e1 in
@@ -293,7 +294,7 @@ let split_along (a:t) (v:var) : t list =
      iterating eval and refine can lead to better reults (but is more costly);
      can raise Bot_found *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
-    (* Format.printf "%a %a %a\n" print a test_print e I.print x;*)
+    (*Format.printf "%a\n" print_bexpri (e, x);*)
     match e with
     | BFuncall(name,args) ->
        let bexpr,itv = List.split args in
@@ -322,7 +323,7 @@ let split_along (a:t) (v:var) : t list =
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
-    (*Format.printf "%a, %a %a %a, %a\n" test_print b1 I.print i1   print_cmpop o   test_print b2 I.print i2;*)
+    (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
     let j = match o with
     | EQ -> I.filter_eq i1 i2
     | LEQ -> I.filter_leq i1 i2
@@ -362,12 +363,12 @@ let split_along (a:t) (v:var) : t list =
 
   let var_bounds abs var =
     let (itv, _) = find var abs in
-    I.to_float_range itv
+    I.to_rational_range itv
 
   let bounded_vars abs =
     let b = Env.bindings abs in
     let l = List.filter (fun (v, d) -> I.is_singleton d) b in
-    List.map (fun (v, d) -> (v, I.to_float_range d)) l
+    List.map (fun (v, d) -> (v, I.to_rational_range d)) l
 
 
   let rem_var abs var : t =
@@ -378,7 +379,7 @@ let split_along (a:t) (v:var) : t list =
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
-    I.to_float_range bounds
+    I.to_rational_range bounds
 
 
   let rec is_applicable abs (e:expr) : bool =

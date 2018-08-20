@@ -84,7 +84,7 @@ module Make (Abs : AbstractCP) = struct
       match obj with
       | Some obj ->
          let (inf, sup) = Abs.forward_eval abs obj in
-         Format.printf "%sabs = %a\tobjective = (%f, %f)@." tab Abs.print abs inf sup
+         Format.printf "%sabs = %a\tobjective = (%s, %s)@." tab Abs.print abs (Mpqf.to_string inf) (Mpqf.to_string sup)
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
   let print_debug_const tab cstrs csts =
@@ -151,11 +151,11 @@ module Make (Abs : AbstractCP) = struct
 
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in
-    let slope = max (abs_float lb) (abs_float ub) in
+    let slope = max (Mpqf.abs lb) (Mpqf.abs ub) in
     let (xl, xu) = Abs.forward_eval abs (Csp.Var v) in
-    let diam = xu -. xl in
-    let value = slope *. diam in
-    (value, (xu +. xl) /. 2.)
+    let diam = Mpqf.sub xu xl in
+    let value = Mpqf.mul slope diam in
+    (value, Mpqf.div (Mpqf.add xu xl) (Mpqf.of_int 2))
 
   let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let (msmear, vsplit, mid) = List.fold_left (
@@ -166,7 +166,7 @@ module Make (Abs : AbstractCP) = struct
             if m < value then (value, v, half)
             else (m, mv, mid)
         ) (m', mv', mid') l
-    ) (-1., "", -1.) jacobian
+    ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 
@@ -180,7 +180,7 @@ module Make (Abs : AbstractCP) = struct
             let (value, half) = get_value abs v e in
             match (Smear.find_opt v m) with
             | None -> Smear.add v (value, half) m
-            | Some (s, _) -> Smear.add v (s +. value, half) m
+            | Some (s, _) -> Smear.add v (Mpqf.add s value, half) m
         ) map l
     ) Smear.empty jacobian
     in
@@ -189,7 +189,7 @@ module Make (Abs : AbstractCP) = struct
       fun var (smear, mi) (m, v, s) ->
         if smear > m then (smear, var, mi)
         else (m, v, s)
-    ) smear (-1., "", -1.)
+    ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 end

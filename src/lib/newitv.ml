@@ -44,9 +44,10 @@ module Make(B:BOUND) = struct
 
   let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_down
 
-  let ( /@ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_up
+  let ( /@ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_up
 
-  let ( /$ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_down
+  (*let ( /$ ) rb1 rb2 = *)
+  let ( /$ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_down
 
   type t = real_bound * real_bound
 
@@ -147,6 +148,10 @@ module Make(B:BOUND) = struct
 
   let of_float (x:float) : t = of_floats x x
 
+  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
+
+  let of_rat (x:Mpqf.t) = of_rats x x
+
   let hull (x:B.t) (y:B.t) : t =
     try large x y
     with Failure _ -> large y x
@@ -176,14 +181,14 @@ module Make(B:BOUND) = struct
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
-                           (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_float_down l)),
-                          (Csp.LEQ, Csp.Cst(B.to_float_up h)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-                          (Csp.LT, Csp.Cst(B.to_float_up h)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-                         (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l)),
+                           (Csp.LT, Csp.Cst(B.to_rat h)))
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l)),
+                          (Csp.LEQ, Csp.Cst(B.to_rat h)))
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+                          (Csp.LT, Csp.Cst(B.to_rat h)))
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+                         (Csp.LEQ, Csp.Cst(B.to_rat h)))
 
    (************************************************************************)
   (* SET-THEORETIC *)
@@ -332,8 +337,15 @@ module Make(B:BOUND) = struct
     max_up  (max_up  (l1 *@ l2) (l1 *@ h2)) (max_up  (h1 *@ l2) (h1 *@ h2))
 
   let div_sgn ((l1,h1):t) ((l2,h2):t) : t =
-    min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
-    max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
+    if  B.sign (snd h2) = 0 then
+      (Large, B.minus_inf), 
+      max_up  (l1 /@ l2) (h1 /@ l2)
+    else if B.sign (snd l2) = 0 then
+      (min_low  (l1 /$ h2) (h1 /$ h2)),
+      (Large, B.inf)
+    else
+      min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
+      max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
 
   let div (i1:t) (i2:t) : t bot * bool =
     let pos = (lift_bot (div_sgn i1)) (meet i2 positive) in
@@ -649,7 +661,9 @@ module Make(B:BOUND) = struct
   (* r = i*c => (i = r/c \/ c=r=0) *)
   let filter_mul_f (i:t) (c:t) (r:t) : t bot =
     if contains r B.zero && contains c B.zero then Nb i
-    else match fst (div r c) with Bot -> Bot | Nb x -> meet i x
+    else match fst (div r c) with
+         | Bot -> Bot
+         | Nb x -> meet i x
 
   (* r = i/c => i = r*c *)
   let filter_div_f (i:t) (c:t) (r:t) : t bot =
@@ -857,6 +871,8 @@ module Make(B:BOUND) = struct
   let filter_bounds (l,h) = failwith "todo filter_bound"
 
   let to_float_range ((_,l),(_,h)) = (B.to_float_down l),(B.to_float_up h)
+
+  let to_rational_range ((_,l),(_,h)) = (B.to_rat l),(B.to_rat h)
 
 end
 

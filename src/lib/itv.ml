@@ -70,9 +70,9 @@ module Itv(B:BOUND) = struct
 
   let of_int (x:int) = of_ints x x
 
-  (* let of_rats (l:Q.t) (h:Q.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h) *)
+  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
 
-  (* let of_rat (x:Q.t) = of_rats x x *)
+  let of_rat (x:Mpqf.t) = of_rats x x
 
   let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
 
@@ -108,8 +108,8 @@ module Itv(B:BOUND) = struct
     | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
 
   let to_expr ((l, h):t) =
-    ((Csp.GEQ, Csp.Cst(B.to_float_down l)),
-     (Csp.LEQ, Csp.Cst(B.to_float_up h)))
+    ((Csp.GEQ, Csp.Cst(B.to_rat l)),
+     (Csp.LEQ, Csp.Cst(B.to_rat h)))
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -275,8 +275,13 @@ module Itv(B:BOUND) = struct
   let bound_div_down = B.bound_div B.div_down
 
   (* helper: assumes i2 has constant sign *)
-  let div_sign =
-    mix4 bound_div_up bound_div_down
+  let div_sign ((l1,h1) as i1) ((l2,h2) as i2) =
+    if  B.sign h2 = 0 then
+      B.minus_inf, B.max (bound_div_up l1 l2) (bound_div_up h1 l2)
+    else if B.sign l2 = 0 then
+      B.min (bound_div_down l1 h2) (bound_div_down h1 h2), B.inf
+    else
+    mix4 bound_div_up bound_div_down i1 i2
 
   (*let printBot fmt i =
     match i with
@@ -316,7 +321,7 @@ module Itv(B:BOUND) = struct
   let ln10 = B.of_float_up 2.3025850
 
   (*the two closest floating boundaries of pi*)
-  let pi_up = B.of_float_up 3.14159265358979356
+  let pi_up   = B.of_float_up   3.14159265358979356
   let pi_down = B.of_float_down 3.14159265358979312
 
   (* it improves soundness to use those *)
@@ -333,6 +338,16 @@ module Itv(B:BOUND) = struct
 		  | AroundPi
 		  | AroundThreePiHalf
 		  | AroundTwoPi
+
+  let print_q = function
+    | One -> "One"
+    | Two -> "Two"
+    | Three -> "Three"
+    | Four -> "Four"
+    | AroundPiHalf -> "AroundPiHalf"
+    | AroundPi -> "AroundPi"
+    | AroundThreePiHalf -> "AroundThreePiHalf"
+    | AroundTwoPi -> "AroundTwoPi"
 
   let might_intersect a b =
     match a,b with
@@ -875,6 +890,9 @@ module Itv(B:BOUND) = struct
 
   let to_float_range (l,h) =
     (B.to_float_down l),(B.to_float_up h)
+
+  let to_rational_range (l, h) =
+    (B.to_rat l), (B.to_rat h)
 
 
 end

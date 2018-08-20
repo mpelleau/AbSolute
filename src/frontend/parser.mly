@@ -41,7 +41,7 @@ open Csp
 %token TOK_INF           /* oo */
 
 %token <string> TOK_id
-%token <float> TOK_const
+%token <Mpqf.t> TOK_const
 
 %token TOK_EOF
 
@@ -93,7 +93,7 @@ domains:
 
 objective:
  | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
- | {Cst(0.)}
+ | {zero}
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
@@ -108,8 +108,12 @@ csts:
   | {[]}
 
 value:
-  | TOK_LBRACKET const TOK_SEMICOLON const TOK_RBRACKET {($2, $4)}
-  | const {($1, $1)}
+  | TOK_LBRACKET rational TOK_SEMICOLON rational TOK_RBRACKET {($2, $4)}
+  | rational {($1, $1)}
+
+rational:
+  | const TOK_DIVIDE const {Mpqf.div $1 $3}
+  | const {$1}
 
 annot2:
  | TOK_DRAW TOK_COLON varlist {$3}
@@ -139,19 +143,19 @@ init:
   | TOK_LBRACKET TOK_MINUS TOK_INF TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET {Top}
   | TOK_LBRACKET TOK_MINF TOK_SEMICOLON const TOK_RBRACKET                     {Minf ($4)}
   | TOK_LBRACKET TOK_MINUS TOK_INF TOK_SEMICOLON const TOK_RBRACKET            {Minf ($5)}
-  | TOK_LBRACKET const TOK_SEMICOLON TOK_INF TOK_RBRACKET                      {Inf ($2)}
-  | TOK_LBRACKET const TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET             {Inf ($2)}
-  | TOK_LBRACKET const TOK_SEMICOLON const TOK_RBRACKET                        {Finite($2,$4)}
+  | TOK_LBRACKET rational TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Inf ($2)}
+  | TOK_LBRACKET rational TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET          {Inf ($2)}
+  | TOK_LBRACKET rational TOK_SEMICOLON rational TOK_RBRACKET                  {Finite($2,$4)}
   | TOK_LBRACE consts TOK_RBRACE                                               {Set($2)}
 
 consts:
-  | const TOK_SEMICOLON consts {$1::$3}
-  | const {[$1]}
+  | rational TOK_SEMICOLON consts {$1::$3}
+  | rational {[$1]}
   | {[]}
 
 const:
   | TOK_const {$1}
-  | TOK_MINUS TOK_const {(-.$2)}
+  | TOK_MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpr:
   | expr cmp expr                       {Cmp ($2, $1, $3)}

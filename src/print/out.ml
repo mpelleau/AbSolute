@@ -22,8 +22,8 @@ module Make (D:Drawer) = struct
     and v2_b = bound_dim v2 sure unsure in
     (match v1_b,v2_b with
     | None, None -> failwith "nothing to draw"
-    | Some(a,b),None | None, Some(a,b) -> View.init (a,b) (1.,1.)
-    | Some(a,b),Some(c,d) -> View.init (a,b) (c,d));
+    | Some(a,b),None | None, Some(a,b) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
+    | Some(a,b),Some(c,d) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
     List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
@@ -93,7 +93,7 @@ module Make (D:Drawer) = struct
       if !trace then traceout res.sure u
 
   let trace_min sure unsure value =
-    Format.printf "best value:%f\n%!" value;
+    Format.printf "best value:%s\n%!" (Mpqf.to_string value);
     traceout sure unsure
 
   let out_min prob res =

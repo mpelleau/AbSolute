@@ -69,7 +69,7 @@ let check_ast p =
     let aux (_, var, d) =
       match d with
       | Finite (f1,f2) -> if f1 > f2 then
-	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%f;%f]" var f1 f2))
+	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%s;%s]" var (Mpqf.to_string f1) (Mpqf.to_string f2)))
       | _ -> ()
     in List.iter aux p.init
   and check_constrs () =
@@ -113,13 +113,15 @@ let parse (filename:string option) : prog =
     | Some s -> s
   in
   let f = open_in filename in
+  Format.printf "file opened\n";
   let lex = from_channel f in
+  Format.printf "lex channel\n";
   let fileparser =
     let ext = Filename.extension filename in
     if ext = ".mod" then begin
         (* Format.printf "mod file detected. parsing with mod parser\n%!"; *)
         (fun lex -> ModParser.stmts ModLexer.token lex |> ModCsp.toCsp)
-      end else Parser.file Lexer.token
+      end else (Format.printf "parsing...\n"; Parser.file Lexer.token)
   in
   try
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
