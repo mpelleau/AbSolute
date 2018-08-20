@@ -1,0 +1,8 @@
+init{
+  int nb = [0;60];
+  real a = [0;100];
+}
+
+constraints{
+  nb * 0.45 = a;
+}

@@ -1,0 +1,7 @@
+init{
+  real x = [0;10];
+}
+
+constraints {
+  x^2 -2*x = 0;
+}

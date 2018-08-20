@@ -1,0 +1,10 @@
+/* pruning test */
+
+init{
+  real x = [-20;20];
+  real y = [-20;20];
+}
+
+constraints{
+  x^2 + y^2 > 25;
+}

@@ -1,0 +1,11 @@
+/* One circle */
+
+init{
+  real x = [-4;4];
+  real y = [-4;4];
+  real z = [-8;8];
+}
+
+constraints{
+  x^2 + y^2 <= 1;
+}

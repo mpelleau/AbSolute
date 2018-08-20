@@ -1,0 +1,9 @@
+init{
+  int i1 =[1;5];
+  real i2 =[1;5];
+  real objvar = [-100.;100.];
+}
+constraints{
+  /* (- 3.) * i1 - 2. * i2 + objvar = 0.;*/
+  (- i1) * i2 < -3.5;
+}

@@ -6,6 +6,6 @@ init{
 }
 
 constraints{
-  |sin(x)| * sqrt (cos (x + 2)) > y^2;
-  |sin (x)| * sqrt (cos (x + 2)) < y^4;
+  |sin(x)| * sqrt (cos(x) + 2) > y^2;
+  |sin(x)| * sqrt (cos(x) + 2) < y^4;
 }

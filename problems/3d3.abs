@@ -5,6 +5,5 @@ init {
 }
 
 constraints{
-  z = (sin (sqrt(x^2 + y^2 + 1)))/ (sqrt(x^2 + y^2 + 1));
+  z = sin(sqrt((x^2 + y^2 + 1))) / sqrt((x^2 + y^2 + 1));
 }
-

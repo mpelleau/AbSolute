@@ -1,3 +1,11 @@
+let xmin = ref 0.
+and xmax = ref 0.
+and ymin = ref 0.
+and ymax = ref 0.
+
+let sx = ref 0.
+let sy = ref 0.
+
 let fff = Format.fprintf
 
 let escape name = Str.(global_replace (regexp "_")) "" name
@@ -8,13 +16,15 @@ let blue_comp rgb = (rgb mod 256 |> float) /. 255.
 
 let rgb_to_latex_col col =
   if col = Graphics.black then "black"
-  else if col = Graphics.green then "green"
+  else if col = Graphics.green then "fill=lightgray"
   else if col = Graphics. blue then "blue"
-  else
-    let r = red_comp col
-    and g = green_comp col
-    and b = blue_comp col in
-    Format.sprintf "{rgb:red,%f;green,%f;blue,%f}" r g b
+  else "fill=sure"
+
+let scale_x x =
+  !sx *. (x -. !xmin) /. (!xmax -. !xmin)
+
+let scale_y y =
+  !sy *. (y -. !ymin) /. (!ymax -. !ymin)
 
 let drawseg fmt (x1,y1) (x2,y2) col =
   let c = rgb_to_latex_col col in
@@ -38,4 +48,19 @@ let filldraw fmt l col =
 
 let filldrawbox fmt (xl, yl) (xu, yu) col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\filldraw[%s, fill opacity = 0.3] (%f, %f) rectangle (%f, %f);@." c xl yl xu yu
+  let xl = scale_x xl in
+  let xu = scale_x xu in
+  let yl = scale_y yl in
+  let yu = scale_y yu in
+  fff fmt "\\%s[%s] (%f, %f) rectangle (%f, %f);@."
+    (if col = Graphics.green then "draw" else "filldraw") c xl yl xu yu
+
+let init (a,b) (c,d) =
+  xmin := a;
+  xmax := b;
+  ymin := c;
+  ymax := d
+
+let create x y =
+  sx := x;
+  sy := y
