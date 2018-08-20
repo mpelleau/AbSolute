@@ -99,6 +99,9 @@ all: $(TARGETS)
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) $(PROF) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
+opam_config:
+	opam-admin make
+
 #minimizer.opt: $(CMXFILES)
 #	$(OCAMLOPT) -o $@ (OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
@@ -134,6 +137,6 @@ MLSOURCES = $(MLFILES) $(MLIFILES)
 .depend: $(MLSOURCES) Makefile
 	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend
 
-.phony:	all clean
+.phony:	all clean opam_config
 
 -include .depend

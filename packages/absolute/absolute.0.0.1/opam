@@ -1,0 +1,18 @@
+opam-version: "1.2"
+maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
+authors: [
+  "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
+  "Ghiles Ziat <ghiles.ziat@lip6.fr>"
+]
+homepage: "https://github.com/mpelleau/AbSolute"
+bug-reports: "https://github.com/mpelleau/AbSolute/issues"
+dev-repo: "https://github.com/mpelleau/AbSolute"
+build: ["make"]
+install: ["make" "install"]
+build-test: ["make" "check"]
+remove: ["ocamlfind" "remove" "absolute"]
+depends: [
+  "apron"
+  "ocamlfind" {build}
+]
+available: [ocaml-version >= "4.05"]

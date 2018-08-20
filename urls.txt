@@ -1,0 +1,3 @@
+packages/absolute/absolute.0.0.1/url 9aac3f291da6bcc84c6f8b067d5c3d8e 0o664
+packages/absolute/absolute.0.0.1/opam 7daf9a39aadc5b2816a6111c3d7dd04d 0o664
+packages/absolute/absolute.0.0.1/descr 18f254af6dcaf70c78e3ee8c1d451efe 0o664
