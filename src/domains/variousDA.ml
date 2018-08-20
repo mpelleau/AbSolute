@@ -197,45 +197,6 @@ module OctNPoly = VariousDomain_MS(OctAndPoly)
 
 (*
 (******************************************************************)
-(************************ Reduced Product *************************)
-(******************************************************************)
-
-let box_meet_oct manbox box manoct oct =
-  let box_env = Abstract1.env box in
-  let oct_env = Abstract1.env oct in
-  let box2oct = box_to_oct manbox box manoct oct_env in
-  Abstract1.meet_with manoct oct box2oct;
-  let oct2box = oct_to_box manoct oct manbox box_env in
-  Abstract1.meet_with manbox box oct2box;
-
-
-let box_meet_poly manbox box manpoly poly =
-  let box_env = Abstract1.env box in
-  let poly_env = Abstract1.env poly in
-  let box2poly = box_to_poly manbox box manpoly poly_env in
-  Abstract1.meet_with manpoly poly box2poly;
-  let poly2box = poly_to_box manpoly poly manbox box_env in
-  Abstract1.meet_with manbox box poly2box;
-
-
-let oct_meet_poly manoct oct manpoly poly =
-  let oct_env = Abstract1.env oct in
-  let poly_env = Abstract1.env poly in
-  let oct2poly = oct_to_poly manoct oct manpoly poly_env in
-  Abstract1.meet_with manpoly poly oct2poly;
-  let poly2oct = poly_to_oct manpoly poly manoct oct_env in
-  Abstract1.meet_with manoct oct poly2oct;
-
-
-let abs_meet_abs man abs abs' =
-  let env = Abstract1.env abs in
-  let env' = Abstract1.env abs' in
-  let abs_tmp1 = Abstract1.change_environment man abs env' false in
-  Abstract1.meet_with man abs' abs_tmp1;
-  let abs_tmp2 = Abstract1.change_environment man abs' env false in
-  Abstract1.meet_with man abs abs_tmp2;
-
-(******************************************************************)
 (*********************** Splitting operators **********************)
 (******************************************************************)
 

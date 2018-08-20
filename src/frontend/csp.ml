@@ -464,7 +464,7 @@ let domain_to_constraints : assign -> bexpr =
      List.fold_left (fun acc e ->
          Or(acc, of_singleton v e)
        ) (of_singleton v h) tl
-  | _ -> assert false
+  | _ -> Cmp(EQ, Cst 1., Cst 1.)
 
 (* iter on expr*)
 let rec iter_expr f = function
