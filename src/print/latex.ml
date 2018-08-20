@@ -49,10 +49,10 @@ let filldraw fmt l col =
 
 let filldrawbox fmt (xl, yl) (xu, yu) col =
   let c = rgb_to_latex_col col in
-  let xl = scale_x xl in
-  let xu = scale_x xu in
-  let yl = scale_y yl in
-  let yu = scale_y yu in
+  let xl = scale_x (Mpqf.to_float xl) in
+  let xu = scale_x (Mpqf.to_float xu) in
+  let yl = scale_y (Mpqf.to_float yl) in
+  let yu = scale_y (Mpqf.to_float yu) in
   fff fmt "\\%s[%s] (%f, %f) rectangle (%f, %f);@."
     (if col = Graphics.green then "draw" else "filldraw") c xl yl xu yu
 
