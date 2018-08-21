@@ -85,6 +85,7 @@ MLFILES = \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
 	src/print/out.ml \
+	src/solver/step_by_step.ml \
 	src/main.ml
 
 CFILES = \

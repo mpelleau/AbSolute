@@ -30,42 +30,28 @@ end
 (* THE SOLVER INSTANCES *)
 (************************)
 
-(* built-in instances *)
-(* interval domain instance. Only large constraints *)
-module SBox       = GoS (Abstract_box.BoxF)(Box_drawer.Make(Abstract_box.BoxF))
-module MBox       = GoM (Abstract_box.BoxF)(Box_drawer.Make(Abstract_box.BoxF))
-
-(* interval domain instance. Both large and strict constraints *)
-module SBoxStrict = GoS (Abstract_box.BoxStrict)(Realbox_drawer)
-module MBoxStrict = GoM (Abstract_box.BoxStrict)(Realbox_drawer)
-
-(* interval domain with rational bounds instance. Only large constraints *)
-module SBoxQ      = GoS (Abstract_box.BoxQ)(Box_drawer.Make(Abstract_box.BoxQ))
-module MBoxQ      = GoM (Abstract_box.BoxQ)(Box_drawer.Make(Abstract_box.BoxQ))
-
-(* interval domain with rational bounds instance. Both large and strict constraints *)
-module SBoxQS     = GoS (Abstract_box.BoxQStrict)(Box_drawer.Make(Abstract_box.BoxQStrict))
-module MBoxQS     = GoM (Abstract_box.BoxQStrict)(Box_drawer.Make(Abstract_box.BoxQStrict))
-
-
-(* apron domain based instances *)
-module SBoxCP     = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
-module MBoxCP     = GoM (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
-module SOctCP     = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
-module MOctCP     = GoM (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
-module SPolyCP    = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
-module MPolyCP    = GoM (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
-
 (* reduced product based instances*)
-(* module SBoxNOct = GoS (VariousDA.BoxNOct)(Apron_drawer.OctDrawer)
-module SBoxNPoly = GoS (VariousDA.BoxNPoly)(Apron_drawer.PolyDrawer)
-module SOctNPoly = GoS (VariousDA.OctNPoly)(Apron_drawer.PolyDrawer) *)
-
+(*
 module SBoxNOct  = Solver.Solve(VariousDA.BoxNOct)
 module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
 module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
 module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
+*)
 
+(**
+ * Lifts the given abstract domain and its associated drawer into a runnable domain.
+ * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
+ *)
+let lift (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module Drawer : Drawer_sig.Drawer with type t = s) (prob : Csp.prog) : unit =
+    if !Constant.minimizing
+    then let module Minimizer = GoM (Domain)(Drawer) in
+        Minimizer.go prob
+    else
+        if !Constant.step_by_step
+        then let module SBS = Step_by_step.Make (Domain)(Drawer) in
+            SBS.solving prob
+        else let module Solver = GoS (Domain)(Drawer) in
+            Solver.go prob
 
 (********************)
 (* OPTIONS HANDLING *)
@@ -92,6 +78,7 @@ let speclist =
   ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
   ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
+  ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
 ]
 
 (*************** ALIASES ************)
@@ -124,35 +111,24 @@ let go() =
   let prob = File_parser.parse !problem in
   Format.printf "file parsed\n";
   if !trace then Format.printf "%a" Csp.print prob;
-  if !minimizing then
-    match !domain with
-    | "box" -> MBox.go prob
-    | "boxS" -> MBoxStrict.go prob
-    | "boxQ" -> MBoxQ.go prob
-    | "boxQS" -> MBoxQS.go prob
-    | "boxCP" -> MBoxCP.go prob
-    | "oct" -> MOctCP.go prob
-    | "poly" -> MPolyCP.go prob
-    (*| "boxNoct" -> Minimizer.BoxNOct.minimizing_various prob
-    | "boxNpoly" -> Minimizer.BoxNPoly.minimizing_various prob
-    | "octNpoly" -> Minimizer.OctNPoly.minimizing_various prob*)
+  match !domain with
+    | "box" -> lift (module Abstract_box.BoxF) (module Box_drawer.Make(Abstract_box.BoxF)) prob
+    | "boxS" -> lift (module Abstract_box.BoxStrict) (module Realbox_drawer) prob
+    | "boxQ" -> lift (module Abstract_box.BoxQ) (module Box_drawer.Make(Abstract_box.BoxQ)) prob
+    | "boxQS" -> lift (module Abstract_box.BoxQStrict) (module Box_drawer.Make(Abstract_box.BoxQStrict)) prob
+    | "boxCP" -> lift (module ADCP.BoxCP) (module Apron_drawer.BoxDrawer) prob
+    | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
+    | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
-  else
-    match !domain with
-    | "box" -> SBox.go prob
-    | "boxS" -> SBoxStrict.go prob
-    | "boxQ" -> SBoxQ.go prob
-    | "boxQS" -> SBoxQS.go prob
-    | "boxCP" -> SBoxCP.go prob
-    | "oct" -> SOctCP.go prob
-    | "poly" -> SPolyCP.go prob
-    (* | "boxNoct" -> SBoxNOct.go prob
-    | "boxNpoly" -> SBoxNPoly.go prob
-    | "octNpoly" -> SOctNPoly.go prob *)
+    (* TODO : fix produit réduit
+    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module Apron_drawer.OctDrawer) prob
+    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module Apron_drawer.PolyDrawer) prob
+    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module Apron_drawer.PolyDrawer) prob
     | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"
     | "boxNpoly" -> SBoxNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | "octNpoly" -> SOctNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | "BandP" -> SBoxAndPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
+    *)
 
 let _ = go()
