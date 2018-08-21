@@ -57,7 +57,7 @@ let speclist =
   ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
   ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
   ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-  ("-domain"       , String set_domain    , default_string "Changes the domain used for the solving" domain);
+  ("-domain"       , String set_domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, boxNoct, boxNpoly, octNpoly, BandP, vpl");
   ("-obj"          , Set obj              , "Generates an .obj file (for 3D visualization)");
   ("-tex"          , Set tex              , "Prints the solutions in latex format on stadard output");
   ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
@@ -68,7 +68,7 @@ let speclist =
   ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
   ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
   ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
-  ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
+  ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
   ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");

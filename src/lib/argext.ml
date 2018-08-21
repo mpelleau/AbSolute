@@ -5,11 +5,11 @@ include Arg
 
 (* adds the default float value to the description *)
 let default_float descr fref=
-  Format.asprintf "%s. Default value is %a" descr Format.pp_print_float !fref
+  Format.asprintf "%s.@.\tDefault value is %a." descr Format.pp_print_float !fref
 
 (* adds the default int value to the description *)
 let default_int descr iref=
-  Format.asprintf "%s. Default value is %i." descr !iref
+  Format.asprintf "%s.@.\tDefault value is %i." descr !iref
 
 (* adds the default bool value to the description *)
 let default_bool descr bref=
@@ -17,7 +17,11 @@ let default_bool descr bref=
 
 (* adds the default bool value to the description *)
 let default_string descr sref=
-  Format.asprintf "%s. default is %s." descr !sref
+  Format.asprintf "%s. Default is %s" descr !sref
+
+(* adds option value to the description *)
+let options descr opts =
+  Format.asprintf "%s.@.\tPossible values are %s." descr opts
 
 type alias = string * string
 
