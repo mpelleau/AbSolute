@@ -163,6 +163,12 @@ module Make (A: AbstractCP) = struct
     let (_,obj_value) = A.forward_eval abs obj in
       {empty_res with best_value = obj_value}
 
+  (* iterates over the list of sure elements *)
+  let iter_sure f res = List.iter f res.sure
+
+  (* iterates over the list of unsure elements *)
+  let iter_unsure f res = List.iter f res.unsure
+
   (* prints a result *)
   let print fmt res =
     Format.fprintf fmt "\n#inner boxes: %d\n#boundary boxes: %d\n#created nodes: %d\n\ninner volume = %f\nboundary volume = %f\ntotal volume = %f%!\n"

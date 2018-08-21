@@ -5,6 +5,7 @@ module Solve(Abs : AbstractCP) = struct
 
   include Splitter.Make(Abs)
   module Res = Result.Make(Abs)
+  include Res
 
   let splitting_strategy =
     match !Constant.split with
@@ -13,7 +14,6 @@ module Solve(Abs : AbstractCP) = struct
     | _ -> split
 
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
-    let open Res in
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
       | Empty -> res

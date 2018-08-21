@@ -89,6 +89,10 @@ MLFILES = \
 	src/solver/step_by_step.ml \
 	src/main.ml
 
+CHECK = src/solver/checker.ml \
+				src/check.ml
+
+
 CFILES = \
   src/lib/ml_float.c
 
@@ -106,6 +110,13 @@ all: $(TARGETS)
 
 solver.opt: $(OFILES) $(CMXFILES)
 	$(OCAMLOPT) $(PROF) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
+
+check: checker.opt
+	@./checker.opt
+	@rm checker.opt
+
+checker.opt: $(OFILES) $(CMXFILES) $(CHECK)
+	@$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
 opam_config:
 	opam-admin make
