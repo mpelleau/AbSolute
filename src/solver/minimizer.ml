@@ -51,7 +51,7 @@ module Minimize(Abs : AbstractCP) = struct
     let open Result in
     let abs = init prob in
     printf "abs = %a" Abs.print abs;
-    if not (Abs.is_bottom abs) then
+    if not (Abs.is_empty abs) then
       let cons = List.filter (fun (exp, _) -> not (is_cons_linear exp)) prob.jacobian in
       printf "\nconstraints = [";
       List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) prob.jacobian;

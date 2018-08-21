@@ -1,4 +1,4 @@
-# this configuration file is generated from configure.make
+# this configuration file is generated from .configure.make
 -include Makefile.config
 
 OPAMBIN   := $(shell opam config var bin)
@@ -10,22 +10,9 @@ OCAMLLEX  := $(OPAMBIN)/ocamllex
 OCAMLYACC := $(OPAMBIN)/ocamlyacc
 CC        := gcc
 
-# libraries
-OPAMDIR   := $(shell opam config var lib)
-APRONDIR  := $(OPAMDIR)/apron
-ZARITHDIR := $(OPAMDIR)/zarith
-GMPDIR    := $(OPAMDIR)/gmp
-OCAMLDIR  := $(OPAMDIR)/ocaml
-
 #ocaml libraries
-LIBS         := bigarray gmp apron polkaMPQ zarith octD boxMPQ str unix graphics
-OCAMLLIBS    := $(LIBS:%=%.cma) $(CCLIB)
-OCAMLOPTLIBS := $(LIBS:%=%.cmxa) $(CCLIB)
-
-# directories to include
-OCAMLINC  := -I $(ZARITHDIR) -I $(APRONDIR) -I $(GMPDIR) \
-             -I src -I src/lib -I src/domains -I src/frontend -I src/print \
-             -I src/solver
+OCAMLLIBS    := $(LIBS:%=%.cma)
+OCAMLOPTLIBS := $(LIBS:%=%.cmxa)
 
 # targets
 TARGETS = solver.opt
@@ -117,6 +104,10 @@ setup_no_vpl:
 	cp -f ./src/domains/vpl_domain.ko.ml ./src/domains/vpl_domain.ml
 	cp -f ./src/print/vpl_drawer.ko.ml ./src/print/vpl_drawer.ml
 
+# proxy rule for rebuilding configuration files directly from the main Makefile
+Makefile.config:
+	$(MAKE) -f .configure.make all
+
 #minimizer.opt: $(CMXFILES)
 #	$(OCAMLOPT) -o $@ (OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
@@ -146,6 +137,7 @@ clean:
 	rm -f `find . -name "*~"`
 	rm -f out/*
 	rm -f -R out
+	rm -f Makefile.config
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 

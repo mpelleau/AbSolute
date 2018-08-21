@@ -171,14 +171,12 @@ module MAKE(AP:ADomain) = struct
     let e = Environment.remove (A.env abs) (Array.of_list [var]) in
     A.change_environment man abs e false
 
-  let is_bottom abs =
-    A.is_bottom man abs
-
-  let is_empty a = is_bottom a
+  let is_empty a = 
+    A.is_bottom man a
 
   let is_singleton b v =
     let man = A.manager b in
-    if A.is_bottom man b then true
+    if is_empty b then true
     else
       let itv = A.bound_variable man b v  in
       diam_interval itv |> Mpqf.to_float = 0.
@@ -197,7 +195,7 @@ module MAKE(AP:ADomain) = struct
       let neg_c = Linconsext.neg c in
       let a' = A.filter_lincons man a c
 	    and s = A.filter_lincons man a neg_c in
-	    if is_bottom s then a,acc
+	    if is_empty s then a,acc
 	    else a',(s::acc)
     in
     let a,pruned = Linconsext.array_fold (fun (abs,acc) c ->

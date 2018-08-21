@@ -28,8 +28,7 @@ module Expr = struct
     (* TODO: handle Binary(POW, e1, e2)? *)
     let rec to_term : t -> Term.t
         = function
-        | Csp.Float f -> (print_endline (string_of_float f) ; Term.Cte (Coeff.of_float f))
-        | Csp.Int f -> (print_endline (string_of_int f) ; Term.Cte (Coeff.of_float (float f)))
+        | Csp.Cst (q, _) -> Term.Cte (Mpqf.to_string q |> Q.of_string)
         | Csp.Var var -> Term.Var (Ident.toVar var)
         | Csp.Unary (Csp.NEG, e) -> Term.Opp (to_term e)
         | Csp.Binary (Csp.ADD, e1, e2) -> Term.Add (to_term e1, to_term e2)
@@ -86,6 +85,20 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             in
             User.assume cond p
         *)
+
+    (* bornage d'une expression *)
+    let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
+        = fun p expr ->
+        let itv = User.itvize p expr in
+        let low = match itv.Pol.low with
+            | Pol.Infty -> Mpqf.of_float Pervasives.neg_infinity
+        	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
+        in
+        let up = match itv.Pol.up with
+            | Pol.Infty -> Mpqf.of_float Pervasives.infinity
+        	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
+        in
+        (low,up)
 
     let add_var : t -> Csp.typ * Csp.var -> t
         = fun p _ -> p
