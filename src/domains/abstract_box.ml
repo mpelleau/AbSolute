@@ -358,7 +358,7 @@ let split_along (a:t) (v:var) : t list =
     let (itv, _) = find var abs in
     I.to_rational_range itv
 
-  let bounded_vars abs =
+  let bound_vars abs =
     let b = Env.bindings abs in
     let l = List.filter (fun (v, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l

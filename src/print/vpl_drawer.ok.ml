@@ -254,16 +254,29 @@ end
 
 type t = Vpl_domain.VplCP.t
 
-let bound : t -> Csp.var -> float * float
+let is_empty = Vpl_domain.VplCP.is_empty
+
+let to_abs : t * Csp.csts -> t
+    = fun (p,csts) ->
+    List.fold_left
+        (fun p (var, (bi, bs)) ->
+            let cond = Csp.And
+            (Csp.Cmp (Csp.LEQ, Csp.Var var, Csp.Cst (bs, Csp.Real)),
+            Csp.Cmp (Csp.GEQ, Csp.Var var, Csp.Cst (bi, Csp.Real)))
+            |> Vpl_domain.VPL.to_cond in
+            Vpl_domain.VplCP.User.assume cond p)
+        p csts
+
+let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
     = fun pol var ->
     let term = Vpl_domain.Expr.to_term (Csp.Var var) in
     let itv = Vpl_domain.VplCP.itvize pol term in
     let low = match itv.Pol.low with
-        | Pol.Infty -> min_float
-    	| Pol.Open r | Pol.Closed r -> Scalar.Rat.to_float r
+        | Pol.Infty -> Mpqf.of_float min_float
+    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
     and up = match itv.Pol.up with
-        | Pol.Infty -> max_float
-    	| Pol.Open r | Pol.Closed r -> Scalar.Rat.to_float r
+        | Pol.Infty -> Mpqf.of_float max_float
+    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
     in
     (low,up)
 

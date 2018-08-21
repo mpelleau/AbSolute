@@ -2,7 +2,11 @@ open Vpl_domain
 
 type t = unit
 
-let bound : t -> Csp.var -> float * float
+let is_empty _ = fail ()
+
+let to_abs _ = fail ()
+
+let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
     = fun _ _ -> fail ()
 
 let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit

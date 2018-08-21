@@ -30,14 +30,6 @@ end
 (* THE SOLVER INSTANCES *)
 (************************)
 
-(* reduced product based instances*)
-(*
-module SBoxNOct  = Solver.Solve(VariousDA.BoxNOct)
-module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
-module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
-module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
-*)
-
 (**
  * Lifts the given abstract domain and its associated drawer into a runnable domain.
  * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
@@ -79,6 +71,7 @@ let speclist =
   ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
+  ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
 ]
 
 (*************** ALIASES ************)
@@ -119,6 +112,7 @@ let go() =
     | "boxCP" -> lift (module ADCP.BoxCP) (module Apron_drawer.BoxDrawer) prob
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
+    | "vpl" -> lift (module Vpl_domain.VplCP) (module Vpl_drawer) prob
     | "boxNoct" -> lift (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
     | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
     | "octNpoly" -> lift (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob

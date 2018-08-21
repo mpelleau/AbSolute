@@ -2,6 +2,7 @@
 *.o
 *.opt
 *depend
+*Makefile.config
 *~
 *#
 src/frontend/parser.ml
