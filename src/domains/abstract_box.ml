@@ -347,9 +347,6 @@ let split_along (a:t) (v:var) : t list =
              raise Bot_found
     | Nb e -> (*Format.printf "  ==> %a\n" print e;*) e
 
-  let filterl (a:t) (e1,binop,e2) : t =
-    filter a (e1, binop, e2)
-
   let empty : t = Env.empty
 
   let is_empty abs = Env.is_empty abs

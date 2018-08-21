@@ -164,9 +164,6 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
     let filter ((abs, abs'):t) cons =
       (A.filter abs cons, abs')
 
-    let filterl ((abs, abs'):t) cons =
-      (abs, B.filter abs' cons)
-
     let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in
       B.forward_eval abs_tmp cons
