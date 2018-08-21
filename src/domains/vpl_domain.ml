@@ -34,11 +34,12 @@ module Expr = struct
         | Csp.Binary (Csp.SUB, e1, e2) -> Term.Add (to_term e1, Term.Opp (to_term e2))
         | Csp.Binary (Csp.MUL, e1, e2) -> Term.Mul (to_term e1, to_term e2)
         | Csp.Binary (Csp.DIV, e1, e2) -> Term.Div (to_term e1, to_term e2)
-        | Csp.Binary (Csp.POW, e1, Csp.Cst (q, _)) ->
-            let term = to_term e1
+        | Csp.Binary (Csp.POW, e, Csp.Cst (q, _)) -> begin
+            let term = to_term e
             and n = Mpqf.to_string q |> int_of_string
             in
             Term.Prod (List.map (fun _ -> term) (Misc.range 0 n))
+            end
         | _ -> Pervasives.raise Out_of_Scope
 end
 
