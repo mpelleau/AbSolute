@@ -12,7 +12,7 @@ module type Reduction =
     val b_meet_a : A.t -> B.t -> A.t
   end
 
-module BoxAndPolyNew : Reduction =
+module BoxAndPolyNew =
   struct
 
     module A=Abstract_box.BoxF
@@ -41,7 +41,7 @@ module BoxAndPolyNew : Reduction =
 
   end
 
-module BoxAndPoly : Reduction =
+module BoxAndPoly =
   struct
 
     module A=BoxCP
@@ -63,11 +63,11 @@ module BoxAndPoly : Reduction =
 
   end
 
-module BoxAndOct : Reduction =
+module BoxAndOct =
   struct
 
-    module A=BoxCP
-    module B=OctBoxCP
+    module A = BoxCP
+    module B = OctBoxCP
 
     let a_meet_b box oct =
       let oct_env = Abstract1.env oct in
@@ -81,7 +81,7 @@ module BoxAndOct : Reduction =
 
   end
 
-module OctAndPoly : Reduction =
+module OctAndPoly =
   struct
 
     module A = OctBoxCP
@@ -100,7 +100,7 @@ module OctAndPoly : Reduction =
   end
 
 
-module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
+module VariousDomain_MS (Reduced : Reduction) =
   struct
 
     include Reduced

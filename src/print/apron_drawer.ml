@@ -35,7 +35,7 @@ module Make(AP:ADomain) = struct
 
     List.fold_left (fun a c -> T.filter a c) a csts_expr
 
-  let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
+  let draw draw_f fillpol abs (v1,v2) col =
     let get_indexes env (x,y) = Environment.(
       dim_of_var env (Var.of_string x),
       dim_of_var env (Var.of_string y))
@@ -61,7 +61,7 @@ module Make(AP:ADomain) = struct
     draw_f vert Graphics.black
 
   let draw2d =
-    draw View.draw_poly 2 View.fill_poly
+    draw View.draw_poly View.fill_poly
 
   let draw3d fmt abs_list (v1,v2,v3) =
     Format.printf "no 3d generation for apron domains for now\n%!"

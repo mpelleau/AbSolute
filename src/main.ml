@@ -119,15 +119,15 @@ let go() =
     | "boxCP" -> lift (module ADCP.BoxCP) (module Apron_drawer.BoxDrawer) prob
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
+    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
+    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
+    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob
+    | "BandP" -> lift (module VariousDA.BandP) (module VariousDA_drawer.BandPDrawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
     (* TODO : fix produit réduit
-    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module Apron_drawer.OctDrawer) prob
-    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module Apron_drawer.PolyDrawer) prob
-    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module Apron_drawer.PolyDrawer) prob
     | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"
     | "boxNpoly" -> SBoxNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | "octNpoly" -> SOctNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
-    | "BandP" -> SBoxAndPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
     *)
 
