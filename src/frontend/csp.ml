@@ -74,7 +74,7 @@ type prog = {
 (* we associate a float value to each variable *)
 module SMAP = Mapext.Make(String)
 
-type instance = float SMAP.t
+type instance = i SMAP.t
 
 
 (*************************************************************)

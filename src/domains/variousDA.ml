@@ -18,12 +18,14 @@ module BoxAndPolyNew =
     module A=Abstract_box.BoxF
     module B=PolyCP
 
+    (* converts box into a polyhedron and return its intersection with poly *)
     let to_poly box poly =
       let poly' = Abstractext.change_environment B.man B.empty (Abstractext.env poly) false in
       let (ivar, rvar) = B.T.apron_to_var poly in
-      let l_expr = A.to_expr box (List.append ivar rvar) in
-      let poly' = List.fold_left (fun a c -> B.filter a c) poly' l_expr in
-      let poly' = B.join poly poly' in
+      let vars = List.append ivar rvar in
+      let l_expr = A.to_expr box vars in
+      let exprs = B.T.apron_to_bexpr poly in
+      let poly' = List.fold_left (fun a c -> B.filter a c) poly' (l_expr@exprs) in
       poly'
 
     let to_box poly box =
