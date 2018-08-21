@@ -216,9 +216,6 @@ module MAKE(AP:ADomain) = struct
       join (A.filter_lincons man b l1) (A.filter_lincons man b l2)
     else A.filter_tcons man b c
 
-  let filterl b (e1,c,e2) =
-    filter b (e1,c,e2)
-
   let print = A.print
 
   let to_box abs env =

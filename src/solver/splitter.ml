@@ -18,18 +18,6 @@ module Boolean (Abs:AbstractCP) = struct
     | Not b -> filter value (neg_bexpr b)
     | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
 
-  let rec filterl (value:Abs.t) = let open Csp in function
-    | And (b1,b2) -> filterl (filterl value b2) b1
-    | Or (b1,b2) ->
-      let a1 = try Some(filterl value b1) with Bot.Bot_found -> None
-      and a2 = try Some(filterl value b2) with Bot.Bot_found -> None in
-      (match (a1,a2) with
-      | (Some a1),(Some a2) -> Abs.join a1 a2
-      | None, (Some x) | (Some x), None -> x
-      | _ -> raise Bot.Bot_found)
-    | Not b -> filterl value (neg_bexpr b)
-    | Cmp (binop,e1,e2) -> Abs.filterl value (e1,binop,e2)
-
   let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
     (* match constr with
