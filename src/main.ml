@@ -30,14 +30,6 @@ end
 (* THE SOLVER INSTANCES *)
 (************************)
 
-(* reduced product based instances*)
-(*
-module SBoxNOct  = Solver.Solve(VariousDA.BoxNOct)
-module SBoxNPoly = Solver.Solve(VariousDA.BoxNPoly)
-module SOctNPoly = Solver.Solve(VariousDA.OctNPoly)
-module SBoxAndPoly = Solver.Solve(VariousDA.BandP)
-*)
-
 (**
  * Lifts the given abstract domain and its associated drawer into a runnable domain.
  * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
@@ -120,15 +112,15 @@ let go() =
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
     | "vpl" -> lift (module Vpl_domain.VplCP) (module Vpl_drawer) prob
+    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
+    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
+    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob
+    | "BandP" -> lift (module VariousDA.BandP) (module VariousDA_drawer.BandPDrawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
     (* TODO : fix produit réduit
-    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module Apron_drawer.OctDrawer) prob
-    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module Apron_drawer.PolyDrawer) prob
-    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module Apron_drawer.PolyDrawer) prob
     | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"
     | "boxNpoly" -> SBoxNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | "octNpoly" -> SOctNPoly.solving_various prob|> ignore; Format.printf "solving done\n"
-    | "BandP" -> SBoxAndPoly.solving_various prob|> ignore; Format.printf "solving done\n"
     | _ -> "domain undefined "^(!domain) |> failwith
     *)
 

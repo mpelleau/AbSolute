@@ -71,6 +71,7 @@ MLFILES = \
 	src/print/realbox_drawer.ml \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
+	src/print/variousDA_drawer.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml \
 	src/main.ml
