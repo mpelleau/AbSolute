@@ -27,7 +27,7 @@ module Make (D:Drawer) = struct
     List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
-    View.draw_end ()
+    View.draw_end v1 v2
 
   let print_latex sure unsure (v1,v2) =
     match !Constant.problem with

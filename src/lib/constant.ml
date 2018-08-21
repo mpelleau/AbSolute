@@ -17,6 +17,7 @@ let sure            = ref false
 let iter            = ref false
 let pruning_iter    = ref 100000000
 let rewrite         = ref true
+let step_by_step    = ref false
 
 let set_debug_lv lv =
   if lv >= 0 then debug := lv

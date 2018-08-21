@@ -2,7 +2,7 @@
 -include Makefile.config
 
 OPAMBIN   := $(shell opam config var bin)
-OCAMLOPTIONS := -w "+a-4-32-27" -warn-error "+a-4-32-27"
+OCAMLOPTIONS := -w "+a-4-32-27-42" -warn-error "+a-4-32-27-42"
 OCAMLC    := $(OPAMBIN)/ocamlc.opt $(OCAMLOPTIONS)
 OCAMLOPT  := $(OPAMBIN)/ocamlopt.opt $(OCAMLOPTIONS)
 OCAMLDEP  := $(OPAMBIN)/ocamldep
@@ -85,6 +85,7 @@ MLFILES = \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
 	src/print/out.ml \
+	src/solver/step_by_step.ml \
 	src/main.ml
 
 CFILES = \

@@ -50,10 +50,13 @@ module MBoxQS     = GoM (Abstract_box.BoxQStrict)(Box_drawer.Make(Abstract_box.B
 
 (* apron domain based instances *)
 module SBoxCP     = GoS (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
+module SBoxCP_SBS = Step_by_step.Make(ADCP.BoxCP)(Apron_drawer.BoxDrawer)
 module MBoxCP     = GoM (ADCP.BoxCP)(Apron_drawer.BoxDrawer)
 module SOctCP     = GoS (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
+module SOctCP_SBS = Step_by_step.Make(ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module MOctCP     = GoM (ADCP.OctBoxCP)(Apron_drawer.OctDrawer)
 module SPolyCP    = GoS (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
+module SPolyCP_SBS = Step_by_step.Make(ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 module MPolyCP    = GoM (ADCP.PolyCP)(Apron_drawer.PolyDrawer)
 
 (* reduced product based instances*)
@@ -93,6 +96,7 @@ let speclist =
   ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
   ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
+  ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
 ]
 
 (*************** ALIASES ************)
@@ -144,9 +148,15 @@ let go() =
     | "boxS" -> SBoxStrict.go prob
     | "boxQ" -> SBoxQ.go prob
     | "boxQS" -> SBoxQS.go prob
-    | "boxCP" -> SBoxCP.go prob
-    | "oct" -> SOctCP.go prob
-    | "poly" -> SPolyCP.go prob
+    | "boxCP" -> if !Constant.step_by_step
+        then SBoxCP_SBS.solving prob
+        else SBoxCP.go prob
+    | "oct" -> if !Constant.step_by_step
+        then SOctCP_SBS.solving prob
+        else SOctCP.go prob
+    | "poly" -> if !Constant.step_by_step
+        then SPolyCP_SBS.solving prob
+        else SPolyCP.go prob
     (* | "boxNoct" -> SBoxNOct.go prob
     | "boxNpoly" -> SBoxNPoly.go prob
     | "octNpoly" -> SOctNPoly.go prob *)
