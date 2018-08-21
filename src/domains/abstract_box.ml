@@ -1,5 +1,4 @@
 open Bot
-open Bound_sig
 open Itv_sig
 open Csp
 

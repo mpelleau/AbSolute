@@ -163,7 +163,7 @@ let rep_view_ctr ((id, e) as view) ctrs =
 let replace_view ctrs views =
   List.fold_left (fun l v -> rep_view_ctr v l) ctrs views
 
-let rec rep_view view views =
+let rep_view view views =
   List.map (fun (id, e) -> (id, replace_view_expr view e)) views
 
 let rep_in_view view views =

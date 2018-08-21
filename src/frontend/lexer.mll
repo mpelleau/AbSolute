@@ -1,7 +1,6 @@
 
 {
  open Lexing
- open Csp
  open Parser
 
 

@@ -1,8 +1,6 @@
 (* Reduced product of domains *)
 
 open Apron
-open Format
-open Apron_utils
 open Adcp_sig
 open ADCP
 
@@ -19,7 +17,7 @@ module BoxAndPolyNew : Reduction =
 
     module A=Abstract_box.BoxF
     module B=PolyCP
-    
+
     let to_poly box poly =
       let poly' = Abstractext.change_environment B.man B.empty (Abstractext.env poly) false in
       (* Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly'; *)
@@ -33,7 +31,7 @@ module BoxAndPolyNew : Reduction =
       let poly' = B.join poly poly' in
       (* Format.printf "poly' = %a@." B.print poly'; *)
       poly'
-    
+
     let to_box poly box =
       let polycons = B.T.apron_to_bexpr poly in
       let box' = A.lfilter box polycons in

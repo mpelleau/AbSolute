@@ -1,6 +1,4 @@
 open Apron
-open Mpqf
-open Format
 open Apron_utils
 
 (**

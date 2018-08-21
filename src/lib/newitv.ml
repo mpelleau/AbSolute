@@ -181,14 +181,14 @@ module Make(B:BOUND) = struct
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l,Real)),
-                           (Csp.LT, Csp.Cst(B.to_rat h,Real)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l,Real)),
-                          (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
-                          (Csp.LT, Csp.Cst(B.to_rat h,Real)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
-                         (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
+      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l,Csp.Real)),
+                           (Csp.LT, Csp.Cst(B.to_rat h,Csp.Real)))
+      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l,Csp.Real)),
+                          (Csp.LEQ, Csp.Cst(B.to_rat h,Csp.Real)))
+      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Csp.Real)),
+                          (Csp.LT, Csp.Cst(B.to_rat h,Csp.Real)))
+      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Csp.Real)),
+                         (Csp.LEQ, Csp.Cst(B.to_rat h,Csp.Real)))
 
    (************************************************************************)
   (* SET-THEORETIC *)
