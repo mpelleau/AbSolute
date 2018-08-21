@@ -109,6 +109,14 @@ solver.opt: $(OFILES) $(CMXFILES)
 opam_config:
 	opam-admin make
 
+setup_vpl:
+	cp -f ./src/domains/vpl_domain.ok.ml ./src/domains/vpl_domain.ml
+	cp -f ./src/print/vpl_drawer.ok.ml ./src/print/vpl_drawer.ml
+
+setup_no_vpl:
+	cp -f ./src/domains/vpl_domain.ko.ml ./src/domains/vpl_domain.ml
+	cp -f ./src/print/vpl_drawer.ko.ml ./src/print/vpl_drawer.ml
+
 #minimizer.opt: $(CMXFILES)
 #	$(OCAMLOPT) -o $@ (OCAMLINC) -cclib "$(CLIBS)" $(OCAMLOPTLIBS) $+
 
@@ -144,6 +152,6 @@ MLSOURCES = $(MLFILES) $(MLIFILES)
 .depend: $(MLSOURCES) Makefile
 	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend
 
-.phony:	all clean opam_config
+.phony:	all clean opam_config setup_vpl setup_no_vpl
 
 -include .depend

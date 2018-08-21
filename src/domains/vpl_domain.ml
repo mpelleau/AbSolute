@@ -1,8 +1,29 @@
+open Csp
+
 let fail () = Pervasives.failwith "VPLDomain: uninstalled"
 
 module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     type t = unit
+
+    (* bornage d'une expression *)
+    let forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
+        = fun _ _ -> fail ()
+
+    (* Si une variable entière est un singleton *)
+    let is_enumerated : t -> bool
+        = fun _ -> fail ()
+
+    (* removes an unconstrained variable to the environnement *)
+    let rem_var : t -> var -> t
+        = fun _ _ -> fail ()
+
+    let bounded_vars : t -> csts
+        = fun _ -> fail ()
+
+    (* returns the bounds of a variable *)
+    let var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
+        = fun _ _ -> fail ()
 
     let empty = ()
 
@@ -10,7 +31,9 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let join _ _ = fail ()
 
-    let is_bottom _ = fail ()
+    let is_empty _ = fail ()
+
+    let vars _ = fail ()
 
     let add_var : t -> Csp.typ * Csp.var * Csp.dom -> t
         = fun _ _ -> fail ()
@@ -32,6 +55,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> fail ()
 
+    (* assume e1 cmp e2 *)
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun _ _ -> fail ()
 

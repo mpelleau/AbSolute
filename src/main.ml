@@ -54,6 +54,8 @@ let lift (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module 
         else let module Solver = GoS (Domain)(Drawer) in
             Solver.go prob
 
+module Test = GoS(Vpl_domain.VplCP) (Vpl_drawer)
+
 (********************)
 (* OPTIONS HANDLING *)
 (********************)

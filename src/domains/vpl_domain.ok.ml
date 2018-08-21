@@ -66,6 +66,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let empty : t = top
 
+    let is_empty = is_bottom
+
+    (*
+    Old version where add_var added a variable with bounds
     let add_var : t -> Csp.typ * Csp.var * Csp.dom -> t
         = fun p (_,var,dom) ->
         if dom = Csp.Top then p
@@ -81,6 +85,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             |> to_cond
             in
             User.assume cond p
+        *)
+
+    let add_var : t -> Csp.typ * Csp.var -> t
+        = fun p _ -> p
 
     let volume : t -> float
         = fun p ->
