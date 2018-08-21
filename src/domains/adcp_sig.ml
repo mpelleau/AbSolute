@@ -33,8 +33,8 @@ module type AbstractCP = sig
   (* returns the bounds of a variable *)
   val var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
 
-  (* returns the bounded variables *)
-  val bounded_vars : t -> csts
+  (* returns the bound variables *)
+  val bound_vars : t -> csts
 
   (* removes an unconstrained variable to the environnement *)
   val rem_var : t -> var -> t

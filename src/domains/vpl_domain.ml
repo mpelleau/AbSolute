@@ -25,7 +25,6 @@ module Expr = struct
 
     exception Out_of_Scope
 
-    (* TODO: handle Binary(POW, e1, e2)? *)
     let rec to_term : t -> Term.t
         = function
         | Csp.Cst (q, _) -> Term.Cte (Mpqf.to_string q |> Q.of_string)
@@ -34,6 +33,12 @@ module Expr = struct
         | Csp.Binary (Csp.ADD, e1, e2) -> Term.Add (to_term e1, to_term e2)
         | Csp.Binary (Csp.SUB, e1, e2) -> Term.Add (to_term e1, Term.Opp (to_term e2))
         | Csp.Binary (Csp.MUL, e1, e2) -> Term.Mul (to_term e1, to_term e2)
+        | Csp.Binary (Csp.DIV, e1, e2) -> Term.Div (to_term e1, to_term e2)
+        | Csp.Binary (Csp.POW, e1, Csp.Cst (q, _)) ->
+            let term = to_term e1
+            and n = Mpqf.to_string q |> int_of_string
+            in
+            Term.Prod (List.map (fun _ -> term) (Misc.range 0 n))
         | _ -> Pervasives.raise Out_of_Scope
 end
 
@@ -67,25 +72,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let is_empty = is_bottom
 
-    (*
-    Old version where add_var added a variable with bounds
-    let add_var : t -> Csp.typ * Csp.var * Csp.dom -> t
-        = fun p (_,var,dom) ->
-        if dom = Csp.Top then p
-        else
-            let cond = begin match dom with
-            | Csp.Finite (bi,bs) -> Csp.And
-                (Csp.Cmp (Csp.LEQ, Csp.Var var, Csp.Float bs),
-                Csp.Cmp (Csp.GEQ, Csp.Var var, Csp.Float bi))
-            | Csp.Minf bs -> Csp.Cmp (Csp.LEQ, Csp.Var var, Csp.Float bs)
-            | Csp.Inf bi -> Csp.Cmp (Csp.GEQ, Csp.Var var, Csp.Float bi)
-            | _ -> Pervasives.invalid_arg "add_var"
-            end
-            |> to_cond
-            in
-            User.assume cond p
-        *)
-
     (* bornage d'une expression *)
     let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
         = fun p expr ->
@@ -101,6 +87,28 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         (low,up)
 
     let add_var : t -> Csp.typ * Csp.var -> t
+        = fun p _ -> p
+
+    let vars : t -> Csp.var list
+        = fun p ->
+        BuiltIn.get_vars p
+        |> List.map Expr.Ident.ofVar
+
+    (* returns the bounds of a variable *)
+    let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
+        = fun p var ->
+        forward_eval p (Csp.Var var)
+
+    let bound_vars : t -> Csp.csts
+        = fun p ->
+        BuiltIn.get_vars p
+        |> List.map (fun var ->
+            let varCsp = Expr.Ident.ofVar var in
+            (varCsp, var_bounds p varCsp)
+            )
+
+    (* removes an unconstrained variable to the environnement *)
+    let rem_var : t -> Csp.var -> t
         = fun p _ -> p
 
     let volume : t -> float
@@ -159,6 +167,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ ->
         Pervasives.failwith "is_abstraction: unimplemented"
 
+    (* Si une variable entière est un singleton *)
+    let is_enumerated : t -> bool
+        = fun _ ->
+        Pervasives.failwith "is_enumerated: unimplemented"
 end
 
 let setup_flags : unit -> unit

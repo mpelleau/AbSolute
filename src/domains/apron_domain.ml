@@ -158,7 +158,7 @@ module MAKE(AP:ADomain) = struct
     let i = A.bound_variable man abs var in
     itv_to_mpqf i
 
-  let bounded_vars abs =
+  let bound_vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->
@@ -171,7 +171,7 @@ module MAKE(AP:ADomain) = struct
     let e = Environment.remove (A.env abs) (Array.of_list [var]) in
     A.change_environment man abs e false
 
-  let is_empty a = 
+  let is_empty a =
     A.is_bottom man a
 
   let is_singleton b v =

@@ -53,8 +53,6 @@ let lift (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module 
         else let module Solver = GoS (Domain)(Drawer) in
             Solver.go prob
 
-module Test = GoS(Vpl_domain.VplCP) (Vpl_drawer)
-
 (********************)
 (* OPTIONS HANDLING *)
 (********************)
@@ -121,6 +119,7 @@ let go() =
     | "boxCP" -> lift (module ADCP.BoxCP) (module Apron_drawer.BoxDrawer) prob
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
+    | "vpl" -> lift (module Vpl_domain.VplCP) (module Vpl_drawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
     (* TODO : fix produit réduit
     | "boxNoct" -> lift (module VariousDA.BoxNOct) (module Apron_drawer.OctDrawer) prob

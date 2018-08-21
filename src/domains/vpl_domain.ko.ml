@@ -18,7 +18,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let rem_var : t -> var -> t
         = fun _ _ -> fail ()
 
-    let bounded_vars : t -> csts
+    let bound_vars : t -> csts
         = fun _ -> fail ()
 
     (* returns the bounds of a variable *)
@@ -35,7 +35,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let vars _ = fail ()
 
-    let add_var : t -> Csp.typ * Csp.var * Csp.dom -> t
+    let add_var : t -> Csp.typ * Csp.var -> t
         = fun _ _ -> fail ()
 
     let volume : t -> float

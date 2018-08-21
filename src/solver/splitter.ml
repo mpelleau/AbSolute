@@ -29,7 +29,7 @@ module Boolean (Abs:AbstractCP) = struct
       with Bot.Bot_found -> true
 
   let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
-    let newc = Abs.bounded_vars a in
+    let newc = Abs.bound_vars a in
 
     let tmp = Csp.get_vars_jacob constrs in
     let ctrs = List.fold_left

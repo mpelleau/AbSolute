@@ -126,9 +126,9 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
        and b = B.rem_var abs' v in
        (a, b)
 
-    let bounded_vars (abs,abs')  =
-      let la = A.bounded_vars abs
-      and lb = B.bounded_vars abs' in
+    let bound_vars (abs,abs')  =
+      let la = A.bound_vars abs
+      and lb = B.bound_vars abs' in
       let (tmp, _) = List.split lb in
       let (same, diffa) = List.partition (fun (v, c) -> List.mem v tmp) la in
       let (tmp, _) = List.split same in
