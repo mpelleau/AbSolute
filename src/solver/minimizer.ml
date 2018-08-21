@@ -1,5 +1,4 @@
 open Format
-open ADCP
 open Adcp_sig
 
 module Minimize(Abs : AbstractCP) = struct
@@ -36,7 +35,7 @@ module Minimize(Abs : AbstractCP) = struct
          else
            List.fold_left (fun res elem ->
                 aux elem cstrs obj csts (incr_step res) (depth + 1)
-	   ) res (splitting abs' cstrs) in 
+	   ) res (splitting abs' cstrs) in
     aux abs constrs obj consts (empty_obj_res abs obj) 0
 
   let minimizing prob =

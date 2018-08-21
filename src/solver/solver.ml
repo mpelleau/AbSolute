@@ -1,5 +1,4 @@
 open Adcp_sig
-open ADCP
 
 (* Solver *)
 module Solve(Abs : AbstractCP) = struct
@@ -12,7 +11,7 @@ module Solve(Abs : AbstractCP) = struct
     | "maxSmear" -> max_smear
     | "smear" -> sum_smear
     | _ -> split
-         
+
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
     let open Res in
     let rec aux abs cstrs csts res depth =

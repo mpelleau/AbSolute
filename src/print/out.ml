@@ -81,7 +81,6 @@ module Make (D:Drawer) = struct
   let out prob res =
     Format.printf "\ntime : %fs\n" (Sys.time ());
     let open Result in
-    let open Csp in
     let open Constant in
     if !visualization || !tex || !obj then
       let s = List.rev_map D.to_abs res.sure in
@@ -99,7 +98,6 @@ module Make (D:Drawer) = struct
   let out_min prob res =
     Format.printf "\ntime : %fs\n" (Sys.time ());
     let open Result in
-    let open Csp in
     let open Constant in
     let (s, _) = List.split res.sure in
     let (u, c) = if !sure then ([], []) else List.split res.unsure in

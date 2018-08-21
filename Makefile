@@ -2,7 +2,7 @@
 -include Makefile.config
 
 OPAMBIN   := $(shell opam config var bin)
-OCAMLOPTIONS := -w "+a-4-32-27" -warn-error "+a-4-32-27-42"
+OCAMLOPTIONS := -w "+a-4-32-27" -warn-error "+a-4-32-27"
 OCAMLC    := $(OPAMBIN)/ocamlc.opt $(OCAMLOPTIONS)
 OCAMLOPT  := $(OPAMBIN)/ocamlopt.opt $(OCAMLOPTIONS)
 OCAMLDEP  := $(OPAMBIN)/ocamldep

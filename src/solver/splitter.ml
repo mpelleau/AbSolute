@@ -30,7 +30,7 @@ module Boolean (Abs:AbstractCP) = struct
     | Not b -> filterl value (neg_bexpr b)
     | Cmp (binop,e1,e2) -> Abs.filterl value (e1,binop,e2)
 
-  let rec sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
+  let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
     (* match constr with
     | Or (b1,b2) -> sat_cons a b1 || sat_cons a b2

@@ -22,8 +22,7 @@ module Make(AP:ADomain) = struct
 
   let bound abs v =
     let i = A.bound_variable man abs (Apron.Var.of_string v) in
-    let open Interval in
-    Apron_utils.(scalar_to_mpqf i.inf,scalar_to_mpqf i.sup)
+    Apron.Interval.(scalar_to_mpqf i.inf,scalar_to_mpqf i.sup)
 
   let is_empty = A.is_bottom man
 
@@ -105,8 +104,7 @@ module MakeVa(AP : ApronReduction) = struct
 
   let bound (a, abs) v :(float * float) =
     let i = Abs.bound_variable man abs (Apron.Var.of_string v) in
-    let open Interval in
-    Apron_utils.(scalar_to_float i.inf,scalar_to_float i.sup)
+    Apron.Interval.(scalar_to_float i.inf,scalar_to_float i.sup)
 
   let draw draw_f draw_dashed_f fillpol (a, b) (v1,v2) col =
     let get_indexes env (x,y) = Environment.(
