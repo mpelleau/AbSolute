@@ -45,8 +45,7 @@ module Solve(Abs : AbstractCP) = struct
   let solving_various prob =
     let open Csp in
     let abs = init prob in
-    let cons = List.filter (fun (e, _) -> not (is_cons_linear e)) prob.jacobian in
-    let lcons = List.filter (fun (e, _) -> (is_cons_linear e)) prob.jacobian in
+    let (lcons, cons) = List.partition (fun (e, _) -> (is_cons_linear e)) prob.jacobian in
     let abs = List.fold_left (fun a (c, _) -> filter a c) abs lcons in
     Format.printf "abs = %a@." Abs.print abs;
     let res = explore abs cons prob.constants prob.view splitting_strategy in

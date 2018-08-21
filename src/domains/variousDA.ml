@@ -15,52 +15,63 @@ module type Reduction =
 module BoxAndPolyNew =
   struct
 
-    module A=Abstract_box.BoxF
-    module B=PolyCP
+    module A = Abstract_box.BoxF
+    module B = PolyCP
 
-    (* converts box into a polyhedron and return its intersection with poly *)
+    (* converts box into a polyhedron given poly environment *)
     let to_poly box poly =
       let poly' = Abstractext.change_environment B.man B.empty (Abstractext.env poly) false in
       let (ivar, rvar) = B.T.apron_to_var poly in
       let vars = List.append ivar rvar in
       let l_expr = A.to_expr box vars in
-      let exprs = B.T.apron_to_bexpr poly in
-      let poly' = List.fold_left (fun a c -> B.filter a c) poly' (l_expr@exprs) in
+      let poly' = List.fold_left (fun a c -> B.filter a c) poly' l_expr in
       poly'
 
     let to_box poly box =
-      let polycons = B.T.apron_to_bexpr poly in
-      let box' = A.lfilter box polycons in
+      let vars = A.vars box in
+      let (iv, rv) = List.partition (A.is_integer) vars in
+      let ivar = List.map (fun v -> String.sub v 0 (String.length v -1)) iv |>
+                   List.map (Var.of_string) |>
+                   Array.of_list in
+      let rvar = List.map (Var.of_string) rv |>
+                   Array.of_list in
+      let poly' = Abstractext.change_environment B.man poly (Environment.make ivar rvar) false in
+      let polycons = B.T.apron_to_bexpr poly' in
+      let box' = A.lfilter A.empty polycons in
       box'
 
     let a_meet_b box poly =
       let poly' = to_poly box poly in
-      Abstractext.meet B.man poly poly'
+      let poly' = Abstractext.meet B.man poly poly' in
+      (* Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly'; *)
+      poly'
 
     let b_meet_a box poly =
       let box' = to_box poly box in
-      A.meet box box'
+      let box' = A.meet box box' in
+      (* Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box'; *)
+      box'
 
   end
 
 module BoxAndPoly =
   struct
 
-    module A=BoxCP
-    module B=PolyCP
+    module A = BoxCP
+    module B = PolyCP
 
     let a_meet_b box poly =
       let poly_env = Abstract1.env poly in
       let poly' = A.to_poly box poly_env in
       let poly' = Abstract1.meet B.man poly poly' in
-      Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly';
+      (* Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly'; *)
       poly'
 
     let b_meet_a box poly =
       let box_env = Abstract1.env box in
       let box' = B.to_box poly box_env in
       let box' = Abstract1.meet BoxCP.man box box' in
-      Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box';
+      (* Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box'; *)
       box'
 
   end
@@ -163,8 +174,12 @@ module VariousDomain_MS (Reduced : Reduction) =
 
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
-    let filter ((abs, abs'):t) cons =
-      (A.filter abs cons, abs')
+    let filter ((abs, abs'):t) ((e1, _, e2) as cons) =
+      if (Csp.is_linear e1 && Csp.is_linear e2) then
+        (A.filter abs cons, B.filter abs' cons)
+      else
+        (A.filter abs cons, abs')
+        
 
     let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in
