@@ -107,6 +107,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             let varCsp = Expr.Ident.ofVar var in
             (varCsp, var_bounds p varCsp)
             )
+        |> List.filter
+            (fun (var,(bi,bs)) -> Mpqf.equal bi bs)
 
     (* removes an unconstrained variable to the environnement *)
     let rem_var : t -> Csp.var -> t

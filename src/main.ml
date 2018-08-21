@@ -71,6 +71,7 @@ let speclist =
   ("-split"        , String set_split     , "Changes the splitting strategy used for the solving");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
+  ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
 ]
 
 (*************** ALIASES ************)
