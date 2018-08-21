@@ -108,8 +108,8 @@ module Itv(B:BOUND) = struct
     | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
 
   let to_expr ((l, h):t) =
-    ((Csp.GEQ, Csp.Cst(B.to_rat l,Real)),
-     (Csp.LEQ, Csp.Cst(B.to_rat h,Real)))
+    ((Csp.GEQ, Csp.Cst(B.to_rat l, Real)),
+     (Csp.LEQ, Csp.Cst(B.to_rat h, Real)))
 
   (************************************************************************)
   (* SET-THEORETIC *)

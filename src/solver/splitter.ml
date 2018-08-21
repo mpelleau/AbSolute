@@ -168,7 +168,7 @@ module Make (Abs : AbstractCP) = struct
         ) (m', mv', mid') l
     ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid,Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid,Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   module Smear = Map.Make(struct type t=Csp.var let compare=compare end)
 
@@ -191,5 +191,5 @@ module Make (Abs : AbstractCP) = struct
         else (m, v, s)
     ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid,Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid,Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 end
