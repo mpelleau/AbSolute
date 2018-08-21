@@ -90,9 +90,6 @@ module Box (I:ITV) = struct
   (* predicates *)
   (* ---------- *)
 
-  let is_bottom (a:t) =
-    Env.exists (fun _ v -> I.check_bot v = Bot.Bot) a
-
   let subseteq (a:t) (b:t) : bool =
     Env.for_all2z (fun _ x y -> I.subseteq x y) a b
 

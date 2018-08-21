@@ -37,7 +37,7 @@ module Boolean (Abs:AbstractCP) = struct
     | And (b1,b2) -> sat_cons a b1 && sat_cons a b2
     | Not b -> sat_cons a (neg_bexpr b)
     | _ -> *)
-     try Abs.is_bottom (filter a (neg_bexpr constr))
+     try Abs.is_empty (filter a (neg_bexpr constr))
       with Bot.Bot_found -> true
 
   let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
@@ -104,7 +104,7 @@ module Make (Abs : AbstractCP) = struct
     print_debug_const "" constrs const;
     try
       let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
-      if Abs.is_bottom abs' then Empty else
+      if Abs.is_empty abs' then Empty else
 	      let unsat = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in
 	      match unsat with
 	      | [] -> print_debug "\t=> sure:" objv abs'; Full (abs', const)

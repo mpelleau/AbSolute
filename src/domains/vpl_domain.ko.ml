@@ -10,8 +10,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let join _ _ = fail ()
 
-    let is_bottom _ = fail ()
-
     let add_var : t -> Csp.typ * Csp.var * Csp.dom -> t
         = fun _ _ -> fail ()
 

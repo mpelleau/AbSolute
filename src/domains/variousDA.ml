@@ -1,4 +1,4 @@
-(* Reduced product of domains *)
+(* Reduced product of domains A and B where B is more expressive than A *)
 
 open Apron
 open Adcp_sig
@@ -20,22 +20,15 @@ module BoxAndPolyNew : Reduction =
 
     let to_poly box poly =
       let poly' = Abstractext.change_environment B.man B.empty (Abstractext.env poly) false in
-      (* Format.printf "box = %a\npoly = %a\npoly' = %a@." A.print box B.print poly B.print poly'; *)
       let (ivar, rvar) = B.T.apron_to_var poly in
-      (* Format.printf "nb_int_var = %i ; nb_real_var = %i@." (List.length ivar) (List.length rvar); *)
       let l_expr = A.to_expr box (List.append ivar rvar) in
-      (* Format.printf "nb_expr = %i@." (List.length l_expr);
-      List.iter (fun (v, op, b) -> Format.printf "%a;" Csp.print_bexpr (Csp.Cmp (op, v, b)));*)
       let poly' = List.fold_left (fun a c -> B.filter a c) poly' l_expr in
-      (* Format.printf "poly' = %a@." B.print poly'; *)
       let poly' = B.join poly poly' in
-      (* Format.printf "poly' = %a@." B.print poly'; *)
       poly'
 
     let to_box poly box =
       let polycons = B.T.apron_to_bexpr poly in
       let box' = A.lfilter box polycons in
-      (* Format.printf "box = %a\npoly = %a\nbox' = %a@." A.print box B.print poly A.print box'; *)
       box'
 
     let a_meet_b box poly =
@@ -149,18 +142,19 @@ module VariousDomain_MS (Reduced : Reduction) : AbstractCP =
 
     let is_small ((abs, abs'):t) = A.is_small abs
 
-    let prune (a,a') (b,b') =
-      (* let la,ua = A.prune a b *)
-      (* and lb,ub = B.prune a' b' in *)
-      [],(b,b')
+    let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
+
+    let prune (a, b) (a', b') =
+      let la,ua = A.prune a a'
+      and lb,ub = B.prune b b' in
+      let l = List.fold_left (fun acc ea ->
+                  List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
+                ) [] la in
+      (List.filter (fun (abs, abs') -> not (is_empty (reduced_product abs abs')) ) l),(ua, ub)
 
     let split ((abs, abs'):t) =
       let split_a = A.split abs in
       List.map (fun x -> (x, abs')) split_a
-
-    let is_bottom ((abs, _):t) = A.is_bottom abs
-
-    let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
     let is_enumerated (abs, abs') =
       A.is_enumerated abs && B.is_enumerated abs'
@@ -191,78 +185,3 @@ module BandP = VariousDomain_MS(BoxAndPolyNew)
 module BoxNOct = VariousDomain_MS(BoxAndOct)
 module BoxNPoly = VariousDomain_MS(BoxAndPoly)
 module OctNPoly = VariousDomain_MS(OctAndPoly)
-
-
-(*
-(******************************************************************)
-(*********************** Splitting operators **********************)
-(******************************************************************)
-
-(**
- * Split a polyhedra along a linear equation.
- *
- * Computes first the barycenter of a polyhedra, then computes the vector v
- * between the barycenter and the point the farthest from it and returns the
- * orthogonal vector of v.
- *)
-let barycenter man abs =
-  let gens = Abstract1.to_generator_array man abs in
-  let gen_env = gens.Generator1.array_env in
-  (*print_gen gens gen_env;*)
-
-  let size = Environment.size gen_env in
-  let gen_float_array = gen_to_array gens size in
-  let length = Array.length gen_float_array in
-
-  (* Compute the barycenter *)
-  let bary_tab = Array.make size 0. in
-  let bary_tab' = Array.make size 0. in
-  for i=0 to (length-1) do
-    let gen_tab = gen_float_array.(i) in
-    for j=0 to (size-1) do
-      bary_tab.(j) <- bary_tab.(j) +. gen_tab.(j)
-    done;
-  done;
-  for j=0 to (size-1) do
-    bary_tab'.(j) <- bary_tab.(j);
-    bary_tab.(j) <- bary_tab.(j) /. float_of_int length
-  done;
-
-  (* Get the farthest vertex from the barycenter wrt. the euclidian distance. *)
-  let rec farthest i point_max i_max dist_max =
-    if i >= length then
-      (point_max, i_max, dist_max)
-    else
-      let dist_i = dist gen_float_array.(i) bary_tab in
-      if dist_i > dist_max then
-        farthest (i+1) gen_float_array.(i) i dist_i
-      else
-        farthest (i+1) point_max i_max dist_max
-  in
-
-  let (point_max, i_max, dist_max) = farthest 1 gen_float_array.(0) 0 (dist gen_float_array.(0) bary_tab) in
-  let m = float_of_int length in
-
-  (* let b = (b1, b2, ..., bn) the barycenter and p = (p1, p2, ..., pn) the farthest
-   * point of b. The vector bp = (p1-b1, p2-b2, ..., pn-bn) and the orthogonal line
-   * to the vector bp passing by b has for equation:
-   * (p1-b1)(x1-b1) + (p2-b2)(x2-b2) + ... + (pn-bn)(xn-bn) = 0
-   *)
-  let rec genere_linexpr i list cst =
-    if i >= size then
-      (list, cst)
-    else
-      let ci = m*.point_max.(i) -. bary_tab'.(i) in
-      let cst' = cst +. (bary_tab'.(i) *. ci) in
-      let ci' = m *. ci in
-      let list' = List.append list [(Coeff.Scalar (Scalar.of_float ci'), Environment.var_of_dim gen_env i)] in
-      genere_linexpr (i+1) list' cst'
-  in
-
-  let (list, cst) = genere_linexpr 0 [] 0. in
-  let cst_sca = Scalar.of_float (-1. *.(cst +. split_prec)) in
-  let linexp = Linexpr1.make gen_env in
-  Linexpr1.set_list linexp list (Some (Coeff.Scalar cst_sca));
-
-  linexp
- *)
