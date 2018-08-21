@@ -150,8 +150,11 @@ module MAKE(AP:ADomain) = struct
   let add_var abs (typ,v) =
     let e = A.env abs in
     let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
-    let env = Environment.add e ints reals in
-    A.change_environment man abs env false
+    try 
+      let env = Environment.add e ints reals in
+      A.change_environment man abs env false
+    with
+      Failure _ -> abs
 
   let var_bounds abs v =
     let var = Var.of_string v in

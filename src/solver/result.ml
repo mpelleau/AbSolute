@@ -122,9 +122,6 @@ module Make (A: AbstractCP) = struct
 
   (* adds a sure element to a result *)
   let add_s res ?obj:fobj (s, c, v) =
-    let vars = A.vars s in
-    let const = List.map (fun v -> (v, A.var_bounds s v)) vars in
-    let c = const@c in
     match fobj with
     | Some fobj ->
        let (s, c, v, obj_value) = get_solution v ~obj:fobj s c in
@@ -140,12 +137,12 @@ module Make (A: AbstractCP) = struct
           vol_sure   = v;
           vol_unsure = 0.}
        else
-         {res with sure     = (A.empty, c)::res.sure;
+         {res with sure     = (s, c)::res.sure;
                    nb_sure  = res.nb_sure + 1;
                    vol_sure = res.vol_sure +. A.volume s}
     | None ->
        let (u, c, v, obj_value) = get_solution v s c in
-       {res with sure     = (A.empty, c)::res.sure;
+       {res with sure     = (s, c)::res.sure;
                  nb_sure  = res.nb_sure+1;
                  vol_sure = res.vol_sure +. v}
 
