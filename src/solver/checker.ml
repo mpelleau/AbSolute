@@ -9,45 +9,45 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   (*   PRINTING   *)
   (****************)
 
-  let print_instance fmt instance =
+  let print_instance fmt (instance:Csp.instance) =
     let bindings = VarMap.bindings instance in
     let print_bind fmt (var,value) =
       Format.fprintf fmt "%s:%a"
                      var
-                     Format.pp_print_float value
+                     Mpqf.print value
     in
     Format.pp_print_list ~pp_sep:(fun fmt () -> Format.fprintf fmt " ; ")
                          (fun fmt -> Format.fprintf fmt "%a" print_bind)
                          fmt bindings
 
-  let err_constr instance cstr e1 cmp e2 =
+  let err_constr (instance:Csp.instance) cstr e1 cmp e2 =
     Format.eprintf "the instance %a do not satisfy the constraint %a\n"
                    print_instance instance
                    print_bexpr cstr;
     Format.eprintf "it evaluates to %a %a %a\n"
-                   Format.pp_print_float e1
+                   Mpqf.print e1
                    print_cmpop cmp
-                   Format.pp_print_float e2
+                   Mpqf.print e2
 
   (* evaluate an expression according to an instance *)
-  let eval instance expr =
+  let eval (instance:Csp.instance) expr =
     let rec aux = function
       | Var v -> VarMap.find v instance
-      | Cst (i,_) -> Mpqf.to_float i
+      | Cst (i,_) -> i
       | Binary(op,e1,e2) ->
          let e1' = aux e1 and e2' = aux e2 in
          (match op with
-          | ADD -> e1' +. e2'
-          | SUB -> e1' -. e2'
-          | MUL -> e1' *. e2'
-          | DIV -> e1' /. e2'
-        | POW -> e1' ** e2')
+          | ADD -> Mpqf.add e1' e2'
+          | SUB -> Mpqf.sub e1' e2'
+          | MUL -> Mpqf.mul e1' e2'
+          | DIV -> Mpqf.div e1' e2'
+        | POW -> Mpqf.of_float ((Mpqf.to_float e1') ** (Mpqf.to_float e2')))
       | Unary(u,e) ->
          let e' = aux e in
          (match u with
-          | NEG -> (-. e'))
+          | NEG -> (Mpqf.neg e'))
       | Funcall(name, [e]) ->
-         let e = aux e in
+         let e = Mpqf.to_float (aux e) in
          let func =
            match name with
            | "sqrt" -> sqrt
@@ -60,12 +60,12 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
            | "exp"  -> exp
            | "log"  -> log
            | x -> Tools.fail_fmt "unrecognized function name %s" x
-          in func e
+          in Mpqf.of_float (func e)
       | Funcall(name, args) -> Tools.fail_fmt "cant evaluate function call %s" name
     in aux expr
 
   (* check if an instance is valid wrt to a constraint *)
-  let check_cstr print instance cstr =
+  let check_cstr print (instance:Csp.instance) cstr =
     let rec aux = function
       | Cmp(op,e1,e2) ->
          let e1' = eval instance e1 and e2' = eval instance e2 in
@@ -88,7 +88,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
     in aux cstr
 
   (*checks if the value of variable of an instance belong to the corresponding domain *)
-  let belong_to instance (typ,var,dom) =
+  let belong_to (instance:Csp.instance) (typ,var,dom) =
     let check_type typ value =
       match typ with
       | INT  -> ceil value = value
@@ -99,11 +99,11 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
       | Finite (l,u) -> l < value && value < u
     | _ -> failwith "cant handle infinite domains for now"
     in
-    let value = VarMap.find var instance in
+    let value = VarMap.find var instance |> Mpqf.to_float in
     check_type typ value && check_dom dom (Mpqf.of_float value)
 
   (* checks if an instance satisfies a csp *)
-  let check_instance fn print instance csp =
+  let check_instance fn print (instance:Csp.instance) csp =
     List.for_all (belong_to instance) csp.init
     &&
     List.for_all (check_cstr print instance) csp.constraints
@@ -111,7 +111,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   (* checks that the sure value DO satisfy the constraints *)
   let check_sure fn csp result =
     let total_sure = ref 0 in
-    iter_sure (fun e ->
+    iter_sure (fun (e,_) ->
         let cpt = ref 0 in
         while !cpt < 10 do
           incr total_sure;
@@ -120,14 +120,14 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
           let i = Abs.spawn e in
           ignore (check_instance fn false i csp)
         done
-      ) result.sure;
+      ) result;
     !total_sure
 
   (* compute the ratio of unsure value that DO satisfy the constraints *)
   let check_unsure fn csp result =
     let total = ref 0 and unsure = ref 0 in
     (* we try to spawn at least 10 points *)
-    iter_unsure (fun e ->
+    iter_unsure (fun (e,_) ->
         let cpt = ref 0 in
         while !cpt < 10 do
           incr total;
@@ -140,7 +140,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
 
   (* checks if an instance is covered by at least one abstract element of a list *)
   let covered_by (i:Csp.instance) abs_list =
-    List.exists (fun e -> Abs.is_abstraction e i) abs_list
+    List.exists (fun (e,_) -> Abs.is_abstraction e i) abs_list
 
   (* checks that the problem's known solutions belong to an astract element *)
   let check_known_solutions fn result goods =

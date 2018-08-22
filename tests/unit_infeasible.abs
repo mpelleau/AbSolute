@@ -1,0 +1,11 @@
+init{
+  real x = [0;1000];
+}
+
+constraints {
+  x!=x;
+}
+
+solutions{
+  none
+}

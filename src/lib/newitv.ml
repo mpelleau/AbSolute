@@ -874,6 +874,13 @@ module Make(B:BOUND) = struct
 
   let to_rational_range ((_,l),(_,h)) = (B.to_rat l),(B.to_rat h)
 
+  (* generate a random float between l and h *)
+  let spawn (((_,l),(_,h)):t) =
+    (* we convert toward the inside of the itv to avoid false negative *)
+    let r = Random.float 1. in
+    let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
+    B.to_float_up res
+
 end
 
 module Test = Make(Bound_float)

@@ -894,6 +894,12 @@ module Itv(B:BOUND) = struct
   let to_rational_range (l, h) =
     (B.to_rat l), (B.to_rat h)
 
+  (* generate a random float between l and h *)
+  let spawn (l,h) =
+    let r = Random.float 1. in
+    let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
+    B.to_float_up res
+
 
 end
 
