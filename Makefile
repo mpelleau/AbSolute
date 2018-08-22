@@ -53,10 +53,10 @@ MLFILES = \
 	src/frontend/rewrite.ml \
 	src/frontend/preprocessing.ml \
 	src/frontend/file_parser.ml \
+	src/domains/adcp_sig.ml \
 	src/domains/apron_domain.ml \
 	src/domains/vpl_domain.ml \
 	src/domains/abstract_box.ml \
-	src/domains/adcp_sig.ml \
 	src/domains/ADCP.ml \
 	src/domains/variousDA.ml \
 	src/solver/result.ml \

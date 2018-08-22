@@ -35,6 +35,8 @@ module Box (I:ITV) = struct
     let (v, _) = List.split (Env.bindings abs) in
     v
 
+  let is_representable _ = Adcp_sig.Yes
+
 
   (************************************************************************)
   (* PRINTING *)
@@ -311,7 +313,7 @@ let split_along (a:t) (v:var) : t list =
          | SUB -> refine_sub (e1,i1) (e2,i2) x
          | MUL -> refine_mul (e1,i1) (e2,i2) x
          | DIV -> refine_div (e1,i1) (e2,i2) x
-	       | POW -> I.filter_pow i1 i2 x
+	 | POW -> I.filter_pow i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
@@ -321,15 +323,15 @@ let split_along (a:t) (v:var) : t list =
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
     (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
     let j = match o with
-    | EQ -> I.filter_eq i1 i2
-    | LEQ -> I.filter_leq i1 i2
-    | GEQ -> I.filter_geq i1 i2
-    | NEQ -> I.filter_neq i1 i2
-    (*| NEQ_INT -> I.filter_neq_int i1 i2*)
-    | GT -> I.filter_gt i1 i2
-    (*| GT_INT -> I.filter_gt_int i1 i2*)
-    | LT -> I.filter_lt i1 i2
-    (*| LT_INT -> I.filter_lt_int i1 i2*)
+      | EQ -> I.filter_eq i1 i2
+      | LEQ -> I.filter_leq i1 i2
+      | GEQ -> I.filter_geq i1 i2
+      | NEQ -> I.filter_neq i1 i2
+      (*| NEQ_INT -> I.filter_neq_int i1 i2*)
+      | GT -> I.filter_gt i1 i2
+      (*| GT_INT -> I.filter_gt_int i1 i2*)
+      | LT -> I.filter_lt i1 i2
+      (*| LT_INT -> I.filter_lt_int i1 i2*)
     in
     let aux = rebot
       (fun a ->
@@ -396,6 +398,22 @@ let split_along (a:t) (v:var) : t list =
     let la = List.filter (fun (e1, op, e2) ->
                            (is_applicable a e1) && (is_applicable a e2)) l in
     List.fold_left (fun a' e -> filter a' e) a la
+
+  let to_bexpr (a:t) : (expr * cmpop * expr) list =
+    Env.fold (fun v x acc ->
+        let (annot, v) = if is_integer v then (Int, String.sub v 0 (String.length v -1)) else (Real, v) in
+        let ((op1, e1), (op2, e2)) = I.to_expr x in
+        match e1, e2 with
+        | Cst(e1, _), Cst(e2, _) ->
+           acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, Cst(e2, annot))]
+        | Cst(e1, _), e2 -> 
+           acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, e2)]
+        | e1, Cst(e2, _) ->
+           acc@[(Var(v), op1, e1); (Var(v), op2, Cst(e2, annot))]
+        | e1, e2 ->
+           acc@[(Var(v), op1, e1); (Var(v), op2, e2)]
+      ) a []
+    
 
 end
 

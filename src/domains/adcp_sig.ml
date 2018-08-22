@@ -5,6 +5,8 @@
 
 open Csp
 
+type answer = Yes | Maybe | No
+                          
 module type AbstractCP = sig
 
   (*** TYPES ***)
@@ -60,6 +62,12 @@ module type AbstractCP = sig
   val filter : t -> (expr * cmpop * expr) -> t
 
   val forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
+
+  (* transforms an abstract element in constraints *)
+  val to_bexpr : t -> (expr * cmpop * expr) list
+
+  (* check if a constraint is suited for this abstract domain *)
+  val is_representable : bexpr -> answer
 
   (* printing *)
   val print : Format.formatter -> t -> unit

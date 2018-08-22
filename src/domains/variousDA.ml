@@ -120,6 +120,11 @@ module VariousDomain_MS (Reduced : Reduction) =
 
     type t = A.t * B.t
 
+    let is_representable _ = Yes
+
+    let to_bexpr _ = []
+                   
+
     let reduced_product a b =
       let new_a = b_meet_a a b in
       let new_b = a_meet_b a b in
@@ -158,8 +163,9 @@ module VariousDomain_MS (Reduced : Reduction) =
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
     let prune (a, b) (a', b') =
-      let la,ua = A.prune a a'
-      and lb,ub = B.prune b b' in
+      Format.printf "a = %a\nb = %a\na' = %a\nb' = %a\n@." A.print a B.print b A.print a' B.print b';
+      let la,ua = A.prune a a' (*if a = a' then A.empty else a'*)
+      and lb,ub = B.prune b b' (*if b = b' then B.empty else b'*) in
       let l = List.fold_left (fun acc ea ->
                   List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
                 ) [] la in
@@ -176,9 +182,11 @@ module VariousDomain_MS (Reduced : Reduction) =
 
     let filter ((abs, abs'):t) ((e1, _, e2) as cons) =
       if (Csp.is_linear e1 && Csp.is_linear e2) then
-        (A.filter abs cons, B.filter abs' cons)
+        (Format.printf "TRUE\n";
+        (A.filter abs cons, B.filter abs' cons))
       else
-        (A.filter abs cons, abs')
+        (Format.printf "FALSE\n";
+        (A.filter abs cons, abs'))
         
 
     let forward_eval (abs, abs') cons =

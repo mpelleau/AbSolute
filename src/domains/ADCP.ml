@@ -12,18 +12,20 @@ module BoxCP =
       let get_manager =  Box.manager_alloc ()
     end)
 
-    let is_small box : bool =
-      let (_, _, max) = largest box in
-      let dim = Mpqf.to_float max in
-      (dim <= !Constant.precision)
+  let is_representable _ = Adcp_sig.Yes
+
+  let is_small box : bool =
+    let (_, _, max) = largest box in
+    let dim = Mpqf.to_float max in
+    (dim <= !Constant.precision)
 
   let split abs =
     let env = Abstract1.env abs in
     let (var, itv, size) = largest abs in
     let mid = mid_interval itv in
     let value = match Environment.typ_of_var env var with
-	    | Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf
-	    | _ -> mid
+      | Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf
+      | _ -> mid
     in
     (* var <= mid*)
     let expr =  Linexpr1.make env in
@@ -48,9 +50,9 @@ module OctMinMinCP =
   struct
 
     include Apron_domain.MAKE (struct
-      type t = Oct.t
-      let get_manager =  Oct.manager_alloc ()
-    end)
+                type t = Oct.t
+                let get_manager =  Oct.manager_alloc ()
+              end)
 
     let is_small octad =
       (*printf "oct = %a@." Abstract1.print octad;*)
@@ -203,9 +205,9 @@ module OctMinMaxCP =
   struct
 
     include Apron_domain.MAKE (struct
-      type t = Oct.t
-      let get_manager =  Oct.manager_alloc ()
-    end)
+                type t = Oct.t
+                let get_manager =  Oct.manager_alloc ()
+              end)
 
     let is_small octad =
       (*printf "oct = %a@." Abstract1.print octad;*)
@@ -262,19 +264,19 @@ module OctMinMaxCP =
           (linexpr1, linexpr2, cst, min_max)
         else
           (
-          (*printf "[%a ; %a], %f" Linexpr1.print linexpr1 Linexpr1.print linexpr2 (scalar_to_float min_max);*)
-          let var_i = Environment.var_of_dim env i in
-          let (linexpr1', linexpr2', cst', min_max') = max_bi var_i (i+1) min_max cst linexpr1 linexpr2 in
-          if Scalar.cmp min_max' min_max < 0 then
-            (
-            (* printf " > %f, [%a ; %a]@." (scalar_to_float min_max') Linexpr1.print linexpr1' Linexpr1.print linexpr2';*)
-            max (i+1) min_max' cst' linexpr1' linexpr2'
-            )
-          else
-            (
-            (* printf " < %f, [%a ; %a]@." (scalar_to_float min_max') Linexpr1.print linexpr1' Linexpr1.print linexpr2';*)
-            max (i+1) min_max cst linexpr1 linexpr2
-            )
+            (*printf "[%a ; %a], %f" Linexpr1.print linexpr1 Linexpr1.print linexpr2 (scalar_to_float min_max);*)
+            let var_i = Environment.var_of_dim env i in
+            let (linexpr1', linexpr2', cst', min_max') = max_bi var_i (i+1) min_max cst linexpr1 linexpr2 in
+            if Scalar.cmp min_max' min_max < 0 then
+              (
+                (* printf " > %f, [%a ; %a]@." (scalar_to_float min_max') Linexpr1.print linexpr1' Linexpr1.print linexpr2';*)
+                max (i+1) min_max' cst' linexpr1' linexpr2'
+              )
+            else
+              (
+                (* printf " < %f, [%a ; %a]@." (scalar_to_float min_max') Linexpr1.print linexpr1' Linexpr1.print linexpr2';*)
+                max (i+1) min_max cst linexpr1 linexpr2
+              )
           )
       in
 
@@ -313,27 +315,33 @@ module OctBoxCP =
       type t = Oct.t
       let get_manager =  Oct.manager_alloc ()
     end)
+      
+    let is_representable c =
+      if (Csp.is_cons_linear c) then
+        Adcp_sig.Yes
+      else
+        Adcp_sig.No
 
-    let is_small oct =
-      let (_, _,max) = largest oct in
-      let dim = Mpqf.to_float max in
-      (dim <= !Constant.precision)
+  let is_small oct =
+    let (_, _,max) = largest oct in
+    let dim = Mpqf.to_float max in
+    (dim <= !Constant.precision)
 
-    let split octad =
-      let env = Abstract1.env octad in
-      let (var, itv, size) = largest octad in
-      let mid = mid_interval itv in
-      let typ_var = Environment.typ_of_var env var in
-      let value = if typ_var == Environment.INT then (scalar_plus_mpqf mid split_prec_mpqf) else mid in
-      (* var <= mid*)
-      let expr =  Linexpr1.make env in
-      Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
-      (* var >= value*)
-      let expr' =  Linexpr1.make env in
-      Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      split octad (expr, expr')
+  let split octad =
+    let env = Abstract1.env octad in
+    let (var, itv, size) = largest octad in
+    let mid = mid_interval itv in
+    let typ_var = Environment.typ_of_var env var in
+    let value = if typ_var == Environment.INT then (scalar_plus_mpqf mid split_prec_mpqf) else mid in
+    (* var <= mid*)
+    let expr =  Linexpr1.make env in
+    Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
+    (* var >= value*)
+    let expr' =  Linexpr1.make env in
+    Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
+    split octad (expr, expr')
 
-    let volume box = 0.
+  let volume box = 0.
   end
 
 (**
@@ -345,9 +353,15 @@ module PolyCP = struct
     let get_manager = Polka.manager_alloc_strict()
   end)
 
-  let is_small poly = is_small man poly
+  let is_small poly = is_small man poly  
+
+  let is_representable c =
+    if (Csp.is_cons_linear c) then
+      Adcp_sig.Yes
+    else
+      Adcp_sig.No
 
   let split poly = split poly (get_expr (Polka.manager_alloc_strict()) poly)
 
-    let volume box = 0.
+  let volume box = 0.
 end

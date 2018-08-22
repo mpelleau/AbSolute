@@ -122,16 +122,18 @@ module Make (Abs : AbstractCP) = struct
       match c_list with
       | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
       | h::tl ->
-	       try
-             let (c, _) = h in
-	         let neg = Csp.neg_bexpr c |> filter abs in
-	         let s,u = Abs.prune abs neg in
-	         let s',u' = List.fold_left (fun (sures,unsures) elm ->
-	           aux elm tl is_sure sures unsures)
-	           (sures,unsures) s
-	         in
-	         aux u tl false s' u'
-	       with Bot.Bot_found -> aux abs tl is_sure sures unsures
+	 try
+           let (c, _) = h in
+           Format.printf "%b\nc = %a\nnot c = %a\n@." (Csp.is_cons_linear c) Csp.print_bexpr c Csp.print_bexpr (Csp.neg_bexpr c);
+	   let neg = Csp.neg_bexpr c |> filter abs in
+           Format.printf "abs = %a\nabs' = %a\n@." Abs.print abs Abs.print neg;
+	   let s,u = Abs.prune abs neg in
+	   let s',u' = List.fold_left (fun (sures,unsures) elm ->
+	                   aux elm tl is_sure sures unsures)
+	                 (sures,unsures) s
+	   in
+	   aux u tl false s' u'
+	 with Bot.Bot_found -> aux abs tl is_sure sures unsures
     in aux abs constrs true [] []
 
   let split abs cstrs = Abs.split abs
