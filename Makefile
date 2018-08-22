@@ -41,10 +41,10 @@ MLFILES = \
 	src/lib/bound_sig.ml \
 	src/lib/bound_mpqf.ml \
 	src/lib/bound_float.ml \
+	src/frontend/csp.ml \
 	src/lib/itv_sig.ml \
 	src/lib/itv.ml \
 	src/lib/newitv.ml \
-	src/frontend/csp.ml \
 	src/frontend/parser.ml \
 	src/frontend/lexer.ml \
 	src/frontend/modCsp.ml \
