@@ -20,14 +20,28 @@ constraints{
 
 You can see other examples of problems in the **problem** directory
 
-### Build 
-A simple **make** will do the job. 
+### Build
+
+1. __From [opam](https://opam.ocaml.org/)__
+
+First, add the following repository in your opam system
+
+    opam repo add absolute https://raw.githubusercontent.com/mpelleau/AbSolute/master
+
+Then, install the package ```absolute```
+
+    opam install absolute
+
+2. __From sources__
+
+A simple **make** will do the job.
+
 ##### warning:
 For some reason, having both packages **libapron** and **libapron-dev** installed will make the building of absolute fail.
 Therefore, the easiest way to deal with apron is to install it with **and only with** opam : https://opam.ocaml.org/packages/
 
 ### Use
-```sh 
+```sh
 ./solver.opt problem
 ```
 
