@@ -75,6 +75,9 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let is_abstraction : t -> Csp.instance -> bool
         = fun _ -> fail ()
 
+    let to_bexpr _ = fail ()
+
+    let is_representable _ = fail ()
 end
 
 let setup_flags : unit -> unit
