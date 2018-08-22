@@ -139,6 +139,8 @@ module MAKE(AP:ADomain) = struct
 
   module T = SyntaxTranslator(AP)
 
+  let to_bexpr = T.apron_to_bexpr
+
   let empty = A.top man (Environment.make [||] [||])
 
   let vars abs =
