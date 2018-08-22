@@ -42,7 +42,7 @@ module Solve(Abs : AbstractCP) = struct
     Format.printf "\nsolving ends\n%!%a" Res.print res;
     res
 
-  let solving_various prob =
+  (* let solving_various prob =
     let open Csp in
     let abs = init prob in
     let (lcons, cons) = List.partition (fun (e, _) -> (is_cons_linear e)) prob.jacobian in
@@ -50,5 +50,5 @@ module Solve(Abs : AbstractCP) = struct
     Format.printf "abs = %a@." Abs.print abs;
     let res = explore abs cons prob.constants prob.view splitting_strategy in
     Format.printf "\nsolving ends\n%!%a" Res.print res;
-    res
+    res *)
 end

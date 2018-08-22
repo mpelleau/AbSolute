@@ -6,6 +6,17 @@
 open Csp
 
 type answer = Yes | Maybe | No
+
+let and_ans a1 a2 =
+  match a1, a2 with
+  | No, _ | _, No -> No
+  | Maybe, _ | _, Maybe -> Maybe
+  | _, _ -> Yes
+
+let not_ans = function
+  | Yes -> No
+  | No -> Yes
+  | Maybe -> Maybe
                           
 module type AbstractCP = sig
 

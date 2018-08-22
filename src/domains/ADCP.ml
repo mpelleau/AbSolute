@@ -355,11 +355,16 @@ module PolyCP = struct
 
   let is_small poly = is_small man poly  
 
-  let is_representable c =
-    if (Csp.is_cons_linear c) then
-      Adcp_sig.Yes
-    else
-      Adcp_sig.No
+  let rec is_representable c =
+    match c with
+    | Csp.Cmp(_, _, _) as c -> 
+       if (Csp.is_cons_linear c) then
+         Adcp_sig.Yes
+       else
+         Adcp_sig.No
+    | Csp.And(e1, e2) -> Adcp_sig.and_ans (is_representable e1) (is_representable e2)
+    | Csp.Or(e1, e2) -> Adcp_sig.No
+    | Csp.Not(e) -> Adcp_sig.not_ans (is_representable e)
 
   let split poly = split poly (get_expr (Polka.manager_alloc_strict()) poly)
 

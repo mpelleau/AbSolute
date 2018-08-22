@@ -180,13 +180,10 @@ module VariousDomain_MS (Reduced : Reduction) =
 
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
-    let filter ((abs, abs'):t) ((e1, _, e2) as cons) =
-      if (Csp.is_linear e1 && Csp.is_linear e2) then
-        (Format.printf "TRUE\n";
-        (A.filter abs cons, B.filter abs' cons))
-      else
-        (Format.printf "FALSE\n";
-        (A.filter abs cons, abs'))
+    let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
+      match B.is_representable (Csp.Cmp(op, e1, e2)) with
+      | Yes -> (A.filter abs cons, B.filter abs' cons)
+      | Maybe | No -> (A.filter abs cons, abs')
         
 
     let forward_eval (abs, abs') cons =
