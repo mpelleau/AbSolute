@@ -153,6 +153,11 @@ clean:
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
+TOINSTALL := solver.opt
+
+install:
+	ocamlfind install absolute META $(TOINSTALL)
+
 .depend: $(MLSOURCES) Makefile
 	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend
 

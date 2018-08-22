@@ -1,0 +1,5 @@
+description = "AbSolute"
+requires = ""
+version = "0.0.1"
+archive(byte) = ""
+archive(native) = "solver.opt"
