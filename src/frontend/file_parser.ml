@@ -106,7 +106,7 @@ let string_of_position p =
 
 (* open a file and parse it *)
 let parse (filename:string option) : prog =
-(* Parsing.set_trace true; *)
+  (* Parsing.set_trace true; *)
   let filename =
     match filename with
     | None -> failwith "you must specify a filename"
@@ -127,7 +127,7 @@ let parse (filename:string option) : prog =
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
     fileparser lex
   with
-    | IllFormedAST s -> failwith s
+  | IllFormedAST s -> failwith s
   (* | Failure s -> *)
   (*     Printf.eprintf "Error near %s\n%s\n" *)
   (*       (string_of_position lex.lex_start_p) *)

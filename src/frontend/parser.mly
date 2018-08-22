@@ -1,4 +1,5 @@
 %{
+open Tools
 open Csp
 %}
 
@@ -36,6 +37,8 @@ open Csp
 %token TOK_OBJ           /* objective */
 %token TOK_CONSTR        /* constraints */
 %token TOK_ANNOT         /* constraints */
+%token TOK_SOL           /* solutions */
+%token TOK_NONE          /* none */
 %token TOK_DRAW          /* draw */
 %token TOK_MINF          /* -oo */
 %token TOK_INF           /* oo */
@@ -71,6 +74,7 @@ file:
   domains
   objective
   constraints
+  solutions
   TOK_EOF
   {
     {
@@ -80,7 +84,8 @@ file:
       objective=$4;
       constraints=$5;
       to_draw=$1;
-      constants=$2
+      constants=$2;
+      solutions=$6;
     }
   }
 
@@ -97,6 +102,23 @@ objective:
 
 constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
+
+solutions:
+ | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Some $3}
+ | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {None}
+ | {Some []}
+
+instances:
+ | TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $2),true)::$5}
+ | TOK_LBRACE sols TOK_RBRACE {[(VarMap.of_list $2),true]}
+ | TOK_NOT TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $3),false)::$6}
+ | TOK_NOT TOK_LBRACE sols TOK_RBRACE {[(VarMap.of_list $3),false]}
+ | {[]}
+
+sols:
+ | TOK_id TOK_ASSIGN const TOK_SEMICOLON sols {($1,$3)::$5}
+ | TOK_id TOK_ASSIGN const {[($1,$3)]}
+ | {[]}
 
 constants:
   | TOK_CST TOK_LBRACE csts TOK_RBRACE {$3}

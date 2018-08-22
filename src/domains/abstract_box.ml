@@ -1,3 +1,4 @@
+open Tools
 open Bot
 open Itv_sig
 open Csp
@@ -20,7 +21,7 @@ module Box (I:ITV) = struct
   type i = I.t
 
   (* maps from variables *)
-  module Env = Mapext.Make(struct type t=var let compare=compare end)
+  module Env = Tools.VarMap
 
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
@@ -413,7 +414,25 @@ let split_along (a:t) (v:var) : t list =
         | e1, e2 ->
            acc@[(Var(v), op1, e1); (Var(v), op2, e2)]
       ) a []
+
     
+  (*********************************)
+  (* Sanity and checking functions *)
+  (*********************************)
+
+  (* returns an randomly (uniformly?) chosen instanciation of the variables *)
+  let spawn (a:t) : instance =
+    VarMap.fold (fun k itv acc -> VarMap.add k (Mpqf.of_float (I.spawn itv)) acc) a VarMap.empty
+
+  (* given an abstraction and instance, verifies if the abstraction is implied
+     by the instance *)
+  let is_abstraction (a:t) (i:instance) =
+    VarMap.for_all (fun k value ->
+        let value = Mpqf.to_float value in
+        let itv = VarMap.find k a in
+        let a,b = I.to_float_range itv in
+        a <= value && b <= value
+      ) i
 
 end
 

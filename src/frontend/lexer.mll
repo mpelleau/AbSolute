@@ -12,9 +12,11 @@ let _ =
       "info",           TOK_ANNOT;
       "draw",           TOK_DRAW;
       "init",           TOK_INIT;
-      "objective", 	TOK_OBJ;
+      "objective", 	    TOK_OBJ;
       "constraints",    TOK_CONSTR;
       "constants",      TOK_CST;
+      "solutions",      TOK_SOL;
+      "none",           TOK_NONE;
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;

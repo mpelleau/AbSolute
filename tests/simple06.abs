@@ -1,0 +1,11 @@
+init {
+  real x = [-100;100]
+}
+
+constraints {
+  x^2 = 1;
+}
+
+solutions {
+  {x=1};
+}

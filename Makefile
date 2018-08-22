@@ -63,6 +63,7 @@ MLFILES = \
 	src/solver/splitter.ml \
 	src/solver/solver.ml \
 	src/solver/minimizer.ml \
+	src/solver/checker.ml \
 	src/print/view.ml \
 	src/print/objgen.ml \
 	src/print/latex.ml \
@@ -73,12 +74,14 @@ MLFILES = \
 	src/print/vpl_drawer.ml \
 	src/print/variousDA_drawer.ml \
 	src/print/out.ml \
-	src/solver/step_by_step.ml \
-	src/main.ml
+	src/solver/step_by_step.ml
 
-CHECK = src/solver/checker.ml \
-				src/check.ml
+# targets
+TARGETS = solver.opt
 
+# mains
+ABS   = src/main.ml
+CHECK = src/check.ml
 
 CFILES = \
   src/lib/ml_float.c
@@ -95,7 +98,7 @@ OFILES   = $(CFILES:%.c=%.o)
 all: $(TARGETS)
 	@mkdir -p out
 
-solver.opt: $(OFILES) $(CMXFILES)
+solver.opt: $(OFILES) $(CMXFILES) $(ABS)
 	$(OCAMLOPT) $(PROF) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
 check: checker.opt
@@ -152,6 +155,11 @@ clean:
 	rm -f Makefile.config
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
+
+TOINSTALL := solver.opt
+
+install:
+	ocamlfind install absolute META $(TOINSTALL)
 
 .depend: $(MLSOURCES) Makefile
 	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend

@@ -201,6 +201,20 @@ module VariousDomain_MS (Reduced : Reduction) =
     let volume ((abs, abs'):t) =
       B.volume (a_meet_b abs abs')
 
+    (* concretization function. we call it a spawner.
+     useful to do tests, and to reuse the results.
+     values are generated randomly *)
+    let spawn (a,b) =
+      let rec generate () =
+        let i = A.spawn a in
+        if B.is_abstraction b i then i
+        else generate ()
+      in generate ()
+
+    let is_abstraction (a,b) i =
+      A.is_abstraction a i && B.is_abstraction b i
+
+
   end
 
 module BandP = VariousDomain_MS(BoxAndPolyNew)
