@@ -1,3 +1,5 @@
+open Tools
+
 (* variables are identified by a string *)
 type var = string
 
@@ -59,6 +61,17 @@ type ctrs = (bexpr * jacob) list
 (* constants *)
 type csts = (var * (i*i)) list
 
+(* the instance type *)
+type instance = i VarMap.t
+
+(* we can annotate a problem with information on the resolution,
+   to check the soundness of the solver *)
+(* A solution_info is either Some (l), where l is instance list,
+   of known solution and known no goods *)
+(* or None, when the problem is infeasible *)
+type solution_info =
+  (instance * bool) list option
+
 (* program *)
 type prog = {
     init        : decls;
@@ -67,15 +80,9 @@ type prog = {
     constraints : constrs;
     jacobian    : ctrs;
     to_draw     : var list;
-    view        : jacob
+    view        : jacob;
+    solutions   : solution_info (* extra information about the solutions of te problem *)
   }
-
-(* the instance type *)
-(* we associate a float value to each variable *)
-module SMAP = Mapext.Make(String)
-
-type instance = i SMAP.t
-
 
 (*************************************************************)
 (*                    PRINTING UTILITIES                     *)
@@ -456,7 +463,7 @@ let compute_jacobian csp =
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-let empty = {init = []; constraints= []; constants=[]; objective = zero; to_draw=[]; jacobian = []; view = []}
+let empty = {init = []; constraints= []; constants=[]; objective = zero; to_draw=[]; jacobian = []; view = []; solutions = Some []}
 
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init

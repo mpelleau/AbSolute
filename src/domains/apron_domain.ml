@@ -150,7 +150,7 @@ module MAKE(AP:ADomain) = struct
   let add_var abs (typ,v) =
     let e = A.env abs in
     let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
-    try 
+    try
       let env = Environment.add e ints reals in
       A.change_environment man abs env false
     with
@@ -329,4 +329,15 @@ module MAKE(AP:ADomain) = struct
     let gen_float_array = gen_to_array poly size in
     let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
     (dist_max <= !Constant.precision)
+
+  let spawn polyad =
+    (* let poly = A.to_generator_array man polyad in
+    let gen_env = poly.Generator1.array_env in *)
+    failwith "spawners not implmented with apron domains"
+
+  let is_abstraction polyad f =
+    (* let poly = A.to_generator_array man polyad in
+    let gen_env = poly.Generator1.array_env in *)
+    failwith "is_abstraction not implmented with apron domains"
+
 end

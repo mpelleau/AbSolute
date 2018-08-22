@@ -205,4 +205,7 @@ module type ITV = sig
   val filter_pow_f: t -> t -> t -> t bot
   val filter_root_f: t -> t -> t -> t bot
 
+  (* generate a random float within the given interval *)
+  val spawn : t -> float
+
 end
