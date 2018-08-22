@@ -41,7 +41,25 @@ module Expr = struct
             Term.Prod (List.map (fun _ -> term) (Misc.range 0 n))
             end
         | _ -> Pervasives.raise Out_of_Scope
-end
+
+    let rec of_term : Term.t -> t
+        = function
+        | Term.Cte q -> Csp.Cst (Q.to_string q |> Mpqf.of_string, Csp.Real)
+        | Term.Var var -> Csp.Var (Ident.ofVar var)
+    	| Term.Add (t1,t2) -> Csp.Binary (Csp.ADD, of_term t1, of_term t2)
+        | Term.Sum tl -> List.fold_left
+            (fun res t -> Csp.Binary (Csp.ADD, res, of_term t))
+            (Csp.Cst (Mpqf.of_int 0, Csp.Int))
+            tl
+        | Term.Opp t -> Csp.Unary (Csp.NEG, of_term t)
+    	| Term.Mul (t1, t2) -> Csp.Binary (Csp.MUL, of_term t1, of_term t2)
+    	| Term.Prod tl -> List.fold_left
+            (fun res t -> Csp.Binary (Csp.MUL, res, of_term t))
+            (Csp.Cst (Mpqf.of_int 1, Csp.Int))
+            tl
+    	| Term.Annot (_, t) -> of_term t
+        | _ -> Pervasives.invalid_arg "of_term"
+    end
 
 module VPL = struct
 
@@ -55,6 +73,15 @@ module VPL = struct
         | Csp.NEQ -> Cstr.NEQ
         | Csp.GT -> Cstr.GT
         | Csp.LT -> Cstr.LT
+
+	let translate_cmp' : Cstr.cmpT_extended -> Csp.cmpop
+		= function
+        | Cstr.EQ -> Csp.EQ
+        | Cstr.LE -> Csp.LEQ
+        | Cstr.GE -> Csp.GEQ
+        | Cstr.NEQ -> Csp.NEQ
+        | Cstr.GT -> Csp.GT
+        | Cstr.LT -> Csp.LT
 
     let rec to_cond : Csp.bexpr -> UserCond.t
         = function
@@ -174,6 +201,25 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let is_enumerated : t -> bool
         = fun _ ->
         Pervasives.failwith "is_enumerated: unimplemented"
+
+    let to_bexpr: t -> Csp.bexpr
+        = let csp_true : Csp.bexpr = Csp.Cmp (Csp.EQ, Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.Cst(Mpqf.of_int 0, Csp.Int))
+        in
+        let rec of_bexpr: Cond.t -> Csp.bexpr
+            = function
+            | Cond.Basic true -> csp_true
+            | Cond.Basic false -> Csp.Not csp_true
+        	| Cond.Atom (t1, cmp, t2) -> Csp.Cmp (translate_cmp' cmp, Expr.of_term t1, Expr.of_term t2)
+        	| Cond.BinL (t1, Vpl.WrapperTraductors.AND, t2) -> Csp.And(of_bexpr t1, of_bexpr t2)
+            | Cond.BinL (t1, Vpl.WrapperTraductors.OR, t2) -> Csp.Or(of_bexpr t1, of_bexpr t2)
+        	| Cond.Not t -> Csp.Not (of_bexpr t)
+        in
+        fun p ->
+        BuiltIn.get_cond p
+        |> of_bexpr
+
+    (*let is_representable : t -> Csp.answer*)
+
 end
 
 let setup_flags : unit -> unit
