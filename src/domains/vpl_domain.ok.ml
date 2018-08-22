@@ -202,17 +202,19 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ ->
         Pervasives.failwith "is_enumerated: unimplemented"
 
-    let to_bexpr: t -> Csp.bexpr
-        = let csp_true : Csp.bexpr = Csp.Cmp (Csp.EQ, Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.Cst(Mpqf.of_int 0, Csp.Int))
+    let to_bexpr: t -> (Csp.expr * Csp.cmpop * Csp.expr) list
+        = let csp_true : Csp.expr * Csp.cmpop * Csp.expr
+            = Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.EQ, Csp.Cst(Mpqf.of_int 0, Csp.Int)
+        and csp_false : Csp.expr * Csp.cmpop * Csp.expr
+            = Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.NEQ, Csp.Cst(Mpqf.of_int 0, Csp.Int)
         in
-        let rec of_bexpr: Cond.t -> Csp.bexpr
+        let rec of_bexpr: Cond.t -> (Csp.expr * Csp.cmpop * Csp.expr) list
             = function
-            | Cond.Basic true -> csp_true
-            | Cond.Basic false -> Csp.Not csp_true
-        	| Cond.Atom (t1, cmp, t2) -> Csp.Cmp (translate_cmp' cmp, Expr.of_term t1, Expr.of_term t2)
-        	| Cond.BinL (t1, Vpl.WrapperTraductors.AND, t2) -> Csp.And(of_bexpr t1, of_bexpr t2)
-            | Cond.BinL (t1, Vpl.WrapperTraductors.OR, t2) -> Csp.Or(of_bexpr t1, of_bexpr t2)
-        	| Cond.Not t -> Csp.Not (of_bexpr t)
+            | Cond.Basic true -> [csp_true]
+            | Cond.Basic false -> [csp_false]
+        	| Cond.Atom (t1, cmp, t2) -> [Expr.of_term t1, translate_cmp' cmp, Expr.of_term t2]
+        	| Cond.BinL (t1, Vpl.WrapperTraductors.AND, t2) -> of_bexpr t1 @ of_bexpr t2
+            | _ -> Pervasives.invalid_arg "to_bexpr"
         in
         fun p ->
         BuiltIn.get_cond p
@@ -227,7 +229,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             else Adcp_sig.Maybe
         in
         let combine : Adcp_sig.answer * Adcp_sig.answer -> Adcp_sig.answer
-            = Adcp_sig.(function ->
+            = Adcp_sig.(function
             | (No,_) | (_,No) -> No
             | (Maybe,_) | (_,Maybe) -> Maybe
             | _ -> Yes)
@@ -239,12 +241,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             | Yes -> No)
         in
         function
-        | Csp.Cmp (_, e1, e2) | And (e1, e2) -> combine (expr_is_representable e1, expr_is_representable e2)
-        | Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
-        | Not e -> not (is_representable e)
-
-
-        = fun
+        | Csp.Cmp (_, e1, e2) -> combine (expr_is_representable e1, expr_is_representable e2)
+        | Csp.And (e1, e2) -> combine (is_representable e1, is_representable e2)
+        | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
+        | Csp.Not e -> not (is_representable e)
 
 end
 
