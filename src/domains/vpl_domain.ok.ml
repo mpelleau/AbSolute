@@ -218,7 +218,33 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         BuiltIn.get_cond p
         |> of_bexpr
 
-    (*let is_representable : t -> Csp.answer*)
+    let rec is_representable : Csp.bexpr -> Adcp_sig.answer
+        = let expr_is_representable : Csp.expr -> Adcp_sig.answer
+            = fun t ->
+            let poly = Expr.to_term t |> Term.to_poly in
+            if Polynomial.is_affine poly
+            then Adcp_sig.Yes
+            else Adcp_sig.Maybe
+        in
+        let combine : Adcp_sig.answer * Adcp_sig.answer -> Adcp_sig.answer
+            = Adcp_sig.(function ->
+            | (No,_) | (_,No) -> No
+            | (Maybe,_) | (_,Maybe) -> Maybe
+            | _ -> Yes)
+        in
+        let not : Adcp_sig.answer -> Adcp_sig.answer
+            = Adcp_sig.(function
+            | No -> Yes
+            | Maybe -> Maybe
+            | Yes -> No)
+        in
+        function
+        | Csp.Cmp (_, e1, e2) | And (e1, e2) -> combine (expr_is_representable e1, expr_is_representable e2)
+        | Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
+        | Not e -> not (is_representable e)
+
+
+        = fun
 
 end
 
