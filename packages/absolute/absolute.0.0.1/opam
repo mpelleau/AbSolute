@@ -15,5 +15,7 @@ depends: [
   "apron"
   "ocamlfind" {build}
 ]
-depopts: "vpl-core", conflicts: "vpl-core" {< "0.4.1"}
+depopts: [
+  "vpl-core" {>= "0.4.1"}
+]
 available: [ocaml-version >= "4.05"]
