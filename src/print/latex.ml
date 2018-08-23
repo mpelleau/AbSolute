@@ -65,10 +65,3 @@ let init (a,b) (c,d) =
 let create x y =
   sx := x;
   sy := y
-
-  (*
-  let (xl, yl) = View.to_float (xl, yl) and
-      (xu, yu) = View.to_float (xu, yu) in
-  fff fmt "\\filldraw[%s, fill opacity = 0.3] (%f, %f) rectangle (%f, %f);@." c xl yl xu yu
->>>>>>> 0bc6e63acd15b36068fb42a2b4891534911274aa
-   *)
