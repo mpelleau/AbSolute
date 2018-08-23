@@ -1,6 +1,7 @@
 *.cm[ioaxt]
 *.o
 *.opt
+absolute
 *depend
 *Makefile.config
 *~

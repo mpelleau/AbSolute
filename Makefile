@@ -14,9 +14,6 @@ CC        := gcc
 OCAMLLIBS    := $(LIBS:%=%.cma)
 OCAMLOPTLIBS := $(LIBS:%=%.cmxa)
 
-# targets
-TARGETS = solver.opt
-
 AUTOGEN =\
 	src/frontend/parser.ml \
 	src/frontend/lexer.ml \
@@ -77,7 +74,7 @@ MLFILES = \
 	src/solver/step_by_step.ml
 
 # targets
-TARGETS = solver.opt
+TARGETS = absolute
 
 # mains
 ABS   = src/main.ml
@@ -98,7 +95,7 @@ OFILES   = $(CFILES:%.c=%.o)
 all: $(TARGETS)
 	@mkdir -p out
 
-solver.opt: $(OFILES) $(CMXFILES) $(ABS)
+absolute: $(OFILES) $(CMXFILES) $(ABS)
 	$(OCAMLOPT) $(PROF) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
 check: checker.opt
@@ -156,14 +153,15 @@ clean:
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
-TOINSTALL := solver.opt
-
 install:
-	ocamlfind install absolute META $(TOINSTALL)
+	cp absolute $(OPAMBIN)
+
+uninstall:
+	rm $(OPAMBIN)/absolute
 
 .depend: $(MLSOURCES) Makefile
 	-$(OCAMLDEP) -native $(OCAMLINC) $(MLSOURCES) > .depend
 
-.phony:	all clean opam_config setup_vpl setup_no_vpl
+.phony:	all clean opam_config setup_vpl setup_no_vpl install uninstall
 
 -include .depend
