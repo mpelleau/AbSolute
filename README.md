@@ -2,7 +2,7 @@
 
 AbSolute is a constraint solver based on abstract domains. It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
-Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet
+Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet. Supported by ANR CoVerif.
 
 ### Solving example:
 
