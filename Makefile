@@ -41,6 +41,8 @@ MLFILES = \
 	src/frontend/csp.ml \
 	src/lib/itv_sig.ml \
 	src/lib/itv.ml \
+	src/lib/itv_int.ml \
+	src/lib/itv_mix.ml \
 	src/lib/newitv.ml \
 	src/frontend/parser.ml \
 	src/frontend/lexer.ml \
