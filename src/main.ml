@@ -113,10 +113,10 @@ let go() =
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
     | "vpl" -> lift (module Vpl_domain.VplCP) (module Vpl_drawer) prob
-    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
-    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
-    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob
-    | "BandP" -> lift (module VariousDA.BandP) (module VariousDA_drawer.BandPDrawer) prob
+    | "boxNoct" -> lift (module Product.BoxAndOct) (module Product_drawer.BoxNoctDrawer) prob
+    | "boxNpoly" -> lift (module Product.BoxAndPoly) (module Product_drawer.BoxNpolyDrawer) prob
+    | "octNpoly" -> lift (module Product.OctAndPoly) (module Product_drawer.OctNpolyDrawer) prob
+    | "BandP" -> lift (module Product.BoxAndPolyNew) (module Product_drawer.BandPDrawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
     (* TODO : fix produit réduit
     | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"

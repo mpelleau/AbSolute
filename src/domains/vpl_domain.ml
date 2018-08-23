@@ -117,10 +117,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let add_var : t -> Csp.typ * Csp.var -> t
         = fun p _ -> p
 
-    let vars : t -> Csp.var list
+    let vars : t -> (Csp.typ * Csp.var) list
         = fun p ->
         BuiltIn.get_vars p
-        |> List.map Expr.Ident.ofVar
+        |> List.map (fun v -> (Csp.REAL, Expr.Ident.ofVar v))
 
     (* returns the bounds of a variable *)
     let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)

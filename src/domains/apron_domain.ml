@@ -145,9 +145,9 @@ module MAKE(AP:ADomain) = struct
 
   let vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
-    let tmp = (Array.to_list ivars)@(Array.to_list rvars) in
-    let tmp' = List.map (Var.to_string) tmp in
-    List.sort_uniq (compare) tmp'
+    let iv = Array.to_list ivars |> List.map (fun v -> (Csp.INT, Var.to_string v)) in
+    let rv = Array.to_list rvars |> List.map (fun v -> (Csp.REAL, Var.to_string v)) in
+    iv@rv
 
   let add_var abs (typ,v) =
     let e = A.env abs in

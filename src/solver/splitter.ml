@@ -38,7 +38,7 @@ module Boolean (Abs:AbstractCP) = struct
       ) tmp newc in
     let newa = List.fold_left (fun a' (v, i) -> Abs.rem_var a' v) a newc in
 
-    let vars = Abs.vars newa in
+    let (_, vars) = List.split (Abs.vars newa) in
     let ctrs_vars = List.fold_left
       ( fun s (c, v, j) -> Csp.Variables.union s v
       ) Csp.Variables.empty ctrs in

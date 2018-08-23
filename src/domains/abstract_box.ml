@@ -33,8 +33,12 @@ module Box (I:ITV) = struct
   let is_integer var = var.[String.length var - 1] = '%'
 
   let vars abs =
-    let (v, _) = List.split (Env.bindings abs) in
-    v
+    Env.fold (fun v x acc ->
+        let (typ, v) = if is_integer v then
+                           (INT, String.sub v 0 (String.length v -1))
+                         else (REAL, v) in
+        (typ, v)::acc
+      ) abs []
 
   let is_representable _ = Adcp_sig.Yes
 

@@ -58,7 +58,7 @@ MLFILES = \
 	src/domains/vpl_domain.ml \
 	src/domains/abstract_box.ml \
 	src/domains/ADCP.ml \
-	src/domains/variousDA.ml \
+	src/domains/product.ml \
 	src/solver/result.ml \
 	src/solver/splitter.ml \
 	src/solver/solver.ml \
@@ -72,7 +72,7 @@ MLFILES = \
 	src/print/realbox_drawer.ml \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
-	src/print/variousDA_drawer.ml \
+	src/print/product_drawer.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml
 
