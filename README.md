@@ -2,6 +2,8 @@
 
 AbSolute is a constraint solver based on abstract domains. It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
+Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet. Supported by ANR CoVerif.
+
 ### Solving example:
 
 ```c
@@ -42,11 +44,11 @@ Therefore, the easiest way to deal with apron is to install it with **and only w
 
 ### Use
 ```sh
-./solver.opt problem
+./absolute problem
 ```
 
 ###### options
-to display the list of options, type: **./solver.opt -help** or **./solver.opt --help**
+to display the list of options, type: **./absolute -help** or **./absolute --help**
 
 
 ### Requirements
@@ -56,4 +58,4 @@ to display the list of options, type: **./solver.opt -help** or **./solver.opt -
 
 ### Current
 AbSolute is currently still in developpement, and have not been fully tested.
-Feel free to contact any member of the developpement team if you want to report a bug or suggest a feature
+Feel free to post an issue or contact any member of the developpement team if you want to report a bug or suggest a feature.
