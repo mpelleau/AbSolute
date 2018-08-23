@@ -117,8 +117,8 @@ let parse (filename:string option) : prog =
   let lex = from_channel f in
   Format.printf "lex channel\n";
   let fileparser =
-    let ext = Filename.extension filename in
-    if ext = ".mod" then begin
+    let len =  String.length filename in
+    if len >= 4 && String.sub filename (len-5) (len-1) = ".mod" then begin
         (* Format.printf "mod file detected. parsing with mod parser\n%!"; *)
         (fun lex -> ModParser.stmts ModLexer.token lex |> ModCsp.toCsp)
       end else (Format.printf "parsing...\n"; Parser.file Lexer.token)

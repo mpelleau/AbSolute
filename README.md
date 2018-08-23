@@ -51,7 +51,7 @@ to display the list of options, type: **./solver.opt -help** or **./solver.opt -
 
 ### Requirements
 - An ANSI C compiler
-- OCaml >= 4.05 : http://ocaml.org/
+- OCaml >= 4.03 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
 
 ### Current
