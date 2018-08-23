@@ -5,6 +5,7 @@ let max_iter        = ref 100000000
 let max_sol         = ref 10000000
 let problem         = ref None
 let domain          = ref "box"
+let product         = ref false
 let split           = ref "default"
 let minimizing      = ref false
 let visualization   = ref false
@@ -44,12 +45,6 @@ let set_max_sol s =
 let set_prob s =
   if Sys.file_exists s then problem := Some s
   else failwith (Format.sprintf "%s : file not found" s)
-
-let set_domain d =
-  match d with
-  | "box" | "boxS" | "boxQ" | "boxQS" | "boxCP" | "oct" | "poly"
-  | "boxNoct" | "boxNpoly" | "octNpoly" | "BandP" | "vpl" -> domain := d
-  | x -> "domain "^x^" undefined" |> failwith
 
 let set_split s =
   match s with
