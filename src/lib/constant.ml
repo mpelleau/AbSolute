@@ -23,7 +23,7 @@ let set_debug_lv lv =
   if lv >= 0 then debug := lv
   else failwith "debug level must be positive"
 
-let set_debug () = debug := 0
+let set_debug () = debug := 1
 
 let set_prec f =
   if f > 0. then precision := f

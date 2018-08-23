@@ -14,6 +14,10 @@ module Coeff = Scalar.Rat
 module Domain = NCDomain.NCVPL_Cstr.Q
 include MakeInterface(Coeff)
 
+type split = Pizza | Default
+
+let vpl_split : split ref = ref Default
+
 module Expr = struct
     module Ident = UserInterface.Lift_Ident (struct
         type t = string
@@ -159,12 +163,12 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split : t -> t list
         = fun p ->
         VPL_CP_Profile.start "split";
-        let res = split_in_half p in
+        let res = match !vpl_split with
+            | Default -> split_in_half p
+            | Pizza -> get_regions p
+        in
         VPL_CP_Profile.stop "split";
         res
-        (*
-        get_regions p
-        *)
 
     (* TODO: can we use this variable? *)
     let split_along : t -> Csp.var -> t list
@@ -252,12 +256,18 @@ let setup_flags : unit -> unit
     = fun () ->
     Flags.handelman_timeout := None
 
-let set_lin s =
-    match s with
+let set_lin =
+    function
     | "handelman" -> Flags.lin := Flags.Handelman
     | "itv" -> Flags.lin := Flags.Intervalization
     | "both" -> Flags.lin := Flags.Both
-    | _ -> "Linearization " ^ s ^ "undefined. Should be among : handelman, itv, both" |> failwith
+    | s -> "Linearization " ^ s ^ "undefined. Should be among : handelman, itv, both" |> invalid_arg
+
+let set_split
+    = function
+    | "pizza" -> vpl_split := Pizza
+    | "default" -> vpl_split := Default
+    | s -> "Splitting strategy " ^ s ^ "undefined. Should be among : pizza, default" |> invalid_arg
 
 let enable_debug : unit -> unit
     = fun () ->

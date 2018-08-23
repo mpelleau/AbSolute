@@ -21,4 +21,4 @@ depopts: [
 conflicts: [
   "vpl-core" {< "0.4.1"}
 ]
-available: [ocaml-version >= "4.05"]
+available: [ocaml-version >= "4.03"]

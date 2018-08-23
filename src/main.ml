@@ -72,6 +72,7 @@ let speclist =
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
   ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
+  ("-vpl_split"          , Arg.String Vpl_domain.set_split      , "Sets the split strategy of the VPL");
 ]
 
 (*************** ALIASES ************)
@@ -103,6 +104,7 @@ let go() =
   Format.printf "domain : %s\n" !domain;
   let prob = File_parser.parse !problem in
   Format.printf "file parsed\n";
+  if !debug > 0 then Vpl_domain.enable_debug();
   if !trace then Format.printf "%a" Csp.print prob;
   match !domain with
     | "box" -> lift (module Abstract_box.BoxF) (module Box_drawer.Make(Abstract_box.BoxF)) prob

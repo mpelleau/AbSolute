@@ -30,9 +30,16 @@ module Make (D:Drawer) = struct
     View.draw_end v1 v2
 
   let print_latex sure unsure (v1,v2) =
+    Latex.create 8. 6.5;
     match !Constant.problem with
     | None -> assert false
     | Some s ->
+       let v1_b = bound_dim v1 sure unsure
+       and v2_b = bound_dim v2 sure unsure in
+       (match v1_b,v2_b with
+        | None, None -> failwith "nothing to draw"
+        | Some(a,b),None | None, Some(a,b) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
+        | Some(a,b),Some(c,d) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
        let name = Filename.(basename s |> chop_extension) in
        let out = ("out/"^name^".tex") in
        let name = Latex.escape name in

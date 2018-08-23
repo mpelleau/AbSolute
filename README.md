@@ -4,7 +4,7 @@ AbSolute is a constraint solver based on abstract domains. It implements the sol
 
 ### Solving example:
 
-```c          
+```c
 /* simple example with sinus and cosinus */
 init{
   real x = [-10;10];
@@ -51,9 +51,8 @@ to display the list of options, type: **./solver.opt -help** or **./solver.opt -
 
 ### Requirements
 - An ANSI C compiler
-- OCaml > 4.05 : http://ocaml.org/
+- OCaml >= 4.03 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
-- Zarith : https://forge.ocamlcore.org/projects/zarith
 
 ### Current
 AbSolute is currently still in developpement, and have not been fully tested.

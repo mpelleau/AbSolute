@@ -80,10 +80,10 @@ module SyntaxTranslator (D:ADomain) = struct
     | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
        let e = apron_to_expr e env in
        Funcall ("sqrt",[e])
-    | Texpr1.(Unop (Neg, e, _, _)) ->
+    | Texpr1.Unop (Texpr1.Neg, e, _, _) ->
       let e = apron_to_expr e env in
       Unary (NEG, e)
-    | Texpr1.(Unop (Cast, e, _, _)) -> failwith "cast should not occur"
+    | Texpr1.Unop (Texpr1.Cast, e, _, _) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
       let o = match op with
         | Texpr1.Add -> ADD

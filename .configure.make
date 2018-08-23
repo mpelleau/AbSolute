@@ -26,18 +26,18 @@ Makefile.config:
 		echo 'OPAMDIR    := $$(shell opam config var lib)'; \
 		echo 'APRONDIR   := $$(OPAMDIR)/apron'; \
 		echo 'GMPDIR     := $$(OPAMDIR)/gmp'; \
-		echo 'ZARITHDIR  := $$(OPAMDIR)/zarith'; \
 		echo 'OCAMLDIR   := $$(OPAMDIR)/ocaml'; \
 		if test -z "$$VPL_PATH"; then VPL_PATH=$$(ocamlfind query vpl); fi; \
 		if [ -n "$$VPL_PATH" ]; then \
+			echo 'ZARITHDIR = $$(OPAMDIR)/zarith'; \
 			echo 'VPLDIR = $$(OPAMDIR)/vpl'; \
 			echo ;\
 			echo "LIBS := bigarray gmp zarith apron polkaMPQ octD boxMPQ str unix graphics vpl"; \
 			echo ;\
 			echo 'OCAMLINC  := -I $$(APRONDIR) -I $$(GMPDIR) -I $$(ZARITHDIR) -I src -I src/lib -I src/domains -I src/frontend -I src/print -I src/solver -I $$(VPLDIR)'; \
 		else \
-			echo "LIBS := bigarray gmp zarith apron polkaMPQ octD boxMPQ str unix graphics"; \
+			echo "LIBS := bigarray gmp apron polkaMPQ octD boxMPQ str unix graphics"; \
 			echo ;\
-			echo 'OCAMLINC  := -I $$(APRONDIR) -I $$(GMPDIR) -I $$(ZARITHDIR) -I src -I src/lib -I src/domains -I src/frontend -I src/print -I src/solver'; \
+			echo 'OCAMLINC  := -I $$(APRONDIR) -I $$(GMPDIR) -I src -I src/lib -I src/domains -I src/frontend -I src/print -I src/solver'; \
 		fi; \
 	} > $@

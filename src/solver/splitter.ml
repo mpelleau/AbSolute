@@ -1,4 +1,5 @@
 open Adcp_sig
+open Tools
 
 (* Boolean expressions abstractions *)
 module Boolean (Abs:AbstractCP) = struct
@@ -137,7 +138,7 @@ module Make (Abs : AbstractCP) = struct
     in aux abs constrs true [] []
 
   let split abs cstrs = Abs.split abs
-(* TODO: add other splits *)
+  (* TODO: add other splits *)
 
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in
@@ -160,7 +161,7 @@ module Make (Abs : AbstractCP) = struct
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
-  module Smear = Map.Make(struct type t=Csp.var let compare=compare end)
+  module Smear = VarMap
 
   let sum_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let smear = List.fold_left (

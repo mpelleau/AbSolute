@@ -1,6 +1,7 @@
 *.cm[ioaxt]
 *.o
 *.opt
+absolute
 *depend
 *Makefile.config
 *~
@@ -11,5 +12,7 @@ src/frontend/lexer.ml
 src/frontend/modParser.ml
 src/frontend/modParser.mli
 src/frontend/modLexer.ml
+src/domains/vpl_domain.ml
+src/print/vpl_drawer.ml
 *.obj
 out/*
