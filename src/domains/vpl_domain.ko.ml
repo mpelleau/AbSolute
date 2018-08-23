@@ -85,6 +85,8 @@ let setup_flags : unit -> unit
 
 let set_lin _ = ()
 
+let set_split _ = ()
+
 let enable_debug : unit -> unit
     = fun () -> ()
 
