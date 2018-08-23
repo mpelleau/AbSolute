@@ -26,22 +26,6 @@ module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
     Print.out_min prob res
 end
 
-module GoSV (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
-  module Sol = Solver.Solve(Abs)
-  module Print = Out.Make(Dr)
-  let go prob =
-    let res = Sol.solving_various prob in
-    Print.out prob res
-end
-
-module GoMV (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
-  module Min = Minimizer.Minimize(Abs)
-  module Print = Out.Make(Dr)
-  let go prob =
-    let res = Min.minimizing_various prob in
-    Print.out_min prob res
-end
-
 (************************)
 (* THE SOLVER INSTANCES *)
 (************************)
@@ -60,17 +44,6 @@ let lift (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module 
             SBS.solving prob
         else let module Solver = GoS (Domain)(Drawer) in
              Solver.go prob
-
-let liftV (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module Drawer : Drawer_sig.Drawer with type t = s) (prob : Csp.prog) : unit =
-    if !Constant.minimizing
-    then let module Minimizer = GoMV (Domain)(Drawer) in
-        Minimizer.go prob
-    else
-        if !Constant.step_by_step
-        then let module SBS = Step_by_step.Make (Domain)(Drawer) in
-            SBS.solving prob
-        else let module Solver = GoSV (Domain)(Drawer) in
-            Solver.go prob
 
 (********************)
 (* OPTIONS HANDLING *)
@@ -142,10 +115,10 @@ let go() =
     | "oct" -> lift (module ADCP.OctBoxCP) (module Apron_drawer.OctDrawer) prob
     | "poly" -> lift (module ADCP.PolyCP) (module Apron_drawer.PolyDrawer) prob
     | "vpl" -> lift (module Vpl_domain.VplCP) (module Vpl_drawer) prob
-    | "boxNoct" -> liftV (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
-    | "boxNpoly" -> liftV (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
-    | "octNpoly" -> liftV (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob
-    | "BandP" -> liftV (module VariousDA.BandP) (module VariousDA_drawer.BandPDrawer) prob
+    | "boxNoct" -> lift (module VariousDA.BoxNOct) (module VariousDA_drawer.BoxNoctDrawer) prob
+    | "boxNpoly" -> lift (module VariousDA.BoxNPoly) (module VariousDA_drawer.BoxNpolyDrawer) prob
+    | "octNpoly" -> lift (module VariousDA.OctNPoly) (module VariousDA_drawer.OctNpolyDrawer) prob
+    | "BandP" -> lift (module VariousDA.BandP) (module VariousDA_drawer.BandPDrawer) prob
     | _ -> "domain undefined "^(!domain) |> failwith
     (* TODO : fix produit réduit
     | "boxNoct" -> SBoxNOct.solving_various prob |> ignore; Format.printf "solving done\n"

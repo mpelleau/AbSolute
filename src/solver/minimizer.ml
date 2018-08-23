@@ -1,4 +1,3 @@
-open Format
 open Adcp_sig
 
 module Minimize(Abs : AbstractCP) = struct
@@ -46,7 +45,7 @@ module Minimize(Abs : AbstractCP) = struct
     Format.printf "\noptimization ends\n%!%a" Res.print res;
     res
 
-    let minimizing_various prob =
+    (* let minimizing_various prob =
     let open Csp in
     let open Result in
     let abs = init prob in
@@ -71,7 +70,7 @@ module Minimize(Abs : AbstractCP) = struct
       else
         (printf "No Solutions - #created nodes: 0@."; Res.empty_res)
     in
-    res
+    res *)
 end
 
 (*
