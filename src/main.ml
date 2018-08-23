@@ -53,40 +53,40 @@ let speclist =
   let open Constant in
   let open Argext in
   [
-  ("-visualization", Set visualization    , "Enables visualization mode");
   ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
   ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
   ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
   ("-domain"       , String set_domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, boxNoct, boxNpoly, octNpoly, BandP, vpl");
-  ("-obj"          , Set obj              , "Generates an .obj file (for 3D visualization)");
-  ("-tex"          , Set tex              , "Prints the solutions in latex format on stadard output");
-  ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
-  ("-trace"        , Set trace            , "Prints the solutions on standard output");
-  ("-sure"         , Set sure             , "Keeps only the sure solutions");
   ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
   ("-iter"         , Set iter             , "Enables the loop for the propagation");
+  ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
   ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
+  ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
+  ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
+  ("-vpl_split"    , Arg.String Vpl_domain.set_split      , "Sets the split strategy of the VPL");
+  ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
   ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
-  ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
-  ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
+  ("-sure"         , Set sure             , "Keeps only the sure solutions");
+  ("-trace"        , Set trace            , "Prints the solutions on standard output");
+  ("-visualization", Set visualization    , "Enables visualization mode");
+  ("-obj"          , Set obj              , "Generates an .obj file (for 3D visualization)");
+  ("-tex"          , Set tex              , "Prints the solutions in latex format on standard output");
   ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
-  ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
-  ("-vpl_split"          , Arg.String Vpl_domain.set_split      , "Sets the split strategy of the VPL");
 ]
 
 (*************** ALIASES ************)
 let aliases =
   [
-  ("-m", "-minimize");
-  ("-t", "-trace");
-  ("-s", "-sure");
-  ("-v", "-visualization");
   ("-p", "-precision");
   ("-d", "-domain");
+  ("-m", "-minimize");
   ("-i", "-iter");
   ("-pi","-pruning_iter");
   ("-sp","-split");
+  ("-s", "-sure");
+  ("-t", "-trace");
+  ("-v", "-visualization");
   ]
 
 let globaldescr =
