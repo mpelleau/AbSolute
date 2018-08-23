@@ -48,7 +48,7 @@ Therefore, the easiest way to deal with apron is to install it with **and only w
 ```
 
 ###### options
-to display the list of options, type: **./solver.opt -help** or **./solver.opt --help**
+to display the list of options, type: **./absolute -help** or **./absolute --help**
 
 
 ### Requirements
