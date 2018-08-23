@@ -1,3 +1,5 @@
+open Tools
+
 (* numeric expressions *)
 type expr =
   | Unary of Csp.unop * expr
@@ -13,8 +15,7 @@ type bexpr =
   | Or of bexpr * bexpr
   | Not of bexpr
 
-module Env = Map.Make(struct type t = Csp.var let compare = compare end)
-module Vars = Set.Make(struct type t = Csp.var let compare = compare end)
+module Env = VarMap
 
 type env = {
     params      : expr Env.t;

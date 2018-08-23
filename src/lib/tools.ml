@@ -54,6 +54,12 @@ module VarMap = struct
     try find key map
     with Not_found -> fail_fmt "variable not found: %s" key
 
+  (* we define a find_fail that fails directly with an error msg
+     when a variable is not found *)
+  let find_opt key map =
+    try Some (find key map)
+    with Not_found -> None
+
   (* builds a map from an association list*)
   let of_list (assoc: (string*'a) list) =
     List.fold_left (fun acc (k,m) -> add k m acc) empty assoc
