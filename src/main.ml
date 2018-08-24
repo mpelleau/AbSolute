@@ -89,8 +89,6 @@ let set_domain_from_names : string list -> (module FullDomain)
 
 let set_domain : unit -> (module FullDomain)
     = fun () ->
-    print_endline "omg";
-    print_endline !Constant.domain;
     Str.split (Str.regexp ",") !Constant.domain
     |> set_domain_from_names
 
@@ -137,14 +135,14 @@ let speclist =
   ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
   ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
   ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-  ("-domain"       , Set_string domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, boxNoct, boxNpoly, octNpoly, BandP, vpl");
+  ("-domain"       , Set_string domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, vpl or any combination of them separated by commas (e.g. box,poly,boxQS) ");
   ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
   ("-iter"         , Set iter             , "Enables the loop for the propagation");
   ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
   ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
   ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
-  ("-lin"          , Arg.String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
-  ("-vpl_split"    , Arg.String Vpl_domain.set_split      , "Sets the split strategy of the VPL");
+  ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
+  ("-vpl_split"    , String Vpl_domain.set_split    , "Sets the split strategy of the VPL");
   ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
   ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
   ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
