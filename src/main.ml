@@ -96,23 +96,6 @@ let set_domain : unit -> (module FullDomain)
  * Lifts the given abstract domain and its associated drawer into a runnable domain.
  * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
  *)
-(*
-let lift (type s) (module Domain : Adcp_sig.AbstractCP with type t = s) (module Drawer : Drawer_sig.Drawer with type t = s) (prob : Csp.prog) : unit =
-    if !Constant.minimizing
-    then let module Minimizer = GoM (Domain)(Drawer) in
-        Minimizer.go prob
-    else
-        if !Constant.step_by_step
-        then let module SBS = Step_by_step.Make (Domain)(Drawer) in
-            SBS.solving prob
-        else let module Solver = GoS (Domain)(Drawer) in
-             Solver.go prob
-*)
-
-(**
- * Lifts the given abstract domain and its associated drawer into a runnable domain.
- * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
- *)
 let lift (module D : FullDomain) (prob : Csp.prog) : unit =
     if !Constant.minimizing
     then let module Minimizer = GoM (D.Abstract)(D.Drawer) in
@@ -186,4 +169,5 @@ let go() =
   if !debug > 0 then Vpl_domain.enable_debug();
   if !trace then Format.printf "%a" Csp.print prob;
   lift (set_domain ()) prob
+
 let _ = go()
