@@ -223,6 +223,10 @@ module Make(B:BOUND) = struct
   let contains ((l,h):t) (x:B.t) : bool =
     in_half l true x && in_half h false x
 
+  let contains_float (i:t) (x:float) : bool =
+    contains i (B.of_float_up x)
+    (*TODO: improve rounding errors resiliance *)
+
   let intersect i1 i2 : bool =
     meet i1 i2 <> Bot
 
@@ -236,6 +240,17 @@ module Make(B:BOUND) = struct
     is_finite l && B.equal (snd l) (snd h)
 
   let range (((_,l),(_,h)): t) = B.sub_up h l
+
+
+  let float_size (i:t) : float =
+    B.to_float_up (range i)
+
+  (* split *)
+  (* ----- *)
+
+  (* split priority *)
+  let score itv = float_size itv
+
 
   (* length of the intersection (>= 0) *)
   let overlap i1 i2 =
@@ -262,31 +277,16 @@ module Make(B:BOUND) = struct
     in [res]
 
   (* splits in two, around m *)
-  let split ((l,h):t) (m:bound list) : (t bot) list =
+  let split ((l,h):t) : t list =
     let rec aux acc cur (bounds:bound list) =
       match bounds with
       |  hd::tl ->
-	       let itv = check_bot (cur,(Large,hd)) in
+	       let itv = validate (cur,(Large,hd)) in
 	       aux (itv::acc) (Strict,hd) tl
       | [] ->
-	       let itv = check_bot (cur,h) in
+	       let itv = validate (cur,h) in
 	       itv::acc
-    in aux [] l m
-
-  (* integer optimized verison *)
-  let split_integer ((l,h):t) (m:bound list) : (t bot) list =
-    let rec aux acc cur (bounds:bound list) =
-      match bounds with
-      |  hd::tl ->
-         let int_down,int_up =
-           let a,b = B.floor hd, B.ceil hd in
-           if B.equal a b then a,(B.add_up b B.one)
-           else a,b
-         in
-	       let itv = check_bot (cur,(Large,int_down)) in
-	       aux (itv::acc) (Strict,int_up) tl
-      | [] -> (check_bot (cur,h))::acc
-    in aux [] l m
+    in aux [] l (mean (l,h))
 
   let prune ((l,h):t) ((l',h'):t) : t list * t  =
     match (gt_low l' l), (lt_up h' h) with

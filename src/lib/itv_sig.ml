@@ -11,17 +11,12 @@
  *)
 
 open Bot
-open Bound_sig
 
 module type ITV = sig
 
   (************************************************************************)
   (* TYPES *)
   (************************************************************************)
-
-  (* interval bound (possibly -oo or +oo) *)
-  module B : BOUND
-  type bound = B.t
 
   (* an interval is a pair of bounds (lower,upper);
      intervals are always non-empty: lower <= upper;
@@ -34,9 +29,6 @@ module type ITV = sig
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
 
-  val positive: t       (* [0,+oo] *)
-  val negative: t       (* [-oo,0] *)
-
   (* default value for unconstrained variables *)
   val top_int : t
   val top_real : t
@@ -44,20 +36,15 @@ module type ITV = sig
   (* approximation of pi *)
   val i_pi:t
 
-  val of_bounds: bound -> bound -> t
   val of_ints: int -> int -> t
   val of_rats: Mpqf.t -> Mpqf.t -> t
   val of_floats: float -> float -> t
   (* [a,b] *)
 
-  val of_bound: bound -> t
   val of_int: int -> t
   val of_rat: Mpqf.t -> t
   val of_float: float -> t
   (* {a} *)
-
-  val hull: bound -> bound -> t
-  (* [min a b, max a b] *)
 
   (************************************************************************)
   (* PRINTING and CONVERSIONS *)
@@ -95,7 +82,7 @@ module type ITV = sig
 
   val equal: t -> t -> bool
   val subseteq: t -> t -> bool
-  val contains: t -> bound -> bool
+  val contains_float: t -> float -> bool
   val intersect: t -> t -> bool
   val is_bounded: t -> bool
   val is_singleton: t -> bool
@@ -104,20 +91,16 @@ module type ITV = sig
 
   (* mesure *)
   (* ------ *)
-
-  (* length of the intersection (>= 0) *)
-  val overlap: t -> t -> bound
-
-  val range: t -> bound
-  val magnitude: t -> bound
+  val float_size: t -> float
 
 
   (* split *)
   (* ----- *)
 
-  val mean: t -> bound list
-  val split: t -> bound list -> (t bot) list
-  val split_integer: t -> bound list -> (t bot) list
+  (* returns a split priority. The higher the better *)
+  val score : t -> float
+
+  val split: t -> t list
 
   (* pruning *)
   (* ------- *)
@@ -187,8 +170,6 @@ module type ITV = sig
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
      it returns a possibly bottom result *)
   val filter_fun: string -> t list -> t -> (t list) bot
-
-  val filter_bounds: t -> t bot
 
   (* Only filters the first argument *)
   val filter_add_f: t -> t -> t -> t bot

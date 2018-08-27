@@ -16,8 +16,8 @@ module Box (I:ITV) = struct
 
   (* interval and bound inheritance *)
   module I = I
-  module B = I.B
-  type bound = B.t
+  (* module B = I.B *)
+  (* type bound = B.t *)
   type i = I.t
 
   (* maps from variables *)
@@ -86,48 +86,48 @@ module Box (I:ITV) = struct
   (* mesure *)
   (* ------ *)
 
-  (* diameter *)
-  let diameter (a:t) : bound =
-    Env.fold (fun _ x v -> B.max (I.range x) v) a B.zero
-
   (* variable with maximal range *)
-  let max_range (a:t) : var * i =
-    Env.fold
+  let max_range (a:t) : var * I.t =
+    VarMap.fold
       (fun v i (vo,io) ->
-        if B.gt (I.range i) (I.range io) then v,i else vo,io
-      ) a (Env.min_binding a)
+        if (I.float_size i) > (I.float_size io) then v,i else vo,io
+      ) a (VarMap.min_binding a)
 
-  (* variable with maximal range if real or with smallest range if integer *)
-  let mix_range (a:t) : var * i =
-    Env.fold
+  (* variable with maximal range if real or with minimal if integer *)
+  let mix_range (a:t) : var * I.t =
+    VarMap.fold
       (fun v i (vo,io) ->
-        if is_integer v then
-          let r = I.range i in
-          if (B.neq B.zero r) && (B.gt (I.range io) r) then v,i else vo,io
-        else
-          vo,io
-      ) a (max_range a)
+        if (I.score i) > (I.score io) then v,i else vo,io
+      ) a (VarMap.min_binding a)
 
   let is_small (a:t) : bool =
     let (v,i) = max_range a in
-    (B.to_float_up (I.range i) <= !Constant.precision)
+    (I.float_size i) <= !Constant.precision
 
   let volume (a:t) : float =
-    let vol_bound = Env.fold (fun _ x v -> B.mul_down (I.range x) v) a B.one in
-    B.to_float_up vol_bound
+    VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
+
+  (************************)
+  (* splitting strategies *)
+  (************************)
+
+  let choose a = mix_range a
+
+  let split_along (a:t) (v,i:var * I.t) : t list =
+    let i_list = I.split i in
+    List.fold_left (fun acc e ->
+        (VarMap.add v e a)::acc
+      ) [] i_list
+
+  let split (a:t) : t list =
+    let ((v,i) as var) = choose a in
+    (if !Constant.debug > 2 then Format.printf " ---- splits along %s ---- \n" v);
+    split_along a var
+
 
 
   (* split *)
   (* ----- *)
-
-  let filter_bounds (a:t) : t =
-    let b = Env.mapi (fun v i ->
-      if is_integer v then
-	      match I.filter_bounds i with
-	      | Bot -> raise Bot_found
-	      | Nb e -> e
-      else i) a in
-    b
 
   let to_bot (a:I.t bot Env.t) : t bot =
     let is_bot = Env.exists (fun v i -> is_Bot i) a in
@@ -137,25 +137,11 @@ module Box (I:ITV) = struct
     | _ -> failwith "should not occur"
     ) a)
 
-  let filter_bounds_bot (a:t bot) : t bot =
-    match a with
-    | Bot -> Bot
-    | Nb e -> Env.mapi (fun v i ->
-      if is_integer v then I.filter_bounds i
-      else Nb i
-    ) e
-    |> to_bot
-
 let split_along (a:t) (v:var) : t list =
     let i = Env.find v a in
-    let i_list =
-      if is_integer v then I.split_integer i (I.mean i)
-      else I.split i (I.mean i)
-    in
+    let i_list = I.split i in
     List.fold_left (fun acc b ->
-      match b with
-      | Nb e -> (Env.add v e a)::acc
-      | Bot -> acc
+        (Env.add v b a)::acc
     ) [] i_list
 
   let split (a:t) : t list =
@@ -188,18 +174,6 @@ let split_along (a:t) (v:var) : t list =
     | BCst     of i
 
   and bexpri = bexpr * i
-
-  let rec print_bexpri fmt (b, i) =
-    match b with
-    | BUnary (u, bi) ->
-      Format.fprintf fmt "(%a %a) -> %a" print_unop u print_bexpri bi I.print i
-    | BBinary (op, e1, e2) ->
-      Format.fprintf fmt "(%a %a %a) -> %a" print_bexpri e1 print_binop op print_bexpri e2 I.print i
-    | BVar v -> Format.fprintf fmt "%s" v
-    | BCst c -> Format.fprintf fmt "cst %a" I.print c
-    | BFuncall (f, l) -> Format.fprintf fmt "%s (" f;
-                         List.iter (print_bexpri fmt) l;
-                         Format.fprintf fmt ") -> %a" I.print i
 
   (* interval evaluation of an expression;
      returns the interval result but also an expression tree annotated with
@@ -239,7 +213,7 @@ let split_along (a:t) (v:var) : t list =
             let r = I.mul i1 i2 in
             if e1=e2 then
               (* special case: squares are positive *)
-              debot (I.meet r I.positive)
+              I.abs r
             else r
 	 | POW -> I.pow i1 i2
        in
@@ -407,7 +381,8 @@ end
 (* INSTANCES *)
 (*************)
 
-module BoxF = Box(Itv.ItvF)
-module BoxStrict = Box(Newitv.Test)
-module BoxQ = Box(Itv.ItvQ)
+module BoxF       = Box(Itv.ItvF)
+module BoxStrict  = Box(Newitv.Test)
+module BoxQ       = Box(Itv.ItvQ)
 module BoxQStrict = Box(Newitv.TestQ)
+(* module BoxMix     = Box(Itv_mix) *)

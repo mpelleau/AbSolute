@@ -156,26 +156,26 @@ module Itv(B:BOUND) = struct
   let is_singleton ((l,h):t) : bool =
     is_finite l && B.equal l h
 
+  let contains_float ((l,h):t) (x:float) : bool =
+    B.leq l (B.of_float_down x) && B.leq (B.of_float_up x) h
 
   (* mesure *)
   (* ------ *)
-
 
   (* length of the intersection (>= 0) *)
   let overlap ((l1,h1):t) ((l2,h2):t) : B.t  =
     B.max B.zero (B.sub_up (B.min h1 h2) (B.max l1 l2))
 
-  let range ((l,h):t) : B.t =
-    B.sub_up h l
+  let range ((l,h):t) : B.t = (B.sub_up h l)
 
-  let magnitude ((l,h):t) : B.t =
-    B.max (B.abs l) (B.abs h)
-
-
+  let float_size ((l,h):t) : float =
+    B.to_float_up (B.sub_up h l)
 
   (* split *)
   (* ----- *)
 
+  (* split priority *)
+  let score itv = float_size itv
 
   (* find the mean of the interval;
      when a bound is infinite, then "mean" is some value strictly inside the
@@ -202,32 +202,17 @@ module Itv(B:BOUND) = struct
       B.zero
     in [res]
 
-  (* splits in two, around m *)
-  let split ((l,h):t) (m:bound list) : (t bot) list =
+  (* splits in two, around the middle *)
+  let split ((l,h) as i :t) : t list =
     let rec aux acc cur bounds =
       match bounds with
       |  hd::tl ->
-	       let itv = check_bot (cur,hd) in
+	       let itv = validate (cur,hd) in
 	       aux (itv::acc) hd tl
       | [] ->
-	       let itv = check_bot (cur,h) in
+	       let itv = validate (cur,h) in
 	       itv::acc
-    in aux [] l m
-
-  let split_integer ((l,h):t) (m:bound list) : (t bot) list =
-    let to_pair = ref l in
-    let list =
-      List.rev_map (fun e ->
-	      let ll,hh =
-          let a, b = B.floor e, B.ceil e in
-          if B.equal a b then a, B.add_up b B.one
-	        else a, b
-        in
-	      let res = (!to_pair,ll) in to_pair := hh ; res)
-	      m
-    in
-    List.rev_map check_bot ((!to_pair,h)::list)
-
+    in aux [] l (mean i)
 
   let prune ((l,h):t) ((l',h'):t) : t list * t  =
     let epsilon = B.of_float_up 0.000001 in
