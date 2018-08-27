@@ -91,8 +91,8 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   let belong_to (instance:Csp.instance) (typ,var,dom) =
     let check_type typ value =
       match typ with
-      | INT  -> ceil value = value
-      | REAL -> true
+      | Int  -> ceil value = value
+      | Real -> true
     in
     let check_dom dom value =
       match dom with

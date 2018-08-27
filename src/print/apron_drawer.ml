@@ -30,7 +30,7 @@ module Make(AP:ADomain) = struct
     let csts_expr = Csp.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
 
-    let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars) in
+    let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars) in
     let a = List.fold_left (T.add_var) abs new_vars in
 
     List.fold_left (fun a c -> T.filter a c) a csts_expr

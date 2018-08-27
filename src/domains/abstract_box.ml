@@ -33,8 +33,8 @@ module Box (I:ITV) = struct
   let vars abs =
     Env.fold (fun v x acc ->
         let (typ, v) = if is_integer v then
-                           (INT, String.sub v 0 (String.length v -1))
-                         else (REAL, v) in
+                           (Int, String.sub v 0 (String.length v -1))
+                         else (Real, v) in
         (typ, v)::acc
       ) abs []
 
@@ -52,16 +52,14 @@ module Box (I:ITV) = struct
   let to_expr abs =
     Env.fold (fun v x lexp ->
         let ((cl, l), (ch, h)) = I.to_expr x in
-        List.append lexp [(Csp.Var(v), cl, l);
-                          (Csp.Var(v), ch, h)]
+        (Csp.Var(v), cl, l)::(Csp.Var(v), ch, h)::lexp
       ) abs []
 
   let to_expr abs vars : (Csp.expr * Csp.cmpop * Csp.expr) list =
     Env.fold (fun v x lexp ->
         if List.exists (fun vn -> String.equal v vn) vars then
           let ((cl, l), (ch, h)) = I.to_expr x in
-          List.append lexp [(Csp.Var(v), cl, l);
-                            (Csp.Var(v), ch, h)]
+          (Csp.Var(v), cl, l)::(Csp.Var(v), ch, h)::lexp
         else lexp
       ) abs []
 
@@ -331,8 +329,12 @@ let split_along (a:t) (v:var) : t list =
 
   let is_empty abs = Env.is_empty abs
 
-  let add_var abs (typ,var) : t =
-    Env.add var I.top abs
+  let add_var (abs:t) (typ,var) : t =
+    Env.add var
+      (match typ with
+      | Int -> I.top_int
+      | Real -> I.top_real)
+      abs
 
   let var_bounds (abs:t) var =
     let itv = find var abs in

@@ -124,7 +124,9 @@ module Make(B:BOUND) = struct
 
   let minus_one : t = of_bound B.minus_one
 
-  let top : t = (Strict,B.minus_inf), (Strict,B.inf)
+  let top_real : t = (Strict,B.minus_inf), (Strict,B.inf)
+  let top_int : t = (Strict,B.minus_inf), (Strict,B.inf)
+  let top = top_real
 
   let zero_one : t = large B.zero B.one
 
@@ -627,7 +629,6 @@ module Make(B:BOUND) = struct
   let filter_abs (i:t) (r:t) : t bot =
     assert (subseteq r positive);
     meet i (join r (neg r))
-
 
   (* r = i + c => i = r - c *)
   let filter_add_f (i:t) (c:t) (r:t) : t bot =

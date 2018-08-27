@@ -50,7 +50,8 @@ module Itv(B:BOUND) = struct
 
   let minus_one : t = of_bound B.minus_one
 
-  let top : t = B.minus_inf, B.inf
+  let top_real : t = B.minus_inf, B.inf
+  let top_int : t = B.minus_inf, B.inf
 
   let zero_one : t = B.zero, B.one
 
@@ -426,19 +427,19 @@ module Itv(B:BOUND) = struct
   (* interval tan *)
   let tan itv =
     let diam = range itv in
-    if B.geq diam pi then top
+    if B.geq diam pi then top_real
     else
       let (l',h') = scale_to_two_pi_itv itv in
       let diam = range itv
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
       (* Format.printf "%s ; || = %s ; (%i, %i)\n" (to_string (l',h')) (B.to_string diam) q_inf q_sup; *)
-      if q_inf = q_sup && B.geq diam pi then top
+      if q_inf = q_sup && B.geq diam pi then top_real
       else
         match q_inf, q_sup with
         | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
 	  (B.tan_down l',B.tan_up h')
-        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
+        | (One | Two | Three | Four), (One | Two | Three | Four) -> top_real
         | _  -> (B.min (B.tan_down l') (B.tan_down h'), B.max (B.tan_up l') (B.tan_up h'))
   (* | _ -> failwith ("Should not occur")*)
 

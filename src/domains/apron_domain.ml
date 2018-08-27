@@ -145,13 +145,13 @@ module MAKE(AP:ADomain) = struct
 
   let vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
-    let iv = Array.to_list ivars |> List.map (fun v -> (Csp.INT, Var.to_string v)) in
-    let rv = Array.to_list rvars |> List.map (fun v -> (Csp.REAL, Var.to_string v)) in
+    let iv = Array.to_list ivars |> List.map (fun v -> (Csp.Int, Var.to_string v)) in
+    let rv = Array.to_list rvars |> List.map (fun v -> (Csp.Real, Var.to_string v)) in
     iv@rv
 
   let add_var abs (typ,v) =
     let e = A.env abs in
-    let ints,reals = if typ = INT then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
+    let ints,reals = if typ = Int then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
     try
       let env = Environment.add e ints reals in
       A.change_environment man abs env false

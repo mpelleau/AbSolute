@@ -58,7 +58,7 @@ open Csp
 %nonassoc TOK_ASIN TOK_ACOS TOK_ATAN TOK_ACOT
 %nonassoc TOK_LN TOK_LOG TOK_EXP TOK_NROOT TOK_SQRT TOK_POW
 
-%type <typ> typ
+%type <annot> typ
 %type <dom> init
 %type <bexpr> bexpr
 %type <Csp.prog> file
@@ -155,8 +155,8 @@ bexprs:
   | {[]}
 
 typ:
-  | TOK_INT       {INT}
-  | TOK_REAL      {REAL}
+  | TOK_INT       {Int}
+  | TOK_REAL      {Real}
 
 init:
   | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Top}

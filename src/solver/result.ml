@@ -43,7 +43,7 @@ module Make (A: AbstractCP) = struct
     (*Format.printf "\n vvvvvvvvvv \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) views_vars;*)
 
-    let new_vars = List.map (fun v -> (Csp.REAL, v)) (csts_vars@views_vars) in
+    let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars@views_vars) in
     let new_a = List.fold_left (A.add_var) abs new_vars in
     (*Format.printf "\n !!!!!!!!!! \n";
     List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars new_a);*)

@@ -35,9 +35,6 @@ type bexpr =
   | Or  of bexpr * bexpr
   | Not of bexpr
 
-type typ = INT | REAL
-
-
 type dom = Finite of i * i   (* [a;b] *)
          | Minf   of i       (* [-oo; a] *)
          | Inf    of i       (* [a; +oo] *)
@@ -45,7 +42,7 @@ type dom = Finite of i * i   (* [a;b] *)
          | Top               (* [-oo; +oo] *)
 
 (* assign *)
-type assign = (typ * var * dom)
+type assign = (annot * var * dom)
 
 (* declarations *)
 type decls =  assign list
@@ -107,8 +104,8 @@ let print_cmpop fmt = function
   | LT  -> Format.fprintf fmt "<"
 
 let print_typ fmt = function
-  | INT  ->  Format.fprintf fmt "int"
-  | REAL ->  Format.fprintf fmt "real"
+  | Int  ->  Format.fprintf fmt "int"
+  | Real ->  Format.fprintf fmt "real"
 
 let print_var fmt s = Format.fprintf fmt "%s" s
 
@@ -469,7 +466,7 @@ let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
 
 let add_real_var csp name inf sup =
-  let assign = (REAL, name, (Finite(inf,sup))) in
+  let assign = (Real, name, (Finite(inf,sup))) in
   {csp with init = assign::csp.init}
 
 let add_constr csp c =

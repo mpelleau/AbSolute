@@ -2,9 +2,6 @@
 (*            Module for Abstract Domains for Constraint Programming.             *)
 (*   These are abstract domains with consistency, split and precision operators.  *)
 (**********************************************************************************)
-
-open Csp
-
 type answer = Yes | Maybe | No
 
 let and_ans a1 a2 =
@@ -38,19 +35,19 @@ module type AbstractCP = sig
   val empty : t
 
   (* returns the variables *)
-  val vars : t -> (typ * var) list
+  val vars : t -> (Csp.annot * Csp.var) list
 
   (* adds an unconstrained variable to the environnement *)
-  val add_var : t -> typ * var -> t
+  val add_var : t -> Csp.annot * Csp.var -> t
 
   (* returns the bounds of a variable *)
-  val var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
+  val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
 
   (* returns the bound variables *)
-  val bound_vars : t -> csts
+  val bound_vars : t -> Csp.csts
 
   (* removes an unconstrained variable to the environnement *)
-  val rem_var : t -> var -> t
+  val rem_var : t -> Csp.var -> t
 
   (*** PREDICATES ***)
 
@@ -68,15 +65,15 @@ module type AbstractCP = sig
   (* splits an abstract element *)
   val split : t -> t list
 
-  val filter : t -> (expr * cmpop * expr) -> t
+  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
 
-  val forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
+  val forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
 
   (* transforms an abstract element in constraints *)
-  val to_bexpr : t -> (expr * cmpop * expr) list
+  val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list
 
   (* check if a constraint is suited for this abstract domain *)
-  val is_representable : bexpr -> answer
+  val is_representable : Csp.bexpr -> answer
 
   (* printing *)
   val print : Format.formatter -> t -> unit
@@ -87,10 +84,10 @@ module type AbstractCP = sig
   (* concretization function. we call it a spawner.
      useful to do tests, and to reuse the results.
      values are generated randomly *)
-  val spawn : t -> instance
+  val spawn : t -> Csp.instance
 
   (* check if an abstract element is an abstractin of an instance *)
-  val is_abstraction : t -> instance -> bool
+  val is_abstraction : t -> Csp.instance -> bool
 
 
  end

@@ -34,15 +34,12 @@ module type ITV = sig
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
 
-  val zero: t           (* {0} *)
-  val one: t            (* {1} *)
-  val minus_one: t      (* {-1} *)
-  val top: t            (* [-oo,+oo] *)
-  val zero_one: t       (* [0,1] *)
-  val minus_one_zero: t (* [-1,0] *)
-  val minus_one_one: t  (* [-1,1] *)
   val positive: t       (* [0,+oo] *)
   val negative: t       (* [-oo,0] *)
+
+  (* default value for unconstrained variables *)
+  val top_int : t
+  val top_real : t
 
   (* approximation of pi *)
   val i_pi:t

@@ -10,7 +10,7 @@ module type Reduction =
 
     val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
 
-    val add_var : t -> Csp.typ * Csp.var -> t
+    val add_var : t -> Csp.annot * Csp.var -> t
 
     val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
 
