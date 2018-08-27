@@ -340,11 +340,11 @@ module Make(B:BOUND) = struct
       min_low (min_low (l1 /$ l2) (l1 /$ h2)) (min_low (h1 /$ l2) (h1 /$ h2)),
       max_up  (max_up  (l1 /@ l2) (l1 /@ h2)) (max_up  (h1 /@ l2) (h1 /@ h2))
 
-  let div (i1:t) (i2:t) : t bot * bool =
+  let div (i1:t) (i2:t) : t bot =
     let pos = (lift_bot (div_sgn i1)) (meet i2 positive) in
     let neg = (lift_bot (div_sgn i1)) (meet i2 negative) in
-    join_bot2 join pos neg,
-    contains i2 B.zero
+    join_bot2 join pos neg
+
 
   let sqrt (itv:t) : t bot =
     match meet itv positive with
@@ -395,9 +395,9 @@ module Make(B:BOUND) = struct
 
   (* it improves soundness to use those *)
   let i_pi:t= (Large, pi_down), (Large, pi_up)
-  let i_pi_half = div i_pi (of_int 2) |> fst |> debot
+  let i_pi_half = div i_pi (of_int 2) |> debot
   let i_two_pi = add i_pi i_pi
-  let i_three_half_of_pi = div (add i_two_pi i_pi) (of_int 2) |> fst |> debot
+  let i_three_half_of_pi = div (add i_two_pi i_pi) (of_int 2) |> debot
 
   let b_one = (Large, B.one)
   let b_minus_one = (Large, B.minus_one)
@@ -534,8 +534,7 @@ module Make(B:BOUND) = struct
     let itv' = ln itv in
     match itv' with
     | Bot -> Bot
-    | Nb i -> fst (div i i_ln10)
-
+    | Nb i -> div i i_ln10
 
   (* interval min *)
   let min ((l1, u1):t) ((l2, u2):t) = failwith "todo min"
@@ -632,9 +631,7 @@ module Make(B:BOUND) = struct
   (* r = i*c => (i = r/c \/ c=r=0) *)
   let filter_mul_f (i:t) (c:t) (r:t) : t bot =
     if contains r B.zero && contains c B.zero then Nb i
-    else match fst (div r c) with
-         | Bot -> Bot
-         | Nb x -> meet i x
+    else strict_bot (meet i) (div r c)
 
   (* r = i/c => i = r*c *)
   let filter_div_f (i:t) (c:t) (r:t) : t bot =
@@ -661,7 +658,7 @@ module Make(B:BOUND) = struct
   let filter_mul_cst (i:t) (c:t) (r:t) : (t*t) bot =
     merge_bot2
       (if contains r B.zero && contains c B.zero then Nb i
-      else match fst (div r c) with Bot -> Bot | Nb x -> meet i x)
+      else strict_bot (meet i) (div r c))
       (Nb c)
 
   (* r = i*c => (i = r/c \/ c=r=0) *)
@@ -669,22 +666,22 @@ module Make(B:BOUND) = struct
     merge_bot2
       (Nb c)
       (if contains r B.zero && contains c B.zero then Nb i
-      else match fst (div r c) with Bot -> Bot | Nb x -> meet i x)
+      else strict_bot (meet i) (div r c))
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
   let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2
       (if contains r B.zero && contains i2 B.zero then Nb i1
-      else match fst (div r i2) with Bot -> Bot | Nb x -> meet i1 x)
+      else strict_bot (meet i1) (div r i2))
       (if contains r B.zero && contains i1 B.zero then Nb i2
-       else match fst (div r i1) with Bot -> Bot | Nb x -> meet i2 x)
+       else strict_bot (meet i2) (div r i1))
 
    (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
   let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2
       (meet i1 (mul i2 r))
       (if contains r B.zero && contains i1 B.zero then Nb i2
-      else match fst (div i1 r) with Bot -> Bot | Nb x -> meet i2 x)
+      else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
   let filter_sqrt (((k_il,il),ih) as i:t) ((rl,rh):t) : t bot =
@@ -701,7 +698,7 @@ module Make(B:BOUND) = struct
   (* r = sin i => i = arcsin r *)
   let filter_sin i r =
     let asin_r = asin r in
-    let (aux, _) = div (add i i_pi_half) i_pi in
+    let aux = div (add i i_pi_half) i_pi in
     match (aux, asin_r) with
     | Bot, _ | _, Bot -> Bot
     | Nb (p1, p2), Nb ((l, h) as a_r) ->
@@ -724,7 +721,7 @@ module Make(B:BOUND) = struct
   (* r = cos i => i = arccos r *)
   let filter_cos i r =
     let acos_r = acos r in
-    let (aux, _) = div i i_pi in
+    let aux = div i i_pi in
     match (aux, acos_r) with
     | Bot, _ | _, Bot -> Bot
     | Nb (p1,p2), Nb ((l,h) as a_r) ->
@@ -748,7 +745,7 @@ module Make(B:BOUND) = struct
   (* r = atan i => i = tan r *)
   let filter_tan i r =
     let atan_r = atan r in
-    let (aux, _) = div (add i i_pi_half) i_pi in
+    let aux = div (add i i_pi_half) i_pi in
     (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
     match aux with
     | Bot -> Bot

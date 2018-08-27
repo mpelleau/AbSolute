@@ -243,7 +243,7 @@ module Make (I:Itv_sig.ITV) = struct
     | "sin"  -> arity_1 sin_itv
     | "acos" -> arity_1_bot acos_itv
     | "asin" -> arity_1_bot asin_itv
-    | "tan"  -> arity_1_bot (fun x -> fst (tan_itv x))
+    | "tan"  -> arity_1_bot tan_itv
     | "atan" -> arity_1 atan_itv
     | _ -> I.eval_fun name args
 

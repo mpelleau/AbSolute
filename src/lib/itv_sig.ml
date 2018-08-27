@@ -66,7 +66,6 @@ module type ITV = sig
 
   (* predicates *)
   (* ---------- *)
-  val subseteq: t -> t -> bool
   val contains_float: t -> float -> bool
 
   val is_singleton: t -> bool
@@ -99,8 +98,8 @@ module type ITV = sig
   val sub: t -> t -> t
   val mul: t -> t -> t
 
-  (* return valid values (possibly Bot) + possible division by zero *)
-  val div: t -> t -> t bot * bool
+  (* return valid values (possibly Bot, if dividend is nul) *)
+  val div: t -> t -> t bot
 
   (* returns valid value when the exponant is a singleton positive integer. fails otherwise*)
   val pow: t -> t -> t

@@ -80,9 +80,6 @@ module Box (I:ITV) = struct
   (* predicates *)
   (* ---------- *)
 
-  let subseteq (a:t) (b:t) : bool =
-    Env.for_all2z (fun _ x y -> I.subseteq x y) a b
-
   (* mesure *)
   (* ------ *)
 
@@ -187,7 +184,7 @@ module Box (I:ITV) = struct
        let r = match o with
          | ADD -> I.add i1 i2
          | SUB -> I.sub i1 i2
-         | DIV -> debot (fst (I.div i1 i2))
+         | DIV -> debot (I.div i1 i2)
          | MUL ->
             let r = I.mul i1 i2 in
             if e1=e2 then
@@ -363,4 +360,4 @@ module BoxF       = Box(Trigo.Make(Itv.ItvF))
 module BoxStrict  = Box(Trigo.Make(Newitv.Test))
 module BoxQ       = Box(Trigo.Make(Itv.ItvQ))
 module BoxQStrict = Box(Trigo.Make(Newitv.TestQ))
-(* module BoxMix     = Box(Itv_mix) *)
+module BoxMix     = Box(Itv_mix)

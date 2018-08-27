@@ -72,6 +72,8 @@ let contains_float ((a,b):t) f =
 
 let intersect ((l1,h1):t) ((l2,h2):t) = l1 <= h2 &&  l2 <= h1
 
+let is_singleton ((l,h):t) = l = h
+
 (* mesure *)
 (* ------ *)
 let range ((a,b):t) = b - a
@@ -200,6 +202,10 @@ let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
      else strict_bot (meet i1) (div r i2))
     (if contains_float r 0. && contains_float i1 0. then Nb i2
      else strict_bot (meet i2) (div r i1))
+
+let to_expr ((l,h):t) =
+  ((Csp.GEQ, Csp.Cst(Mpqf.of_int l, Csp.Int)),
+   (Csp.LEQ, Csp.Cst(Mpqf.of_int h, Csp.Int)))
 
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
      given a function name, a list of argument, and a result,

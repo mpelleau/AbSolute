@@ -139,6 +139,9 @@ let intersect (x1:t) (x2:t) : bool =
      | Bot -> false
      | Nb x2 -> I.intersect x1 x2
 
+let is_singleton (itv:t) : bool =
+  dispatch I.is_singleton R.is_singleton itv
+
 (* mesure *)
 (* ------ *)
 let range (x:t) : float =
@@ -146,14 +149,14 @@ let range (x:t) : float =
   | Int x -> float (I.range x)
   | Real x -> R.range x
 
-(* let score = dispatch I.score R.score *)
+let score = dispatch I.score R.score
 
-(* (\* split *\)
- * (\* ----- *\)
- * let split (x:t) : t list =
- *   match x with
- *   | Real x -> R.split x |> List.map make_real
- *   | Int x -> I.split x  |> List.map make_int *)
+(* split *)
+(* ----- *)
+let split (x:t) : t list =
+  match x with
+  | Real x -> R.split x |> List.map make_real
+  | Int x -> I.split x  |> List.map make_int
 
 (* pruning *)
 (* ------- *)
@@ -217,11 +220,11 @@ let div (x1:t) (x2:t) : t bot =
   | Int x2 ->
      if I.contains_float x2 0. then
        let pos = I.meet I.positive x2 and neg = I.meet I.negative x2 in
-       let divpos = strict_bot (fun x -> fst(R.div x1 (to_float x))) pos
-       and divneg = strict_bot (fun x -> fst(R.div x1 (to_float x))) neg
+       let divpos = strict_bot (fun x -> R.div x1 (to_float x)) pos
+       and divneg = strict_bot (fun x -> R.div x1 (to_float x)) neg
        in lift_bot make_real (join_bot2 R.join divpos divneg)
-     else lift_bot make_real (fst(R.div x1 (to_float x2)))
-  | Real x2 -> lift_bot make_real (fst(R.div x1 x2))
+     else lift_bot make_real (R.div x1 (to_float x2))
+  | Real x2 -> lift_bot make_real (R.div x1 x2)
 
 (* returns valid value when the exponant is a singleton positive integer.
      fails otherwise *)
@@ -419,6 +422,9 @@ let filter_pow_f (i:t) n (r:t) =
 (* r = nroot i => i = r ** n *)
 let filter_root_f i r n =
   meet i (pow r n)
+
+let to_expr (itv:t) =
+  dispatch I.to_expr R.to_expr itv
 
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
    given a function name, a list of argument, and a result,
