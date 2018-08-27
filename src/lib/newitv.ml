@@ -617,16 +617,6 @@ module Make(B:BOUND) = struct
     if is_singleton i1 && is_singleton i2 && equal i1 i2 then Bot
     else Nb (i1,i2)
 
-  let filter_lt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check
-      l1
-      (min_up h1 (h2 +@ (Large,B.one)))
-      (max_low (l1 +$ (Large,B.one)) l2)
-      h2
-
-  let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    failwith "todo"
-
   (* arithmetic *)
   (* --------- *)
 

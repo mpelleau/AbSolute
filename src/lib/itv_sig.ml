@@ -165,10 +165,6 @@ module type ITV = sig
   val filter_eq : t -> t -> (t * t) bot
   val filter_neq: t -> t -> (t * t) bot
 
-  (* integer versions *)
-  val filter_lt_int: t -> t -> (t * t) bot
-  val filter_neq_int: t -> t -> (t * t) bot
-
   (* given the interval argument(s) and the expected interval result of
      a numeric operation, returns refined interval argument(s) where
      points that cannot contribute to a value in the result are

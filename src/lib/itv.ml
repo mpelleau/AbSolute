@@ -33,11 +33,9 @@ module Itv(B:BOUND) = struct
     | _ when  B.gt l h -> invalid_arg "int.validate"
     | _ -> l,h
 
-
   (* maps empty intervals to explicit bottom *)
   let check_bot ((l,h):t) : t bot =
     if B.leq l h then Nb (l,h) else Bot
-
 
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
@@ -85,7 +83,6 @@ module Itv(B:BOUND) = struct
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
-
 
   let to_string ((l,h):t) : string =
     Printf.sprintf "[%s;%s]" (B.to_string l) (B.to_string h)
@@ -608,25 +605,6 @@ module Itv(B:BOUND) = struct
   let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
     else Nb (i1,i2)
-
-  let filter_lt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2
-      (check_bot (l1, B.min h1 (B.sub_up h2 B.one)))
-      (check_bot (B.max (B.add_down l1 B.one) l2, h2))
-
-  let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    match is_singleton (l1,h1), is_singleton (l2,h2) with
-    | true, true when B.equal l1 l2 -> Bot
-    | true, false when B.equal l1 l2 ->
-        merge_bot2 (Nb (l1,l2)) (check_bot (B.add_down l2 B.one, h2))
-    | true, false when B.equal l1 h2 ->
-        merge_bot2 (Nb (l1,l2)) (check_bot (l2, B.sub_up h2 B.one))
-    | false, true when B.equal l1 l2 ->
-        merge_bot2 (check_bot (B.add_down l1 B.one, h1)) (Nb (l2,h2))
-    | false, true when B.equal h1 l2 ->
-        merge_bot2 (check_bot (l1, B.sub_up h1 B.one)) (Nb (l2,h2))
-    | _ -> Nb ((l1,h1),(l2,h2))
-
 
   (* arithmetic *)
   (* --------- *)
