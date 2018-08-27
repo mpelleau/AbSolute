@@ -156,17 +156,17 @@ module type ITV = sig
   (* given two interval arguments, return a subset of each argument
      by removing points that cannot satisfy the predicate;
      may also return Bot if no point can satisfy the predicate *)
+  (* simplified interface since a > b <=> b < a *)
+  (* val filter_geq: t -> t -> (t * t) bot *)
+  (* val filter_gt: t -> t -> (t * t) bot *)
 
   val filter_leq: t -> t -> (t * t) bot
-  val filter_geq: t -> t -> (t * t) bot
-  val filter_lt: t -> t -> (t * t) bot
-  val filter_gt: t -> t -> (t * t) bot
-  val filter_eq: t -> t -> (t * t) bot
+  val filter_lt : t -> t -> (t * t) bot
+  val filter_eq : t -> t -> (t * t) bot
   val filter_neq: t -> t -> (t * t) bot
 
   (* integer versions *)
   val filter_lt_int: t -> t -> (t * t) bot
-  val filter_gt_int: t -> t -> (t * t) bot
   val filter_neq_int: t -> t -> (t * t) bot
 
   (* given the interval argument(s) and the expected interval result of

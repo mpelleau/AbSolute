@@ -312,24 +312,17 @@ let split_along (a:t) (v:var) : t list =
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
     (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
-    let j = match o with
-      | EQ -> I.filter_eq i1 i2
-      | LEQ -> I.filter_leq i1 i2
-      | GEQ -> I.filter_geq i1 i2
-      | NEQ -> I.filter_neq i1 i2
-      (*| NEQ_INT -> I.filter_neq_int i1 i2*)
-      | GT -> I.filter_gt i1 i2
-      (*| GT_INT -> I.filter_gt_int i1 i2*)
-      | LT -> I.filter_lt i1 i2
-      (*| LT_INT -> I.filter_lt_int i1 i2*)
+    let j1,j2 = match o with
+      | LT  -> debot (I.filter_lt i1 i2)
+      | LEQ -> debot (I.filter_leq i1 i2)
+      (* a > b <=> b < a*)
+      | GEQ -> let j2,j1 = debot (I.filter_leq i2 i1) in (j1,j2)
+      | GT  -> let j2,j1 = debot (I.filter_lt i2 i1) in (j1,j2)
+      | NEQ -> debot (I.filter_neq i1 i2)
+      | EQ  -> debot (I.filter_eq i1 i2)
     in
-    let aux = rebot
-      (fun a ->
-        let j1,j2 = debot j in
-        refine (refine a b1 j1) b2 j2
-      ) a
-    in
-    filter_bounds_bot aux
+    let refined1 = if j1 = i1 then a else refine a b1 j1 in
+    Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
   let filter (a:t) (e1,binop,e2) : t =
     match test a e1 binop e2 with

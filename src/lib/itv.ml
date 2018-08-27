@@ -596,18 +596,10 @@ module Itv(B:BOUND) = struct
   let filter_leq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     merge_bot2 (check_bot (l1, B.min h1 h2)) (check_bot (B.max l1 l2, h2))
 
-  let filter_geq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2 (check_bot (B.max l1 l2, h1)) (check_bot (l2, B.min h1 h2))
-
   let filter_lt ((l1,_) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
     else if B.leq h2 l1 then Bot
     else filter_leq i1 i2
-
-  let filter_gt ((l1,h1) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else if B.leq h1 l2 then Bot
-    else filter_geq i1 i2
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     (*Format.printf "%a = %a\n" print i1 print i2;*)
@@ -621,11 +613,6 @@ module Itv(B:BOUND) = struct
     merge_bot2
       (check_bot (l1, B.min h1 (B.sub_up h2 B.one)))
       (check_bot (B.max (B.add_down l1 B.one) l2, h2))
-
-  let filter_gt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2
-      (check_bot (B.max l1 (B.add_down l2 B.one), h1))
-      (check_bot (l2, B.min (B.sub_up h1 B.one) h2))
 
   let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     match is_singleton (l1,h1), is_singleton (l2,h2) with

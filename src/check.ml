@@ -67,6 +67,7 @@ let checkfiles dir files =
           incr problem;
         Format.asprintf "covering element missing (false negative)"
        | _,_,false ->
+          arr.(3) <- Format.asprintf "%a" print_bad ();
           incr problem;
           Format.asprintf "covering element exceeding (false positive)"
        | 0,true,true  ->

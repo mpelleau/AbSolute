@@ -179,13 +179,6 @@ module MAKE(AP:ADomain) = struct
   let is_empty a =
     A.is_bottom man a
 
-  let is_singleton b v =
-    let man = A.manager b in
-    if is_empty b then true
-    else
-      let itv = A.bound_variable man b v  in
-      diam_interval itv |> Mpqf.to_float = 0.
-
   let join a b = A.join man a b
 
   let prune a b =

@@ -607,14 +607,8 @@ module Make(B:BOUND) = struct
   let filter_leq ((l1,h1):t) ((l2,h2):t) : (t * t) bot =
     merge_check l1 (min_up h1 h2) (max_low l1 l2) h2
 
-  let filter_geq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check (max_low l1 l2) h1 l2 (min_up h1 h2)
-
   let filter_lt ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     merge_check l1 (min_up h1 (stricten h2)) (max_low (stricten l1) l2) h2
-
-  let filter_gt  ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check (max_low l1 (stricten l2)) h1 l2 (min_up (stricten h1) h2)
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     lift_bot (fun x -> x,x) (meet i1 i2)
@@ -629,11 +623,6 @@ module Make(B:BOUND) = struct
       (min_up h1 (h2 +@ (Large,B.one)))
       (max_low (l1 +$ (Large,B.one)) l2)
       h2
-
-  let filter_gt_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check
-      (max_low l1 (l2 +$ (Large,B.one))) h1
-      l2 (min_up (h1 -@ (Large,B.one)) h2)
 
   let filter_neq_int ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     failwith "todo"
