@@ -4,7 +4,7 @@ type t = Abstract_box.BoxStrict.t
 
 let print = Abstract_box.BoxStrict.print
 
-let bound abs v = find v abs |> fst |> I.to_rational_range
+let bound abs v = find v abs |> I.to_rational_range
 
 let is_empty = Abstract_box.BoxStrict.is_empty
 
@@ -20,8 +20,8 @@ let to_abs (abs, consts) =
 let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
   let (xl,xu) = bound abs v1 and (yl,yu) = bound abs v2 in
   fillpol [(xl,yl);(xl,yu);(xu,yu);(xu,yl)] col;
-  let ((xl,xu) as i1) : I.t = find v1 abs |> fst
-  and ((yl,yu) as i2) : I.t = find v2 abs |> fst in
+  let ((xl,xu) as i1) : I.t = find v1 abs
+  and ((yl,yu) as i2) : I.t = find v2 abs in
   let draw_seg vert a (b,c) =
     let open Newitv.Test in
     let draw_f,value =

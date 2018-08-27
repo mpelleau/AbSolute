@@ -26,9 +26,7 @@ module Box (I:ITV) = struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
-  let find v a =
-    try (Env.find v a, v) with
-      Not_found -> (Env.find (v^"%") a, v^"%")
+  let find v (a:t) = VarMap.find_fail v a
 
   let is_integer var = var.[String.length var - 1] = '%'
 
@@ -42,22 +40,14 @@ module Box (I:ITV) = struct
 
   let is_representable _ = Adcp_sig.Yes
 
-
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
 
   let print fmt a =
-    let rec aux fmt = function
-      | [] -> ()
-      | (v,d)::[] -> Format.fprintf fmt "%s:%s" v (I.to_string d)
-      | (v,d)::tl -> Format.fprintf fmt "%s:%s " v (I.to_string d); aux fmt tl
-    in
-    aux fmt (Env.bindings a)
+    VarMap.iter (fun v i -> Format.fprintf fmt "%s:%a\n" v I.print i) a
 
-  let float_bounds a v =
-    let ((l,h), _) = find v a in
-    (B.to_float_down l),(B.to_float_up h)
+  let float_bounds a v = I.to_float_range (find v a)
 
   let to_expr abs =
     Env.fold (fun v x lexp ->
@@ -234,11 +224,8 @@ let split_along (a:t) (v:var) : t list =
        let r = debot (I.eval_fun name iargs) in
        BFuncall(name, bargs),r
     | Var v ->
-        let (r, n) =
-          try find v a
-          with Not_found -> failwith ("variable not found: "^v)
-        in
-        BVar n, r
+        let r = find v a in
+        BVar v, r
     | Cst (c,_) ->
         let r = I.of_rat c in
         BCst r, r
@@ -304,9 +291,7 @@ let split_along (a:t) (v:var) : t list =
        let res = I.filter_fun name itv x in
        List.fold_left2 (fun acc e1 e2 ->
            refine acc e2 e1) a (debot res) bexpr
-    | BVar v ->
-        (try Env.add v (debot (I.meet x (fst (find v a)))) a
-        with Not_found -> failwith ("variable not found: "^v))
+    | BVar v -> Env.add v (debot (I.meet x (find v a))) a
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
        let j = match o with
@@ -347,29 +332,28 @@ let split_along (a:t) (v:var) : t list =
     filter_bounds_bot aux
 
   let filter (a:t) (e1,binop,e2) : t =
-    (*Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;*)
     match test a e1 binop e2 with
-    | Bot -> if !Constant.debug > 5 then
-               Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;
-             raise Bot_found
-    | Nb e -> (*Format.printf "  ==> %a\n" print e;*) e
+    | Bot ->
+       if !Constant.debug > 5 then
+         Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;
+       raise Bot_found
+    | Nb e -> e
 
   let empty : t = Env.empty
 
   let is_empty abs = Env.is_empty abs
 
   let add_var abs (typ,var) : t =
-    Env.add (if typ = INT then (var^"%") else var) I.top abs
+    Env.add var I.top abs
 
   let var_bounds abs var =
-    let (itv, _) = find var abs in
+    let itv = find var abs in
     I.to_rational_range itv
 
   let bound_vars abs =
     let b = Env.bindings abs in
     let l = List.filter (fun (v, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l
-
 
   let rem_var abs var : t =
     Env.remove var abs
@@ -385,15 +369,8 @@ let split_along (a:t) (v:var) : t list =
   let rec is_applicable abs (e:expr) : bool =
     match e with
     | Var v ->
-       let (var, name) =
-         try find v abs with
-           Not_found -> (I.zero, "")
-       in
-       let res = match name with
-         | "" -> false
-         | _ -> true
-       in
-       res
+       (try VarMap.find v abs; true
+       with Not_found -> false)
     | Cst _ -> true
     | Unary (_, e1) -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
@@ -411,7 +388,7 @@ let split_along (a:t) (v:var) : t list =
         match e1, e2 with
         | Cst(e1, _), Cst(e2, _) ->
            acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, Cst(e2, annot))]
-        | Cst(e1, _), e2 -> 
+        | Cst(e1, _), e2 ->
            acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, e2)]
         | e1, Cst(e2, _) ->
            acc@[(Var(v), op1, e1); (Var(v), op2, Cst(e2, annot))]
@@ -419,7 +396,7 @@ let split_along (a:t) (v:var) : t list =
            acc@[(Var(v), op1, e1); (Var(v), op2, e2)]
       ) a []
 
-    
+
   (*********************************)
   (* Sanity and checking functions *)
   (*********************************)
