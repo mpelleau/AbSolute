@@ -17,7 +17,7 @@ let not_ans = function
   | Yes -> No
   | No -> Yes
   | Maybe -> Maybe
-                          
+
 module type AbstractCP = sig
 
   (*** TYPES ***)
@@ -58,8 +58,6 @@ module type AbstractCP = sig
   val is_small : t -> bool
 
   val is_empty : t -> bool
-
-  val is_enumerated : t -> bool
 
   (*** OPERATIONS ***)
   val join: t -> t -> t

@@ -201,11 +201,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ ->
         Pervasives.failwith "is_abstraction: unimplemented"
 
-    (* Si une variable entière est un singleton *)
-    let is_enumerated : t -> bool
-        = fun _ ->
-        Pervasives.failwith "is_enumerated: unimplemented"
-
     let to_bexpr: t -> (Csp.expr * Csp.cmpop * Csp.expr) list
         = let csp_true : Csp.expr * Csp.cmpop * Csp.expr
             = Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.EQ, Csp.Cst(Mpqf.of_int 0, Csp.Int)

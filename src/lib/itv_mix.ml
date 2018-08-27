@@ -62,6 +62,11 @@ let check_bot (x:t) : t bot =
   | Int x -> lift_bot make_int (I.check_bot x)
   | Real x -> lift_bot make_real (R.check_bot x)
 
+(* unbounded interval cinstructor *)
+let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
+
+let top_real : t = Real (R.top)
+
 (************************************************************************)
 (*                       PRINTING and CONVERSIONS                       *)
 (************************************************************************)

@@ -10,10 +10,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
         = fun _ _ -> fail ()
 
-    (* Si une variable entière est un singleton *)
-    let is_enumerated : t -> bool
-        = fun _ -> fail ()
-
     (* removes an unconstrained variable to the environnement *)
     let rem_var : t -> var -> t
         = fun _ _ -> fail ()

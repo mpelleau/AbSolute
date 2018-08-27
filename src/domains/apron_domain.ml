@@ -186,13 +186,6 @@ module MAKE(AP:ADomain) = struct
       let itv = A.bound_variable man b v  in
       diam_interval itv |> Mpqf.to_float = 0.
 
-  let is_enumerated abs =
-    let int_vars = Environment.vars (A.env abs) |> fst in
-    try
-      Array.iter (fun v -> if (is_singleton abs v) |> not then raise Exit) int_vars;
-      true
-    with Exit -> false
-
   let join a b = A.join man a b
 
   let prune a b =

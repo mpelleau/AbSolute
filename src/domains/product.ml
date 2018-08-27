@@ -13,13 +13,13 @@ module type Reduction =
     val add_var : t -> Csp.typ * Csp.var -> t
 
     val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
-      
+
     val reduced_product : A.t -> B.t -> (A.t * B.t)
-      
+
     val print : Format.formatter -> t -> unit
 
     val is_empty : t -> bool
-      
+
   end
 
 module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
@@ -32,7 +32,7 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
     let is_representable = B.is_representable
 
     let to_bexpr (a, b) = (A.to_bexpr a)@(B.to_bexpr b)
-                   
+
     let a_meet_b a b =
       let b_expr = B.to_bexpr b in
       let b_vars = B.vars b in
@@ -46,7 +46,7 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
                      ) [] b_vars in
       let b' = List.fold_left (fun abs v -> B.add_var abs v) B.empty (a_vars@to_add) in
       List.fold_left (fun abs c -> B.filter abs c) b' (a_expr@b_expr)
-                   
+
     let b_meet_a a b =
       let b_expr = B.to_bexpr b in
       let b_vars = B.vars b in
@@ -59,8 +59,8 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
                          vb::acc
                      ) [] b_vars in
       let a' = List.fold_left (fun abs v -> A.add_var abs v) A.empty (a_vars@to_add) in
-      List.fold_left (fun abs c -> A.filter abs c) a' (a_expr@b_expr)       
-                        
+      List.fold_left (fun abs c -> A.filter abs c) a' (a_expr@b_expr)
+
     let reduced_product (a:A.t) (b:B.t) : (A.t * B.t) =
       let new_a = b_meet_a a b in
       let new_b = a_meet_b a b in
@@ -111,16 +111,13 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       let split_a = A.split abs in
       List.map (fun x -> (x, abs')) split_a
 
-    let is_enumerated (abs, abs') =
-      A.is_enumerated abs && B.is_enumerated abs'
-
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
     let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
       match B.is_representable (Csp.Cmp(op, e1, e2)) with
       | Yes -> (A.filter abs cons, B.filter abs' cons)
       | Maybe | No -> (A.filter abs cons, abs')
-        
+
 
     let forward_eval (abs, abs') cons =
       let abs_tmp = a_meet_b abs abs' in

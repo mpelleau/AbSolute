@@ -346,11 +346,11 @@ let split_along (a:t) (v:var) : t list =
   let add_var abs (typ,var) : t =
     Env.add var I.top abs
 
-  let var_bounds abs var =
+  let var_bounds (abs:t) var =
     let itv = find var abs in
     I.to_rational_range itv
 
-  let bound_vars abs =
+  let bound_vars (abs:t) =
     let b = Env.bindings abs in
     let l = List.filter (fun (v, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l
@@ -358,13 +358,9 @@ let split_along (a:t) (v:var) : t list =
   let rem_var abs var : t =
     Env.remove var abs
 
-  let is_enumerated a =
-    Env.for_all (fun v i -> (is_integer v |> not) || I.is_singleton i) a
-
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
     I.to_rational_range bounds
-
 
   let rec is_applicable abs (e:expr) : bool =
     match e with
