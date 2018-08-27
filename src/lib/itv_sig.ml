@@ -33,9 +33,6 @@ module type ITV = sig
   val top_int : t
   val top_real : t
 
-  (* approximation of pi *)
-  val i_pi:t
-
   val of_ints: int -> int -> t
   val of_rats: Mpqf.t -> Mpqf.t -> t
   val of_floats: float -> float -> t
@@ -53,11 +50,6 @@ module type ITV = sig
   val to_float_range : t -> float * float
   val to_rational_range : t -> Mpqf.t * Mpqf.t
 
-  val to_string: t -> string
-  val output: out_channel -> t -> unit
-  val sprint: unit -> t -> string
-  val bprint: Buffer.t -> t -> unit
-  val pp_print: Format.formatter -> t -> unit
   val print: Format.formatter -> t -> unit
 
   val to_expr: t -> (Csp.cmpop * Csp.expr) * (Csp.cmpop * Csp.expr)
@@ -66,33 +58,23 @@ module type ITV = sig
   (* SET-THEORETIC *)
   (************************************************************************)
 
-
   (* operations *)
   (* ---------- *)
 
   val join: t -> t -> t
   val meet: t -> t -> t bot
 
-  (* returns None if the set-union cannot be exactly represented *)
-  val union: t -> t -> t option
-
-
   (* predicates *)
   (* ---------- *)
-
-  val equal: t -> t -> bool
   val subseteq: t -> t -> bool
   val contains_float: t -> float -> bool
-  val intersect: t -> t -> bool
-  val is_bounded: t -> bool
+
   val is_singleton: t -> bool
   val check_bot: t -> t bot
-
 
   (* mesure *)
   (* ------ *)
   val float_size: t -> float
-
 
   (* split *)
   (* ----- *)
@@ -112,7 +94,6 @@ module type ITV = sig
 
   val neg: t -> t
   val abs: t -> t
-  val sqrt: t -> t bot
 
   val add: t -> t -> t
   val sub: t -> t -> t
@@ -154,13 +135,12 @@ module type ITV = sig
 
   val filter_neg: t -> t -> t bot
   val filter_abs: t -> t -> t bot
-  val filter_sqrt: t -> t -> t bot
 
   val filter_add: t -> t -> t -> (t*t) bot
   val filter_sub: t -> t -> t -> (t*t) bot
   val filter_mul: t -> t -> t -> (t*t) bot
-  val filter_mul_cst: t -> t -> t -> (t*t) bot
-  val filter_cst_mul: t -> t -> t -> (t*t) bot
+  (* val filter_mul_cst: t -> t -> t -> (t*t) bot
+   * val filter_cst_mul: t -> t -> t -> (t*t) bot *)
   val filter_div: t -> t -> t -> (t*t) bot
 
   val filter_pow: t -> t -> t -> (t*t) bot

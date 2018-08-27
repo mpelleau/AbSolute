@@ -113,31 +113,10 @@ module Box (I:ITV) = struct
 
   let choose a = mix_range a
 
-  let split_along (a:t) (v,i:var * I.t) : t list =
-    let i_list = I.split i in
-    List.fold_left (fun acc e ->
-        (VarMap.add v e a)::acc
-      ) [] i_list
-
-  let split (a:t) : t list =
-    let ((v,i) as var) = choose a in
-    (if !Constant.debug > 2 then Format.printf " ---- splits along %s ---- \n" v);
-    split_along a var
-
-
-
   (* split *)
   (* ----- *)
 
-  let to_bot (a:I.t bot Env.t) : t bot =
-    let is_bot = Env.exists (fun v i -> is_Bot i) a in
-    if is_bot then Bot
-    else Nb (Env.map (fun v -> match v with
-    | Nb e -> e
-    | _ -> failwith "should not occur"
-    ) a)
-
-let split_along (a:t) (v:var) : t list =
+  let split_along (a:t) (v:var) : t list =
     let i = Env.find v a in
     let i_list = I.split i in
     List.fold_left (fun acc b ->
@@ -371,8 +350,7 @@ let split_along (a:t) (v:var) : t list =
     VarMap.for_all (fun k value ->
         let value = Mpqf.to_float value in
         let itv = VarMap.find k a in
-        let a,b = I.to_float_range itv in
-        a <= value && b <= value
+        I.contains_float itv value
       ) i
 
 end
@@ -381,8 +359,8 @@ end
 (* INSTANCES *)
 (*************)
 
-module BoxF       = Box(Itv.ItvF)
-module BoxStrict  = Box(Newitv.Test)
-module BoxQ       = Box(Itv.ItvQ)
-module BoxQStrict = Box(Newitv.TestQ)
+module BoxF       = Box(Trigo.Make(Itv.ItvF))
+module BoxStrict  = Box(Trigo.Make(Newitv.Test))
+module BoxQ       = Box(Trigo.Make(Itv.ItvQ))
+module BoxQStrict = Box(Trigo.Make(Newitv.TestQ))
 (* module BoxMix     = Box(Itv_mix) *)

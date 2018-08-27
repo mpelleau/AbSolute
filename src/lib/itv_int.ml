@@ -43,6 +43,10 @@ let negative : t = (min_int,-1)
 
 let to_float_range ((a,b):t) = (float a), (float b)
 
+let float_size ((a,b):t) = float (b - a)
+
+let to_rational_range ((a,b):t) = (Mpqf.of_int a),(Mpqf.of_int b)
+
 let print (fmt:Format.formatter) ((a,b):t) =
   Format.fprintf fmt "[%i,%i]" a b
 

@@ -56,13 +56,19 @@ let of_int (x1:int) : t =
 let of_float (x1:float) : t =
   of_floats x1 x1
 
+let of_rats (m1:Mpqf.t) (m2:Mpqf.t) : t =
+  Real(R.of_rats m1 m2)
+
+let of_rat (m1:Mpqf.t) : t =
+  of_rats m1 m1
+
 (* maps empty intervals to explicit bottom *)
 let check_bot (x:t) : t bot =
   match x with
   | Int x -> lift_bot make_int (I.check_bot x)
   | Real x -> lift_bot make_real (R.check_bot x)
 
-(* unbounded interval cinstructor *)
+(* unbounded interval constructor *)
 let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
 
 let top_real : t = Real (R.top_real)
@@ -74,8 +80,14 @@ let top_real : t = Real (R.top_real)
 let to_float_range (x:t) : float * float =
   dispatch I.to_float_range R.to_float_range x
 
+let to_rational_range (x:t) : Mpqf.t * Mpqf.t =
+  dispatch I.to_rational_range R.to_rational_range x
+
 let print (fmt:Format.formatter) (x:t) : unit =
   dispatch (Format.fprintf fmt "%a" I.print) (Format.fprintf fmt "%a" R.print) x
+
+let float_size (i:t) : float =
+  dispatch I.float_size R.float_size i
 
 (************************************************************************)
 (* SET-THEORETIC *)
@@ -407,7 +419,6 @@ let filter_pow_f (i:t) n (r:t) =
 (* r = nroot i => i = r ** n *)
 let filter_root_f i r n =
   meet i (pow r n)
-
 
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
    given a function name, a list of argument, and a result,

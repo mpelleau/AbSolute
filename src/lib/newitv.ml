@@ -174,11 +174,6 @@ module Make(B:BOUND) = struct
       B.sprint h
       (if kh = Large then ']' else '[')
 
-  (* printing *)
-  let output chan x = output_string chan (to_string x)
-  let sprint () x = to_string x
-  let bprint b x = Buffer.add_string b (to_string x)
-  let pp_print f x = Format.pp_print_string f (to_string x)
   let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
 
   let to_expr (((kl, l), (kh, h)):t) =
@@ -203,10 +198,6 @@ module Make(B:BOUND) = struct
 
   let meet ((l1,h1):t) ((l2,h2):t) : t bot =
     check_bot (max_low l1 l2, min_up h1 h2)
-
-  (* returns None if the set-union cannot be exactly represented *)
-  let union (a:t) (b:t) : t option =
-    if meet a b = Bot then None else Some (join a b)
 
   (* ---------- *)
   (* predicates *)
