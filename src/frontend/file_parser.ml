@@ -106,7 +106,7 @@ let string_of_position p =
 
 (* open a file and parse it *)
 let parse (filename:string option) : prog =
-  (* Parsing.set_trace true; *)
+  if !Constant.debug > 0 then Format.printf "parsing\n%!";
   let filename =
     match filename with
     | None -> failwith "you must specify a filename"

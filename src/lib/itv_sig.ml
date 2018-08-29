@@ -50,6 +50,8 @@ module type ITV = sig
   val to_float_range : t -> float * float
   val to_rational_range : t -> Mpqf.t * Mpqf.t
 
+  (* returns the type annotation of the represented values *)
+  val to_annot : t -> Csp.annot
   val print: Format.formatter -> t -> unit
 
   val to_expr: t -> (Csp.cmpop * Csp.expr) * (Csp.cmpop * Csp.expr)

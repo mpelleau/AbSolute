@@ -842,6 +842,9 @@ module Make(B:BOUND) = struct
 
   let to_rational_range ((_,l),(_,h)) = (B.to_rat l),(B.to_rat h)
 
+  (* returns the type annotation of the represented values *)
+  let to_annot _ = Csp.Real
+
   (* generate a random float between l and h *)
   let spawn (((_,l),(_,h)):t) =
     (* we convert toward the inside of the itv to avoid false negative *)

@@ -554,6 +554,9 @@ module Itv(B:BOUND) = struct
   let to_rational_range (l, h) =
     (B.to_rat l), (B.to_rat h)
 
+  (* returns the type annotation of the represented values *)
+  let to_annot _ = Csp.Real
+
   (* generate a random float between l and h *)
   let spawn (l,h) =
     let r = Random.float 1. in

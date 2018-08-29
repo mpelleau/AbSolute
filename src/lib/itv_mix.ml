@@ -426,6 +426,10 @@ let filter_root_f i r n =
 let to_expr (itv:t) =
   dispatch I.to_expr R.to_expr itv
 
+(* returns the type annotation of the represented values *)
+let to_annot x =
+  dispatch I.to_annot R.to_annot x
+
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
    given a function name, a list of argument, and a result,
    it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;

@@ -4,8 +4,7 @@ open Adcp_sig
 module Solve(Abs : AbstractCP) = struct
 
   include Splitter.Make(Abs)
-  module Res = Result.Make(Abs)
-  include Res
+  include Result.Make(Abs)
 
   let splitting_strategy =
     match !Constant.split with
@@ -14,11 +13,12 @@ module Solve(Abs : AbstractCP) = struct
     | _ -> split
 
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
+    if !Constant.debug > 0 then Format.printf "entering the solving loop\n%!";
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res (abs', const, views)
-      | Maybe(a, cstrs, csts) when stop res a -> res
+      | Maybe(a, cstrs, csts) when stop res a -> add_u res (a, csts, views)
       | Maybe(a, cstrs, csts) when Abs.is_small a -> add_u res (a, csts, views)
       | Maybe(abs', cstrs, csts) ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
@@ -38,17 +38,7 @@ module Solve(Abs : AbstractCP) = struct
   let solving prob =
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f\n@." Abs.print abs (Abs.volume abs);
-    let res =  explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view splitting_strategy in
-    Format.printf "\nsolving ends\n%!%a" Res.print res;
+    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view splitting_strategy in
+    Format.printf "\nsolving ends\n%!%a" print res;
     res
-
-  (* let solving_various prob =
-    let open Csp in
-    let abs = init prob in
-    let (lcons, cons) = List.partition (fun (e, _) -> (is_cons_linear e)) prob.jacobian in
-    let abs = List.fold_left (fun a (c, _) -> filter a c) abs lcons in
-    Format.printf "abs = %a@." Abs.print abs;
-    let res = explore abs cons prob.constants prob.view splitting_strategy in
-    Format.printf "\nsolving ends\n%!%a" Res.print res;
-    res *)
 end

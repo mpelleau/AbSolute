@@ -28,13 +28,12 @@ module Box (I:ITV) = struct
 
   let find v (a:t) = VarMap.find_fail v a
 
-  let is_integer var = var.[String.length var - 1] = '%'
+  (* returns true if var is an integer in the given environment *)
+  let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
 
   let vars abs =
     Env.fold (fun v x acc ->
-        let (typ, v) = if is_integer v then
-                           (Int, String.sub v 0 (String.length v -1))
-                         else (Real, v) in
+        let typ = if is_integer abs v then Int else Real in
         (typ, v)::acc
       ) abs []
 
@@ -319,7 +318,7 @@ module Box (I:ITV) = struct
 
   let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->
-        let (annot, v) = if is_integer v then (Int, String.sub v 0 (String.length v -1)) else (Real, v) in
+        let annot = if is_integer a v then Int else Real in
         let ((op1, e1), (op2, e2)) = I.to_expr x in
         match e1, e2 with
         | Cst(e1, _), Cst(e2, _) ->

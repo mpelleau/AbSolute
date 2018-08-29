@@ -16,7 +16,7 @@ let l_to_float l = List.map (to_float) l
 (* graham sort *)
 let signF f = if f < 0. then -1. else 1.
 
-let bas_gauche l =
+let bottom_left l =
   let rec aux (best_x,best_y) l =
     match l with
     | [] -> best_x,best_y
@@ -35,7 +35,7 @@ let angle (ax,ay) (bx,by) =
   (signF s)*.(acos c)
 
 let graham_sort l =
-  let p = bas_gauche l in
+  let p = bottom_left l in
   let comp p1 p2 =
     if p1 = p then 1
     else if p2 = p then -1
@@ -121,6 +121,10 @@ let draw_dashed_seg ((x1,y1) as p1) (x2,y2) col =
     end
   in aux p1
 
+(****************)
+(* AXIS DRAWING *)
+(****************)
+
 let draw_line_x x col = draw_seg (x, 0.) (x, size_y() |> float_of_int) col
 
 let draw_line_y y col = draw_seg (0., y) ((size_x() |> float_of_int
@@ -162,9 +166,11 @@ let draw_end v1 v2 =
   draw_string (padding/.2.-.5.) (sy-.2.*.padding-.5.) y_max black;
   draw_string (padding/.2.-.5.) (sy-.2.*.padding+.15.) v2 black
 
+(* dummy main loop *)
 let loop state =
   loop_at_exit [] (fun _ -> ())
 
+(* window creation and initialization *)
 let create_window width height =
   Format.sprintf " %ix%i" width height |> open_graph;
   sx := size_x() |> float;
