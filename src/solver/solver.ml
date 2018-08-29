@@ -13,7 +13,7 @@ module Solve(Abs : AbstractCP) = struct
     | _ -> split
 
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
-    if !Constant.debug > 0 then Format.printf "entering the solving loop\n%!";
+    if !Constant.debug > 0 then Tools.debug 0 "entering the solving loop\n%!";
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
       | Empty -> res

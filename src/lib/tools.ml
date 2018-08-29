@@ -38,6 +38,15 @@ let matrix_print_indent fmt mat =
     Format.fprintf fmt "\n"
   done
 
+(******************************)
+(* printing for debug purpose *)
+(******************************)
+
+(* debug utility that indents according to the debug level *)
+let debug i fmt =
+  let spacing = String.make i ' ' in
+  Format.ksprintf (Format.printf "%s%s%s%!" spacing spacing) fmt
+
 (*****************)
 (* Map instances *)
 (*****************)

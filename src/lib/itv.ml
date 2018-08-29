@@ -79,8 +79,6 @@ module Itv(B:BOUND) = struct
 
   let hull (x:B.t) (y:B.t) = B.min x y, B.max x y
 
-
-
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
@@ -111,6 +109,13 @@ module Itv(B:BOUND) = struct
   let meet ((l1,h1):t) ((l2,h2):t) : t bot =
     check_bot (B.max l1 l2, B.min h1 h2)
 
+  let negative_part ((l1,h1):t) : t bot =
+    if B.geq l1 B.zero then Bot else
+      check_bot (l1,(B.min h1 B.zero))
+
+  let positive_part ((l1,h1):t) : t bot =
+    if B.leq h1 B.zero then Bot else
+      check_bot ((B.max l1 B.zero),h1)
 
   (* predicates *)
   (* ---------- *)
@@ -248,21 +253,11 @@ module Itv(B:BOUND) = struct
     else
     mix4 bound_div_up bound_div_down i1 i2
 
-  (*let printBot fmt i =
-    match i with
-     | Bot -> Format.fprintf fmt "Bot"
-     | Nb a -> Format.fprintf fmt "%a" print a*)
-
-
   (* return valid values (possibly Bot) + possible division by zero *)
   let div (i1:t) (i2:t) : t bot =
     (* split into positive and negative dividends *)
-    (*Format.printf "\t\t%a / %a (%a / %a U %a / %a)\n" print i1 print i2 print i1 printBot (meet i2 positive) print i1 printBot (meet i2 negative);*)
-    let pos = (lift_bot (div_sign i1)) (meet i2 positive)
-    and neg = (lift_bot (div_sign i1)) (meet i2 negative) in
-    (*Format.printf "\t\t\t%a and %a" printBot pos printBot neg;*)
-    (*let (r, bb) = join_bot2 join pos neg, contains i2 B.zero in
-    Format.printf " => %a\n" printBot r;*)
+    let pos = (lift_bot (div_sign i1)) (positive_part i2)
+    and neg = (lift_bot (div_sign i1)) (negative_part i2) in
     (* joins the result*)
     join_bot2 join pos neg
 
@@ -270,7 +265,7 @@ module Itv(B:BOUND) = struct
   let sqrt ((l,h):t) : t bot =
     if B.sign h < 0 then Bot else
     let l = B.max l B.zero in
-    Nb (B.sqrt_down l, B.sqrt_up h)
+   Nb (B.sqrt_down l, B.sqrt_up h)
 
   (* useful operators on intervals *)
   let ( +@ ) = add

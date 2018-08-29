@@ -2,7 +2,7 @@
 (* this modules checks that the solver implementation works fine *)
 (*****************************************************************)
 
-module CheckBox = Checker.Make(Abstract_box.BoxMix)
+module CheckBox = Checker.Make(Abstract_box.BoxF)
 
 let print_sep () =
   Format.printf "----------------------------------------------------------\n"

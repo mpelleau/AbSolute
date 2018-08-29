@@ -69,7 +69,7 @@ module Make (Abs : AbstractCP) = struct
 		               | Empty
 
   let print_debug tab obj abs =
-    if !Constant.debug >= 3 then
+    if !Constant.debug >= 5 then
       match obj with
       | Some obj ->
          let (inf, sup) = Abs.forward_eval abs obj in
@@ -77,7 +77,7 @@ module Make (Abs : AbstractCP) = struct
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
   let print_debug_const tab cstrs csts =
-    if !Constant.debug >= 3 then Format.printf "#constraints = %d@." (List.length cstrs)
+    if !Constant.debug >= 5 then Format.printf "#constraints = %d@." (List.length cstrs)
   (*Format.printf "%sconstraints:\n" tab;
       List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
       Format.printf "%sconstants:\n" tab;
@@ -89,7 +89,7 @@ module Make (Abs : AbstractCP) = struct
     | None -> false
 
   let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
-    if !Constant.debug >= 1 then Format.printf "consistency\n%!";
+    if !Constant.debug >= 1 then Tools.debug 1 "consistency\n%!";
     print_debug "" objv abs;
     print_debug_const "" constrs const;
     try
@@ -120,7 +120,7 @@ module Make (Abs : AbstractCP) = struct
 
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =
-    if !Constant.debug >= 1 then Format.printf "pruning\n%!";
+    if !Constant.debug >= 1 then Tools.debug 1 "pruning\n%!";
     let rec aux abs c_list is_sure sures unsures =
       match c_list with
       | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
@@ -138,7 +138,7 @@ module Make (Abs : AbstractCP) = struct
     in aux abs constrs true [] []
 
   let split abs cstrs =
-    if !Constant.debug >= 1 then Format.printf "splitting\n%!";
+    if !Constant.debug >= 1 then Tools.debug 1 "splitting\n%!";
     Abs.split abs
   (* TODO: add other splits *)
 

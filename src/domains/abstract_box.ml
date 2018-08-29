@@ -121,8 +121,7 @@ module Box (I:ITV) = struct
 
   let split (a:t) : t list =
     let (v,_) = mix_range a in
-    (if !Constant.debug > 2 then
-      Format.printf " ---- splits along %s ---- \n" v);
+    if !Constant.debug >= 3 then Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
   let prune (a:t) (b:t) : t list * t =
@@ -245,13 +244,14 @@ module Box (I:ITV) = struct
          | SUB -> refine_sub (e1,i1) (e2,i2) x
          | MUL -> refine_mul (e1,i1) (e2,i2) x
          | DIV -> refine_div (e1,i1) (e2,i2) x
-	 | POW -> I.filter_pow i1 i2 x
+	       | POW -> I.filter_pow i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
 
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
+    if !Constant.debug >= 2 then Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
     (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
     let j1,j2 = match o with
@@ -263,6 +263,7 @@ module Box (I:ITV) = struct
       | NEQ -> debot (I.filter_neq i1 i2)
       | EQ  -> debot (I.filter_eq i1 i2)
     in
+    if !Constant.debug >= 2 then Tools.debug 2 "HC4 - refine\n%!";
     let refined1 = if j1 = i1 then a else refine a b1 j1 in
     Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
