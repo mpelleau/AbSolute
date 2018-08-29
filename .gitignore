@@ -16,3 +16,4 @@ src/domains/vpl_domain.ml
 src/print/vpl_drawer.ml
 *.obj
 out/*
+.DS_Store

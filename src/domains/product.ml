@@ -99,13 +99,16 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
     let prune (a, b) (a', b') =
-      Format.printf "a = %a\nb = %a\na' = %a\nb' = %a\n@." A.print a B.print b A.print a' B.print b';
-      let la,ua = A.prune a a' (*if a = a' then A.empty else a'*)
-      and lb,ub = B.prune b b' (*if b = b' then B.empty else b'*) in
+      let la, ua =  A.prune a a'
+      and lb, ub = if b = b' then ([b], b) else B.prune b b' in
       let l = List.fold_left (fun acc ea ->
                   List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
                 ) [] la in
-      (List.filter (fun (abs, abs') -> not (is_empty (reduced_product abs abs')) ) l),(ua, ub)
+      let l' = List.filter (fun (abs, abs') ->
+                   try (not (is_empty (reduced_product abs abs')))
+                   with Bot.Bot_found -> false
+                 ) l in
+      l',(ua, ub)
 
     let split ((abs, abs'):t) =
       let split_a = A.split abs in

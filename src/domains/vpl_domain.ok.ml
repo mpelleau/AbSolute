@@ -121,7 +121,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let add_var : t -> Csp.annot * Csp.var -> t
         = fun p _ -> p
 
-    let vars : t -> (Csp.annot * Csp.annot) list
+    let vars : t -> (Csp.annot * Csp.var) list
         = fun p ->
         BuiltIn.get_vars p
         |> List.map (fun v -> (Csp.Real, Expr.Ident.ofVar v))
