@@ -89,7 +89,7 @@ module Make (Abs : AbstractCP) = struct
     | None -> false
 
   let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
-    if !Constant.debug >= 1 then Tools.debug 1 "consistency\n%!";
+    Tools.debug 1 "consistency\n%!";
     print_debug "" objv abs;
     print_debug_const "" constrs const;
     try
@@ -120,7 +120,7 @@ module Make (Abs : AbstractCP) = struct
 
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =
-    if !Constant.debug >= 1 then Tools.debug 1 "pruning\n%!";
+    Tools.debug 1 "pruning\n%!";
     let rec aux abs c_list is_sure sures unsures =
       match c_list with
       | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
@@ -138,7 +138,7 @@ module Make (Abs : AbstractCP) = struct
     in aux abs constrs true [] []
 
   let split abs cstrs =
-    if !Constant.debug >= 1 then Tools.debug 1 "splitting\n%!";
+    Tools.debug 1 "splitting\n%!";
     Abs.split abs
   (* TODO: add other splits *)
 

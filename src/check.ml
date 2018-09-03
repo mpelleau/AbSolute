@@ -85,7 +85,7 @@ let checkfiles dir files =
     let arr = Array.make 4 "" in
     arr.(0) <- Format.asprintf "%s" fn;
     try
-      let prob = File_parser.parse (Some (dir^fn)) in
+      let prob = File_parser.parse (dir^fn) in
       let res = CheckBox.result prob in
       (match prob.Csp.solutions with
       | None -> output_infeasible arr prob res

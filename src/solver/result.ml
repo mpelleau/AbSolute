@@ -12,6 +12,10 @@ type 'a res = {
     best_value : Mpqf.t      (* best value found during the optimization *)
   }
 
+(* returns the inner ratio (between 0 and 1) of a solution *)
+let inner_ratio res =
+  res.vol_sure /. (res.vol_sure +. res.vol_unsure)
+
 (* the abstract result type we will be manipulating *)
 module Make (A: AbstractCP) = struct
 

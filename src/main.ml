@@ -14,7 +14,11 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
   module Print = Out.Make(Dr)
   let go prob =
+    Format.printf "Starting the resolution using the ";
+    Tools.green_fprintf Format.std_formatter "%s" (!Constant.domain);
+    Format.printf " domain ...\n%!";
     let res = Sol.solving prob in
+    Format.printf "Solving finished\n\n%!";
     Print.out prob res
 end
 
@@ -44,7 +48,6 @@ module MakeFullDomain
          (Abstract : Adcp_sig.AbstractCP)
          (Drawer : Drawer_sig.Drawer with type t = Abstract.t)
   = struct
-
   module Abstract = Abstract
   module Drawer = Drawer
 end
@@ -163,11 +166,14 @@ let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob
 let go() =
   let open Constant in
   parse_args ();
-  Format.printf "domain : %s\n" !domain;
+  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
+  Format.printf "%a\n" Tools.green_fprintf "| Welcome to the AbSolute solver |";
+  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
+  Format.printf "\n";
   let prob = File_parser.parse !problem in
-  Format.printf "file parsed\n";
+  Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
+  Format.printf "%a\n" Csp.print prob;
   if !debug > 0 then Vpl_domain.enable_debug();
-  if !trace then Format.printf "%a" Csp.print prob;
   lift (set_domain ()) prob
 
 let _ = go()

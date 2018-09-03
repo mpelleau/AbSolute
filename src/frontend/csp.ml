@@ -10,8 +10,6 @@ type annot = Int | Real
 
 (* unary arithmetic operators *)
 type unop = NEG
-(*  | SQRT | ABS | COS | SIN | TAN | COT *)
-(* | ASIN | ACOS | ATAN | ACOT | LN | LOG | EXP *)
 
 (* binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
@@ -122,8 +120,12 @@ let print_dom fmt = function
      Format.fprintf fmt "{%a}" print_set l
   | Top -> Format.fprintf fmt "[-oo; +oo]"
 
-let print_assign fmt (a,b,c) =
-  Format.fprintf fmt "%a %a=%a" print_typ a print_var b print_dom c
+let print_assign fmt assignations =
+  Format.fprintf fmt "Variables:\n";
+  List.iter
+    (fun (a,b,c) ->
+      Format.fprintf fmt "%a %a in %a\n" print_typ a print_var b print_dom c
+    ) assignations
 
 let print_cst fmt (a, b) =
   match (a, b) with
@@ -164,6 +166,13 @@ let rec print_bexpr fmt = function
     Format.fprintf fmt "%a || %a" print_bexpr b1 print_bexpr b2
   | Not b -> Format.fprintf fmt "not %a" print_bexpr b
 
+let print_constraints fmt constraints =
+  Format.fprintf fmt "Constraints:\n";
+  List.iter
+    (fun c ->
+      Format.fprintf fmt "%a" print_bexpr c
+    ) constraints
+
 let print_jacob fmt (v, e) =
   Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e
 
@@ -176,18 +185,16 @@ let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e
 
 let print fmt prog =
-  let rec aux f = function
-  | [] -> ()
-  | a::tl -> Format.fprintf fmt "%a;\n" f a; aux f tl
-  in
-  aux print_assign prog.init;
-  Format.fprintf fmt "\n-----\n";
-  aux print_csts prog.constants;
-  Format.fprintf fmt "\n-----\n";
-  aux print_view prog.view;
-  Format.fprintf fmt "\n-----\n";
-  print_jacobian fmt prog.jacobian;
-  Format.fprintf fmt "\n-----\n"
+  Format.printf "%a" print_assign prog.init;
+  Format.fprintf fmt "\n";
+  Format.printf "%a" print_constraints prog.constraints;
+  Format.fprintf fmt "\n"(* ;
+   * aux print_csts prog.constants;
+   * Format.fprintf fmt "\n-----\n";
+   * aux print_view prog.view;
+   * Format.fprintf fmt "\n-----\n";
+   * print_jacobian fmt prog.jacobian;
+   * Format.fprintf fmt "\n-----\n" *)
 
 
 (*************************************************************)
@@ -539,12 +546,9 @@ let rec neg_bexpr = function
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
 
-
-
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
 (*****************************************)
-
 
 
 let rec replace_cst_expr (id, cst) expr =

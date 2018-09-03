@@ -105,24 +105,16 @@ let string_of_position p =
   Printf.sprintf "%s:%i:%i" p.pos_fname p.pos_lnum (p.pos_cnum - p.pos_bol)
 
 (* open a file and parse it *)
-let parse (filename:string option) : prog =
+let parse (filename:string) : prog =
   if !Constant.debug > 0 then Format.printf "parsing\n%!";
-  let filename =
-    match filename with
-    | None -> failwith "you must specify a filename"
-    | Some s -> s
-  in
   let f = open_in filename in
-  Format.printf "file opened\n";
   let lex = from_channel f in
-  Format.printf "lex channel\n";
   let fileparser =
     let len = String.length filename in
     if len >= 4 && (String.sub filename (len-4) 4) = ".mod" then begin
-        (* Format.printf "mod file detected. parsing with mod parser\n%!"; *)
         (fun lex -> ModParser.stmts ModLexer.token lex |> ModCsp.toCsp)
       end
-    else (Format.printf "parsing...\n"; Parser.file Lexer.token)
+    else Parser.file Lexer.token
   in
   try
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
@@ -137,7 +129,7 @@ let parse (filename:string option) : prog =
   | Parsing.Parse_error -> failwith "Parse error"
 
 
-let parse fn =
+let parse (fn:string) =
   let p = parse fn in
   check_ast p;
   (*List.iter (fun c -> Format.printf "  -- %a\n" Csp.print_bexpr c) p.Csp.constraints;*)

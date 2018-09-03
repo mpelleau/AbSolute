@@ -12,8 +12,9 @@ module Solve(Abs : AbstractCP) = struct
     | "smear" -> sum_smear
     | _ -> split
 
+  (* main propagation loop *)
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
-    if !Constant.debug > 0 then Tools.debug 0 "entering the solving loop\n%!";
+    Tools.debug 1 "entering the solving loop\n%!";
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
       | Empty -> res
@@ -37,8 +38,5 @@ module Solve(Abs : AbstractCP) = struct
 
   let solving prob =
     let abs = init prob in
-    Format.printf "abs = %a\tvolume = %f\n@." Abs.print abs (Abs.volume abs);
-    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view splitting_strategy in
-    Format.printf "\nsolving ends\n%!%a" print res;
-    res
+    explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view splitting_strategy
 end
