@@ -42,13 +42,18 @@ module Make (D:Drawer) = struct
         | Some(a,b),Some(c,d) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
        let name = Filename.(basename s |> chop_extension) in
        let out = ("out/"^name^".tex") in
-       let name = Latex.escape name in
-       let fmt = Format.formatter_of_out_channel (open_out out) in
-       Format.fprintf fmt "\\begin{figure}[t]\n\\centering\n\\begin{tikzpicture}[scale=0.6]\n";
+       (* let name = Latex.escape name in *)
+       let fout = open_out out in
+       let fmt = Format.formatter_of_out_channel fout in
+       Format.fprintf fmt "\\documentclass{standalone}\n\n\\usepackage{xcolor}\n\\usepackage{pgf, tikz}\n\n\\definecolor{sure}{rgb}{0, 0.7, 0.9}\n\\definecolor{unsure}{rgb}{0, 0.9, 0}\n\n\\begin{document}\n  \\begin{tikzpicture}\n";
        List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
        if !Constant.sure |> not then
          List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
-       Format.fprintf fmt "\\end{tikzpicture}\n\\caption{%s}\n\\end{figure}\n" name
+       Format.printf "@.";
+       Format.set_formatter_out_channel fout;
+       Format.printf "\n  \\end{tikzpicture}\n\\end{document}@.";
+       Format.set_formatter_out_channel stdout;
+       Format.printf "written latex file %s\n" out
 
   let draw3d values vars =
     match !Constant.problem with
