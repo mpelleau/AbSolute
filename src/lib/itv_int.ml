@@ -207,6 +207,9 @@ let to_expr ((l,h):t) =
   ((Csp.GEQ, Csp.Cst(Mpqf.of_int l, Csp.Int)),
    (Csp.LEQ, Csp.Cst(Mpqf.of_int h, Csp.Int)))
 
+(* returns the type annotation of the represented values *)
+let to_annot _ = Csp.Int
+
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
      given a function name, a list of argument, and a result,
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;

@@ -3,7 +3,7 @@
 let precision       = ref 0.01
 let max_iter        = ref 100000000
 let max_sol         = ref 10000000
-let problem         = ref None
+let problem         = ref ""
 let domain          = ref "box"
 let product         = ref false
 let split           = ref "default"
@@ -43,7 +43,7 @@ let set_max_sol s =
   else failwith "number of solutions must be stricly positive"
 
 let set_prob s =
-  if Sys.file_exists s then problem := Some s
+  if Sys.file_exists s then problem := s
   else failwith (Format.sprintf "%s : file not found" s)
 
 let set_split s =

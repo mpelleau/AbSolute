@@ -3,7 +3,7 @@
 (******************)
 
 (* same as failwith but uses a format instead *)
-let fail_fmt fmt = Format.kasprintf (fun s -> failwith s) fmt
+let fail_fmt fmt = Format.kasprintf failwith fmt
 
 (* terminal output with a color given in parameter *)
 (* restoring default color after use *)
@@ -12,6 +12,9 @@ let color_printf fmt col x =
 
 (* red terminal output *)
 let red_fprintf fmt x = color_printf fmt "\027[31m" x
+
+(* blue terminal output *)
+let cyan_fprintf fmt x = color_printf fmt "\027[36m" x
 
 (* green terminal output *)
 let green_fprintf fmt x = color_printf fmt "\027[32m" x
@@ -38,13 +41,21 @@ let matrix_print_indent fmt mat =
     Format.fprintf fmt "\n"
   done
 
+(* debug utility that indents according to the debug level *)
+let debug level fmt =
+  if !Constant.debug < level then
+    Format.ikfprintf ignore Format.std_formatter fmt
+  else
+    let spacing = String.make level ' ' in
+    Format.kasprintf (fun msg -> Format.printf "%s%s%s" spacing spacing msg) fmt
+
 (*****************)
 (* Map instances *)
 (*****************)
 
 (* only one instanciation forall variable maps modules *)
 module VarMap = struct
-  include Mapext.Make(struct type t = string let compare = compare end)
+  include Mapext.Make(String)
 
   (* we add few utilities inside it *)
 

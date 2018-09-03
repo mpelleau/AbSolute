@@ -28,13 +28,12 @@ module Box (I:ITV) = struct
 
   let find v (a:t) = VarMap.find_fail v a
 
-  let is_integer var = var.[String.length var - 1] = '%'
+  (* returns true if var is an integer in the given environment *)
+  let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
 
   let vars abs =
     Env.fold (fun v x acc ->
-        let (typ, v) = if is_integer v then
-                           (Int, String.sub v 0 (String.length v -1))
-                         else (Real, v) in
+        let typ = if is_integer abs v then Int else Real in
         (typ, v)::acc
       ) abs []
 
@@ -122,8 +121,7 @@ module Box (I:ITV) = struct
 
   let split (a:t) : t list =
     let (v,_) = mix_range a in
-    (if !Constant.debug > 2 then
-      Format.printf " ---- splits along %s ---- \n" v);
+    Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
   let prune (a:t) (b:t) : t list * t =
@@ -191,17 +189,15 @@ module Box (I:ITV) = struct
               (* special case: squares are positive *)
               I.abs r
             else r
-	 | POW -> I.pow i1 i2
-       in
-       BBinary (o,b1,b2), r
+	 | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
 
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
     match e1, e2, b with
     | BCst c1, BCst c2, _ -> Nb (i1, i2)
-    | BCst c, _, true -> merge_bot2 (Nb (i1)) (f2 i2 i1 x)
-    | BCst c, _, false -> merge_bot2 (Nb (i1)) (f2 i2 x i1)
-    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb (i2))
+    | BCst c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
+    | BCst c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
+    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
     | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
     | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
 
@@ -246,13 +242,14 @@ module Box (I:ITV) = struct
          | SUB -> refine_sub (e1,i1) (e2,i2) x
          | MUL -> refine_mul (e1,i1) (e2,i2) x
          | DIV -> refine_div (e1,i1) (e2,i2) x
-	 | POW -> I.filter_pow i1 i2 x
+	       | POW -> I.filter_pow i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
 
   (* test transfer function *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
+    Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
     (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
     let j1,j2 = match o with
@@ -264,14 +261,14 @@ module Box (I:ITV) = struct
       | NEQ -> debot (I.filter_neq i1 i2)
       | EQ  -> debot (I.filter_eq i1 i2)
     in
+    Tools.debug 2 "HC4 - refine\n%!";
     let refined1 = if j1 = i1 then a else refine a b1 j1 in
     Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
   let filter (a:t) (e1,binop,e2) : t =
     match test a e1 binop e2 with
     | Bot ->
-       if !Constant.debug > 5 then
-         Format.printf "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a ;
+       Tools.debug 5 "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a;
        raise Bot_found
     | Nb e -> e
 
@@ -319,7 +316,7 @@ module Box (I:ITV) = struct
 
   let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->
-        let (annot, v) = if is_integer v then (Int, String.sub v 0 (String.length v -1)) else (Real, v) in
+        let annot = if is_integer a v then Int else Real in
         let ((op1, e1), (op2, e2)) = I.to_expr x in
         match e1, e2 with
         | Cst(e1, _), Cst(e2, _) ->

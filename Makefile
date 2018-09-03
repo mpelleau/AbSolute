@@ -24,6 +24,7 @@ AUTOGEN =\
 
 # source files
 MLFILES = \
+	src/lib/constant.ml \
 	src/lib/mapext.ml \
 	src/lib/argext.ml \
 	src/lib/tools.ml \
@@ -32,7 +33,6 @@ MLFILES = \
 	src/lib/linconsext.ml \
 	src/lib/tconsext.ml \
 	src/lib/abstractext.ml \
-	src/lib/constant.ml \
 	src/lib/apron_utils.ml \
 	src/lib/bot.ml \
 	src/lib/bound_sig.ml \
