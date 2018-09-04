@@ -40,7 +40,7 @@ module Make (D:Drawer) = struct
     let name = Filename.(basename !Constant.problem |> chop_extension) in
     let out = ("out/"^name^".tex") in
     let fmt = Format.formatter_of_out_channel (open_out out) in
-       Format.fprintf fmt "\\documentclass{standalone}\n\n\\usepackage{xcolor}\n\\usepackage{pgf, tikz}\n\n\\definecolor{sure}{rgb}{0, 0.7, 0.9}\n\\definecolor{unsure}{rgb}{0, 0.9, 0}\n\n\\begin{document}\n  \\begin{tikzpicture}\n";
+       Format.fprintf fmt "\\documentclass{standalone}\n\n\\usepackage{xcolor}\n\\usepackage{pgf, tikz}\n\n\\definecolor{sure}{rgb}{0, 0.8, 1}\n\\definecolor{unsure}{rgb}{0, 0.9, 0}\n\n\\begin{document}\n  \\begin{tikzpicture}\n";
     List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;

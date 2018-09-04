@@ -34,28 +34,29 @@ module Make(AP:ADomain) = struct
     let a = List.fold_left (T.add_var) abs new_vars in
 
     List.fold_left (fun a c -> T.filter a c) a csts_expr
-
-  let draw draw_f fillpol abs (v1,v2) col =
-    let get_indexes env (x,y) = Environment.(
+    
+  let get_indexes env (x,y) = Environment.(
       dim_of_var env (Var.of_string x),
       dim_of_var env (Var.of_string y))
-    in
-    let vertices2d abs (v1,v2) =
-      let env = A.env abs in
-      let draw_pol pol =
-        let i1,i2 = get_indexes env (v1,v2) in
-        let x,y = Environment.(var_of_dim env i1,var_of_dim env i2) in
-        let get_coord l = Linexpr1.(get_coeff l x,get_coeff l y) in
-        let gen' = A.to_generator_array polkaman pol in
-        let v = Array.init (Generator1.array_length gen')
+                            
+  let vertices2d abs (v1,v2) =
+    let env = A.env abs in
+    let draw_pol pol =
+      let i1,i2 = get_indexes env (v1,v2) in
+      let x,y = Environment.(var_of_dim env i1,var_of_dim env i2) in
+      let get_coord l = Linexpr1.(get_coeff l x,get_coeff l y) in
+      let gen' = A.to_generator_array polkaman pol in
+      let v = Array.init (Generator1.array_length gen')
 	        (fun i -> get_coord
-	          (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
-	         |> Array.to_list
-        in
-        List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
+	                    (Generator1.get_linexpr1 (Generator1.array_get gen' i)))
+	      |> Array.to_list
       in
-      draw_pol (to_poly abs env)
+      List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
     in
+    draw_pol (to_poly abs env)
+    
+
+  let draw draw_f fillpol abs (v1,v2) col =
     let vert = vertices2d abs (v1,v2) in
     fillpol vert col;
     draw_f vert Graphics.black
@@ -67,7 +68,9 @@ module Make(AP:ADomain) = struct
     Format.printf "no 3d generation for apron domains for now\n%!"
 
   let print_latex fmt abs (v1,v2) col =
-    Format.printf "no latex generation for apron domains for now\n%!"
+    let l = vertices2d abs (v1, v2) in
+    let l = View.graham_sort l in
+    Latex.filldraw fmt l col
 
 end
 
