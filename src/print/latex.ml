@@ -43,7 +43,7 @@ let fillpol fmt l col =
 
 let filldraw fmt l col =
   let c = rgb_to_latex_col col in
-  fff fmt "    \\filldraw [%s, fill opacity = 0.3] " c;
+  fff fmt "    \\filldraw [%s] " c;
   List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."
 
