@@ -32,7 +32,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   (* evaluate an expression according to an instance *)
   let eval (instance:Csp.instance) expr =
     let rec aux = function
-      | Var v -> VarMap.find v instance
+      | Var v -> VarMap.find_fail v instance
       | Cst (i,_) -> i
       | Binary(op,e1,e2) ->
          let e1' = aux e1 and e2' = aux e2 in
@@ -99,7 +99,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
       | Finite (l,u) -> l < value && value < u
     | _ -> failwith "cant handle infinite domains for now"
     in
-    let value = VarMap.find var instance |> Mpqf.to_float in
+    let value = VarMap.find_fail var instance |> Mpqf.to_float in
     check_type typ value && check_dom dom (Mpqf.of_float value)
 
   (* checks if an instance satisfies a csp *)

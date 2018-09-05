@@ -343,7 +343,7 @@ module Box (I:ITV) = struct
   let is_abstraction (a:t) (i:instance) =
     VarMap.for_all (fun k value ->
         let value = Mpqf.to_float value in
-        let itv = VarMap.find k a in
+        let itv = VarMap.find_fail k a in
         I.contains_float itv value
       ) i
 
@@ -357,4 +357,4 @@ module BoxF       = Box(Trigo.Make(Itv.ItvF))
 module BoxStrict  = Box(Trigo.Make(Newitv.Test))
 module BoxQ       = Box(Trigo.Make(Itv.ItvQ))
 module BoxQStrict = Box(Trigo.Make(Newitv.TestQ))
-module BoxMix     = Box(Itv_mix)
+module BoxMix     = Box(Trigo.Make(Itv_mix))

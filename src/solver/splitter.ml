@@ -89,9 +89,7 @@ module Make (Abs : AbstractCP) = struct
     | None -> false
 
   let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
-    Tools.debug 1 "consistency\n%!";
-    print_debug "" objv abs;
-    print_debug_const "" constrs const;
+    Tools.debug 2 "consistency\n%!";
     try
       let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
       if Abs.is_empty abs' then Empty else
@@ -120,7 +118,7 @@ module Make (Abs : AbstractCP) = struct
 
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =
-    Tools.debug 1 "pruning\n%!";
+    Tools.debug 2 "pruning\n%!";
     let rec aux abs c_list is_sure sures unsures =
       match c_list with
       | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
@@ -137,10 +135,6 @@ module Make (Abs : AbstractCP) = struct
 	       with Bot.Bot_found -> aux abs tl is_sure sures unsures
     in aux abs constrs true [] []
 
-  let split abs cstrs =
-    Tools.debug 1 "splitting\n%!";
-    Abs.split abs
-  (* TODO: add other splits *)
 
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in
@@ -151,38 +145,49 @@ module Make (Abs : AbstractCP) = struct
     (value, Mpqf.div (Mpqf.add xu xl) (Mpqf.of_int 2))
 
   let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
-    let (msmear, vsplit, mid) = List.fold_left (
-                                    fun (m', mv', mid') (_, l) ->
-                                    List.fold_left (
-                                        fun (m, mv, mid) (v, e) ->
-                                        let (value, half) = get_value abs v e in
-                                        if m < value then (value, v, half)
-                                        else (m, mv, mid)
-                                      ) (m', mv', mid') l
-                                  ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
+    let (msmear, vsplit, mid) =
+      List.fold_left (
+          fun (m', mv', mid') (_, l) ->
+          List.fold_left (
+              fun (m, mv, mid) (v, e) ->
+              let (value, half) = get_value abs v e in
+              if m < value then (value, v, half)
+              else (m, mv, mid)
+            ) (m', mv', mid') l
+        ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
-  module Smear = VarMap
-
   let sum_smear abs (jacobian:Csp.ctrs) : Abs.t list =
-    let smear = List.fold_left (
-                    fun map (_, l) ->
-                    List.fold_left (
-                        fun m (v, e) ->
-                        let (value, half) = get_value abs v e in
-                        match (Smear.find_opt v m) with
-                        | None -> Smear.add v (value, half) m
-                        | Some (s, _) -> Smear.add v (Mpqf.add s value, half) m
-                      ) map l
-                  ) Smear.empty jacobian
+    let smear =
+      List.fold_left (
+          fun map (_, l) ->
+          List.fold_left (
+              fun m (v, e) ->
+              let (value, half) = get_value abs v e in
+              match (VarMap.find_opt v m) with
+              | None -> VarMap.add v (value, half) m
+              | Some (s, _) -> VarMap.add v (Mpqf.add s value, half) m
+            ) map l
+        ) VarMap.empty jacobian
     in
     let (msmear, vsplit, mid) =
-      Smear.fold (
+      VarMap.fold (
           fun var (smear, mi) (m, v, s) ->
           if smear > m then (smear, var, mi)
           else (m, v, s)
         ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
+
+  let split abs  =
+    Tools.debug 1 "splitting using %s\n%!" !Constant.split;
+    let splitting_strategy =
+      match !Constant.split with
+      | "maxSmear" -> max_smear
+      | "smear" -> sum_smear
+      | _ -> (fun abs _ -> Abs.split abs)
+    in
+    splitting_strategy abs
+
 end

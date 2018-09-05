@@ -6,14 +6,8 @@ module Solve(Abs : AbstractCP) = struct
   include Splitter.Make(Abs)
   include Result.Make(Abs)
 
-  let splitting_strategy =
-    match !Constant.split with
-    | "maxSmear" -> max_smear
-    | "smear" -> sum_smear
-    | _ -> split
-
   (* main propagation loop *)
-  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) splitting =
+  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) =
     Tools.debug 1 "entering the solving loop\n%!";
     let rec aux abs cstrs csts res depth =
       match consistency abs cstrs csts with
@@ -28,15 +22,15 @@ module Solve(Abs : AbstractCP) = struct
            List.fold_left (fun res x ->
                List.fold_left (fun res elem ->
                    aux elem cstrs csts (incr_step res) (depth +1)
-                 ) res (splitting x cstrs)
+                 ) res (split x cstrs)
 	     ) res lu
          else
            List.fold_left (fun res elem ->
              aux elem cstrs csts (incr_step res) (depth +1)
-           ) res (splitting abs' cstrs)
+           ) res (split abs' cstrs)
     in aux abs constrs consts empty_res 0
 
   let solving prob =
     let abs = init prob in
-    explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view splitting_strategy
+    explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view
 end
