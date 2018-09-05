@@ -34,7 +34,7 @@ module Make (A:ArrayLike) = struct
 
   let array_to_list arr =
     let rec aux accu idx =
-      if idx <= 0 then accu
+      if idx < 0 then accu
       else aux ((A.get arr idx)::accu) (idx-1)
     in aux [] (A.length arr - 1)
 

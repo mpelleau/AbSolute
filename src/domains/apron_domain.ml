@@ -231,8 +231,7 @@ module MAKE(AP:ADomain) = struct
     and obj_sup = obj_itv.Interval.sup in
     (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
 
-    (* utilties for splitting *)
-
+  (* utilties for splitting *)
   let rec largest tab i max i_max =
     if i>=Array.length tab then (max, i_max)
     else
@@ -259,10 +258,10 @@ module MAKE(AP:ADomain) = struct
     let rec minmax tab i max i_max min i_min =
       if i>=Array.length tab then  (max, i_max, min, i_min)
       else
-	let dim = diam_interval (tab.(i)) in
-	if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
-	else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
-	else minmax tab (i+1) max i_max min i_min
+	      let dim = diam_interval (tab.(i)) in
+	      if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
+	      else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
+	      else minmax tab (i+1) max i_max min i_min
 
     (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
      * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line
@@ -318,14 +317,36 @@ module MAKE(AP:ADomain) = struct
     let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
     (dist_max <= !Constant.precision)
 
+  (*********************************)
+  (* Sanity and checking functions *)
+  (*********************************)
+
+  let instance_to_abs i =
+    let open Csp in
+    let of_singleton v f = (Var v, EQ, Cst (f,Real)) in
+    let env = List.map (fun (k,_) -> Var.of_string k) (Tools.VarMap.bindings i) in
+    let env = Environment.make [||] (Array.of_list env) in
+    let abs = Abstract1.top man env in
+    List.fold_left (fun abs (v,i) ->
+        let c = of_singleton v i in
+        filter abs c
+      ) abs (Tools.VarMap.bindings i)
+
+  (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn polyad =
-    (* let poly = A.to_generator_array man polyad in
-    let gen_env = poly.Generator1.array_env in *)
-    failwith "spawners not implmented with apron domains"
+    let poly = A.to_generator_array man polyad in
+    let _gen_env = poly.Generator1.array_env in
+    failwith "spawners not implemented with apron domains"
 
-  let is_abstraction polyad f =
-    (* let poly = A.to_generator_array man polyad in
-    let gen_env = poly.Generator1.array_env in *)
-    failwith "is_abstraction not implmented with apron domains"
-
+  (* given an abstraction and instance, verifies if the abstraction is implied
+     by the instance *)
+  let is_abstraction =
+    (* returns true iff an instance satisfies a constraint *)
+    let sat i c =
+      let abs = instance_to_abs i in
+      Abstract1.sat_lincons man abs c
+    in
+    fun poly instance ->
+    let ctrs = A.to_lincons_array man poly in
+    Linconsext.array_for_all (sat instance) ctrs
 end

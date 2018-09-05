@@ -129,5 +129,5 @@ let main =
   Check_BoxMix.go();
   message "polyhedra (Apron)";
   Check_Poly.go();
-  message "polyhedra (vpl)";
+  message "polyhedra (VPL)";
   Check_Vpl.go()
