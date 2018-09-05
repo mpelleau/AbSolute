@@ -16,9 +16,9 @@ let blue_comp rgb = (rgb mod 256 |> float) /. 255.
 
 let rgb_to_latex_col col =
   if col = Graphics.black then "black"
-  else if col = Graphics.green then "fill=lightgray"
-  else if col = Graphics. blue then "blue"
-  else "fill=sure"
+  else if col = Graphics.green then "fill = unsure"
+  else if col = Graphics.blue then "blue"
+  else "fill = sure"
 
 let scale_x x =
   !sx *. (x -. !xmin) /. (!xmax -. !xmin)
@@ -28,32 +28,32 @@ let scale_y y =
 
 let drawseg fmt (x1,y1) (x2,y2) col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\draw[%s] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
+  fff fmt "    \\draw [%s] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
 
 let draw_dashed_seg fmt (x1,y1) (x2,y2) col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\draw[%s, dashed] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
+  fff fmt "    \\draw [%s, dashed] (%f,%f) -- (%f,%f);\n" c x1 y1 x2 y2
 
 let fillpol fmt l col =
   let c = rgb_to_latex_col col in
   let l = View.l_to_float l in
-	fff fmt "\\fill[%s] " c;
+	fff fmt "    \\fill [%s] " c;
 	List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."
 
 let filldraw fmt l col =
   let c = rgb_to_latex_col col in
-  fff fmt "\\filldraw[%s, fill opacity = 0.3] " c;
+  fff fmt "    \\filldraw [%s] " c;
   List.iter (fun (x,y) -> fff fmt "(%f, %f) -- " x y) l;
   fff fmt "cycle;@."
 
 let filldrawbox fmt (xl, yl) (xu, yu) col =
   let c = rgb_to_latex_col col in
-  let xl = scale_x (Mpqf.to_float xl) in
-  let xu = scale_x (Mpqf.to_float xu) in
-  let yl = scale_y (Mpqf.to_float yl) in
-  let yu = scale_y (Mpqf.to_float yu) in
-  fff fmt "\\%s[%s] (%f, %f) rectangle (%f, %f);@."
+  let xl = Mpqf.to_float xl in
+  let xu = Mpqf.to_float xu in
+  let yl = Mpqf.to_float yl in
+  let yu = Mpqf.to_float yu in
+  fff fmt "    \\%s [%s] (%f, %f) rectangle (%f, %f);@."
     (if col = Graphics.green then "draw" else "filldraw") c xl yl xu yu
 
 let init (a,b) (c,d) =
