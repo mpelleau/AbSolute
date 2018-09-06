@@ -171,7 +171,8 @@ let go() =
   Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
   Format.printf "\n";
   let prob = File_parser.parse !problem in
-  Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
+  Format.printf "Problem: ";
+  Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
   Format.printf "%a\n" Csp.print prob;
   if !debug > 0 then Vpl_domain.enable_debug();
   lift (set_domain ()) prob
