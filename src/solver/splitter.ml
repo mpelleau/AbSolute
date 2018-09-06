@@ -135,7 +135,6 @@ module Make (Abs : AbstractCP) = struct
 	       with Bot.Bot_found -> aux abs tl is_sure sures unsures
     in aux abs constrs true [] []
 
-
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in
     let slope = max (Mpqf.abs lb) (Mpqf.abs ub) in
@@ -156,7 +155,8 @@ module Make (Abs : AbstractCP) = struct
             ) (m', mv', mid') l
         ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
+     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   let sum_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let smear =
@@ -178,7 +178,8 @@ module Make (Abs : AbstractCP) = struct
           else (m, v, s)
         ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real)); Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
+     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   let split abs  =
     Tools.debug 1 "splitting using %s\n%!" !Constant.split;

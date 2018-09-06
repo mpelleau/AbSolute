@@ -84,3 +84,21 @@ module TconsExt = Make (struct
 
   let empty = array_make (Environment.make [||] [||]) 0
 end)
+
+module GeneratorExt = Make (struct
+  open Apron
+  open Generator1
+
+  type elem = t
+  type t = earray
+
+  let get = array_get
+
+  let set = array_set
+
+  let length = array_length
+
+  let make elem = array_make elem.env
+
+  let empty = array_make (Environment.make [||] [||]) 0
+end)
