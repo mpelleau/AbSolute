@@ -321,32 +321,48 @@ module MAKE(AP:ADomain) = struct
   (* Sanity and checking functions *)
   (*********************************)
 
-  let instance_to_abs i =
+  let instance_to_abs (abs_env:Environment.t) (i:Csp.instance) =
     let open Csp in
     let of_singleton v f = (Var v, EQ, Cst (f,Real)) in
     let env = List.map (fun (k,_) -> Var.of_string k) (Tools.VarMap.bindings i) in
-    let env = Environment.make [||] (Array.of_list env) in
+    let i_env,r_env =
+      List.partition (fun v -> Environment.typ_of_var abs_env v = Environment.INT) env
+    in
+    let env = Environment.make (Array.of_list i_env) (Array.of_list r_env) in
     let abs = Abstract1.top man env in
     List.fold_left (fun abs (v,i) ->
         let c = of_singleton v i in
         filter abs c
       ) abs (Tools.VarMap.bindings i)
 
-  (* returns an randomly (uniformly?) chosen instanciation of the variables *)
-  let spawn polyad =
-    let poly = A.to_generator_array man polyad in
-    let _gen_env = poly.Generator1.array_env in
-    failwith "spawners not implemented with apron domains"
-
   (* given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
-  let is_abstraction =
-    (* returns true iff an instance satisfies a constraint *)
-    let sat i c =
-      let abs = instance_to_abs i in
-      Abstract1.sat_lincons man abs c
-    in
-    fun poly instance ->
+  let is_abstraction poly instance =
+    let env_abs = Abstract1.env poly in
+    let abs = instance_to_abs env_abs instance in
     let ctrs = A.to_lincons_array man poly in
-    Linconsext.array_for_all (sat instance) ctrs
+    Linconsext.array_for_all (Abstract1.sat_lincons man abs) ctrs
+
+  (* returns a randomly uniformly chosen instanciation of the variables *)
+  let spawn =
+    let spawn_itv (i:Interval.t) =
+      let r = Mpqf.of_float (Random.float 1.) in
+      let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
+      let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
+      Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
+    in
+    fun abs ->
+    let b = Abstract1.to_box man abs in
+    let itvs = b.Abstract1.interval_array in
+    let env = b.Abstract1.box1_env in
+    let rec retry () =
+      let instance,_ =
+        Array.fold_left (fun (acc,idx) i ->
+            let v = Environment.var_of_dim env idx in
+            let instance = Tools.VarMap.add (Var.to_string v) (spawn_itv i) acc in
+            instance,(idx+1)
+          ) (Tools.VarMap.empty,0) itvs
+      in
+      if is_abstraction abs instance then instance else retry()
+    in retry()
 end
