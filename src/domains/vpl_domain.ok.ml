@@ -191,15 +191,24 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ p ->
         print_endline (to_string Expr.Ident.get_string p)
 
-    (* TODO: to define *)
     let spawn : t -> Csp.instance
-        = fun _ ->
-        Pervasives.failwith "spawn: unimplemented"
+        = fun p ->
+        spawn p
+        |> Vector.Rat.Positive.toList
+        |> List.map
+            (fun (var,coeff) ->
+             Expr.Ident.ofVar var, (Q.to_string coeff |> Mpqf.of_string))
+        |> Tools.VarMap.of_list
 
-    (* TODO: to define *)
     let is_abstraction : t -> Csp.instance -> bool
-        = fun _ ->
-        Pervasives.failwith "is_abstraction: unimplemented"
+        = fun p varmap ->
+        Tools.VarMap.fold
+                (fun var coeff coeffs ->
+                    (Mpqf.to_string coeff |> Q.of_string, Expr.Ident.toVar var) :: coeffs)
+                varmap
+                []
+            |> Vector.Rat.Positive.mk
+            |> satisfy p
 
     let to_bexpr: t -> (Csp.expr * Csp.cmpop * Csp.expr) list
         = let csp_true : Csp.expr * Csp.cmpop * Csp.expr
