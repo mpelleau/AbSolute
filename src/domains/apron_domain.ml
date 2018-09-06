@@ -202,9 +202,8 @@ module MAKE(AP:ADomain) = struct
     let env = A.env b in
     let c = T.cmp_expr_to_tcons (e1,c,e2) env in
     if Tconsext.get_typ c = Tconsext.DISEQ then
-      let lin = Tconsext.to_lincons b.A.env c in
-      let l1,l2 = Linconsext.splitdiseq lin in
-      join (A.filter_lincons man b l1) (A.filter_lincons man b l2)
+      let t1,t2 = Tconsext.splitdiseq c in
+      join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
     else A.filter_tcons man b c
 
   let print = A.print
@@ -355,7 +354,7 @@ module MAKE(AP:ADomain) = struct
     let b = Abstract1.to_box man abs in
     let itvs = b.Abstract1.interval_array in
     let env = b.Abstract1.box1_env in
-    let rec retry () =
+    let rec retry n =
       let instance,_ =
         Array.fold_left (fun (acc,idx) i ->
             let v = Environment.var_of_dim env idx in
@@ -363,6 +362,8 @@ module MAKE(AP:ADomain) = struct
             instance,(idx+1)
           ) (Tools.VarMap.empty,0) itvs
       in
-      if is_abstraction abs instance then instance else retry()
-    in retry()
+      if is_abstraction abs instance then instance
+      else if n > 10 then failwith "max tries reached"
+      else retry (n+1)
+    in retry 0
 end
