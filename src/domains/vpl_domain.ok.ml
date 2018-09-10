@@ -96,6 +96,70 @@ module VPL = struct
 
 end
 
+module PizzaSplit = struct
+    module CPoly = Vpl.WrapperTraductors.CP
+    module Poly = CPoly.Poly
+
+    let next_point : Scalar.Rat.t -> Poly.t Cs.Vec.M.t -> Cs.Vec.t -> Cs.Vec.t
+        = fun gamma gradient point ->
+        Cs.Vec.sub
+            point
+            (Cs.Vec.mulc
+                gamma
+                (Cs.Vec.M.map
+                    (fun p -> Poly.eval p (Cs.Vec.get point))
+                    gradient
+                )
+            )
+
+    let norm : Cs.Vec.t -> float
+        = fun vec ->
+        Cs.Vec.toList vec
+        |> List.map (fun (_,coeff) -> Scalar.Rat.to_float coeff)
+        |> List.fold_left (fun acc c -> acc +. c*.c) 0.
+        |> fun f -> sqrt f
+
+    let rec gradient_descent : Scalar.Rat.t -> float -> Poly.t Cs.Vec.M.t -> Cs.Vec.t -> Cs.Vec.t
+        = fun gamma epsilon gradient point ->
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Gradient descent: %s"
+            (Vector.Rat.Positive.to_string Vector.Rat.Positive.V.to_string point)));
+        let point' = next_point gamma gradient point in
+        if norm (Cs.Vec.sub point' point) < epsilon
+        then point'
+        else gradient_descent gamma epsilon gradient point'
+
+    let find_point : CPoly.t -> Cs.Vec.t
+        = fun cpoly ->
+        Debug.log DebugTypes.Title (lazy "Gradient descent");
+        Debug.log DebugTypes.MInput (lazy (Printf.sprintf
+                "Polynomial constraint: %s"
+                (CPoly.to_string cpoly)));
+        let poly = cpoly.CPoly.p in (* polynomial of the shape _ <= 0 *)
+        let poly' = Poly.pow poly 2 in
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Squared Polynomial : %s"
+            (Poly.to_string poly')));
+        let gradient = Poly.gradient poly' in
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Gradient : %s"
+            (Cs.Vec.M.to_string
+                " ; "
+                (fun elem key -> Printf.sprintf "%s -> %s"
+                    key
+                    (Poly.to_string elem))
+                Cs.Vec.V.to_string gradient)));
+        let starting_point = Cs.Vec.nil in
+        let gamma = Scalar.Rat.of_float 0.01 in
+        let epsilon = 0.1 in
+        let res = gradient_descent gamma epsilon gradient starting_point in
+        Debug.log DebugTypes.MOutput (lazy (Printf.sprintf
+                "point: %s"
+                (Vector.Rat.Positive.to_string Cs.Vec.V.to_string res)));
+        res
+
+end
+
 module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     include VPL
@@ -179,7 +243,16 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         Debug.log DebugTypes.Title (lazy "Filter");
         let cond = to_cond (Csp.Cmp (cmp, e1, e2)) in
         Debug.log DebugTypes.MInput (lazy (UserCond.to_string cond));
-        User.assume cond state
+        let res = User.assume cond state in
+        if Csp.is_linear e1 && Csp.is_linear e2
+        then res
+        else
+            let term = Csp.Binary (Csp.SUB, e1, e2)
+                |> Expr.to_term
+            in
+            let cp = Term.to_cp (translate_cmp cmp, term) in
+            let point = PizzaSplit.find_point cp in
+            set_point point res
 
     (* TODO: Should return the variable with the maximal range as well. *)
     let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
@@ -258,6 +331,7 @@ end
 
 let setup_flags : unit -> unit
     = fun () ->
+    Flags.lin := Flags.Intervalization;
     Flags.handelman_timeout := None
 
 let set_lin =
