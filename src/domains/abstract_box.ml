@@ -314,7 +314,7 @@ module Box (I:ITV) = struct
                            (is_applicable a e1) && (is_applicable a e2)) l in
     List.fold_left (fun a' e -> filter a' e) a la
 
-  let to_bexpr (a:t) : (expr * cmpop * expr) list =
+ let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->
         let annot = if is_integer a v then Int else Real in
         let ((op1, e1), (op2, e2)) = I.to_expr x in

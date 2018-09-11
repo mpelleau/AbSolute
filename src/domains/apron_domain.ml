@@ -19,7 +19,8 @@ module SyntaxTranslator (D:ADomain) = struct
         | "sqrt",[x] ->
            let e1 = expr_to_apron a x in
            Texpr1.Unop (Texpr1.Sqrt, e1, Texpr1.Real, Texpr1.Near)
-        | _ -> failwith ("function not supported"^name)
+        | "cos",[_] | "sin",[_] -> Texpr1.Cst (Coeff.i_of_int (-1) 1)
+        | _ -> failwith ("function not supported "^name)
        )
     | Var v ->
       let var = Var.of_string v in
@@ -202,9 +203,8 @@ module MAKE(AP:ADomain) = struct
     let env = A.env b in
     let c = T.cmp_expr_to_tcons (e1,c,e2) env in
     if Tconsext.get_typ c = Tconsext.DISEQ then
-      let lin = Tconsext.to_lincons b.A.env c in
-      let l1,l2 = Linconsext.splitdiseq lin in
-      join (A.filter_lincons man b l1) (A.filter_lincons man b l2)
+      let t1,t2 = Tconsext.splitdiseq c in
+      join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
     else A.filter_tcons man b c
 
   let print = A.print
@@ -343,19 +343,18 @@ module MAKE(AP:ADomain) = struct
     let ctrs = A.to_lincons_array man poly in
     Linconsext.array_for_all (Abstract1.sat_lincons man abs) ctrs
 
+  let spawn_itv (i:Interval.t) =
+    let r = Mpqf.of_float (Random.float 1.) in
+    let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
+    let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
+    Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
+
   (* returns a randomly uniformly chosen instanciation of the variables *)
-  let spawn =
-    let spawn_itv (i:Interval.t) =
-      let r = Mpqf.of_float (Random.float 1.) in
-      let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
-      let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
-      Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
-    in
-    fun abs ->
-    let b = Abstract1.to_box man abs in
+  let spawn pman (poly:Polka.strict Polka.t A.t) =
+    let b = Abstract1.to_box pman poly in
     let itvs = b.Abstract1.interval_array in
     let env = b.Abstract1.box1_env in
-    let rec retry () =
+    let rec retry n =
       let instance,_ =
         Array.fold_left (fun (acc,idx) i ->
             let v = Environment.var_of_dim env idx in
@@ -363,6 +362,20 @@ module MAKE(AP:ADomain) = struct
             instance,(idx+1)
           ) (Tools.VarMap.empty,0) itvs
       in
-      if is_abstraction abs instance then instance else retry()
-    in retry()
+      let lin = Abstract1.to_lincons_array pman poly in
+      let abs = Abstract1.of_lincons_array man env lin in
+      if is_abstraction abs instance then instance
+      else if n > 10 then begin
+          (* let poly = A.to_generator_array pman poly in *)
+          (* Generatorext.array_iter (Format.printf "%a " Generator1.print) poly;
+           * Format.printf "\n-------------------\n%!"; *)
+          failwith "max tries reached"
+        end
+      else retry (n+1)
+    in retry 0
+
+  let spawn abs =
+    let env = Abstract1.env abs in
+    let poly = to_poly abs env in
+    spawn (Polka.manager_alloc_strict()) poly
 end

@@ -31,5 +31,6 @@ module Solve(Abs : AbstractCP) = struct
 
   let solving prob =
     let abs = init prob in
-    explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view
+    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    res
 end

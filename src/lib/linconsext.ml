@@ -32,7 +32,7 @@ let spliteq c =
   iter (fun c v -> set_coeff c2 v (Apron.Coeff.neg c)) c2;
   c1,c2
 
-(* split a = into a > b or a < b*)
+(* split a <> b into a > b or a < b*)
 let splitdiseq c =
   let c1 = copy c in
   set_typ c1 SUP;

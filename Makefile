@@ -30,6 +30,7 @@ MLFILES = \
 	src/lib/tools.ml \
 	src/lib/polynom.ml \
 	src/lib/array_maker.ml \
+	src/lib/generatorext.ml \
 	src/lib/linconsext.ml \
 	src/lib/tconsext.ml \
 	src/lib/abstractext.ml \
