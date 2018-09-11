@@ -22,7 +22,7 @@ module Solve(Abs : AbstractCP) = struct
                List.fold_left (fun res elem ->
                    aux elem cstrs csts (incr_step res) (depth +1)
                  ) res (split x cstrs)
-	     ) res lu
+           ) res lu
          else
            List.fold_left (fun res elem ->
              aux elem cstrs csts (incr_step res) (depth +1)
