@@ -1,10 +1,17 @@
 # AbSolute
 
-AbSolute is a constraint solver based on abstract domains. It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
+`AbSolute` is a constraint solver based on abstract domains from the theory of abstract interpretation.
+It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
-Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet. Supported by ANR CoVerif.
+`AbSolute` is still in developpement, and have not been fully tested.
+Feel free to fill an [issue](https://github.com/mpelleau/AbSolute/issues) or contact any member of the developpement team if you want to report a bug or suggest a feature.
 
-### Solving example:
+Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet.
+Supported by ANR CoVerif.
+
+## Quick introductory example
+
+In `AbSolute`, you first declare your variables in the `init` section, and then the constraints on these variables in the `constraints` section:
 
 ```c
 /* simple example with sinus and cosinus */
@@ -18,44 +25,71 @@ constraints{
   y > (cos x) - 1;
 }
 ```
+
+This model is saved into a file that can be fed into the `AbSolute` solver.
+We have nice graphics showing how the problem was solved:
+
 <img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="400" height="400">
 
-You can see other examples of problems in the **problem** directory
+You can see other examples of problems in the [problems](https://github.com/mpelleau/AbSolute/tree/master/problems) directory.
+Please also consult our [documentation](https://github.com/mpelleau/AbSolute/blob/master/documentation.pdf) for more information.
 
-### Build
-
-1. __From [opam](https://opam.ocaml.org/)__
-
-First, add the following repository in your opam system
-
-    opam repo add absolute https://raw.githubusercontent.com/mpelleau/AbSolute/master
-
-Then, install the package ```absolute```
-
-    opam install absolute
-
-2. __From sources__
-
-A simple **make** will do the job.
-
-##### warning:
-For some reason, having both packages **libapron** and **libapron-dev** installed will make the building of absolute fail.
-Therefore, the easiest way to deal with apron is to install it with **and only with** opam : https://opam.ocaml.org/packages/
-
-### Use
-```sh
-./absolute problem
-```
-
-###### options
-to display the list of options, type: **./absolute -help** or **./absolute --help**
-
+## Getting Started
 
 ### Requirements
+
+The following is a list of the dependencies to build `AbSolute`, but we explain in the next section how to install `OCaml` and `Apron` if you do not have them already.
+
 - An ANSI C compiler
 - OCaml >= 4.03 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
 
-### Current
-AbSolute is currently still in developpement, and have not been fully tested.
-Feel free to post an issue or contact any member of the developpement team if you want to report a bug or suggest a feature.
+### Installation
+
+`AbSolute` relies on the OCaml compiler and the package manager [opam](http://opam.ocaml.org/).
+First, [install `opam`](http://opam.ocaml.org/doc/Install.html) through your package manager and initialize it:
+```sh
+apt-get install opam # on Debian, see opam documentation for other distributions.
+opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.1
+```
+
+Once this is done, install the [apron library](http://apron.cri.ensmp.fr/library/) dependency as follows:
+
+```sh
+opam install apron
+```
+
+The last step is to download and build `AbSolute`.
+If you intent to modify the source code and possibly contribute to the project, go to the "Developpers" section.
+Otherwise, you can install it from `opam`:
+
+```sh
+opam repo add absolute https://raw.githubusercontent.com/mpelleau/AbSolute/master
+opam install absolute
+# Retrieve a model file
+wget https://raw.githubusercontent.com/mpelleau/AbSolute/master/problems/booth.abs
+# Test the file with your fresh installation
+absolute booth.abs
+# Display solver options
+absolute --help
+```
+
+### Developpers
+First, clone and build `AbSolute` from the Github repository:
+
+```sh
+git clone https://github.com/mpelleau/AbSolute
+cd AbSolute
+make
+```
+
+Then, verify everything is working well on an example:
+
+```sh
+./absolute problems/booth.abs
+```
+
+### Troubleshooters
+
+1. For some reason, having both packages **libapron** and **libapron-dev** installed will make the building of absolute fail.
+Therefore, the easiest way to deal with apron is to install it with **and only with** opam : https://opam.ocaml.org/packages/
