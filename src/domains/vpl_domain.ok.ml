@@ -98,34 +98,35 @@ end
 
 module PizzaSplit = struct
     module CPoly = Vpl.WrapperTraductors.CP
+    module FloatPoly = Poly.Make(Vector.Float.Positive)
     module Poly = CPoly.Poly
 
-    let next_point : Scalar.Rat.t -> Poly.t Cs.Vec.M.t -> Cs.Vec.t -> Cs.Vec.t
+    let next_point : float -> FloatPoly.t Cs.Vec.M.t -> Vector.Float.Positive.t -> Vector.Float.Positive.t
         = fun gamma gradient point ->
-        Cs.Vec.sub
+        Vector.Float.Positive.sub
             point
-            (Cs.Vec.mulc
+            (Vector.Float.Positive.mulc
                 gamma
                 (Cs.Vec.M.map
-                    (fun p -> Poly.eval p (Cs.Vec.get point))
+                    (fun p -> FloatPoly.eval p (Vector.Float.Positive.get point))
                     gradient
                 )
             )
 
-    let norm : Cs.Vec.t -> float
+    let norm : Vector.Float.Positive.t -> float
         = fun vec ->
-        Cs.Vec.toList vec
-        |> List.map (fun (_,coeff) -> Scalar.Rat.to_float coeff)
+        Vector.Float.Positive.toList vec
+        |> List.map (fun (_,coeff) -> coeff)
         |> List.fold_left (fun acc c -> acc +. c*.c) 0.
         |> fun f -> sqrt f
 
-    let rec gradient_descent : Scalar.Rat.t -> float -> Poly.t Cs.Vec.M.t -> Cs.Vec.t -> Cs.Vec.t
+    let rec gradient_descent : float -> float -> FloatPoly.t Cs.Vec.M.t -> Vector.Float.Positive.t -> Vector.Float.Positive.t
         = fun gamma epsilon gradient point ->
         Debug.log DebugTypes.Normal (lazy (Printf.sprintf
             "Gradient descent: %s"
-            (Vector.Rat.Positive.to_string Vector.Rat.Positive.V.to_string point)));
+            (Vector.Float.Positive.to_string Vector.Float.Positive.V.to_string point)));
         let point' = next_point gamma gradient point in
-        if norm (Cs.Vec.sub point' point) < epsilon
+        if norm (Vector.Float.Positive.sub point' point) < epsilon
         then point'
         else gradient_descent gamma epsilon gradient point'
 
@@ -135,28 +136,34 @@ module PizzaSplit = struct
         Debug.log DebugTypes.MInput (lazy (Printf.sprintf
                 "Polynomial constraint: %s"
                 (CPoly.to_string cpoly)));
-        let poly = cpoly.CPoly.p in (* polynomial of the shape _ <= 0 *)
-        let poly' = Poly.pow poly 2 in
+        let poly' = cpoly.CPoly.p (* polynomial of the shape _ <= 0 *)
+            |> Poly.neg
+            |> fun p -> Poly.pow p 2
+        in
         Debug.log DebugTypes.Normal (lazy (Printf.sprintf
             "Squared Polynomial : %s"
             (Poly.to_string poly')));
-        let gradient = Poly.gradient poly' in
+        let poly_float = Poly.data poly'
+            |> List.map (fun (v,coeff) -> (v, Q.to_float coeff))
+            |> FloatPoly.mk2
+        in
+        let gradient = FloatPoly.gradient poly_float in
         Debug.log DebugTypes.Normal (lazy (Printf.sprintf
             "Gradient : %s"
             (Cs.Vec.M.to_string
-                " ; "
+                "\n"
                 (fun elem key -> Printf.sprintf "%s -> %s"
                     key
-                    (Poly.to_string elem))
+                    (FloatPoly.to_string elem))
                 Cs.Vec.V.to_string gradient)));
-        let starting_point = Cs.Vec.nil in
-        let gamma = Scalar.Rat.of_float 0.01 in
-        let epsilon = 0.1 in
+        let starting_point = Vector.Float.Positive.nil in
+        let gamma = 0.01 in
+        let epsilon = 0.00001 in
         let res = gradient_descent gamma epsilon gradient starting_point in
         Debug.log DebugTypes.MOutput (lazy (Printf.sprintf
                 "point: %s"
-                (Vector.Rat.Positive.to_string Cs.Vec.V.to_string res)));
-        res
+                (Vector.Float.Positive.to_string Cs.Vec.V.to_string res)));
+        Cs.Vec.M.map Scalar.Rat.of_float res
 
 end
 
