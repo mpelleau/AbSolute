@@ -133,11 +133,17 @@ module PizzaSplit = struct
     let find_point : CPoly.t -> Cs.Vec.t
         = fun cpoly ->
         Debug.log DebugTypes.Title (lazy "Gradient descent");
+        let starting_point = Vector.Float.Positive.nil
+        and gamma = 0.01
+        and epsilon = 0.00001
+        in
         Debug.log DebugTypes.MInput (lazy (Printf.sprintf
-                "Polynomial constraint: %s"
-                (CPoly.to_string cpoly)));
+                "Polynomial constraint: %s\ngamma = %f\nepsilon = %f\nstarting point : %s"
+                (CPoly.to_string cpoly)
+                gamma epsilon
+                (Vector.Float.Positive.to_string Cs.Vec.V.to_string starting_point)));
         let poly' = cpoly.CPoly.p (* polynomial of the shape _ <= 0 *)
-            |> Poly.neg
+            (*|> Poly.neg*)
             |> fun p -> Poly.pow p 2
         in
         Debug.log DebugTypes.Normal (lazy (Printf.sprintf
@@ -156,9 +162,6 @@ module PizzaSplit = struct
                     key
                     (FloatPoly.to_string elem))
                 Cs.Vec.V.to_string gradient)));
-        let starting_point = Vector.Float.Positive.nil in
-        let gamma = 0.01 in
-        let epsilon = 0.00001 in
         let res = gradient_descent gamma epsilon gradient starting_point in
         Debug.log DebugTypes.MOutput (lazy (Printf.sprintf
                 "point: %s"
