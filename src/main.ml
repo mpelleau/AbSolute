@@ -8,9 +8,7 @@
 (* rendering module witch fits the domain we use                  *)
 (******************************************************************)
 
-open Drawer_sig
-
-module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
+module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
   module Print = Out.Make(Dr)
   let go prob =
@@ -22,7 +20,7 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
     Print.out prob res
 end
 
-module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer with type t = Abs.t) = struct
+module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Min = Minimizer.Minimize(Abs)
   module Print = Out.Make(Dr)
   let go prob =
@@ -52,32 +50,21 @@ module MakeFullDomain
   module Drawer = Drawer
 end
 
-module MakeProduct (D1 : FullDomain) (D2 : FullDomain)
-  = struct
-
+module MakeProduct (D1 : FullDomain) (D2 : FullDomain) = struct
   module Abstract = Product.MakeProduct(D1.Abstract)(D2.Abstract)
   module Drawer = Product_drawer.Product_Drawer(Abstract)(D2.Drawer)
 end
 
-let get_domain : string -> (module FullDomain)
-  = function
-  | "box" -> let module M = MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF))
-             in (module M)
-  | "boxS" -> let module M = MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer)
-              in (module M)
-  | "boxQ" -> let module M = MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ))
-              in (module M)
-  | "boxQS" -> let module M = MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict))
-               in (module M)
-  | "boxCP" -> let module M = MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer)
-               in (module M)
-  | "oct" -> let module M = MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer)
-             in (module M)
-  | "poly" -> let module M = MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer)
-              in (module M)
-  | "vpl" -> let module M = MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer)
-             in (module M)
-  | s -> Printf.sprintf "Domain %s does not exist" s |> invalid_arg
+let get_domain : string -> (module FullDomain) = function
+  | "box" -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
+  | "boxS" -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
+  | "boxQ" -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
+  | "boxQS" -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
+  | "boxCP" -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
+  | "oct" -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
+  | "poly" -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
+  | "vpl" -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
+  | s -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
   = fun names ->
@@ -170,10 +157,18 @@ let go() =
   Format.printf "%a\n" Tools.green_fprintf "| Welcome to the AbSolute solver |";
   Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
   Format.printf "\n";
-  let prob = File_parser.parse !problem in
-  Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
-  Format.printf "%a\n" Csp.print prob;
-  if !debug > 0 then Vpl_domain.enable_debug();
-  lift (set_domain ()) prob
+  if !problem <> "" then begin
+      let prob = File_parser.parse !problem in
+      Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
+      Format.printf "%a\n" Csp.print prob;
+      if !debug > 0 then Vpl_domain.enable_debug();
+      lift (set_domain ()) prob
+    end
+  else begin
+      Format.printf "%a" Tools.red_fprintf "Error: ";
+      Format.printf "No filename specified\n";
+      Format.printf "Usage: absolute [options] [filename]\n";
+      Format.printf "You can type 'absolute --help' to see the options list\n"
+    end
 
 let _ = go()

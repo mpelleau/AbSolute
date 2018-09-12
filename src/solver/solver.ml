@@ -13,8 +13,7 @@ module Solve(Abs : AbstractCP) = struct
       match consistency abs cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res (abs', const, views)
-      | Maybe(a, cstrs, csts) when stop res a -> add_u res (a, csts, views)
-      | Maybe(a, cstrs, csts) when Abs.is_small a -> add_u res (a, csts, views)
+      | Maybe(a, cstrs, csts) when stop res a || Abs.is_small a -> add_u res (a, csts, views)
       | Maybe(abs', cstrs, csts) ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
@@ -32,5 +31,6 @@ module Solve(Abs : AbstractCP) = struct
 
   let solving prob =
     let abs = init prob in
-    explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view
+    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    res
 end

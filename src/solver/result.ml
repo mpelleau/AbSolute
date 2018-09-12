@@ -37,7 +37,7 @@ module Make (A: AbstractCP) = struct
 
   let to_abs abs consts views =
     (*Format.printf "\n ---------- \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs);*)
+      List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs);*)
     let csts_expr = Csp.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
     (*Format.printf "\n ********** \n";

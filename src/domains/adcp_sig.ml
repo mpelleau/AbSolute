@@ -21,16 +21,6 @@ module type AbstractCP = sig
   (* abstract elements *)
   type t
 
-  (* (\* expression and constraint conversion *\) *)
-  (* type expr *)
-  (* type cmp *)
-
-  (* val translate_expr : Csp.expr -> expr *)
-
-  (* val translate_cons : Csp.expr * Csp.cmpop * Csp.expr -> expr * cmpop * expr *)
-
-  (*** INSTANCIATION ***)
-
   (* returns an empty element *)
   val empty : t
 
@@ -46,7 +36,7 @@ module type AbstractCP = sig
   (* returns the bound variables *)
   val bound_vars : t -> Csp.csts
 
-  (* removes an unconstrained variable to the environnement *)
+  (* removes an unconstrained variable from the environnement *)
   val rem_var : t -> Csp.var -> t
 
   (*** PREDICATES ***)
