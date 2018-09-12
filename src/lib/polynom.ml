@@ -35,7 +35,7 @@ module Make(R:Ring) = struct
    and cell   = coeff * var list   (* c * v1*...*vn <- sorted in lex. order *)
    and var    = id * exp           (* id^exp *)
    and id     = string
-   and exp    = R.t
+   and exp    = int
    and coeff  = R.t
 
   (* if a monom correspont to a constant *)
@@ -54,8 +54,8 @@ module Make(R:Ring) = struct
 
   let print_varlist fmt =
     List.iter (fun (p,e) ->
-        if e = R.one then Format.fprintf fmt "%s" p
-        else Format.fprintf fmt "%s^%a " p R.print e)
+      if e = 1 then Format.fprintf fmt "%s" p
+      else Format.fprintf fmt "%s^%i " p e)
 
   let print_cell fmt (((coeff,varl) as c) :cell) =
     if is_monom_constant c then Format.fprintf fmt "%a" R.print coeff
@@ -86,7 +86,7 @@ module Make(R:Ring) = struct
 
   let one : t = [(R.one,[])]
 
-  let of_var v : t = [(R.one,[(v,R.one)])]
+  let of_var v : t = [(R.one,[(v,1)])]
 
   (* convert a monom to a constant *)
   let to_constant (((c,v) as monom):cell) =
@@ -134,7 +134,7 @@ module Make(R:Ring) = struct
       | [],x | x,[] -> x
       | ((p1,e1) as v1)::t1, ((p2,e2) as v2)::t2 ->
          (* we keep the variables in a sorted order *)
-         if p1 = p2 then (p1,(R.add e1 e2))::(mul_list t1 t2)
+         if p1 = p2 then (p1,(e1 + e2))::(mul_list t1 t2)
          else if p1 < p2 then v1::(mul_list t1 l2)
          else v2::(mul_list l1 t2)
     in
@@ -269,10 +269,10 @@ module RationalRing = struct
   let of_rational x = x
 
   let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
-               
-          
+
+
 end
-               
+
 
 module Int = Make(IntRing)
 module Float = Make(FloatRing)
