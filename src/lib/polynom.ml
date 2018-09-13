@@ -3,12 +3,20 @@
 (* It is parametrized by a ring module which deals with basic arithmetic *)
 (*************************************************************************)
 
+(**
+ * Module type for polynomial coefficients.
+ *)
 module type Ring = sig
+
+  (** Type of coefficient *)
   type t
+
   val add   : t -> t -> t
   val mul   : t -> t -> t
 
-  (* None if the division is not exact *)
+  (**
+   * [div p1 p2] returns the division of p1 by p2.
+   * None if the division is not exact *)
   val div   : t -> t -> t option
 
   (* None if the value cannot be converted exactly to an integer *)
@@ -194,6 +202,74 @@ module Make(R:Ring) = struct
                | None -> None
              else None
     | _ -> None
+
+  (**
+    Evaluates the polynomial on a point defined by the map.
+  *)
+  let eval : coeff Tools.VarMap.t -> t -> coeff
+    = let find : id -> coeff Tools.VarMap.t -> coeff
+      = fun var map ->
+        try
+          Tools.VarMap.find var map
+        with Not_found -> R.zero
+    in
+    let rec pow (c : coeff)
+        = function
+        | 0 -> R.one
+        | 1 -> c
+        | n -> R.mul c (pow c (n-1))
+    in
+    let eval_cell : coeff Tools.VarMap.t -> cell -> coeff
+      = fun map (coeff,vars) ->
+        List.fold_left
+          (fun sum (var,exp) ->
+            pow (find var map) exp
+            |> R.add sum
+          )
+          R.zero
+          vars
+    in
+    fun map p ->
+    List.fold_left
+      (fun sum cell ->
+        eval_cell map cell
+        |> R.add sum
+      )
+      R.zero p
+
+  (**
+    Computes the partial derivative of the given polynomial w.r.t the given variable.
+  *)
+  let partial_derivative : t -> id -> t
+    = fun p var ->
+    let rec deriv_vars : var list -> var list
+      = function
+      | [] -> []
+      | (v,e) :: l when v = var ->
+        if e = 1
+        then l
+        else ((v,e-1) :: l)
+      | (v,e) :: l -> (v,e) :: deriv_vars l
+    in
+    List.map
+      (fun (coeff, vars) ->
+        (coeff, deriv_vars vars))
+      p
+    |> clean
+
+  let gradient : id list -> t -> t Tools.VarMap.t
+    = fun vars p ->
+    List.fold_left
+      (fun map var ->
+        Tools.VarMap.add var (partial_derivative p var) map
+      )
+      Tools.VarMap.empty
+      vars
+
+  let eval_gradient : t Tools.VarMap.t -> coeff Tools.VarMap.t -> coeff Tools.VarMap.t
+    = fun gradient map ->
+    Tools.VarMap.map (eval map) gradient
+
 end
 
 module IntRing = struct
