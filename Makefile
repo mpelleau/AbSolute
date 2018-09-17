@@ -75,7 +75,8 @@ MLFILES = \
 	src/print/vpl_drawer.ml \
 	src/print/product_drawer.ml \
 	src/print/out.ml \
-	src/solver/step_by_step.ml
+	src/solver/step_by_step.ml \
+	src/domains/pizza_splitter.ml
 
 # targets
 TARGETS = absolute

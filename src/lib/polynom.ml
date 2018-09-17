@@ -19,6 +19,8 @@ module type Ring = sig
    * None if the division is not exact *)
   val div   : t -> t -> t option
 
+  val neg : t -> t
+
   (* None if the value cannot be converted exactly to an integer *)
   val to_int : t -> int option
   val to_float : t -> float
@@ -32,6 +34,8 @@ module type Ring = sig
   val of_int : int -> t
   val of_float : float -> t
   val of_rational : Mpqf.t -> t
+
+  val equal : t -> t -> bool
 
   (* printintg *)
   val print : Format.formatter -> t -> unit
@@ -95,6 +99,8 @@ module Make(R:Ring) = struct
   let one : t = [(R.one,[])]
 
   let of_var v : t = [(R.one,[(v,1)])]
+
+  let of_constant c : t = [(c, [])]
 
   (* convert a monom to a constant *)
   let to_constant (((c,v) as monom):cell) =
@@ -282,6 +288,8 @@ module IntRing = struct
 
   let div x y = if y <> 0 && x mod y = 0 then Some (x/y) else None
 
+  let neg x = -1 * x
+
   let to_int x = Some x
   let to_float = float_of_int
   let to_rational = Mpqf.of_int
@@ -291,6 +299,7 @@ module IntRing = struct
   let of_float = int_of_float
   let of_rational x = of_float (Mpqf.to_float x)
 
+  let equal x y = (x = y)
   let print fmt x = Format.fprintf fmt "%i" x
 
 end
@@ -306,6 +315,8 @@ module FloatRing = struct
 
   let div x y = if y <> 0. && (x/.y) *. y = x then Some (x/.y) else None
 
+  let neg x = -1. *. x
+
   let to_int x =
     let xi = int_of_float x in
     if float xi = x then Some xi
@@ -317,6 +328,8 @@ module FloatRing = struct
   let of_int = float_of_int
   let of_float x = x
   let of_rational = Mpqf.to_float
+
+  let equal x y = (x = y)
 
   let print fmt x = Format.fprintf fmt "%f" x
 
@@ -332,6 +345,8 @@ module RationalRing = struct
 
   let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
 
+  let neg x = Mpqf.neg x
+
   let to_int x =
     let xi = int_of_float (Mpqf.to_float x) in
     if Mpqf.equal x (Mpqf.of_int xi) then Some xi
@@ -344,9 +359,9 @@ module RationalRing = struct
   let of_float = Mpqf.of_float
   let of_rational x = x
 
+  let equal = Mpqf.equal
+
   let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
-
-
 end
 
 
