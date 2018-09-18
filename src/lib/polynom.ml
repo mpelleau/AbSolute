@@ -39,6 +39,7 @@ module type Ring = sig
 
   (* printintg *)
   val print : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module Make(R:Ring) = struct
@@ -78,6 +79,26 @@ module Make(R:Ring) = struct
       ~pp_sep:(fun fmt () -> Format.fprintf fmt "+")
       (fun fmt -> Format.fprintf fmt "%a" print_cell) fmt
       (clean p)
+
+  let to_string =
+    let vars_to_string : var list -> string
+        = fun vars ->
+        List.map
+            (fun (v,e) ->
+                if e = 1
+                then v
+                else Printf.sprintf "%s^%i" v e
+            ) vars
+        |> String.concat ""
+    in
+    fun p ->
+    List.map
+      (fun (coeff, vars) ->
+        Printf.sprintf "%s.%s"
+          (R.to_string coeff)
+          (vars_to_string vars)
+        ) p
+    |> String.concat " + "
 
   (*******************************************************)
   (*           CONSTRUCTORS AND CONSTANTS                *)
@@ -301,6 +322,7 @@ module IntRing = struct
 
   let equal x y = (x = y)
   let print fmt x = Format.fprintf fmt "%i" x
+  let to_string = string_of_int
 
 end
 
@@ -332,7 +354,7 @@ module FloatRing = struct
   let equal x y = (x = y)
 
   let print fmt x = Format.fprintf fmt "%f" x
-
+  let to_string = string_of_float
 end
 
 module RationalRing = struct
@@ -362,6 +384,7 @@ module RationalRing = struct
   let equal = Mpqf.equal
 
   let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
+  let to_string = Mpqf.to_string
 end
 
 

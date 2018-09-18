@@ -58,6 +58,7 @@ MLFILES = \
 	src/domains/apron_domain.ml \
 	src/domains/vpl_domain.ml \
 	src/domains/abstract_box.ml \
+	src/domains/gradient_descent.ml \
 	src/domains/ADCP.ml \
 	src/domains/product.ml \
 	src/solver/result.ml \
@@ -75,8 +76,7 @@ MLFILES = \
 	src/print/vpl_drawer.ml \
 	src/print/product_drawer.ml \
 	src/print/out.ml \
-	src/solver/step_by_step.ml \
-	src/domains/pizza_splitter.ml
+	src/solver/step_by_step.ml
 
 # targets
 TARGETS = absolute

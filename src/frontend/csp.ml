@@ -430,7 +430,22 @@ let rec derivate expr var =
      | SUB -> Binary (SUB, derivate e1 var, derivate e2 var)
      | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
      | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
-     | POW -> zero (* TODO IMPLENTATION *)
+     | POW -> begin
+        let rec flatten_pow e
+            = function
+            | 0 -> one
+            | 1 -> e
+            | n -> Binary (MUL, e, flatten_pow e (n-1))
+        in
+        match e2 with
+        | Cst (i,_) -> begin
+            match Polynom.RationalRing.to_int i with
+            | Some i -> let expr' = flatten_pow e1 i in
+                derivate expr' var
+            | None -> zero
+            end
+        | _ -> zero
+        end
     )
   | Funcall _ -> zero (* TODO IMPLEMENTATION *)
 
