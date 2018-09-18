@@ -185,40 +185,24 @@ module GradientDescent = struct
             end
         | _ -> Pervasives.invalid_arg "expr_to_poly")
 
-    let find_point : Csp.var list -> (Csp.expr * Csp.cmpop * Csp.expr) -> FloatVec.t
-        = fun vars (e1,cmp,e2) ->
+    let find_point : Csp.ctrs -> FloatVec.t
+        = fun jacobian ->
         (* Debug.log DebugTypes.Title (lazy "Gradient descent");*)
         let starting_point = FloatVec.nil
         and gamma = 0.01
         and epsilon = 0.00001
         in
-        (*Debug.log DebugTypes.MInput (lazy (Printf.sprintf
-                "Polynomial constraint: %s\ngamma = %f\nepsilon = %f\nstarting point : %s"
-                (CPoly.to_string cpoly)
-                gamma epsilon
-                (Vector.Float.Positive.to_string Cs.Vec.V.to_string starting_point)));*)
-        let poly = expr_to_poly (Csp.Binary (Csp.SUB, e1, e2))
-            |> fun p -> P.Float.mul p p
+        let gradient = List.fold_left
+            (fun map (bexpr,jacob) ->
+                if Csp.is_cons_linear bexpr
+                then List.fold_left
+                    (fun map (var,expr) ->
+                        Tools.VarMap.add var (expr_to_poly expr) map
+                    )
+                    map jacob
+                else map
+            )
+            Tools.VarMap.empty jacobian
         in
-        (*Debug.log DebugTypes.Normal (lazy (Printf.sprintf
-            "Squared Polynomial : %s"
-            (Poly.to_string poly')));
-        let poly_float = Poly.data poly'
-            |> List.map (fun (v,coeff) -> (v, Q.to_float coeff))
-            |> FloatPoly.mk2
-        in*)
-        let gradient = P.Float.gradient vars poly in
-        (*Debug.log DebugTypes.Normal (lazy (Printf.sprintf
-            "Gradient : %s"
-            (Cs.Vec.M.to_string
-                "\n"
-                (fun elem key -> Printf.sprintf "%s -> %s"
-                    key
-                    (FloatPoly.to_string elem))
-                Cs.Vec.V.to_string gradient)));*)
         gradient_descent gamma epsilon gradient starting_point
-        (*Debug.log DebugTypes.MOutput (lazy (Printf.sprintf
-                "point: %s"
-                (Vector.Float.Positive.to_string Cs.Vec.V.to_string res)));
-        Cs.Vec.M.map Scalar.Rat.of_float res*)
 end
