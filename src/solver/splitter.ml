@@ -181,13 +181,13 @@ module Make (Abs : AbstractCP) = struct
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
-  let split abs  =
+  let split abs =
     Tools.debug 1 "splitting using %s\n%!" !Constant.split;
     let splitting_strategy =
       match !Constant.split with
       | "maxSmear" -> max_smear
       | "smear" -> sum_smear
-      | _ -> (fun abs _ -> Abs.split abs)
+      | _ -> Abs.split
     in
     splitting_strategy abs
 

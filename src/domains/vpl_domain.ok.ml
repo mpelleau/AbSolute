@@ -234,8 +234,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun p1 p2 ->
         (diff p1 p2, meet p1 p2)
 
-    let split : t -> t list
-        = fun p ->
+    let split : t -> Csp.ctrs -> t list
+        = fun p _ ->
         VPL_CP_Profile.start "split";
         let res = match !vpl_split with
             | Default -> split_in_half p

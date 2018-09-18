@@ -278,7 +278,7 @@ module MAKE(AP:ADomain) = struct
 	      let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
 	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
- let split abs (e1,e2) =
+ let split abs _ (e1,e2) =
    let meet_linexpr abs man env expr =
      let cons = Linconsext.make expr Linconsext.SUPEQ in
      A.filter_lincons man abs cons

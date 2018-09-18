@@ -119,7 +119,7 @@ module Box (I:ITV) = struct
         (Env.add v b a)::acc
     ) [] i_list
 
-  let split (a:t) : t list =
+  let split (a:t) (_ :ctrs) : t list =
     let (v,_) = mix_range a in
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v

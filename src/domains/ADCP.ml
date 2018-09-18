@@ -19,7 +19,7 @@ module BoxCP =
       let dim = Mpqf.to_float max in
       (dim <= !Constant.precision)
 
-    let split abs =
+    let split abs jacobian =
       let env = Abstract1.env abs in
       let (var, itv, size) = largest abs in
       let mid = mid_interval itv in
@@ -33,7 +33,7 @@ module BoxCP =
       (* var >= value*)
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      split abs (expr,expr')
+      split abs jacobian (expr,expr')
 
     let volume abs =
       let box = Abstract1.to_box man abs in
@@ -193,7 +193,7 @@ module OctMinMinCP =
       Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
       let mmin' = Scalar.of_mpqf mmin in
       let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (mid_interval tab.(i_max)) expr1 expr2 in
-      split octad (linexpr1,linexpr2)
+      split octad [] (linexpr1,linexpr2)
 
     let volume box = 0.
   end
@@ -297,10 +297,10 @@ module OctMinMaxCP =
       (*printf "max = %f@.split = [%a, %a]@." max Linexpr1.print linexpr1 Linexpr1.print linexpr2;*)
       (max <= !Constant.precision)
 
-    let split octad =
+    let split octad jacobian =
       let env = Abstract1.env octad in
       let poly = to_poly octad env in
-      split octad (get_expr (Polka.manager_alloc_strict()) poly)
+      split octad jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
     let volume box = 0.
   end
@@ -327,7 +327,7 @@ module OctBoxCP =
       let dim = Mpqf.to_float max in
       (dim <= !Constant.precision)
 
-    let split octad =
+    let split octad jacobian =
       let env = Abstract1.env octad in
       let (var, itv, size) = largest octad in
       let mid = mid_interval itv in
@@ -339,7 +339,7 @@ module OctBoxCP =
       (* var >= value*)
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
-      split octad (expr, expr')
+      split octad jacobian (expr, expr')
 
     let volume box = 0.
   end
@@ -366,7 +366,7 @@ module PolyCP = struct
     | Csp.Or(e1, e2) -> Adcp_sig.No
     | Csp.Not(e) -> Adcp_sig.not_ans (is_representable e)
 
-  let split poly = split poly (get_expr (Polka.manager_alloc_strict()) poly)
+  let split poly jacobian = split poly jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
   let volume box = 0.
 end

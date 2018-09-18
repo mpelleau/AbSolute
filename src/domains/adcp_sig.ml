@@ -53,7 +53,7 @@ module type AbstractCP = sig
   val prune : t -> t -> t list * t
 
   (* splits an abstract element *)
-  val split : t -> t list
+  val split : t -> Csp.ctrs -> t list
 
   val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
 

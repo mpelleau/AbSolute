@@ -110,8 +110,8 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
                  ) l in
       l',(ua, ub)
 
-    let split ((abs, abs'):t) =
-      let split_a = A.split abs in
+    let split ((abs, abs'):t) (jacobian : Csp.ctrs) =
+      let split_a = A.split abs jacobian in
       List.map (fun x -> (x, abs')) split_a
 
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
