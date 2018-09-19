@@ -209,6 +209,20 @@ let gradient_descent : Csp.ctrs -> FloatVec.t
     and gamma = 0.01
     and epsilon = 0.00001
     in
+    (* Gradient of the input polynomial : *)
+    (*let gradient = List.fold_left
+        (fun map (bexpr,jacob) ->
+            if Csp.is_cons_linear bexpr
+            then map
+            else List.fold_left
+                (fun map (var,expr) ->
+                    Tools.VarMap.add var (expr_to_poly expr) map
+                )
+                map jacob
+        )
+        Tools.VarMap.empty jacobian
+    in
+    *)
     let gradient = List.fold_left
         (fun map (bexpr,jacob) ->
             if Csp.is_cons_linear bexpr
