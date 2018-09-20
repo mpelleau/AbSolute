@@ -6,15 +6,17 @@ module Make (D:Drawer) = struct
   let color_unsure = Graphics.green
 
   let bound_dim v sure unsure =
-    let aux v info_init abs_list = List.fold_left (fun a b ->
-                                       let (l,h) = D.bound b v in
-                                       match a with
-                                       | None -> Some(l,h)
-                                       | Some(l',h') -> Some((min l l'),(max h h'))
-	                                   ) info_init abs_list
-    in    let onlysure = aux v None sure in
-          if !Constant.sure |> not then aux v onlysure unsure
-          else onlysure
+    let aux v info_init abs_list =
+      List.fold_left (fun a b ->
+          let (l,h) = D.bound b v in
+          match a with
+          | None -> Some(l,h)
+          | Some(l',h') -> Some((min l l'),(max h h'))
+	      ) info_init abs_list
+    in
+    let onlysure = aux v None sure in
+    if !Constant.sure |> not then aux v onlysure unsure
+    else onlysure
 
   let draw2d sure unsure (v1,v2) =
     View.create_window 800 800;
@@ -23,7 +25,9 @@ module Make (D:Drawer) = struct
     (match v1_b,v2_b with
      | None, None -> failwith "nothing to draw"
      | Some(a,b),None | None, Some(a,b) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
-     | Some(a,b),Some(c,d) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
+     | Some(a,b),Some(c,d) ->
+        let (a,b,c,d) = Mpqf.((to_float a), (to_float b), (to_float c), (to_float d)) in
+        View.init (a,b) (c,d));
     List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
     if !Constant.sure |> not then
       List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
@@ -103,7 +107,7 @@ module Make (D:Drawer) = struct
           end else
           Format.printf " %i\n" (res.nb_unsure)
     );
-    Format.fprintf fmt "Inner ratio : %2.f%%\n" (Result.inner_ratio res);
+    Format.fprintf fmt "Inner ratio : %f%%\n" (Result.inner_ratio res);
     Format.printf "solving time : %fs\n" (Sys.time ());
     if not (!Constant.trace) then
       Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"

@@ -44,41 +44,4 @@ module Minimize(Abs : AbstractCP) = struct
     let res =  explore abs prob.jacobian prob.objective prob.constants prob.view splitting_strategy in
     Format.printf "\noptimization ends\n%!%a" Res.print res;
     res
-
-    (* let minimizing_various prob =
-    let open Csp in
-    let open Result in
-    let abs = init prob in
-    printf "abs = %a" Abs.print abs;
-    let res =
-      if not (Abs.is_empty abs) then
-        let cons = List.filter (fun (exp, _) -> not (is_cons_linear exp)) prob.jacobian in
-        printf "\nconstraints = [";
-        List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) prob.jacobian;
-        printf "]@.";
-        printf "non linear constraints = [";
-        List.iter (fun (exp, _) -> Format.printf "%a ;" print_bexpr exp) cons;
-        printf "]@.";
-        let r = explore abs prob.jacobian prob.objective prob.constants prob.view splitting_strategy in
-        printf "solving ends\n%!";
-        let nb_sols = r.nb_sure + r.nb_unsure in
-        (match nb_sols with
-        | 0 -> printf "No solutions - #created nodes: %d@." r.nb_steps
-        | 1 -> printf "Unique solution - #created nodes: %d@." r.nb_steps
-        | _ -> printf "#solutions: %d - #created nodes: %d@." nb_sols r.nb_steps);
-        r
-      else
-        (printf "No Solutions - #created nodes: 0@."; Res.empty_res)
-    in
-    res *)
 end
-
-(*
-module Box = Minimize(Abstract_box.BoxF)
-module BoxCP = Minimize(BoxCP)
-module Oct = Minimize(OctBoxCP)
-module Poly = Minimize(PolyCP)
-
-module BoxNOct = Minimize(VariousDA.BoxNOct)
-module BoxNPoly = Minimize(VariousDA.BoxNPoly)
-module OctNPoly = Minimize(VariousDA.OctNPoly)*)
