@@ -248,13 +248,14 @@ module Make(R:Ring) = struct
     in
     let eval_cell : coeff Tools.VarMap.t -> cell -> coeff
       = fun map (coeff,vars) ->
-        List.fold_left
-          (fun sum (var,exp) ->
+        if vars = []
+        then coeff
+        else List.fold_left (
+            fun sum (var,exp) ->
             pow (find var map) exp
             |> R.add sum
-          )
-          R.zero
-          vars
+          ) R.zero vars
+          |> R.mul coeff
     in
     fun map p ->
     List.fold_left
@@ -296,7 +297,6 @@ module Make(R:Ring) = struct
   let eval_gradient : t Tools.VarMap.t -> coeff Tools.VarMap.t -> coeff Tools.VarMap.t
     = fun gradient map ->
     Tools.VarMap.map (eval map) gradient
-
 end
 
 module IntRing = struct

@@ -161,15 +161,15 @@ let next_point : float -> gradient -> FloatVec.t -> FloatVec.t
 (**
  * Iterates the gradient descent.
  *)
-let rec descent : float -> float -> gradient -> FloatVec.t -> FloatVec.t
-    = fun gamma epsilon gradient point ->
+let rec descent : float -> float -> FloatVec.t -> gradient -> FloatVec.t
+    = fun gamma epsilon point gradient ->
     Printf.sprintf "descent :%s"
         (FloatVec.to_string point)
     |> print_endline;
     let point' = next_point gamma gradient point in
     if FloatVec.norm sqrt (FloatVec.sub point' point) < epsilon
     then point'
-    else descent gamma epsilon gradient point'
+    else descent gamma epsilon point' gradient
 
 (**
  * Conversion from an expression into a floating-point polynomial.
@@ -194,7 +194,7 @@ let rec expr_to_poly : Csp.expr -> P.Float.t
         end
     | _ -> Pervasives.invalid_arg "expr_to_poly")
 
-let gradient_descent : Csp.ctrs -> FloatVec.t
+let gradient_descent : Csp.ctrs -> FloatVec.t option
     = fun jacobian ->
     print_endline "gradient descent";
     List.iter
@@ -223,19 +223,42 @@ let gradient_descent : Csp.ctrs -> FloatVec.t
         Tools.VarMap.empty jacobian
     in
     *)
-    let gradient = List.fold_left
-        (fun map (bexpr,jacob) ->
-            if Csp.is_cons_linear bexpr
-            then map
-            else List.fold_left
-                (fun map (var,expr) ->
-                    Tools.VarMap.add var (expr_to_poly expr) map
-                )
-                map jacob
-        )
-        Tools.VarMap.empty jacobian
+    let vars = List.hd jacobian
+        |> Pervasives.snd
+        |> List.map Pervasives.fst
     in
-    let res = descent gamma epsilon gradient starting_point in
-    Printf.sprintf "gradient result:%s" (FloatVec.to_string res)
-        |> print_endline;
-    res
+    List.find (
+        fun (bexpr, _) -> not (Csp.is_cons_linear bexpr)
+        ) jacobian
+    |> Pervasives.fst
+    |> function
+    | Csp.Cmp (op,e1,e2) ->
+        let bexpr' = Csp.(Cmp (op,
+            Binary (POW, e1, Cst (Mpqf.of_int 2, Csp.Int)),
+            Binary (POW, e2, Cst (Mpqf.of_int 2, Csp.Int))))
+        in
+        let vars' = List.map (
+            fun v -> (Csp.Real, v, Csp.Top))
+            vars
+        in
+        let gradient = Csp.ctr_jacobian bexpr' vars'
+            |> List.fold_left (
+                fun map (var,expr) ->
+                Tools.VarMap.add var (expr_to_poly expr) map
+                )
+                Tools.VarMap.empty
+        in
+        Printf.sprintf "Gradient : %s" (
+            Tools.VarMap.bindings gradient
+            |> List.map (
+                fun (var,poly) -> Printf.sprintf "%s -> %s"
+                var
+                (P.Float.to_string poly) )
+            |> String.concat "\n"
+        ) |> print_endline;
+        let res = descent gamma epsilon starting_point gradient
+        in
+        Printf.sprintf "gradient result:%s" (FloatVec.to_string res)
+            |> print_endline;
+        Some res
+    | _ -> None
