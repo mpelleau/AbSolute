@@ -1,0 +1,9 @@
+init{
+  real x = [-2; 2];
+  real y = [-2; 2];
+  real z = [-10; 10];
+}
+
+constraints{
+  x^2 + y^2 = z^2*(1-z);
+}
