@@ -53,8 +53,11 @@ module Make (D:Drawer) = struct
 
   (* generation of an .obj file for 3d viewing. Works with g3dviewer for example *)
   let draw3d values vars =
-	  let out = Filename.basename !Constant.problem in
-	  let out = ("out/"^(Filename.chop_extension out)^".obj") in
+    let out = Filename.basename !Constant.problem in
+    let out = ("out/"^(Filename.chop_extension out)^".obj") in
+    Format.printf "\ngeneration of ";
+    Tools.cyan_fprintf Format.std_formatter "%s" out;
+    Format.printf " for 3d viewing. This may take few seconds ...\n%!";
     let out = open_out out in
     let fmt = Format.formatter_of_out_channel out in
     D.draw3d fmt values vars
@@ -122,7 +125,7 @@ module Make (D:Drawer) = struct
       let u = if !sure then [] else List.rev_map D.to_abs res.unsure in
       if !visualization then draw2d s u (vars2D prob);
       if !tex then print_latex s u (vars2D prob);
-      if !obj then draw3d s (vars3D prob)
+      if !obj then draw3d (s@u) (vars3D prob)
 
   let trace_min sure unsure value =
     Format.printf "best value:%s\n%!" (Mpqf.to_string value);
