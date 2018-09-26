@@ -18,3 +18,5 @@ A number of abbreviations are used in AbSolute, we give a non-exhaustive list he
 - MPQF: GMP multi-precision rationals, functional version (from the external library GMP); 'Q' probably stands for "quotient".
 - ITV: interval.
 - VPL: (Verimag) Verified Polyhedra Library (external library).
+- csts: constants
+- ctrs: constraints
