@@ -48,7 +48,8 @@ let float_size ((a,b):t) = float (b - a)
 let to_rational_range ((a,b):t) = (Mpqf.of_int a),(Mpqf.of_int b)
 
 let print (fmt:Format.formatter) ((a,b):t) =
-  Format.fprintf fmt "[%i,%i]" a b
+  if a = b then Format.print_int a
+  else Format.fprintf fmt "[%i;%i]" a b
 
 (************************************************************************)
 (* SET-THEORETIC *)

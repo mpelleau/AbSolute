@@ -87,8 +87,6 @@ CHECK = src/check.ml
 CFILES = \
   src/lib/ml_float.c
 
-# MLIFILES = ADCP.mli
-
 # object files
 CMIFILES = $(MLIFILES:%.ml=%.cmi)
 CMOFILES = $(MLFILES:%.ml=%.cmo)
@@ -97,7 +95,7 @@ OFILES   = $(CFILES:%.c=%.o)
 
 # rules
 all:
-	${MAKE} -s $(TARGETS) || ${MAKE} clean; ${MAKE} --no-print-directory $(TARGETS)
+	${MAKE} --no-print-directory $(TARGETS) || ${MAKE} --no-print-directory clean; ${MAKE} --no-print-directory $(TARGETS)
 	@mkdir -p out
 
 absolute: $(OFILES) $(CMXFILES) $(ABS)
