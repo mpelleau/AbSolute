@@ -48,20 +48,14 @@ The following is a list of the dependencies to build AbSolute; note that we expl
 
 ### Installation
 
-We install `OCaml` and `Apron` through the OCaml package manager [opam](http://opam.ocaml.org/).
+We install OCaml and AbSolute through the OCaml package manager [opam](http://opam.ocaml.org/).
 First, [install opam](http://opam.ocaml.org/doc/Install.html) with your package manager and initialize it:
 ```sh
 apt-get install opam # on Debian, see opam documentation for other distributions.
 opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.1
 ```
 
-Once this is done, install the [apron library](http://apron.cri.ensmp.fr/library/) dependency as follows:
-
-```sh
-opam install apron
-```
-
-The last step is to download and build AbSolute.
+The next step is to download and build AbSolute.
 If you intent to modify the source code and possibly contribute to the project, jump to the "Developpers" section.
 Otherwise, you can install it from `opam`:
 
@@ -77,9 +71,11 @@ absolute --help
 ```
 
 ### Developpers
-First, clone and build AbSolute from the Github repository:
+
+Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
 
 ```sh
+opam install apron
 git clone https://github.com/mpelleau/AbSolute
 cd AbSolute
 make
