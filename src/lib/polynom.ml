@@ -269,8 +269,6 @@ module RationalRing = struct
   let of_rational x = x
 
   let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
-
-
 end
 
 

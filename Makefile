@@ -96,7 +96,8 @@ CMXFILES = $(MLFILES:%.ml=%.cmx)
 OFILES   = $(CFILES:%.c=%.o)
 
 # rules
-all: $(TARGETS)
+all:
+	${MAKE} -s $(TARGETS) || ${MAKE} clean; ${MAKE} --no-print-directory $(TARGETS)
 	@mkdir -p out
 
 absolute: $(OFILES) $(CMXFILES) $(ABS)

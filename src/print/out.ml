@@ -49,7 +49,8 @@ module Make (D:Drawer) = struct
     if !Constant.sure |> not then
       List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
     Format.fprintf fmt "\n  \\end{tikzpicture}\n\\end{document}@.";
-    Format.printf "written latex file %s@." out
+    Format.printf "written latex file: ";
+    Tools.cyan_fprintf Format.std_formatter "%s@.%!" out
 
   (* generation of an .obj file for 3d viewing. Works with g3dviewer for example *)
   let draw3d values vars =
