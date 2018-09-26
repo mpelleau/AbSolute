@@ -1,7 +1,8 @@
 (*
    Generic intervals.
-
    Can be instantiated with any bound type.
+   An interval is a pair `(l,u)` where `l` is the lower bound and `u` is the upper bound.
+   Therefore it does not handle "holes" in the domain.
 *)
 
 

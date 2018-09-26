@@ -159,6 +159,10 @@ module Make (A: AbstractCP) = struct
     || res.nb_steps > !Constant.max_iter
 
   (* tests if a result can't be pruned anymore *)
+  (* TO CHECK: In solver.ml, `Constant.pruning_iter` seems to be the maximal depth
+               of the search tree under which we stop "pruning by finding inconsistencies",
+               not the number of nodes explored (nb_steps = nb_nodes?).
+  *)
   let prunable res =
     !Constant.pruning && res.nb_steps < !Constant.pruning_iter
 

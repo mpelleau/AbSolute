@@ -124,6 +124,7 @@ module Box (I:ITV) = struct
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
+  (** precondition: `a` and `b` must be defined onto the same set of variables. *)
   let prune (a:t) (b:t) : t list * t =
     let rec aux a good = function
       | [] -> good,a
@@ -149,13 +150,13 @@ module Box (I:ITV) = struct
 
   and bexpri = bexpr * i
 
-  (* interval evaluation of an expression;
-     returns the interval result but also an expression tree annotated with
-     intermediate results (useful for test transfer functions
+  (* First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
+     For example: given `x + 3` with `x in [1..3]`, then it annotates `+` with `[4..6]`.
+     It returns this new annotated expression tree, and the interval of the root node.
 
-     errors (e.g. division by zero) return no result, so:
-     - we raise Bot_found in case the expression only evaluates to error values
-     - otherwise, we return only the non-error values
+     This function is useful for testing transfer functions errors (e.g. division by zero).
+     - We raise Bot_found in case the expression only evaluates to error values.
+     - Otherwise, we return only the non-error values.
    *)
   let rec eval (a:t) (e:expr) : bexpri =
     match e with
@@ -189,7 +190,7 @@ module Box (I:ITV) = struct
               (* special case: squares are positive *)
               I.abs r
             else r
-	 | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+         | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
 
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
@@ -217,11 +218,13 @@ module Box (I:ITV) = struct
   let refine_div u v r =
     refine_bop I.filter_div_f I.filter_mul_f u v r false
 
-  (* returns a box included in its argument, by removing points such that
-     the evaluation is not in the interval;
-     not all such points are removed, due to interval abstraction;
-     iterating eval and refine can lead to better reults (but is more costly);
-     can raise Bot_found *)
+  (* Second step of the HC4-revise algorithm.
+     It propagates the intervals from the root of the expression tree `e` to the leaves.
+     For example: Given `y = x + 3`, `x in [1..3]`, `y in [1..5]`.
+                  Then after `eval` we know that the node at `+` has the interval `[4..6]`.
+                  Therefore we can intersect `y` with `[4..6]` due to the equality.
+     Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
+     We raise `Bot_found` in case of unsatisfiability. *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     (*Format.printf "%a\n" print_bexpri (e, x);*)
     match e with
@@ -247,7 +250,10 @@ module Box (I:ITV) = struct
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
 
-  (* test transfer function *)
+  (* test transfer function.
+     Apply the evaluation followed by the refine step of the HC4-revise algorithm.
+     It prunes the domain of the variables in `a` according to the constraint `e1 o e2`.
+  *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
