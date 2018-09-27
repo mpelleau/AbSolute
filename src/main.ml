@@ -156,22 +156,13 @@ let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob
 let go() =
   let open Constant in
   parse_args ();
-  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
-  Format.printf "%a\n" Tools.green_fprintf "| Welcome to the AbSolute solver |";
-  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
-  Format.printf "\n";
   if !problem <> "" then begin
+      Terminal.go();
       let prob = File_parser.parse !problem in
-      Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
       Format.printf "%a\n" Csp.print prob;
       if !debug > 0 then Vpl_domain.enable_debug();
       lift (set_domain ()) prob
     end
-  else begin
-      Format.printf "%a" Tools.red_fprintf "Error: ";
-      Format.printf "No filename specified\n";
-      Format.printf "Usage: absolute [options] [filename]\n";
-      Format.printf "You can type 'absolute --help' to see the options list\n"
-    end
+  else Terminal.error()
 
 let _ = go()

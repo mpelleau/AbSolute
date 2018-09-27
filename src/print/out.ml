@@ -113,7 +113,7 @@ module Make (D:Drawer) = struct
           Format.printf " %i\n" (res.nb_unsure)
     );
     Format.fprintf fmt "Outer volume : %f\n" (res.vol_unsure);
-    Format.fprintf fmt "Inner ratio : %f%%\n" ((Result.inner_ratio res) *. 100.);
+    Format.fprintf fmt "Inner ratio : %a%%\n" Format.pp_print_float ((Result.inner_ratio res) *. 100.);
     Format.printf "solving time : %fs\n" (Sys.time ());
     if not (!Constant.trace) then
       Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"

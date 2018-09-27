@@ -13,11 +13,9 @@ type 'a res = {
 
 (* returns the inner ratio (between 0 and 1) of a solution *)
 let inner_ratio res =
-  let div = res.vol_sure +. res.vol_unsure in
-  if div = 0. then
-    0.
-  else
-    res.vol_sure /. (res.vol_sure +. res.vol_unsure)
+  let divider = res.vol_sure +. res.vol_unsure in
+  if divider = 0. then 0.
+  else res.vol_sure /. divider
 
 
 (* Shapes that have a volume, and can be evaluated *)
@@ -173,5 +171,4 @@ module Make (A: Res) = struct
       res.vol_sure
       res.vol_unsure
       (res.vol_sure +. res.vol_unsure)
-
 end

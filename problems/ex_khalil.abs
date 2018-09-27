@@ -1,0 +1,16 @@
+init {
+  real a1 = [-20; 20];
+  real a2 = [-20; 20];
+  real a3 = [-20; 20];
+  real b  = [-20; 20];
+}
+
+objective{
+  b
+}
+
+constraints {
+  (1-b)*a1=0;
+  (1-b)*a2 =0;
+  b*a3 = 0;
+}

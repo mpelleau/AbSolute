@@ -1,5 +1,8 @@
 open Csp
 
+(* indicates if the vpl is installed or not *)
+let available = false
+
 let fail () = Pervasives.failwith "VPLDomain: uninstalled"
 
 module VplCP (* : Domain_signature.AbstractCP *)= struct
