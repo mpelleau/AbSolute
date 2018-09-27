@@ -1,28 +1,30 @@
-(******************)
-(* Printing stuff *)
-(******************)
+(** A small set of useful utilities *)
 
-(* same as failwith but uses a format instead *)
+(***********************)
+(** {1} Printing stuff *)
+(***********************)
+
+(** same as failwith but uses a format instead *)
 let fail_fmt fmt = Format.kasprintf failwith fmt
 
-(* terminal output with a color given in parameter *)
-(* restoring default color after use *)
+(** terminal output with a color given in parameter
+  restoring default color after use *)
 let color_printf fmt col x =
   Format.kasprintf (fun s -> Format.fprintf fmt "%s%s%s" col s "\027[0m") x
 
-(* red terminal output *)
+(** red terminal output *)
 let red_fprintf fmt x = color_printf fmt "\027[31m" x
 
-(* blue terminal output *)
+(** blue terminal output *)
 let cyan_fprintf fmt x = color_printf fmt "\027[36m" x
 
-(* green terminal output *)
+(** green terminal output *)
 let green_fprintf fmt x = color_printf fmt "\027[32m" x
 
-(* yellow terminal output *)
+(** yellow terminal output *)
 let yellow_fprintf fmt x = color_printf fmt "\027[33m" x
 
-(* 2D table print indentation *)
+(** 2D table print indentation *)
 let matrix_print_indent fmt mat =
   let sizes = Array.make (Array.length mat.(0)) 0 in
   for i = 0 to  Array.length mat.(0) -1 do
@@ -41,7 +43,15 @@ let matrix_print_indent fmt mat =
     Format.fprintf fmt "\n"
   done
 
-(* debug utility that indents according to the debug level *)
+(** Mpqf human understandable printing *)
+let pp_print_mpqf fmt (m:Mpqf.t) =
+  let f = Mpqf.to_float m in
+  if Mpqf.of_float f = m then
+    Format.pp_print_float fmt f
+  else
+    Mpqf.print fmt m
+
+(** debug utility that indents according to the debug level *)
 let debug level fmt =
   if !Constant.debug < level then
     Format.ikfprintf ignore Format.std_formatter fmt
@@ -49,30 +59,28 @@ let debug level fmt =
     let spacing = String.make level ' ' in
     Format.kasprintf (fun msg -> Format.printf "%s%s%s" spacing spacing msg) fmt
 
-(*****************)
-(* Map instances *)
-(*****************)
+(**********************)
+(** {1} Map instances *)
+(**********************)
 
-(* only one instanciation forall variable maps modules *)
+(** only one instanciation forall variable maps modules *)
 module VarMap = struct
   include Mapext.Make(String)
+  (** we add few utilities inside it *)
 
-  (* we add few utilities inside it *)
-
-  (* we define a find_fail that fails directly with an error msg
+  (** we define a find_fail that fails directly with an error msg
      when a variable is not found *)
   let find_fail key map =
     try find key map
     with Not_found -> fail_fmt "variable not found: %s" key
 
-  (* we define a find_fail that fails directly with an error msg
+  (** we define a find_fail that fails directly with an error msg
      when a variable is not found *)
   let find_opt key map =
     try Some (find key map)
     with Not_found -> None
 
-  (* builds a map from an association list*)
+  (** builds a map from an association list*)
   let of_list (assoc: (string*'a) list) =
     List.fold_left (fun acc (k,m) -> add k m acc) empty assoc
-
 end

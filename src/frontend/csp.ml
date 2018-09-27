@@ -129,8 +129,8 @@ let print_assign fmt assignations =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (Mpqf.to_string a)
-  | (a, b) -> Format.fprintf fmt "[%s; %s]" (Mpqf.to_string a) (Mpqf.to_string b)
+  | (a, b)  when a = b ->  Format.fprintf fmt "%a" pp_print_mpqf a
+  | (a, b) -> Format.fprintf fmt "[%a; %a]" pp_print_mpqf a pp_print_mpqf b
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
@@ -153,7 +153,7 @@ let rec print_expr fmt = function
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
-  | Cst (c,_) -> Format.fprintf fmt "%s" (Mpqf.to_string c)
+  | Cst (c,_) -> Format.fprintf fmt "%a" pp_print_mpqf c
 
 let rec print_bexpr fmt = function
   | Cmp (c,e1,e2) ->
