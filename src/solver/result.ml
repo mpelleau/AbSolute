@@ -13,7 +13,11 @@ type 'a res = {
 
 (* returns the inner ratio (between 0 and 1) of a solution *)
 let inner_ratio res =
-  res.vol_sure /. (res.vol_sure +. res.vol_unsure)
+  let div = res.vol_sure +. res.vol_unsure in
+  if div = 0. then
+    0.
+  else
+    res.vol_sure /. (res.vol_sure +. res.vol_unsure)
 
 
 (* Shapes that have a volume, and can be evaluated *)
