@@ -77,6 +77,7 @@ MLFILES = \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
 	src/print/product_drawer.ml \
+	src/print/terminal.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml
 
@@ -111,7 +112,7 @@ check: checker.opt
 checker.opt: $(OFILES) $(CMXFILES) $(CHECK)
 	@$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
-doc:
+doc: $(TARGETS)
 	@mkdir -p $(DOCOUTPUT)
 	@$(OCAMLDOC) -d $(DOCOUTPUT) -html $(OCAMLINC) $(MLSOURCES)
 
