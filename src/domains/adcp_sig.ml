@@ -1,5 +1,5 @@
 (**********************************************************************************)
-(*            Module for Abstract Domains for Constraint Programming.             *)
+(*            Module for Abstract Domains for Constraint Programming (ADCP).      *)
 (*   These are abstract domains with consistency, split and precision operators.  *)
 (**********************************************************************************)
 type answer = Yes | Maybe | No

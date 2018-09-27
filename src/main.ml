@@ -3,11 +3,12 @@
 (******************************************************************)
 
 (******************************************************************)
-(* An instance of the solver is parmetrized by an abstract domain *)
+(* An instance of the solver is parametrized by an abstract domain*)
 (* which will be used in the abstract solving process and a       *)
-(* rendering module witch fits the domain we use                  *)
+(* rendering module which fits the domain we use                  *)
 (******************************************************************)
 
+(** Solve a CSP with the abstract domain Abs *)
 module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
   module Print = Out.Make(Dr)
@@ -20,6 +21,7 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) =
     Print.out prob res
 end
 
+(** Solve and minimize a CSP with the abstract domain Abs *)
 module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Min = Minimizer.Minimize(Abs)
   module Print = Out.Make(Dr)

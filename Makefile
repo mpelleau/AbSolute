@@ -8,7 +8,10 @@ OCAMLOPT  := $(OPAMBIN)/ocamlopt.opt $(OCAMLOPTIONS)
 OCAMLDEP  := $(OPAMBIN)/ocamldep
 OCAMLLEX  := $(OPAMBIN)/ocamllex
 OCAMLYACC := $(OPAMBIN)/ocamlyacc
+OCAMLDOC  := $(OPAMBIN)/ocamldoc
 CC        := gcc
+
+DOCOUTPUT := doc
 
 #ocaml libraries
 OCAMLLIBS    := $(LIBS:%=%.cma)
@@ -108,6 +111,10 @@ check: checker.opt
 checker.opt: $(OFILES) $(CMXFILES) $(CHECK)
 	@$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
+doc:
+	@mkdir -p $(DOCOUTPUT)
+	@$(OCAMLDOC) -d $(DOCOUTPUT) -html $(OCAMLINC) $(MLSOURCES)
+
 opam_config:
 	opam-admin make
 
@@ -153,6 +160,7 @@ clean:
 	rm -f out/*
 	rm -f -R out
 	rm -f Makefile.config
+	rm -f -R $(DOCOUTPUT)
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
