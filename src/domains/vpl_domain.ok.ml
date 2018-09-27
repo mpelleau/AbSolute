@@ -237,10 +237,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split : t -> Csp.ctrs -> t list
         = fun p _ ->
         VPL_CP_Profile.start "split";
-        let res = match !vpl_split with
-            | Default -> split_in_half p
-            | Pizza -> get_regions p
-        in
+        let res = split_in_half p in
         VPL_CP_Profile.stop "split";
         res
 
@@ -253,16 +250,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         Debug.log DebugTypes.Title (lazy "Filter");
         let cond = to_cond (Csp.Cmp (cmp, e1, e2)) in
         Debug.log DebugTypes.MInput (lazy (UserCond.to_string cond));
-        let res = User.assume cond state in
-        if Csp.is_linear e1 && Csp.is_linear e2
-        then res
-        else
-            let term = Csp.Binary (Csp.SUB, e1, e2)
-                |> Expr.to_term
-            in
-            let cp = Term.to_cp (translate_cmp cmp, term) in
-            let point = PizzaSplit.find_point cp in
-            set_point point res
+        User.assume cond state
 
     (* TODO: Should return the variable with the maximal range as well. *)
     let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
