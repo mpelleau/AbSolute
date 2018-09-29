@@ -124,7 +124,7 @@ module Box (I:ITV) = struct
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
-  (** precondition: `a` and `b` must be defined onto the same set of variables. *)
+  (* precondition: `a` and `b` must be defined onto the same set of variables. *)
   let prune (a:t) (b:t) : t list * t =
     let rec aux a good = function
       | [] -> good,a

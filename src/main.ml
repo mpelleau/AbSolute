@@ -66,6 +66,7 @@ let get_domain : string -> (module FullDomain) = function
   | "oct" -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
   | "poly" -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
   | "vpl" -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
+  | "boct" -> (module MakeFullDomain (Boxed_octagon.BoxedOctagon) (Boxed_octagon_drawer))
   | s -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
@@ -110,7 +111,7 @@ let speclist =
     ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
     ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
     ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-    ("-domain"       , Set_string domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, vpl or any combination of them separated by commas (e.g. box,poly,boxQS) ");
+    ("-domain"       , Set_string domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, boct, poly, vpl or any combination of them separated by commas (e.g. box,poly,boxQS) ");
     ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
     ("-iter"         , Set iter             , "Enables the loop for the propagation");
     ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");

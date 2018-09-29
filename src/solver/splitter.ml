@@ -88,10 +88,10 @@ module Make (Abs : AbstractCP) = struct
     | Some obj -> let (inf, sup) = Abs.forward_eval abs obj in inf = sup
     | None -> false
 
-  (** This is the main propagation loop.
-      Only one iteration is performed if `Constant.iter` equals `false`.
-      Otherwise we iterate until we obtain a fixed point,
-      or if a propagation step prunes less than a certain ratio.
+  (* This is the main propagation loop.
+     Only one iteration is performed if `Constant.iter` equals `false`.
+     Otherwise we iterate until we obtain a fixed point,
+     or if a propagation step prunes less than a certain ratio.
   *)
   let rec consistency abs ?obj:objv (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
     Tools.debug 2 "consistency\n%!";

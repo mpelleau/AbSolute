@@ -61,6 +61,7 @@ MLFILES = \
 	src/domains/apron_domain.ml \
 	src/domains/vpl_domain.ml \
 	src/domains/abstract_box.ml \
+	src/domains/boxed_octagon.ml \
 	src/domains/ADCP.ml \
 	src/domains/product.ml \
 	src/solver/result.ml \
@@ -76,6 +77,7 @@ MLFILES = \
 	src/print/realbox_drawer.ml \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
+	src/print/boxed_octagon_drawer.ml \
 	src/print/product_drawer.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml
