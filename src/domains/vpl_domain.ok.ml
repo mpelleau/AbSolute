@@ -168,7 +168,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         VPL_CP_Profile.start "split";
         let res = match !vpl_split with
             | Default -> split_in_half p
-            | Pizza -> get_regions p
+            | Pizza -> get_regions None p
         in
         VPL_CP_Profile.stop "split";
         res
