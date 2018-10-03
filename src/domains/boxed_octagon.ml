@@ -85,6 +85,12 @@ module BoxedOctagon = struct
   let lb : t -> int -> bound = fun o dim ->
     F.div_down o.dbm.(lb_idx dim) (-2.)
 
+  let set_ub : t -> int -> bound -> unit = fun o dim v ->
+    o.dbm.(ub_idx dim) <- F.mul_up v 2.
+
+  let set_lb : t -> int -> bound -> unit = fun o dim v ->
+    o.dbm.(ub_idx dim) <- F.mul_down v (-2.)
+
   (* returns an empty element *)
   let empty : t = { env=Env.empty; dim=0; dbm=[||]; box=B.empty }
 
@@ -179,6 +185,15 @@ module BoxedOctagon = struct
       B.filter box (Var k, LEQ, Cst (u, Real)) in
     { o with box=Env.fold filter_box o.env o.box }
 
+  let meet_box_into_dbm : t -> t = fun o ->
+    let update_cell = fun k dim ->
+      let (l, u) = B.float_bounds o.box k in
+      set_lb o dim l;
+      set_ub o dim u;
+    in
+    Env.iter update_cell o.env;
+    o
+
   let bound_add : bound -> bound -> bound = fun x y ->
     if x = F.inf || y = F.inf then
       F.inf
@@ -228,8 +243,14 @@ module BoxedOctagon = struct
     = fun o -> []
 
   (* Throw Bot.Bot_found if an inconsistent abstract element is reached. *)
-  let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
-    = fun o cons -> o
+  (* This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we call a filtering on a constraint.
+     However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once. *)
+  let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t = fun o cons ->
+    let box' = B.filter o.box cons in
+    let o' = { o with box=box' } in
+    let o' = meet_box_into_dbm o' in
+    let o' = floyd_warshall_for_octagon o' in
+    meet_dbm_into_box o'
 
   let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
     = fun o e -> Pervasives.failwith "BoxedOctagon: function `forward_eval` unimplemented."
