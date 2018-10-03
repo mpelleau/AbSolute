@@ -213,8 +213,8 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
                 |> print_endline)
             jacob)
         jacobian;
-    let gamma = 0.01
-    and epsilon = 0.001
+    let gamma = 0.1
+    and epsilon = 0.01
     in
     (* Gradient of the input polynomial : *)
     (*let gradient = List.fold_left

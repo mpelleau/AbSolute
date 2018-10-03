@@ -342,13 +342,13 @@ module Box (I:ITV) = struct
         (Env.add v b a)::acc
     ) [] i_list
 
-  let split_middle (a:t) : t list =
+  let split (a:t) (_:ctrs) : t list =
     let (v,_) = mix_range a in
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
-  let split_on (a:t) (xs :  Gradient_descent.FloatVec.t) : t list =
-    let split_on_one (a:t) ((v,value) : (var * float)) : t list =
+  let split_on (a:t) (_:ctrs) (xs : instance) : t list =
+    let split_on_one (a:t) ((v,value) : (var * Mpqf.t)) : t list =
       let i = Env.find v a in
       I.split_on i value
       |> List.fold_left (fun acc b ->
@@ -361,27 +361,6 @@ module Box (I:ITV) = struct
         split_on_one box (var,value) @ acc
       ) [] box_list
     ) [a]
-
-  let split (a:t) (jacobian :ctrs) : t list =
-    match !Constant.split with
-    | "pizza" -> let splits = begin
-      let starting_point = spawn a
-        |> Gradient_descent.RationalVec.map Mpqf.to_float (fun c -> c = 0.)
-      and includes x = Gradient_descent.FloatVec.map
-        Mpqf.of_float
-        (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
-        x
-        |> is_abstraction a
-      in
-      match Gradient_descent.gradient_descent starting_point includes jacobian with
-      | Some xs -> split_on a xs
-      | None -> split_middle a
-      end
-      in (* case where the pizza split has been made on a corner *)
-      if List.length splits = 1
-      then split_middle a
-      else splits
-    | _ -> split_middle a
 end
 
 (*************)

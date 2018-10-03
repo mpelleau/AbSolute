@@ -84,7 +84,7 @@ module type ITV = sig
   val score : t -> float
 
   (** Split on a given value *)
-  val split_on: t -> float -> t list
+  val split_on: t -> Mpqf.t -> t list
   val split: t -> t list
 
   (* pruning *)

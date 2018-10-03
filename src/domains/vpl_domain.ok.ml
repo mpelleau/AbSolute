@@ -245,6 +245,9 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> Pervasives.failwith "split_along: unimplemented"
 
+    let split_on : t -> Csp.ctrs -> Csp.instance -> t list
+        = fun _ _ _ -> Pervasives.failwith "split_on: unimplemented"
+
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun state (e1,cmp,e2) ->
         Debug.log DebugTypes.Title (lazy "Filter");

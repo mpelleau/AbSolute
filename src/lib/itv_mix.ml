@@ -158,10 +158,10 @@ let split (x:t) : t list =
   | Real x -> R.split x |> List.map make_real
   | Int x -> I.split x  |> List.map make_int
 
-let split_on (x:t) (value : float) : t list =
+let split_on (x:t) (value : Mpqf.t) : t list =
   match x with
   | Real x -> R.split_on x value |> List.map make_real
-  | Int x -> I.split_on x (int_of_float value) |> List.map make_int
+  | Int x -> I.split_on x (Mpqf.to_float value |> int_of_float) |> List.map make_int
 
 (* pruning *)
 (* ------- *)

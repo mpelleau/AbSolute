@@ -198,8 +198,8 @@ module Itv(B:BOUND) = struct
 	       itv::acc
     in aux [] l [x]
 
-  let split_on (i : t) (x: float) : t list =
-    split_on_value i (B.of_float_up x)
+  let split_on (i : t) (x: Mpqf.t) : t list =
+    split_on_value i (B.of_rat_up x)
 
   (* splits in two, around the middle *)
   let split (i:t) : t list = split_on_value i (mean i)

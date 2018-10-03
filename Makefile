@@ -59,7 +59,6 @@ MLFILES = \
 	src/domains/vpl_domain.ml \
 	src/domains/gradient_descent.ml \
 	src/domains/abstract_box.ml \
-	src/domains/pizza_splitter.ml \
 	src/domains/ADCP.ml \
 	src/domains/product.ml \
 	src/solver/result.ml \

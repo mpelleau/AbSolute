@@ -114,6 +114,10 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       let split_a = A.split abs jacobian in
       List.map (fun x -> (x, abs')) split_a
 
+    let split_on ((abs, abs'):t) (jacobian : Csp.ctrs) (xs : Csp.instance) =
+      let split_a = A.split_on abs jacobian xs in
+      List.map (fun x -> (x, abs')) split_a
+
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
     let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
@@ -149,8 +153,9 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
 
 
   end
-
+(*
 module BoxAndPolyNew = MakeProduct (Abstract_box.BoxF) (ADCP.PolyCP)
 module BoxAndOct = MakeProduct (ADCP.BoxCP) (ADCP.OctBoxCP)
 module BoxAndPoly = MakeProduct (ADCP.BoxCP) (ADCP.PolyCP)
 module OctAndPoly = MakeProduct (ADCP.OctBoxCP) (ADCP.PolyCP)
+*)

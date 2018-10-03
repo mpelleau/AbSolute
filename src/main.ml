@@ -63,7 +63,7 @@ let get_domain : string -> (module FullDomain) = function
   | "boxCP" -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
   | "oct" -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
   | "poly" -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
-  | "vpl" -> (module MakeFullDomain (Pizza_splitter.VPL_Pizza) (Vpl_drawer))
+  | "vpl" -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
   | s -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)

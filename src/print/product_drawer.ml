@@ -31,8 +31,9 @@ module Product_Drawer (R : Product.Reduction) (D : Drawer_sig.Drawer with type t
 
     let is_empty = R.is_empty
   end
-
+(*
 module BoxNoctDrawer = Product_Drawer(Product.BoxAndOct)(Apron_drawer.OctDrawer)
 module BoxNpolyDrawer = Product_Drawer(Product.BoxAndPoly)(Apron_drawer.PolyDrawer)
 module OctNpolyDrawer = Product_Drawer(Product.OctAndPoly)(Apron_drawer.PolyDrawer)
 module BandPDrawer = Product_Drawer(Product.BoxAndPolyNew)(Apron_drawer.PolyDrawer)
+*)
