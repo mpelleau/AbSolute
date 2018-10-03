@@ -129,18 +129,16 @@ let print_assign fmt assignations =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%s" (*(string_of_float (Mpqf.to_float a))*) (Mpqf.to_string a)
-  | (a, b) -> Format.fprintf fmt "[%s; %s]" (*(string_of_float (Mpqf.to_float a)) (string_of_float (Mpqf.to_float b))*) (Mpqf.to_string a) (Mpqf.to_string b)
+  | (a, b)  when a = b ->  Format.fprintf fmt "%a" pp_print_mpqf a
+  | (a, b) -> Format.fprintf fmt "[%a; %a]" pp_print_mpqf a pp_print_mpqf b
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
-
 
 let rec print_all_csts fmt = function
   | [] -> ()
   | a::[] -> Format.fprintf fmt "%a" print_csts a
   | a::tl -> Format.fprintf fmt "%a " print_csts a; print_all_csts fmt tl
-
 
 let rec print_expr fmt = function
   | Funcall(name,args) ->
@@ -155,7 +153,7 @@ let rec print_expr fmt = function
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
-  | Cst (c,_) -> Format.fprintf fmt "%s" (Mpqf.to_string c)
+  | Cst (c,_) -> Format.fprintf fmt "%a" pp_print_mpqf c
 
 let rec print_bexpr fmt = function
   | Cmp (c,e1,e2) ->
@@ -170,7 +168,7 @@ let print_constraints fmt constraints =
   Format.fprintf fmt "Constraints:\n";
   List.iter
     (fun c ->
-      Format.fprintf fmt "%a" print_bexpr c
+      Format.fprintf fmt "%a\n" print_bexpr c
     ) constraints
 
 let print_jacob fmt (v, e) =
@@ -180,22 +178,12 @@ let rec print_jacobian fmt = function
   | [] -> ()
   | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
-
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e
 
 let print fmt prog =
-  Format.printf "%a" print_assign prog.init;
-  Format.fprintf fmt "\n";
-  Format.printf "%a" print_constraints prog.constraints;
-  Format.fprintf fmt "\n"(* ;
-   * aux print_csts prog.constants;
-   * Format.fprintf fmt "\n-----\n";
-   * aux print_view prog.view;
-   * Format.fprintf fmt "\n-----\n";
-   * print_jacobian fmt prog.jacobian;
-   * Format.fprintf fmt "\n-----\n" *)
-
+  Format.fprintf fmt "%a\n" print_assign prog.init;
+  Format.fprintf fmt "%a\n" print_constraints prog.constraints
 
 (*************************************************************)
 (*                         PREDICATES                        *)
@@ -233,12 +221,12 @@ let rec is_cons_linear = function
 
 (* cmp operator inversion *)
 let inv = function
-  | EQ -> EQ
+  | EQ  -> EQ
   | LEQ -> GEQ
   | GEQ -> LEQ
   | NEQ -> NEQ
-  | GT -> LT
-  | LT -> GT
+  | GT  -> LT
+  | LT  -> GT
 
 let zero_val = Mpqf.of_int 0
 let is_zero = Mpqf.equal zero_val
@@ -408,22 +396,8 @@ let rec left_hand = function
 let rec derivate expr var =
   match expr with
   | Cst _ -> zero
-  | Var v -> if var = v then one
-             else zero
+  | Var v -> if var = v then one else zero
   | Unary (NEG, e) ->  Unary (NEG, derivate e var)
-     (* | SQRT -> Binary (DIV, derivate e var, Binary (MUL, Cst 2., Unary (SQRT, e))) *)
-     (* | COS -> Unary (NEG, Binary (MUL, derivate e var, Unary (SIN, e))) *)
-     (* | SIN -> Binary (MUL, derivate e var, Unary (COS, e)) *)
-     (* | TAN -> Binary (MUL, derivate e var, plus_one (sqr (Unary (TAN, e)))) *)
-     (* | COT -> Unary (NEG, Binary (MUL, derivate e var, plus_one (sqr (Unary (COT, e))))) *)
-     (* | ASIN -> Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e)))) *)
-     (* | ACOS -> Unary (NEG, Binary (DIV, derivate e var, Unary (SQRT, Binary (SUB, one, (sqr e))))) *)
-     (* | ATAN -> Binary (DIV, derivate e var, plus_one (sqr e)) *)
-     (* | ACOT -> Unary (NEG, Binary (DIV, derivate e var, plus_one (sqr e))) *)
-     (* | LN -> Binary (DIV, derivate e var, e) *)
-     (* | LOG -> Binary (DIV, derivate e var, Binary (MUL, e, Unary (LN, Cst 10.))) *)
-     (* | EXP -> Binary (MUL, derivate e var, Unary (EXP, e)) *)
-     (* | ABS -> (\* TODO: depends if the variable is positive or negative *\) derivate e var *)
   | Binary (b, e1, e2) ->
     (match b with
      | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)

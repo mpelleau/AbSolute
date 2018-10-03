@@ -5,6 +5,9 @@ open UserInterface
 https://git.frama-c.com/frama-c/frama-c/blob/save/feature/eva/vpl/src/plugins/value/domains/vpl/vpl_binding.ok.ml
 *)
 
+(* indicates if the vpl is installed or not *)
+let available = true
+
 module Debug = DebugTypes.Debug(struct let name = "AbSolute" end)
 
 module VPL_CP_Profile = Profile.Profile(struct let name = "VPL_CP" end)

@@ -305,7 +305,7 @@ module OctMinMaxCP =
       split octad jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
     let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
-    
+
     let volume box = 0.
   end
 

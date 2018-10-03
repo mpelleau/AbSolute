@@ -129,5 +129,7 @@ let main =
   Check_BoxMix.go();
   message "polyhedra (Apron)";
   Check_Poly.go();
-  message "polyhedra (VPL)";
-  Check_Vpl.go()
+  if Vpl_domain.available then begin
+      message "polyhedra (VPL)";
+      Check_Vpl.go()
+    end

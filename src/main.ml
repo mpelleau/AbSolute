@@ -3,11 +3,12 @@
 (******************************************************************)
 
 (******************************************************************)
-(* An instance of the solver is parmetrized by an abstract domain *)
+(* An instance of the solver is parametrized by an abstract domain*)
 (* which will be used in the abstract solving process and a       *)
-(* rendering module witch fits the domain we use                  *)
+(* rendering module which fits the domain we use                  *)
 (******************************************************************)
 
+(** Solve a CSP with the abstract domain Abs *)
 module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
   module Print = Out.Make(Dr)
@@ -20,6 +21,7 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) =
     Print.out prob res
 end
 
+(** Solve and minimize a CSP with the abstract domain Abs *)
 module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Min = Minimizer.Minimize(Abs)
   module Print = Out.Make(Dr)
@@ -58,6 +60,7 @@ end
 let get_domain : string -> (module FullDomain) = function
   | "box" -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
   | "boxS" -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
+  | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix) (Box_drawer.Make(Abstract_box.BoxMix)))
   | "boxQ" -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
   | "boxQS" -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
   | "boxCP" -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
@@ -153,22 +156,13 @@ let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob
 let go() =
   let open Constant in
   parse_args ();
-  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
-  Format.printf "%a\n" Tools.green_fprintf "| Welcome to the AbSolute solver |";
-  Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
-  Format.printf "\n";
   if !problem <> "" then begin
+      Terminal.go();
       let prob = File_parser.parse !problem in
-      Format.printf "Problem: "; Tools.cyan_fprintf Format.std_formatter "%s\n\n" !problem;
       Format.printf "%a\n" Csp.print prob;
       if !debug > 0 then Vpl_domain.enable_debug();
       lift (set_domain ()) prob
     end
-  else begin
-      Format.printf "%a" Tools.red_fprintf "Error: ";
-      Format.printf "No filename specified\n";
-      Format.printf "Usage: absolute [options] [filename]\n";
-      Format.printf "You can type 'absolute --help' to see the options list\n"
-    end
+  else Terminal.error()
 
 let _ = go()

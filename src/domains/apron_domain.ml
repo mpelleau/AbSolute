@@ -30,17 +30,17 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf c)
     | Unary (o,e1) ->
       let r = match o with
-	      | NEG  -> Texpr1.Neg
+              | NEG  -> Texpr1.Neg
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
     | Binary (o,e1,e2) ->
        let r = match o with
-	       | ADD -> Texpr1.Add
-	       | SUB -> Texpr1.Sub
-	       | DIV -> Texpr1.Div
-	       | MUL -> Texpr1.Mul
-	       | POW -> Texpr1.Pow
+               | ADD -> Texpr1.Add
+               | SUB -> Texpr1.Sub
+               | DIV -> Texpr1.Div
+               | MUL -> Texpr1.Mul
+               | POW -> Texpr1.Pow
        in
        let e1 = expr_to_apron a e1
        and e2 = expr_to_apron a e2 in
@@ -186,9 +186,9 @@ module MAKE(AP:ADomain) = struct
     let work acc a c =
       let neg_c = Linconsext.neg c in
       let a' = A.filter_lincons man a c
-	    and s = A.filter_lincons man a neg_c in
-	    if is_empty s then a,acc
-	    else a',(s::acc)
+      and s = A.filter_lincons man a neg_c in
+      if is_empty s then a,acc
+      else a',(s::acc)
     in
     let a,pruned = Linconsext.array_fold (fun (abs,acc) c ->
       if Linconsext.get_typ c = Linconsext.EQ then
@@ -232,13 +232,18 @@ module MAKE(AP:ADomain) = struct
     (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
 
   (* utilties for splitting *)
+  (* Similar to `largest abs` but does not deal with variables or abstract domain.
+   * Instead, it manipulates an array of intervals `tab`. *)
   let rec largest tab i max i_max =
     if i>=Array.length tab then (max, i_max)
     else
-	    let dim = diam_interval (tab.(i)) in
-	    if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
-	    else largest tab (i+1) max i_max
+      let dim = diam_interval (tab.(i)) in
+      if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
+      else largest tab (i+1) max i_max
 
+  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs`
+   * with the largest interval `i` = [l, u], and `d` the dimension of the
+   * interval (`u - l` with appropriate rounding). *)
   let largest abs : (Var.t * Interval.t * Mpqf.t) =
     let env = A.env abs in
     let box = A.to_box man abs in
@@ -258,10 +263,10 @@ module MAKE(AP:ADomain) = struct
     let rec minmax tab i max i_max min i_min =
       if i>=Array.length tab then  (max, i_max, min, i_min)
       else
-	      let dim = diam_interval (tab.(i)) in
-	      if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
-	      else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
-	      else minmax tab (i+1) max i_max min i_min
+        let dim = diam_interval (tab.(i)) in
+        if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
+        else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
+        else minmax tab (i+1) max i_max min i_min
 
     (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
      * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line

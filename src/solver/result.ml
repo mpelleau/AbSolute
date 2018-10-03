@@ -1,5 +1,4 @@
 (* Module that handles solution of the abstract solver *)
-open Adcp_sig
 
 type 'a res = {
     sure       : ('a * Csp.csts) list;   (* elements that satisfy the constraints *)
@@ -9,15 +8,33 @@ type 'a res = {
     vol_sure   : float;     (* volume of the elements in the sure list *)
     vol_unsure : float;     (* volume of the elements in the unsure list *)
     nb_steps   : int;       (* number of steps of the solving process *)
-    best_value : Mpqf.t      (* best value found during the optimization *)
+    best_value : Mpqf.t     (* best value found during the optimization *)
   }
 
 (* returns the inner ratio (between 0 and 1) of a solution *)
 let inner_ratio res =
-  res.vol_sure /. (res.vol_sure +. res.vol_unsure)
+  let divider = res.vol_sure +. res.vol_unsure in
+  if divider = 0. then 0.
+  else res.vol_sure /. divider
+
+
+(* Shapes that have a volume, and can be evaluated *)
+module type Res = sig
+  type t
+
+  val empty : t
+
+  val forward_eval : t -> Csp.expr -> Mpqf.t * Mpqf.t
+
+  val add_var : t -> Csp.annot * Csp.var -> t
+
+  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
+
+  val volume : t -> float
+end
 
 (* the abstract result type we will be manipulating *)
-module Make (A: AbstractCP) = struct
+module Make (A: Res) = struct
 
   type t = A.t res
 
@@ -33,27 +50,13 @@ module Make (A: AbstractCP) = struct
       best_value = Csp.zero_val
     }
 
-
-
   let to_abs abs consts views =
-    (*Format.printf "\n ---------- \n";
-      List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs);*)
     let csts_expr = Csp.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
-    (*Format.printf "\n ********** \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_var v) csts_vars;*)
-
     let (views_vars, views_expr) = List.split views in
-    (*Format.printf "\n vvvvvvvvvv \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_var v) views_vars;*)
-
     let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars@views_vars) in
     let new_a = List.fold_left (A.add_var) abs new_vars in
-    (*Format.printf "\n !!!!!!!!!! \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars new_a);*)
-
     let new_a' = List.fold_left (fun a c -> A.filter a c) new_a csts_expr in
-
     let (vars, csts) = List.fold_left (
                             fun (a, c) (v, e) ->
                             let (l, u) as d = A.forward_eval new_a' e in
@@ -63,16 +66,6 @@ module Make (A: AbstractCP) = struct
                             else ((v, d)::a, c)
                           ) ([], []) views in
     let to_add = Csp.csts_to_expr (vars@csts) in
-    (*Format.printf "\n ////////// \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_aux_csts v) vars;
-    Format.printf "\n ?????????? \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_aux_csts v) csts;
-
-    Format.printf "\n\n %%%%%%%%%% \n";
-    Format.printf "%a " A.print new_a';
-    Format.printf "\n %%%%%%%%%% \n";*)
-
-
     (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
 
 
@@ -83,14 +76,6 @@ module Make (A: AbstractCP) = struct
       | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
       | None -> Csp.zero_val
     in
-
-    (*Format.printf "\n $$$$$$$$$$ \n";
-    List.iter (fun (v, d) -> Format.printf "%a " Csp.print_var v) csts;*)
-    let abs' = List.fold_left (fun a (id, _) -> A.rem_var a id) abs' csts in
-    (*Format.printf "\n ;;;;;;;;;; \n";
-    List.iter (fun v -> Format.printf "%a " Csp.print_var v) (A.vars abs');
-    Format.printf "\n";*)
-
     (abs', csts, volume, obj_value)
 
 
@@ -159,13 +144,17 @@ module Make (A: AbstractCP) = struct
     || res.nb_steps > !Constant.max_iter
 
   (* tests if a result can't be pruned anymore *)
+  (* TO CHECK: In solver.ml, `Constant.pruning_iter` seems to be the maximal depth
+               of the search tree under which we stop "pruning by finding inconsistencies",
+               not the number of nodes explored (nb_steps = nb_nodes?).
+  *)
   let prunable res =
     !Constant.pruning && res.nb_steps < !Constant.pruning_iter
 
   (* creates an empty res for the optimization *)
   let empty_obj_res abs obj =
     let (_,obj_value) = A.forward_eval abs obj in
-      {empty_res with best_value = obj_value}
+    {empty_res with best_value = obj_value}
 
   (* iterates over the list of sure elements *)
   let iter_sure f res = List.iter f res.sure
@@ -176,11 +165,10 @@ module Make (A: AbstractCP) = struct
   (* prints a result *)
   let print fmt res =
     Format.fprintf fmt "\n#inner boxes: %d\n#boundary boxes: %d\n#created nodes: %d\n\ninner volume = %f\nboundary volume = %f\ntotal volume = %f%!\n"
-                   res.nb_sure
-                   res.nb_unsure
-                   res.nb_steps
-                   res.vol_sure
-                   res.vol_unsure
-                   (res.vol_sure +. res.vol_unsure)
-
+      res.nb_sure
+      res.nb_unsure
+      res.nb_steps
+      res.vol_sure
+      res.vol_unsure
+      (res.vol_sure +. res.vol_unsure)
 end

@@ -24,20 +24,20 @@ let _ =
    ]
 
 (* (exact) parsing of decimal constants constants *)
-(*let parse_const c =
-  let rec div10 x n =
-    if n <= 0 then x else div10 (x /. (float_of_int 10)) (n-1)
-  in
-  try
-    let p = String.index c '.' in
-    let p' = String.length c - p - 1 in
-    let x = (String.sub c 0 p)^(String.sub c (p+1) p') in
-    div10 (float_of_string x) p'
-  with Not_found ->
-    Mpqf.of_string c
-*)
+(* let parse_const c =
+ *   let rec div10 x n =
+ *     if n <= 0 then x else div10 (x /. (float_of_int 10)) (n-1)
+ *   in
+ *   try
+ *     let p = String.index c '.' in
+ *     let p' = String.length c - p - 1 in
+ *     let x = (String.sub c 0 p)^(String.sub c (p+1) p') in
+ *     div10 (float_of_string x) p'
+ *   with Not_found ->
+ *     Mpqf.of_string c *)
 
 let parse_const c = Mpqf.of_float (float_of_string c)
+
 }
 
 

@@ -8,7 +8,10 @@ OCAMLOPT  := $(OPAMBIN)/ocamlopt.opt $(OCAMLOPTIONS)
 OCAMLDEP  := $(OPAMBIN)/ocamldep
 OCAMLLEX  := $(OPAMBIN)/ocamllex
 OCAMLYACC := $(OPAMBIN)/ocamlyacc
+OCAMLDOC  := $(OPAMBIN)/ocamldoc
 CC        := gcc
+
+DOCOUTPUT := doc
 
 #ocaml libraries
 OCAMLLIBS    := $(LIBS:%=%.cma)
@@ -75,6 +78,7 @@ MLFILES = \
 	src/print/apron_drawer.ml \
 	src/print/vpl_drawer.ml \
 	src/print/product_drawer.ml \
+	src/print/terminal.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml
 
@@ -88,8 +92,6 @@ CHECK = src/check.ml
 CFILES = \
   src/lib/ml_float.c
 
-# MLIFILES = ADCP.mli
-
 # object files
 CMIFILES = $(MLIFILES:%.ml=%.cmi)
 CMOFILES = $(MLFILES:%.ml=%.cmo)
@@ -97,7 +99,8 @@ CMXFILES = $(MLFILES:%.ml=%.cmx)
 OFILES   = $(CFILES:%.c=%.o)
 
 # rules
-all: $(TARGETS)
+all:
+	${MAKE} --no-print-directory $(TARGETS) || ${MAKE} --no-print-directory clean; ${MAKE} --no-print-directory $(TARGETS)
 	@mkdir -p out
 
 absolute: $(OFILES) $(CMXFILES) $(ABS)
@@ -109,6 +112,10 @@ check: checker.opt
 
 checker.opt: $(OFILES) $(CMXFILES) $(CHECK)
 	@$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
+
+doc: $(TARGETS)
+	@mkdir -p $(DOCOUTPUT)
+	@$(OCAMLDOC) -d $(DOCOUTPUT) -html $(OCAMLINC) $(MLSOURCES)
 
 opam_config:
 	opam-admin make
@@ -155,6 +162,7 @@ clean:
 	rm -f out/*
 	rm -f -R out
 	rm -f Makefile.config
+	rm -f -R $(DOCOUTPUT)
 
 MLSOURCES = $(MLFILES) $(MLIFILES)
 
