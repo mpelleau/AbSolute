@@ -17,7 +17,7 @@ module Box (I:ITV) = struct
   (* interval and bound inheritance *)
   module I = I
   (* module B = I.B *)
-  (* type bound = B.t *)
+
   type i = I.t
 
   (* maps from variables *)
@@ -108,21 +108,6 @@ module Box (I:ITV) = struct
   (************************)
 
   let choose a = mix_range a
-
-  (* split *)
-  (* ----- *)
-
-  let split_along (a:t) (v:var) : t list =
-    let i = Env.find v a in
-    let i_list = I.split i in
-    List.fold_left (fun acc b ->
-        (Env.add v b a)::acc
-    ) [] i_list
-
-  let split (a:t) (_ :ctrs) : t list =
-    let (v,_) = mix_range a in
-    Tools.debug 3 "variable split : %s\n%!" v;
-    split_along a v
 
   let prune (a:t) (b:t) : t list * t =
     let rec aux a good = function
@@ -347,6 +332,56 @@ module Box (I:ITV) = struct
         I.contains_float itv value
       ) i
 
+  (* split *)
+  (* ----- *)
+
+  let split_along (a:t) (v:var) : t list =
+    let i = Env.find v a in
+    let i_list = I.split i in
+    List.fold_left (fun acc b ->
+        (Env.add v b a)::acc
+    ) [] i_list
+
+  let split_middle (a:t) : t list =
+    let (v,_) = mix_range a in
+    Tools.debug 3 "variable split : %s\n%!" v;
+    split_along a v
+
+  let split_on (a:t) (xs :  Gradient_descent.FloatVec.t) : t list =
+    let split_on_one (a:t) ((v,value) : (var * float)) : t list =
+      let i = Env.find v a in
+      I.split_on i value
+      |> List.fold_left (fun acc b ->
+          (Env.add v b a)::acc
+      ) []
+    in
+    VarMap.bindings xs
+    |> List.fold_left (fun box_list (var,value) ->
+      List.fold_left (fun acc box ->
+        split_on_one box (var,value) @ acc
+      ) [] box_list
+    ) [a]
+
+  let split (a:t) (jacobian :ctrs) : t list =
+    match !Constant.split with
+    | "pizza" -> let splits = begin
+      let starting_point = spawn a
+        |> Gradient_descent.RationalVec.map Mpqf.to_float (fun c -> c = 0.)
+      and includes x = Gradient_descent.FloatVec.map
+        Mpqf.of_float
+        (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
+        x
+        |> is_abstraction a
+      in
+      match Gradient_descent.gradient_descent starting_point includes jacobian with
+      | Some xs -> split_on a xs
+      | None -> split_middle a
+      end
+      in (* case where the pizza split has been made on a corner *)
+      if List.length splits = 1
+      then split_middle a
+      else splits
+    | _ -> split_middle a
 end
 
 (*************)

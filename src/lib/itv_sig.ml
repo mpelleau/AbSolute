@@ -83,6 +83,8 @@ module type ITV = sig
   (* returns a split priority. The higher the better *)
   val score : t -> float
 
+  (** Split on a given value *)
+  val split_on: t -> float -> t list
   val split: t -> t list
 
   (* pruning *)

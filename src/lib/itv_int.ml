@@ -83,14 +83,17 @@ let score (a,b) = if b = a then 0. else 1./.float (b - a)
 (* split *)
 (* ----- *)
 
-(* splits in two, around the middle *)
-let split ((a,b):t) =
-  match b-a with
+(* Split around the given number *)
+let split_on ((a,b):t) (x : bound) =
+  if x >= b || x <= a
+  then [(a,b)]
+  else match b-a with
   | 1 -> [(a,a); (b,b)]
   | 2 -> [(a,a); (a+1,a+1); (b,b)]
-  | r ->
-     let mid = a + r/2 in
-     [(a,mid); (mid+1,b)]
+  | r -> [(a,x); (x+1,b)]
+
+(* splits in two, around the middle *)
+let split ((a,b):t) = split_on (a,b) (a + (b-a)/2)
 
 let prune (l1,u1:t) (l2,u2:t) : t list * t =
   match (l1 < l2),(u2 < u1) with

@@ -71,12 +71,12 @@ module VectorMap (Coeff : P.Ring) = struct
     (**
      * Applying a function to each element of the vector.
      *)
-	let map : (Coeff.t -> Coeff.t) -> t -> t
-		= fun f vec ->
+	let map : (Coeff.t -> 'a) -> ('a -> bool) -> t -> 'a M.t
+		= fun f is_zero vec ->
 		M.fold
 			(fun var c map ->
 				let c' = f c in
-				if Coeff.equal Coeff.zero c'
+				if is_zero c'
 				then M.remove var map
 				else M.add var c' map)
 			vec
@@ -87,7 +87,7 @@ module VectorMap (Coeff : P.Ring) = struct
      *)
 	let neg : t -> t
 		= fun x ->
-		map (fun c -> Coeff.neg c) x
+		map (fun c -> Coeff.neg c) (fun c -> Coeff.equal Coeff.zero c) x
 
     (**
      * Addition of two vectors.
@@ -117,7 +117,7 @@ module VectorMap (Coeff : P.Ring) = struct
      *)
 	let mulc : Coeff.t -> t -> t
         = fun n v ->
-        map (fun v' -> Coeff.mul n v') v
+        map (fun v' -> Coeff.mul n v') (fun c -> Coeff.equal Coeff.zero c) v
 
 
     let fold : (Var.t -> Coeff.t -> 'a -> 'a) -> t -> 'a -> 'a
@@ -140,6 +140,7 @@ end
  * Type of floating points vectors.
  *)
 module FloatVec = VectorMap(P.FloatRing)
+module RationalVec = VectorMap(P.RationalRing)
 
 (**
  * Type of gradients: a map associating variables to a partial derivative.
@@ -161,15 +162,17 @@ let next_point : float -> gradient -> FloatVec.t -> FloatVec.t
 (**
  * Iterates the gradient descent.
  *)
-let rec descent : float -> float -> FloatVec.t -> gradient -> FloatVec.t
-    = fun gamma epsilon point gradient ->
+let rec descent : (FloatVec.t -> bool) -> float -> float -> FloatVec.t -> gradient -> FloatVec.t
+    = fun includes gamma epsilon point gradient ->
     Printf.sprintf "descent :%s"
         (FloatVec.to_string point)
     |> print_endline;
     let point' = next_point gamma gradient point in
-    if FloatVec.norm sqrt (FloatVec.sub point' point) < epsilon
-    then point'
-    else descent gamma epsilon point' gradient
+    if not (includes point')
+    then point
+    else if FloatVec.norm sqrt (FloatVec.sub point' point) < epsilon
+        then point'
+        else descent includes gamma epsilon point' gradient
 
 (**
  * Conversion from an expression into a floating-point polynomial.
@@ -194,8 +197,13 @@ let rec expr_to_poly : Csp.expr -> P.Float.t
         end
     | _ -> Pervasives.invalid_arg "expr_to_poly")
 
-let gradient_descent : Csp.ctrs -> FloatVec.t option
-    = fun jacobian ->
+(**
+  * [gradient_descent x includes jacobian] returns the point resulting from the gradient descent along [jacobian], starting at [x].
+  * @param includes returns true if the given point lies within a certain domain
+  * @param x must belong to the domain w.r.t [includes]
+  *)
+let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVec.t option
+    = fun starting_point includes jacobian ->
     print_endline "gradient descent";
     List.iter
         (fun (_,jacob) -> List.iter
@@ -205,9 +213,8 @@ let gradient_descent : Csp.ctrs -> FloatVec.t option
                 |> print_endline)
             jacob)
         jacobian;
-    let starting_point = FloatVec.nil
-    and gamma = 0.01
-    and epsilon = 0.00001
+    let gamma = 0.01
+    and epsilon = 0.001
     in
     (* Gradient of the input polynomial : *)
     (*let gradient = List.fold_left
@@ -227,38 +234,43 @@ let gradient_descent : Csp.ctrs -> FloatVec.t option
         |> Pervasives.snd
         |> List.map Pervasives.fst
     in
-    List.find (
-        fun (bexpr, _) -> not (Csp.is_cons_linear bexpr)
-        ) jacobian
-    |> Pervasives.fst
-    |> function
-    | Csp.Cmp (op,e1,e2) ->
-        let bexpr' = Csp.(Cmp (op,
-            Binary (POW, e1, Cst (Mpqf.of_int 2, Csp.Int)),
-            Binary (POW, e2, Cst (Mpqf.of_int 2, Csp.Int))))
-        in
-        let vars' = List.map (
-            fun v -> (Csp.Real, v, Csp.Top))
-            vars
-        in
-        let gradient = Csp.ctr_jacobian bexpr' vars'
-            |> List.fold_left (
-                fun map (var,expr) ->
-                Tools.VarMap.add var (expr_to_poly expr) map
-                )
-                Tools.VarMap.empty
-        in
-        Printf.sprintf "Gradient : %s" (
-            Tools.VarMap.bindings gradient
-            |> List.map (
-                fun (var,poly) -> Printf.sprintf "%s -> %s"
-                var
-                (P.Float.to_string poly) )
-            |> String.concat "\n"
-        ) |> print_endline;
-        let res = descent gamma epsilon starting_point gradient
-        in
-        Printf.sprintf "gradient result:%s" (FloatVec.to_string res)
-            |> print_endline;
-        Some res
-    | _ -> None
+    Printf.sprintf "Variables: %s"
+        (String.concat ", " vars)
+        |> print_endline;
+    try
+        List.find (
+            fun (bexpr, _) -> not (Csp.is_cons_linear bexpr)
+            ) jacobian
+        |> Pervasives.fst
+        |> function
+        | Csp.Cmp (op,e1,e2) ->
+            let bexpr' = Csp.(Cmp (op,
+                Binary (POW, e1, Cst (Mpqf.of_int 2, Csp.Int)),
+                Binary (POW, e2, Cst (Mpqf.of_int 2, Csp.Int))))
+            in
+            let vars' = List.map (
+                fun v -> (Csp.Real, v, Csp.Top))
+                vars
+            in
+            let gradient = Csp.ctr_jacobian bexpr' vars'
+                |> List.fold_left (
+                    fun map (var,expr) ->
+                    Tools.VarMap.add var (expr_to_poly expr) map
+                    )
+                    Tools.VarMap.empty
+            in
+            Printf.sprintf "Gradient : %s" (
+                Tools.VarMap.bindings gradient
+                |> List.map (
+                    fun (var,poly) -> Printf.sprintf "%s -> %s"
+                    var
+                    (P.Float.to_string poly) )
+                |> String.concat "\n"
+            ) |> print_endline;
+            let res = descent includes gamma epsilon starting_point gradient
+            in
+            Printf.sprintf "gradient result:%s" (FloatVec.to_string res)
+                |> print_endline;
+            Some res
+        | _ -> None
+    with Not_found -> None

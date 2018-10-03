@@ -1,5 +1,5 @@
 module VPL = Vpl_domain.VplCP
-open Gradient_descent
+(*open Gradient_descent*)
 
 module Make (D : sig
     include Adcp_sig.AbstractCP
@@ -10,7 +10,7 @@ module Make (D : sig
 struct
 
     include D
-
+(*
     let split : t -> Csp.ctrs -> t list
         = fun p jacobian ->
         match !Constant.split with
@@ -32,6 +32,7 @@ struct
                 end
             end
             | _ -> D.split p jacobian
+            *)
 end
 
 module VPL_Pizza = Make (struct

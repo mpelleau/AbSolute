@@ -367,7 +367,6 @@ module PolyCP = struct
     | Csp.Not(e) -> Adcp_sig.not_ans (is_representable e)
 
   let split poly jacobian =
-    let _ = Gradient_descent.gradient_descent jacobian in
     split poly jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
   let volume box = 0.
