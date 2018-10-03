@@ -232,8 +232,8 @@ module MAKE(AP:ADomain) = struct
     (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
 
   (* utilties for splitting *)
-  (** Similar to `largest abs` but does not deal with variables or abstract domain.
-      Instead, it manipulates an array of intervals `tab`. *)
+  (* Similar to `largest abs` but does not deal with variables or abstract domain.
+   * Instead, it manipulates an array of intervals `tab`. *)
   let rec largest tab i max i_max =
     if i>=Array.length tab then (max, i_max)
     else
@@ -241,7 +241,9 @@ module MAKE(AP:ADomain) = struct
       if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
       else largest tab (i+1) max i_max
 
-  (** Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs` with the largest interval `i` = [l, u], and `d` the dimension of the interval (`u - l` with appropriate rounding). *)
+  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs` 
+   * with the largest interval `i` = [l, u], and `d` the dimension of the 
+   * interval (`u - l` with appropriate rounding). *)
   let largest abs : (Var.t * Interval.t * Mpqf.t) =
     let env = A.env abs in
     let box = A.to_box man abs in
@@ -281,11 +283,11 @@ module MAKE(AP:ADomain) = struct
         let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
         genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
-  (** Given the abstract domain `abs` and two linear expressions `e1` and `e2`,
-      we split `abs` into two boxes `a1` and `a2` such that:
-        `a1 = abs /\ e1 >= 0`
-        `a2 = abs /\ e2 >= 0`
-  *)
+  (* Given the abstract domain `abs` and two linear expressions `e1` and `e2`,
+   *  we split `abs` into two boxes `a1` and `a2` such that:
+   *  `a1 = abs /\ e1 >= 0`
+   * `a2 = abs /\ e2 >= 0`
+   *)
   let split abs (e1,e2) =
     let meet_linexpr abs man env expr =
       let cons = Linconsext.make expr Linconsext.SUPEQ in

@@ -4,7 +4,21 @@ open Csp
 %}
 
 
-/* tokens */
+/* Keywords */
+%token TOK_INT           /* int */
+%token TOK_REAL          /* real */
+%token TOK_CST           /* constants */
+%token TOK_INIT          /* init */
+%token TOK_OBJ           /* objective */
+%token TOK_CONSTR        /* constraints */
+%token TOK_ANNOT         /* info */
+%token TOK_SOL           /* solutions */
+%token TOK_NONE          /* none */
+%token TOK_DRAW          /* draw */
+%token TOK_MINF          /* -oo */
+%token TOK_INF           /* oo */
+
+/* Operators */
 %token TOK_LBRACE        /* { */
 %token TOK_RBRACE        /* } */
 %token TOK_LBRACKET      /* [ */
@@ -30,18 +44,6 @@ open Csp
 %token TOK_AND           /* && */
 %token TOK_OR            /* || */
 %token TOK_NOT           /* ! */
-%token TOK_INT           /* int */
-%token TOK_REAL          /* real */
-%token TOK_CST           /* constants */
-%token TOK_INIT          /* init */
-%token TOK_OBJ           /* objective */
-%token TOK_CONSTR        /* constraints */
-%token TOK_ANNOT         /* constraints */
-%token TOK_SOL           /* solutions */
-%token TOK_NONE          /* none */
-%token TOK_DRAW          /* draw */
-%token TOK_MINF          /* -oo */
-%token TOK_INF           /* oo */
 
 %token <string> TOK_id
 %token <Mpqf.t> TOK_const

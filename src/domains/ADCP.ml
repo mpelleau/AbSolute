@@ -19,8 +19,8 @@ module BoxCP =
       let dim = Mpqf.to_float max in
       (dim <= !Constant.precision)
 
-    (* Split the abstract domain `abs` on the middle value `m` of the variable `v` with the largest domain in `abs`.
-       It returns two abstract domains `(a1, a2)` such that `a1 = a /\ v <= m` and `a2 = a /\ v >= m`.
+    (* Split the abstract element `abs` on the middle value `m` of the variable `v` with the largest range value in `abs`.
+       It returns two abstract elements `(a1, a2)` such that `a1 = a /\ v <= m` and `a2 = a /\ v >= m`.
        Note the equivalences `v <= m` <=> `-v + m >= 0` and `v >= m` <=> `v + -m >= 0` in order to match the syntax of Apron linear expressions.
     *)
     let split abs =

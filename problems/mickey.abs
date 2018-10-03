@@ -1,8 +1,13 @@
-/* Coconut mickey */
+/**************************************/
+/* mickey                             */
+/* problem from the Coconut benchmark */
+/* 2 variables                        */
+/* 2 quadratic constraints            */
+/**************************************/
 
 init{
-  real x = [-10;10];
-  real y = [-10;10];
+  int x = [-3; 3];
+  real y = [-3; 3];
 }
 
 constraints{

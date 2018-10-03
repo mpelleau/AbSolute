@@ -84,13 +84,17 @@ module Itv(B:BOUND) = struct
   (* PRINTING *)
   (************************************************************************)
 
-  (* format printer *)
+  let pp_print_bound fmt (b:B.t) =
+    if B.ceil b = b then
+      Format.fprintf fmt "%0F" (B.to_float_down b)
+    else
+      Format.fprintf fmt "%a" Format.pp_print_float (B.to_float_down b)
+
+  (* printer *)
   let print fmt ((l,h):t) =
-    match (B.ceil l = l),(B.ceil h = h) with
-    | true,true -> Format.fprintf fmt "[%0F;%0F]" (B.to_float_down l) (B.to_float_up h)
-    | false,true -> Format.fprintf fmt "[%f;%0F]" (B.to_float_down l) (B.to_float_up h)
-    | true,false -> Format.fprintf fmt "[%0F;%f]" (B.to_float_down l) (B.to_float_up h)
-    | _ -> Format.fprintf fmt "[%f;%f]" (B.to_float_down l) (B.to_float_up h)
+    if l = h
+    then pp_print_bound fmt l
+    else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
 
   let to_expr ((l, h):t) =
     ((Csp.GEQ, Csp.Cst(B.to_rat l, Csp.Real)),
@@ -133,7 +137,6 @@ module Itv(B:BOUND) = struct
 
   let intersect ((l1,h1):t) ((l2,h2):t) : bool =
     B.leq l1 h2 && B.leq l2 h1
-
 
   let is_finite x =
     B.classify x = B.FINITE

@@ -79,6 +79,7 @@ MLFILES = \
 	src/print/vpl_drawer.ml \
 	src/print/boxed_octagon_drawer.ml \
 	src/print/product_drawer.ml \
+	src/print/terminal.ml \
 	src/print/out.ml \
 	src/solver/step_by_step.ml
 
@@ -92,8 +93,6 @@ CHECK = src/check.ml
 CFILES = \
   src/lib/ml_float.c
 
-# MLIFILES = ADCP.mli
-
 # object files
 CMIFILES = $(MLIFILES:%.ml=%.cmi)
 CMOFILES = $(MLFILES:%.ml=%.cmo)
@@ -101,7 +100,8 @@ CMXFILES = $(MLFILES:%.ml=%.cmx)
 OFILES   = $(CFILES:%.c=%.o)
 
 # rules
-all: $(TARGETS)
+all:
+	${MAKE} --no-print-directory $(TARGETS) || ${MAKE} --no-print-directory clean; ${MAKE} --no-print-directory $(TARGETS)
 	@mkdir -p out
 
 absolute: $(OFILES) $(CMXFILES) $(ABS)
@@ -114,7 +114,7 @@ check: checker.opt
 checker.opt: $(OFILES) $(CMXFILES) $(CHECK)
 	@$(OCAMLOPT) -o $@ $(OCAMLINC) $(OCAMLOPTLIBS) $+
 
-doc:
+doc: $(TARGETS)
 	@mkdir -p $(DOCOUTPUT)
 	@$(OCAMLDOC) -d $(DOCOUTPUT) -html $(OCAMLINC) $(MLSOURCES)
 

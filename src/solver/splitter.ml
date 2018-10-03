@@ -6,7 +6,6 @@ module Boolean (Abs:AbstractCP) = struct
 
   let rec filter (value:Abs.t) c =
     let open Csp in
-    (* Format.printf "%a@." print_bexpr c;*)
     match c with
     | And (b1,b2) -> filter (filter value b2) b1
     | Or (b1,b2) ->
@@ -22,9 +21,9 @@ module Boolean (Abs:AbstractCP) = struct
   let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
     (* match constr with
-    | Or (b1,b2) -> sat_cons a b1 || sat_cons a b2
-    | And (b1,b2) -> sat_cons a b1 && sat_cons a b2
-    | Not b -> sat_cons a (neg_bexpr b)
+    | Or (b1,b2) ->  sat_cons a b1 || sat_cons a b2
+    | And (b1,b2) ->  sat_cons a b1 && sat_cons a b2
+    | Not b -> sat_co ns a (neg_bexpr b)
     | _ -> *)
     try Abs.is_empty (filter a (neg_bexpr constr))
     with Bot.Bot_found -> true
