@@ -172,8 +172,7 @@ module Itv(B:BOUND) = struct
      when a bound is infinite, then "mean" is some value strictly inside the
      interval
    *)
-  let mean ((l,h):t) : B.t list =
-    let res =
+  let mean ((l,h):t) : B.t =
     match is_finite l, is_finite h with
     | true,true ->
       (* finite bounds: returns the actual mean *)
@@ -191,10 +190,8 @@ module Itv(B:BOUND) = struct
     | false,false ->
         (* the mean of [-oo,+oo] is 0 *)
       B.zero
-    in [res]
 
-  (* splits in two, around the middle *)
-  let split ((l,h) as i :t) : t list =
+  let split_on_value ((l,h) :t) (x : B.t) : t list =
     let rec aux acc cur bounds =
       match bounds with
       |  hd::tl ->
@@ -203,7 +200,13 @@ module Itv(B:BOUND) = struct
       | [] ->
 	       let itv = validate (cur,h) in
 	       itv::acc
-    in aux [] l (mean i)
+    in aux [] l [x]
+
+  let split_on (i : t) (x: Mpqf.t) : t list =
+    split_on_value i (B.of_rat_up x)
+
+  (* splits in two, around the middle *)
+  let split (i:t) : t list = split_on_value i (mean i)
 
   let prune ((l,h):t) ((l',h'):t) : t list * t  =
     let epsilon = B.of_float_up 0.000001 in

@@ -48,5 +48,5 @@ let set_prob s =
 
 let set_split s =
   match s with
-  | "default" | "maxSmear" | "smear" -> split := s
+  | "default" | "maxSmear" | "smear" | "pizza" -> split := s
   | x -> "bisection "^x^" undefined" |> failwith

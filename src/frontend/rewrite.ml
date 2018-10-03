@@ -97,7 +97,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
       | 0 -> acc
       | n -> iter (Binary(MUL,acc,(of_id id))) (n-1)
     in
-    match (PI.to_int exp) with
+    match exp with
     | 0 -> one
     | n -> iter (of_id id) (n - 1)
   in

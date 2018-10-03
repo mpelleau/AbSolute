@@ -17,7 +17,7 @@ module Box (I:ITV) = struct
   (* interval and bound inheritance *)
   module I = I
   (* module B = I.B *)
-  (* type bound = B.t *)
+
   type i = I.t
 
   (* maps from variables *)
@@ -108,21 +108,6 @@ module Box (I:ITV) = struct
   (************************)
 
   let choose a = mix_range a
-
-  (* split *)
-  (* ----- *)
-
-  let split_along (a:t) (v:var) : t list =
-    let i = Env.find v a in
-    let i_list = I.split i in
-    List.fold_left (fun acc b ->
-        (Env.add v b a)::acc
-    ) [] i_list
-
-  let split (a:t) : t list =
-    let (v,_) = mix_range a in
-    Tools.debug 3 "variable split : %s\n%!" v;
-    split_along a v
 
   let prune (a:t) (b:t) : t list * t =
     let rec aux a good = function
@@ -352,6 +337,35 @@ module Box (I:ITV) = struct
         I.contains_float itv value
       ) i
 
+  (* split *)
+  (* ----- *)
+
+  let split_along (a:t) (v:var) : t list =
+    let i = Env.find v a in
+    let i_list = I.split i in
+    List.fold_left (fun acc b ->
+        (Env.add v b a)::acc
+    ) [] i_list
+
+  let split (a:t) (_:ctrs) : t list =
+    let (v,_) = mix_range a in
+    Tools.debug 3 "variable split : %s\n%!" v;
+    split_along a v
+
+  let split_on (a:t) (_:ctrs) (xs : instance) : t list =
+    let split_on_one (a:t) ((v,value) : (var * Mpqf.t)) : t list =
+      let i = Env.find v a in
+      I.split_on i value
+      |> List.fold_left (fun acc b ->
+          (Env.add v b a)::acc
+      ) []
+    in
+    VarMap.bindings xs
+    |> List.fold_left (fun box_list (var,value) ->
+      List.fold_left (fun acc box ->
+        split_on_one box (var,value) @ acc
+      ) [] box_list
+    ) [a]
 end
 
 (*************)

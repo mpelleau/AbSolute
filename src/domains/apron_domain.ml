@@ -241,8 +241,8 @@ module MAKE(AP:ADomain) = struct
       if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
       else largest tab (i+1) max i_max
 
-  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs` 
-   * with the largest interval `i` = [l, u], and `d` the dimension of the 
+  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs`
+   * with the largest interval `i` = [l, u], and `d` the dimension of the
    * interval (`u - l` with appropriate rounding). *)
   let largest abs : (Var.t * Interval.t * Mpqf.t) =
     let env = A.env abs in
@@ -275,28 +275,23 @@ module MAKE(AP:ADomain) = struct
      * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
     let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
       if i >= size then (list1, list2, cst) else
-        let ci = p2.(i) -. p1.(i) in
-        let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
-        let ci' = 2. *. ci in
-        let coeffi = Coeff.Scalar (Scalar.of_float ci') in
-        let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
-        let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
-        genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
+	      let ci = p2.(i) -. p1.(i) in
+	      let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
+	      let ci' = 2. *. ci in
+	      let coeffi = Coeff.Scalar (Scalar.of_float ci') in
+	      let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
+	      let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
+	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
-  (* Given the abstract domain `abs` and two linear expressions `e1` and `e2`,
-   *  we split `abs` into two boxes `a1` and `a2` such that:
-   *  `a1 = abs /\ e1 >= 0`
-   * `a2 = abs /\ e2 >= 0`
-   *)
-  let split abs (e1,e2) =
-    let meet_linexpr abs man env expr =
-      let cons = Linconsext.make expr Linconsext.SUPEQ in
-      A.filter_lincons man abs cons
-    in
-    let env = A.env abs in
-    let abs1 = meet_linexpr abs man env e1 in
-    let abs2 = meet_linexpr abs man env e2 in
-    [abs1; abs2]
+ let split abs _ (e1,e2) =
+   let meet_linexpr abs man env expr =
+     let cons = Linconsext.make expr Linconsext.SUPEQ in
+     A.filter_lincons man abs cons
+   in
+   let env = A.env abs in
+   let abs1 = meet_linexpr abs man env e1 in
+   let abs2 = meet_linexpr abs man env e2 in
+   [abs1; abs2]
 
   (************************************************)
   (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)

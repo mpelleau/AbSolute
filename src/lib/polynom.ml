@@ -3,13 +3,23 @@
 (* It is parametrized by a ring module which deals with basic arithmetic *)
 (*************************************************************************)
 
+(**
+ * Module type for polynomial coefficients.
+ *)
 module type Ring = sig
+
+  (** Type of coefficient *)
   type t
+
   val add   : t -> t -> t
   val mul   : t -> t -> t
 
-  (* None if the division is not exact *)
+  (**
+   * [div p1 p2] returns the division of p1 by p2.
+   * None if the division is not exact *)
   val div   : t -> t -> t option
+
+  val neg : t -> t
 
   (* None if the value cannot be converted exactly to an integer *)
   val to_int : t -> int option
@@ -25,8 +35,11 @@ module type Ring = sig
   val of_float : float -> t
   val of_rational : Mpqf.t -> t
 
+  val equal : t -> t -> bool
+
   (* printintg *)
   val print : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module Make(R:Ring) = struct
@@ -35,7 +48,7 @@ module Make(R:Ring) = struct
    and cell   = coeff * var list   (* c * v1*...*vn <- sorted in lex. order *)
    and var    = id * exp           (* id^exp *)
    and id     = string
-   and exp    = R.t
+   and exp    = int
    and coeff  = R.t
 
   (* if a monom correspont to a constant *)
@@ -54,8 +67,8 @@ module Make(R:Ring) = struct
 
   let print_varlist fmt =
     List.iter (fun (p,e) ->
-        if e = R.one then Format.fprintf fmt "%s" p
-        else Format.fprintf fmt "%s^%a " p R.print e)
+      if e = 1 then Format.fprintf fmt "%s" p
+      else Format.fprintf fmt "%s^%i " p e)
 
   let print_cell fmt (((coeff,varl) as c) :cell) =
     if is_monom_constant c then Format.fprintf fmt "%a" R.print coeff
@@ -66,6 +79,26 @@ module Make(R:Ring) = struct
       ~pp_sep:(fun fmt () -> Format.fprintf fmt "+")
       (fun fmt -> Format.fprintf fmt "%a" print_cell) fmt
       (clean p)
+
+  let to_string =
+    let vars_to_string : var list -> string
+        = fun vars ->
+        List.map
+            (fun (v,e) ->
+                if e = 1
+                then v
+                else Printf.sprintf "%s^%i" v e
+            ) vars
+        |> String.concat ""
+    in
+    fun p ->
+    List.map
+      (fun (coeff, vars) ->
+        Printf.sprintf "%s.%s"
+          (R.to_string coeff)
+          (vars_to_string vars)
+        ) p
+    |> String.concat " + "
 
   (*******************************************************)
   (*           CONSTRUCTORS AND CONSTANTS                *)
@@ -86,7 +119,9 @@ module Make(R:Ring) = struct
 
   let one : t = [(R.one,[])]
 
-  let of_var v : t = [(R.one,[(v,R.one)])]
+  let of_var v : t = [(R.one,[(v,1)])]
+
+  let of_constant c : t = [(c, [])]
 
   (* convert a monom to a constant *)
   let to_constant (((c,v) as monom):cell) =
@@ -134,7 +169,7 @@ module Make(R:Ring) = struct
       | [],x | x,[] -> x
       | ((p1,e1) as v1)::t1, ((p2,e2) as v2)::t2 ->
          (* we keep the variables in a sorted order *)
-         if p1 = p2 then (p1,(R.add e1 e2))::(mul_list t1 t2)
+         if p1 = p2 then (p1,(e1 + e2))::(mul_list t1 t2)
          else if p1 < p2 then v1::(mul_list t1 l2)
          else v2::(mul_list l1 t2)
     in
@@ -194,6 +229,74 @@ module Make(R:Ring) = struct
                | None -> None
              else None
     | _ -> None
+
+  (**
+    Evaluates the polynomial on a point defined by the map.
+  *)
+  let eval : coeff Tools.VarMap.t -> t -> coeff
+    = let find : id -> coeff Tools.VarMap.t -> coeff
+      = fun var map ->
+        try
+          Tools.VarMap.find var map
+        with Not_found -> R.zero
+    in
+    let rec pow (c : coeff)
+        = function
+        | 0 -> R.one
+        | 1 -> c
+        | n -> R.mul c (pow c (n-1))
+    in
+    let eval_cell : coeff Tools.VarMap.t -> cell -> coeff
+      = fun map (coeff,vars) ->
+        if vars = []
+        then coeff
+        else List.fold_left (
+            fun sum (var,exp) ->
+            pow (find var map) exp
+            |> R.add sum
+          ) R.zero vars
+          |> R.mul coeff
+    in
+    fun map p ->
+    List.fold_left
+      (fun sum cell ->
+        eval_cell map cell
+        |> R.add sum
+      )
+      R.zero p
+
+  (**
+    Computes the partial derivative of the given polynomial w.r.t the given variable.
+  *)
+  let partial_derivative : t -> id -> t
+    = fun p var ->
+    let rec deriv_vars : var list -> var list
+      = function
+      | [] -> []
+      | (v,e) :: l when v = var ->
+        if e = 1
+        then l
+        else ((v,e-1) :: l)
+      | (v,e) :: l -> (v,e) :: deriv_vars l
+    in
+    List.map
+      (fun (coeff, vars) ->
+        (coeff, deriv_vars vars))
+      p
+    |> clean
+
+  let gradient : id list -> t -> t Tools.VarMap.t
+    = fun vars p ->
+    List.fold_left
+      (fun map var ->
+        Tools.VarMap.add var (partial_derivative p var) map
+      )
+      Tools.VarMap.empty
+      vars
+
+  let eval_gradient : t Tools.VarMap.t -> coeff Tools.VarMap.t -> coeff Tools.VarMap.t
+    = fun gradient map ->
+    Tools.VarMap.map (eval map) gradient
 end
 
 module IntRing = struct
@@ -206,6 +309,8 @@ module IntRing = struct
 
   let div x y = if y <> 0 && x mod y = 0 then Some (x/y) else None
 
+  let neg x = -1 * x
+
   let to_int x = Some x
   let to_float = float_of_int
   let to_rational = Mpqf.of_int
@@ -215,7 +320,9 @@ module IntRing = struct
   let of_float = int_of_float
   let of_rational x = of_float (Mpqf.to_float x)
 
+  let equal x y = (x = y)
   let print fmt x = Format.fprintf fmt "%i" x
+  let to_string = string_of_int
 
 end
 
@@ -230,6 +337,8 @@ module FloatRing = struct
 
   let div x y = if y <> 0. && (x/.y) *. y = x then Some (x/.y) else None
 
+  let neg x = -1. *. x
+
   let to_int x =
     let xi = int_of_float x in
     if float xi = x then Some xi
@@ -242,8 +351,10 @@ module FloatRing = struct
   let of_float x = x
   let of_rational = Mpqf.to_float
 
-  let print fmt x = Format.fprintf fmt "%f" x
+  let equal x y = (x = y)
 
+  let print fmt x = Format.fprintf fmt "%f" x
+  let to_string = string_of_float
 end
 
 module RationalRing = struct
@@ -255,6 +366,8 @@ module RationalRing = struct
   let one = Mpqf.of_int 1
 
   let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
+
+  let neg x = Mpqf.neg x
 
   let to_int x =
     let xi = int_of_float (Mpqf.to_float x) in
@@ -268,7 +381,10 @@ module RationalRing = struct
   let of_float = Mpqf.of_float
   let of_rational x = x
 
+  let equal = Mpqf.equal
+
   let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
+  let to_string = Mpqf.to_string
 end
 
 

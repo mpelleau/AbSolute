@@ -47,12 +47,15 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let prune : t -> t -> t list * t
         = fun _ _ -> fail ()
 
-    let split : t -> t list
+    let split : t -> Csp.ctrs -> t list
         = fun _ -> fail ()
 
     (* TODO: can we use this variable? *)
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> fail ()
+
+    let split_on : t -> Csp.ctrs -> Csp.instance -> t list
+        = fun _ _ _ -> fail ()
 
     (* assume e1 cmp e2 *)
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t

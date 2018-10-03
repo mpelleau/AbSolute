@@ -60,6 +60,7 @@ MLFILES = \
 	src/domains/adcp_sig.ml \
 	src/domains/apron_domain.ml \
 	src/domains/vpl_domain.ml \
+	src/domains/gradient_descent.ml \
 	src/domains/abstract_box.ml \
 	src/domains/ADCP.ml \
 	src/domains/product.ml \

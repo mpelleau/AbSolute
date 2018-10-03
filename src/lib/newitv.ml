@@ -252,32 +252,35 @@ module Make(B:BOUND) = struct
   let magnitude (((_,l),(_,h)): t) : B.t =
     B.max (B.abs l) (B.abs h)
 
-  let mean (((_,l) as low, ((_,h) as high)):t) : B.t list =
-    let res =
-      match is_finite low, is_finite high with
-      | true,true -> B.div_up (B.add_up l h) B.two
-      | true,false ->
-         if B.sign l < 0 then B.zero
-         else if B.sign l = 0 then B.one
-         else B.mul_up l B.two
-      | false,true ->
-         if B.sign h > 0 then B.zero
-         else if B.sign h = 0 then B.minus_one
-         else B.mul_down h B.two
-      | false,false -> B.zero
-    in [res]
+  let mean (((_,l) as low, ((_,h) as high)):t) : B.t =
+    match is_finite low, is_finite high with
+    | true,true -> B.div_up (B.add_up l h) B.two
+    | true,false ->
+       if B.sign l < 0 then B.zero
+       else if B.sign l = 0 then B.one
+       else B.mul_up l B.two
+    | false,true ->
+       if B.sign h > 0 then B.zero
+       else if B.sign h = 0 then B.minus_one
+       else B.mul_down h B.two
+    | false,false -> B.zero
 
-  (* splits in two, around m *)
-  let split ((l,h):t) : t list =
-    let rec aux acc cur (bounds:bound list) =
+  let split_on_value ((l,h) :t) (x : B.t) : t list =
+    let rec aux acc cur bounds =
       match bounds with
       |  hd::tl ->
 	       let itv = validate (cur,(Large,hd)) in
-	       aux (itv::acc) (Strict,hd) tl
+           aux (itv::acc) (Strict,hd) tl
       | [] ->
-	       let itv = validate (cur,h) in
-	       itv::acc
-    in aux [] l (mean (l,h))
+           let itv = validate (cur,h) in
+           itv::acc
+    in aux [] l [x]
+
+  let split_on (i : t) (x: Mpqf.t) : t list =
+    split_on_value i (B.of_rat_up x)
+
+  (* splits in two, around the middle *)
+  let split (i:t) : t list = split_on_value i (mean i)
 
   let prune ((l,h):t) ((l',h'):t) : t list * t  =
     match (gt_low l' l), (lt_up h' h) with
