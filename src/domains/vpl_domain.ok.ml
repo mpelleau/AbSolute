@@ -17,10 +17,6 @@ module Coeff = Scalar.Rat
 module Domain = NCDomain.NCVPL_Cstr.Q
 include MakeInterface(Coeff)
 
-type split = Pizza | Default
-
-let vpl_split : split ref = ref Default
-
 module Expr = struct
     module Ident = UserInterface.Lift_Ident (struct
         type t = string
@@ -344,12 +340,6 @@ let set_lin =
     | "itv" -> Flags.lin := Flags.Intervalization
     | "both" -> Flags.lin := Flags.Both
     | s -> "Linearization " ^ s ^ "undefined. Should be among : handelman, itv, both" |> invalid_arg
-
-let set_split
-    = function
-    | "pizza" -> vpl_split := Pizza
-    | "default" -> vpl_split := Default
-    | s -> "Splitting strategy " ^ s ^ "undefined. Should be among : pizza, default" |> invalid_arg
 
 let enable_debug : unit -> unit
     = fun () ->

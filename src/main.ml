@@ -118,7 +118,6 @@ let speclist =
     ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
     ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
     ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
-    ("-vpl_split"    , String Vpl_domain.set_split    , "Sets the split strategy of the VPL");
     ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
     ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
     ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
