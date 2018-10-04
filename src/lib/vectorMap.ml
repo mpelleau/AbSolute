@@ -46,18 +46,14 @@ module Make (Coeff : P.Ring) = struct
      *)
 	let set : t -> Var.t -> Coeff.t -> t
         = fun vec var value ->
-		if Coeff.equal value Coeff.zero
-		then M.remove var vec
-		else M.add var value vec
+		M.add var value vec
 
     (**
      * Returns the coefficient associated to the given variable in the vector.
      *)
     let get : t -> Var.t -> Coeff.t
 		= fun vec var ->
-        if M.mem var vec
-		then M.find var vec
-		else Coeff.zero
+        M.find var vec
 
     (**
      * [mk z l] builds a map from the list of association [l].
@@ -71,14 +67,10 @@ module Make (Coeff : P.Ring) = struct
     (**
      * Applying a function to each element of the vector.
      *)
-	let map : (Coeff.t -> 'a) -> ('a -> bool) -> t -> 'a M.t
-		= fun f is_zero vec ->
+	let map : (Coeff.t -> 'a) -> t -> 'a M.t
+		= fun f vec ->
 		M.fold
-			(fun var c map ->
-				let c' = f c in
-				if is_zero c'
-				then M.remove var map
-				else M.add var c' map)
+			(fun var c map -> M.add var (f c) map)
 			vec
             nil
 
@@ -87,7 +79,7 @@ module Make (Coeff : P.Ring) = struct
      *)
 	let neg : t -> t
 		= fun x ->
-		map (fun c -> Coeff.neg c) (fun c -> Coeff.equal Coeff.zero c) x
+		map (fun c -> Coeff.neg c) x
 
     (**
      * Addition of two vectors.
@@ -99,10 +91,7 @@ module Make (Coeff : P.Ring) = struct
 				match c1opt,c2opt with
 				| None, None -> None
 				| None, Some c | Some c, None -> Some c
-				| Some c1, Some c2 -> let c' = Coeff.add c1 c2 in
-					if Coeff.equal Coeff.zero c'
-					then None
-					else Some c')
+				| Some c1, Some c2 -> Some (Coeff.add c1 c2))
 			v1 v2
 
     (**
@@ -117,7 +106,7 @@ module Make (Coeff : P.Ring) = struct
      *)
 	let mulc : Coeff.t -> t -> t
         = fun n v ->
-        map (fun v' -> Coeff.mul n v') (fun c -> Coeff.equal Coeff.zero c) v
+        map (fun v' -> Coeff.mul n v') v
 
 
     let fold : (Var.t -> Coeff.t -> 'a -> 'a) -> t -> 'a -> 'a

@@ -366,6 +366,18 @@ module Box (I:ITV) = struct
         split_on_one box (var,value) @ acc
       ) [] box_list
     ) [a]
+
+  let shrink (a:t) (c:Mpqf.t) : t =
+    Env.fold (fun var itv (b,acc) ->
+      if b && is_empty acc
+      then (b,acc)
+      else
+        match I.shrink itv c with
+          | Bot.Bot -> (true, Env.empty)
+          | Bot.Nb itv' -> (true, Env.add var itv acc)
+    ) a (false,Env.empty)
+    |> Pervasives.snd
+
 end
 
 (*************)

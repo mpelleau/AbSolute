@@ -87,4 +87,8 @@ module type AbstractCP = sig
 
   (* check if an abstract element is an abstraction of an instance *)
   val is_abstraction : t -> Csp.instance -> bool
+
+  (** Skrinks the abstract element in every direction by the given value. *)
+  val shrink : t -> Mpqf.t -> t
+  
  end

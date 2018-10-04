@@ -186,26 +186,28 @@ module Make (Abs : AbstractCP) = struct
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
-    let splits = begin
-      let starting_point = Abs.spawn abs
-        |> VectorMap.RationalVec.map Mpqf.to_float (fun c -> c = 0.)
-      and includes x = VectorMap.FloatVec.map
-        Mpqf.of_float
-        (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
-        x
-        |> Abs.is_abstraction abs
-      in
-      match Gradient_descent.gradient_descent starting_point includes jacobian with
-      | Some xs -> Abs.split_on abs jacobian
-        (VectorMap.FloatVec.map Mpqf.of_float
-        (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
-        xs)
-      | None -> Abs.split abs jacobian
-      end
-    in (* case where the pizza split has been made on a corner *)
-    if List.length splits = 1
+    let abs' = (!Constant.precision *. 10. |> Mpqf.of_float)
+      |> Abs.shrink abs
+    in
+    if Abs.is_empty abs'
     then Abs.split abs jacobian
-    else splits
+    else begin
+        let splits = begin
+          let starting_point = Abs.spawn abs'
+            |> VectorMap.RationalVec.map Mpqf.to_float
+          and includes x = VectorMap.FloatVec.map Mpqf.of_float x
+            |> Abs.is_abstraction abs'
+          in
+          match Gradient_descent.gradient_descent starting_point includes jacobian with
+          | Some xs -> Abs.split_on abs jacobian
+            (VectorMap.FloatVec.map Mpqf.of_float xs)
+          | None -> Abs.split abs jacobian
+          end
+        in (* case where the pizza split has been made on a corner *)
+        if List.length splits = 1
+        then Abs.split abs jacobian
+        else splits
+    end
 
   let split abs =
     Tools.debug 1 "splitting using %s\n%!" !Constant.split;

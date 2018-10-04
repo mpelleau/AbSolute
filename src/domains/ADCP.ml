@@ -36,6 +36,7 @@ module BoxCP =
       split abs jacobian (expr,expr')
 
     let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
+    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
 
     let volume abs =
       let box = Abstract1.to_box man abs in
@@ -305,6 +306,7 @@ module OctMinMaxCP =
       split octad jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
     let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
+    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
 
     let volume box = 0.
   end
@@ -346,6 +348,7 @@ module OctBoxCP =
       split octad jacobian (expr, expr')
 
     let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
+    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
 
     let volume box = 0.
   end
@@ -378,4 +381,6 @@ module PolyCP = struct
   let volume box = 0.
 
   let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
+
+  let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
 end

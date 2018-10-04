@@ -226,3 +226,14 @@ let filter_fun (x1:string) (x2:t list) (x3:t) : (t list) bot =
 let spawn (l,h:t) : int =
   let r = Random.int ((h-l)+1) in
   l + r
+
+let shrink (i : t) (c:Mpqf.t) : t bot =
+  try
+    let c' = Mpqf.to_float c |> int_of_float in
+    let i' =
+      (c', -1*c')
+      |> add i
+      |> validate
+    in
+    Nb i'
+  with Invalid_argument _ -> Bot

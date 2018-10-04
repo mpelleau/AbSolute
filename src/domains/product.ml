@@ -151,7 +151,8 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
     let is_abstraction (a,b) i =
       A.is_abstraction a i && B.is_abstraction b i
 
-
+    let shrink (a,b) value =
+      (A.shrink a value, B.shrink b value)
   end
 (*
 module BoxAndPolyNew = MakeProduct (Abstract_box.BoxF) (ADCP.PolyCP)

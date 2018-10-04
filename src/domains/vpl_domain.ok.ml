@@ -327,6 +327,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
         | Csp.Not e -> not (is_representable e)
 
+    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+
 end
 
 let setup_flags : unit -> unit

@@ -142,4 +142,6 @@ module type ITV = sig
   (** generate a random float within the given interval *)
   val spawn : t -> float
 
+  (** shrinks each bound of the interval by the given value *)
+  val shrink : t -> Mpqf.t -> t bot
 end

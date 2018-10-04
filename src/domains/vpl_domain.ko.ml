@@ -80,6 +80,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let to_bexpr _ = fail ()
 
     let is_representable _ = fail ()
+
+    let shrink _ _ = fail ()
 end
 
 let setup_flags : unit -> unit

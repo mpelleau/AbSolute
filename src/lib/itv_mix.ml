@@ -449,3 +449,8 @@ let spawn (x:t) : float =
   match x with
   | Int x  -> float (I.spawn x)
   | Real x -> R.spawn x
+
+let shrink (i : t) (c:Mpqf.t) : t bot =
+  match i with
+  | Int i -> I.shrink i c |> lift_bot make_int
+  | Real i -> R.shrink i c |> lift_bot make_real
