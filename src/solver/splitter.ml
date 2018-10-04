@@ -188,8 +188,8 @@ module Make (Abs : AbstractCP) = struct
   let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
     let splits = begin
       let starting_point = Abs.spawn abs
-        |> Gradient_descent.RationalVec.map Mpqf.to_float (fun c -> c = 0.)
-      and includes x = Gradient_descent.FloatVec.map
+        |> VectorMap.RationalVec.map Mpqf.to_float (fun c -> c = 0.)
+      and includes x = VectorMap.FloatVec.map
         Mpqf.of_float
         (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
         x
@@ -197,7 +197,7 @@ module Make (Abs : AbstractCP) = struct
       in
       match Gradient_descent.gradient_descent starting_point includes jacobian with
       | Some xs -> Abs.split_on abs jacobian
-        (Gradient_descent.FloatVec.map Mpqf.of_float
+        (VectorMap.FloatVec.map Mpqf.of_float
         (fun c -> Mpqf.equal (Mpqf.of_int 0) c)
         xs)
       | None -> Abs.split abs jacobian
