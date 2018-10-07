@@ -44,6 +44,37 @@ open Abstract_box
    Elements such that j/2 > i/2 are retreived by coherence: (i,j) = (j^1,i^1)
 *)
 
+type octagonalisation_kind =
+    ConstraintBased
+  | Random
+  | StrongestLink
+  | Promising
+
+type var_order =
+    LargestFirst
+  | LargestCanFirst
+  | LargestOctFirst
+  | OctSplit
+
+let boct_split : var_order ref = ref LargestFirst
+let octagonalisation : octagonalisation_kind ref = ref Random
+
+let set_split
+    = function
+    | "lf" -> boct_split := LargestFirst
+    | "lcf" -> boct_split := LargestCanFirst
+    | "lof" -> boct_split := LargestOctFirst
+    | "os" -> boct_split := OctSplit
+    | s -> "Splitting strategy " ^ s ^ " is undefined. Should be among: lf, lcf, lof, os" |> invalid_arg
+
+let set_octagonalisation =
+    function
+    | "cb" -> octagonalisation := ConstraintBased
+    | "random" -> octagonalisation := Random
+    | "sl" -> octagonalisation := StrongestLink
+    | "promising" -> octagonalisation := Promising
+    | s -> "Octagonalisation strategy " ^ s ^ " is undefined. Should be among: cb, random, sl, promising" |> invalid_arg
+
 module BoxedOctagon = struct
   module F = Bound_float
   type bound = F.t
@@ -238,9 +269,20 @@ module BoxedOctagon = struct
   let prune : t -> t -> t list * t
     = fun o o' -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
 
+  (* Largest first split: select the biggest variable and split on its middle value.
+   * We rely on the split of Box. *)
+  let split_lf : t -> t list = fun o ->
+    let create_node = fun box ->
+      let o' = copy o in
+      meet_box_into_dbm { o' with box=box } in
+    let boxes = B.split o.box in
+    List.map create_node boxes
+
   (* splits an abstract element *)
-  let split : t -> t list
-    = fun o -> []
+  let split : t -> t list = fun o ->
+    match !boct_split with
+    | LargestFirst -> split_lf o
+    | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
 
   (* Throw Bot.Bot_found if an inconsistent abstract element is reached. *)
   (* This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we call a filtering on a constraint.

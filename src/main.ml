@@ -120,6 +120,8 @@ let speclist =
     ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
     ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
     ("-vpl_split"    , String Vpl_domain.set_split    , "Sets the split strategy of the VPL");
+    ("-boct_strat"    , String Boxed_octagon.set_octagonalisation, options "Sets the octogonalisation strategy of the boxed octagon domain (boct)" "cb,random,sl,promising");
+    ("-boct_split"    , String Boxed_octagon.set_split, options "Sets the split strategy of the boxed octagon domain (boct)." "lf,lcf,lof,os");
     ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
     ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
     ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");
