@@ -81,6 +81,11 @@ module BoxedOctagon = struct
   type m = bound array
   module I = Trigo.Make(Itv.ItvF)
   module B = Box(I)
+  type base = int * int
+  module R = Mapext.Make(struct
+    type t=base
+    let compare = compare end)
+  type rotated_boxes = B.t R.t
 
   module Env = Tools.VarMap
   (* maps each variable to its index `i` in the matrix such that dbm[i,i] is the constraint vi - vi <= c *)
@@ -91,8 +96,10 @@ module BoxedOctagon = struct
     dim: int;
     (* difference bound matrix *)
     dbm : bound array;
-    (* Interval representation of the octagon (just the base variables). *)
-    box : B.t
+    (* Interval representation of the octagon (the canonical box). *)
+    cbox : B.t;
+    (* Interval representation of the canonical box in different rotated plan. *)
+    rboxes : rotated_boxes
   }
 
   let matsize : int -> int
@@ -110,11 +117,29 @@ module BoxedOctagon = struct
   let ub_idx : int -> int = fun dim -> matpos2 (dim*2+1) (dim*2)
   let lb_idx : int -> int = fun dim -> matpos2 (dim*2) (dim*2+1)
 
-  let ub : t -> int -> bound = fun o dim ->
-    F.div_up o.dbm.(ub_idx dim) 2.
+  let ub : t -> int -> base option -> bound = fun o dim base ->
+    let (num, den) =
+      match base with
+      | Some (d1, d2) when dim = d1 ->
+          (matpos2 (2*d2) (2*d1-1), F.sqrt_down 2.)
+      | Some (d1, d2) when dim = d2 ->
+          (matpos2 (2*d2) (2*d1), F.sqrt_down 2.)
+      | _ ->
+          (ub_idx dim, 2.)
+    in
+       F.div_up o.dbm.(num) den
 
-  let lb : t -> int -> bound = fun o dim ->
-    F.div_down o.dbm.(lb_idx dim) (-2.)
+  let lb : t -> int -> base option -> bound = fun o dim base ->
+    let (num, den) =
+      match base with
+      | Some (d1, d2) when dim = d1 ->
+          (matpos2 (2*d2-1) (2*d1), F.neg (F.sqrt_down 2.))
+      | Some (d1, d2) when dim = d2 ->
+          (matpos2 (2*d2-1) (2*d1-1), F.neg (F.sqrt_down 2.))
+      | _ ->
+          (lb_idx dim, -2.)
+    in
+      F.div_down o.dbm.(num) den
 
   let set_ub : t -> int -> bound -> unit = fun o dim v ->
     o.dbm.(ub_idx dim) <- F.mul_up v 2.
@@ -122,11 +147,28 @@ module BoxedOctagon = struct
   let set_lb : t -> int -> bound -> unit = fun o dim v ->
     o.dbm.(ub_idx dim) <- F.mul_down v (-2.)
 
+  (* Add a box rotated in a random plan (d1, d2) such that d2 > d1. *)
+  let random_octagonalisation : t -> t = fun o ->
+    Random.init 0;
+    let d1 = (Random.int (o.dim - 1)) in
+    let d2 = (Random.int (o.dim - d1 - 1)) + d1 + 1 in
+    let rboxes = R.add (d1,d2) o.cbox o.rboxes in
+    { o with rboxes=rboxes }
+
+  (* This function must be called after all the unconstrained variables have been added,
+   * and before any constraint is filtered. *)
+  let init_octagonalise : t -> t = fun o ->
+    if o.dim >= 2 && R.is_empty o.rboxes then
+      match !octagonalisation with
+        Random -> random_octagonalisation o
+      | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
+    else o
+
   (* returns an empty element *)
-  let empty : t = { env=Env.empty; dim=0; dbm=[||]; box=B.empty }
+  let empty : t = { env=Env.empty; dim=0; dbm=[||]; cbox=B.empty; rboxes=R.empty }
 
   let copy : t -> t = fun o ->
-    { env = o.env; dim=o.dim; dbm=Array.copy o.dbm; box=o.box }
+    { env = o.env; dim=o.dim; dbm=Array.copy o.dbm; cbox=o.cbox; rboxes=o.rboxes }
 
   (* returns the variables *)
   let vars : t -> (Csp.annot * Csp.var) list = fun o ->
@@ -149,16 +191,16 @@ module BoxedOctagon = struct
     let top = F.inf in
     let row = Array.make (dim'*2*2) top in
     let dbm' = Array.append o.dbm row in
-    let box' = B.add_var o.box (typ, var) in
-    { env=env'; dim=dim'; dbm=dbm'; box=box' }
+    let cbox' = B.add_var o.cbox (typ, var) in
+    { env=env'; dim=dim'; dbm=dbm'; cbox=cbox'; rboxes=o.rboxes }
 
-  let var_bounds_from_dim : t -> int -> (Mpqf.t * Mpqf.t) = fun o dim ->
-    (F.to_rat (lb o dim), F.to_rat (ub o dim))
+  let var_bounds_from_dim : t -> int -> base option -> (Mpqf.t * Mpqf.t) = fun o dim base ->
+    (F.to_rat (lb o dim base), F.to_rat (ub o dim base))
 
   (* returns the bounds of a variable *)
   let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t) = fun o var ->
     let dim = Env.find var o.env in
-    var_bounds_from_dim o dim
+    var_bounds_from_dim o dim None
 
   (* returns the bound variables *)
   let bound_vars : t -> Csp.csts
@@ -195,6 +237,11 @@ module BoxedOctagon = struct
                            their environments is not included in the other."
 
   (*** OPERATIONS ***)
+  (* We only keep the intersection of the rotated boxes. *)
+  let join_rboxes : rotated_boxes -> rotated_boxes -> rotated_boxes = fun a b ->
+    let c: rotated_boxes = R.filter (fun k _ -> R.exists (fun k' _ -> k = k') b) a in
+    R.mapi (fun k -> B.join (R.find k b)) c
+
   let join : t -> t -> t = fun o o' ->
     let (res, rest) =
       if Array.length o.dbm >= Array.length o'.dbm then
@@ -203,22 +250,30 @@ module BoxedOctagon = struct
         (o', o)
     in
     let res = copy res in
-    let res = { res with box=(B.join res.box rest.box) } in
+    let res = { res with
+      cbox=(B.join res.cbox rest.cbox);
+      rboxes=(join_rboxes res.rboxes rest.rboxes) } in
     check_same_env res rest;
     let merge = fun idx x -> res.dbm.(idx) <- (F.max x res.dbm.(idx)) in
     Array.iteri merge rest.dbm;
     res
 
-  let meet_dbm_into_box : t -> t = fun o ->
-    let filter_box = fun k dim box ->
-      let (l,u) = var_bounds_from_dim o dim in
+  let meet_dbm_into_box : t -> base option -> B.t -> B.t = fun o base box ->
+    let filter_var = fun k dim box ->
+      let (l,u) = var_bounds_from_dim o dim base in
       let box = B.filter box (Var k, GEQ, Cst (l, Real)) in
       B.filter box (Var k, LEQ, Cst (u, Real)) in
-    { o with box=Env.fold filter_box o.env o.box }
+    Env.fold filter_var o.env box
+
+  let meet_dbm_into_boxes : t -> t = fun o ->
+    let cbox = meet_dbm_into_box o None o.cbox in
+    let meet_rbox = fun k v -> meet_dbm_into_box o (Some k) v in
+    let rboxes = R.mapi meet_rbox o.rboxes in
+    { o with cbox=cbox; rboxes=rboxes }
 
   let meet_box_into_dbm : t -> t = fun o ->
     let update_cell = fun k dim ->
-      let (l, u) = B.float_bounds o.box k in
+      let (l, u) = B.float_bounds o.cbox k in
       set_lb o dim l;
       set_ub o dim u;
     in
@@ -263,7 +318,7 @@ module BoxedOctagon = struct
       else
         o.dbm.(matpos2 (i-1) (i-1)) <- 0.
     done;
-    meet_dbm_into_box o
+    meet_dbm_into_boxes o
 
   (* pruning *)
   let prune : t -> t -> t list * t
@@ -272,10 +327,10 @@ module BoxedOctagon = struct
   (* Largest first split: select the biggest variable and split on its middle value.
    * We rely on the split of Box. *)
   let split_lf : t -> t list = fun o ->
-    let create_node = fun box ->
+    let create_node = fun cbox ->
       let o' = copy o in
-      meet_box_into_dbm { o' with box=box } in
-    let boxes = B.split o.box in
+      meet_box_into_dbm { o' with cbox=cbox } in
+    let boxes = B.split o.cbox in
     List.map create_node boxes
 
   (* splits an abstract element *)
@@ -288,11 +343,12 @@ module BoxedOctagon = struct
   (* This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we call a filtering on a constraint.
      However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once. *)
   let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t = fun o cons ->
-    let box' = B.filter o.box cons in
-    let o' = { o with box=box' } in
+    let o = init_octagonalise o in
+    let cbox' = B.filter o.cbox cons in
+    let o' = { o with cbox=cbox' } in
     let o' = meet_box_into_dbm o' in
     let o' = floyd_warshall_for_octagon o' in
-    meet_dbm_into_box o'
+    meet_dbm_into_boxes o'
 
   let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
     = fun o e -> Pervasives.failwith "BoxedOctagon: function `forward_eval` unimplemented."
