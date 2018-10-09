@@ -565,14 +565,12 @@ module Itv(B:BOUND) = struct
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
 
-  let shrink (i : t) (c:Mpqf.t) : t bot =
+  let shrink ((l,h) : t) (c:Mpqf.t) : t bot =
     try
-      let i' =
-        (B.of_rat_up c, B.of_rat_down (Mpqf.neg c))
-        |> add i
+      let c' = B.of_rat_up c in
+      (B.add_up l c', B.sub_down h c')
         |> validate
-      in
-      Nb i'
+        |> check_bot
     with Invalid_argument _ -> Bot
 end
 

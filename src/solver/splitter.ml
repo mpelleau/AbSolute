@@ -186,7 +186,7 @@ module Make (Abs : AbstractCP) = struct
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
-    let abs' = (!Constant.precision *. 10. |> Mpqf.of_float)
+    let abs' = (!Constant.precision *. 2. |> Mpqf.of_float)
       |> Abs.shrink abs
     in
     if Abs.is_empty abs'

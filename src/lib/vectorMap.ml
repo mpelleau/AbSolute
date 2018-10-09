@@ -118,7 +118,7 @@ module Make (Coeff : P.Ring) = struct
     let norm : (Coeff.t -> Coeff.t) -> t -> Coeff.t
         = fun sqrt vec ->
         fold
-            (fun _ coeff acc -> Coeff.add coeff acc)
+            (fun _ coeff acc -> Coeff.add (Coeff.mul coeff coeff) acc)
             vec Coeff.zero
         |> fun r -> sqrt r
 

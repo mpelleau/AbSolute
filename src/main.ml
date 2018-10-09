@@ -164,4 +164,6 @@ let go() =
     end
   else Terminal.error()
 
+let _ = Random.init(527)
+
 let _ = go()

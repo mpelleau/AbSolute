@@ -374,7 +374,7 @@ module Box (I:ITV) = struct
       else
         match I.shrink itv c with
           | Bot.Bot -> (true, Env.empty)
-          | Bot.Nb itv' -> (true, Env.add var itv acc)
+          | Bot.Nb itv' -> (true, Env.add var itv' acc)
     ) a (false,Env.empty)
     |> Pervasives.snd
 
