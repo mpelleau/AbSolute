@@ -575,3 +575,11 @@ let from_cst_to_expr (id, (l, u)) =
 
 let csts_to_expr csts =
   List.fold_left (fun l cst -> List.append (from_cst_to_expr cst) l) [] csts
+
+let rec replace_var_in_expr : (var -> expr) -> expr -> expr = fun f e ->
+  match e with
+  | Cst (c,a) -> Cst (c,a)
+  | Var v -> f v
+  | Unary (op, e) -> Unary (op, replace_var_in_expr f e)
+  | Binary (op, e1, e2) -> Binary (op, replace_var_in_expr f e1, replace_var_in_expr f e2)
+  | Funcall (fname, args) -> Funcall (fname, (List.map (replace_var_in_expr f) args))
