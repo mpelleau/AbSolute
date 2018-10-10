@@ -290,44 +290,66 @@ module BoxedOctagon = struct
     Env.iter update_cell o.env;
     o
 
-  let bound_add : bound -> bound -> bound = fun x y ->
-    if x = F.inf || y = F.inf then
-      F.inf
-    else
-      F.add_up x y
-
-  (* Floyd-Warshall algorithm: it propagates the octogonal constraints *)
-  let floyd_warshall_for_octagon : t -> t = fun o ->
-    let o = copy o in
-    let m = fun i j -> o.dbm.(matpos2 (i-1) (j-1)) in
+  (* Check the consistency of the DBM. *)
+  let float_consistent : t -> unit = fun o ->
     let n = o.dim in
-    for k = 1 to n do
-      for i = 1 to (2*n) do
-        for j = 1 to (2*n) do
-          let v = List.fold_left F.min F.inf [
-            bound_add (m i (2*k)) (m (2*k) j) ;
-            bound_add (m i (2*k-1)) (m (2*k-1) j) ;
-            bound_add (bound_add (m i (2*k-1)) (m (2*k -1) (2*k))) (m (2*k) j) ;
-            bound_add (bound_add (m i (2*k)) (m (2*k) (2*k-1))) (m (2*k-1) j) ] in
-          if v < m i j then
-            o.dbm.(matpos2 (i-1) (j-1)) <- v
-        done
-      done;
-      for i = 1 to (2*n) do
-        for j = 1 to (2*n) do
-          let i' = if i mod 2 = 0 then i - 1 else i + 1 in
-          let j' = if j mod 2 = 0 then j - 1 else j + 1 in
-          if (bound_add (m i i')  (m j' j)) < (m i j) then
-            o.dbm.(matpos (i-1) (j-1)) <- (bound_add (m i i') (m j' j))
-        done
-      done
-    done;
     for i = 1 to (2*n) do
-      if m i i < 0. then
+      let idx = matpos2 (i-1) (i-1) in
+      if o.dbm.(idx) < 0. then
         raise Bot.Bot_found
       else
-        o.dbm.(matpos2 (i-1) (i-1)) <- 0.
+        o.dbm.(idx) <- 0.
+    done
+
+  (* The part of the Floyd-Washall algorithm for a given 'k'. *)
+  let strong_closure_k : t -> int -> unit = fun o k ->
+    let m = fun i j -> o.dbm.(matpos2 (i-1) (j-1)) in
+    let n = o.dim in
+    for i = 1 to (2*n) do
+      for j = 1 to (2*n) do
+        let v = List.fold_left F.min F.inf [
+          F.add_up (m i (2*k)) (m (2*k) j) ;
+          F.add_up (m i (2*k-1)) (m (2*k-1) j) ;
+          F.add_up (F.add_up (m i (2*k-1)) (m (2*k -1) (2*k))) (m (2*k) j) ;
+          F.add_up (F.add_up (m i (2*k)) (m (2*k) (2*k-1))) (m (2*k-1) j) ] in
+        if v < m i j then
+          o.dbm.(matpos2 (i-1) (j-1)) <- v
+      done
+    done
+
+  (* Strengthening propagates the octagonal constraints in the DBM. *)
+  let strengthening : t -> unit = fun o ->
+    let m = fun i j -> o.dbm.(matpos2 (i-1) (j-1)) in
+    let n = o.dim in
+    for i = 1 to (2*n) do
+      for j = 1 to (2*n) do
+        let i' = if i mod 2 = 0 then i - 1 else i + 1 in
+        let j' = if j mod 2 = 0 then j - 1 else j + 1 in
+        if (F.add_up (m i i')  (m j' j)) < (m i j) then
+          o.dbm.(matpos (i-1) (j-1)) <- (F.add_up (m i i') (m j' j))
+      done
+    done
+
+  (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
+  let strong_closure_mine : t -> t = fun o ->
+    let o = copy o in
+    let n = o.dim in
+    for k = 1 to n do
+      strong_closure_k o k;
+      strengthening o
     done;
+    float_consistent o;
+    o
+
+  (* Strong closure as appearing in (Bagnara, 2009) using Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let strong_closure_bagnara : t -> t = fun o ->
+    let o = copy o in
+    let n = o.dim in
+    for k = 1 to n do
+      strong_closure_k o k;
+    done;
+    float_consistent o;
+    strengthening o;
     o
 
   (* pruning *)
@@ -404,7 +426,7 @@ module BoxedOctagon = struct
     init_octagonalise |>
     filter_in_base cons None o.cbox |>
     R.fold filter_rotated o.rboxes |>
-    floyd_warshall_for_octagon |>
+    strong_closure_mine |>
     meet_dbm_into_boxes
 
   let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
