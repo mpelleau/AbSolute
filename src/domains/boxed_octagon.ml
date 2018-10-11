@@ -213,27 +213,11 @@ module BoxedOctagon = struct
     var_bounds_from_dim o dim None
 
   (* returns the bound variables *)
-  let bound_vars : t -> Csp.csts
-    = fun o -> []
+  let bound_vars : t -> Csp.csts = fun o ->
+    B.bound_vars o.cbox
 
   (* removes an unconstrained variable from the environnement *)
-  let rem_var : t -> Csp.var -> t
-    = fun o _ -> Pervasives.failwith "BoxedOctagon: function `rem_var` unimplemented."
-
-  (*** PREDICATES ***)
-
-  let volume : t -> float
-    = fun o -> 0.
-
-  (* tests if an abstract element is too small to be cut *)
-  let is_small : t -> bool
-    = fun o -> volume o <= !Constant.precision
-
-  let is_failed : t -> bool
-    = fun o -> Array.exists (fun x -> x < F.zero) o.dbm
-
-  let is_empty : t -> bool
-    = fun o -> Env.is_empty o.env || is_failed o
+  let rem_var : t -> Csp.var -> t = fun o _ -> o
 
   let check_same_env : t -> t -> unit = fun large small ->
     let checker = fun k v ->
@@ -429,27 +413,78 @@ module BoxedOctagon = struct
     strong_closure_mine |>
     meet_dbm_into_boxes
 
-  let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
-    = fun o e -> Pervasives.failwith "BoxedOctagon: function `forward_eval` unimplemented."
+  (* We delegate this evaluation to the canonical box.
+   * Possible improvement: obtain a better approximation by turning the expression and forward_eval it in different base. *)
+  let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t) = fun o e ->
+    B.forward_eval o.cbox e
+
+  let create_var_from_cell : t -> int -> expr = fun o i ->
+    let x = REnv.find (i/2) o.renv in
+    if i mod 2 = 0 then
+      Var x
+    else
+      Unary (NEG, Var x)
+
+  let dbm_cell_to_bexpr : t -> int -> bconstraint list -> int -> bconstraint list = fun o i res j ->
+    let idx = matpos i j in
+    (* We do not generate the constraint where the coefficient is infinite. *)
+    if o.dbm.(idx) <> F.inf then
+      (* x - y <= c *)
+      let x = create_var_from_cell o i in
+      let y = create_var_from_cell o j in
+      let c = Cst ((Mpqf.of_float o.dbm.(idx)), Real) in
+      let left = simplify_fp (Binary (SUB, x, y)) in
+      res@[(left,LEQ,c)]
+    else
+      res
+
+  let range i j =
+    let rec aux n acc =
+      if n < i then acc else aux (n-1) (n :: acc)
+    in aux j []
 
   (* transforms an abstract element in constraints *)
-  let to_bexpr : t -> bconstraint list
-    = fun o -> Pervasives.failwith "BoxedOctagon: function `to_bexpr` unimplemented."
+  let to_bexpr : t -> bconstraint list = fun o ->
+    let n = o.dim in
+    let aux res i =
+      List.fold_left (dbm_cell_to_bexpr o i) res (range 0 ((i lxor 1)*2-1))
+    in
+    List.fold_left aux [] (range 0 (2*n-1))
 
   (* check if a constraint is suited for this abstract domain *)
   let is_representable : Csp.bexpr -> answer =
     fun _ -> Adcp_sig.Yes
 
-  let print : Format.formatter -> t -> unit
-    = fun fmt o -> Pervasives.failwith "BoxedOctagon: function `print` unimplemented."
+  let print : Format.formatter -> t -> unit = fun fmt o ->
+    B.print fmt o.cbox
 
   (* concretization function. we call it a spawner.
      useful to do tests, and to reuse the results.
      values are generated randomly *)
-  let spawn : t -> Csp.instance
-    = fun o -> Pervasives.failwith "BoxedOctagon: function `spawn` unimplemented."
+  let spawn : t -> Csp.instance = fun o ->
+    B.spawn o.cbox
 
   (* check if an abstract element is an abstractin of an instance *)
-  let is_abstraction : t -> Csp.instance -> bool
-    = fun o vars -> Pervasives.failwith "BoxedOctagon: function `is_abstraction` unimplemented."
+  let is_abstraction : t -> Csp.instance -> bool = fun o vars ->
+    B.is_abstraction o.cbox vars
+
+  (*** PREDICATES ***)
+  let volume : t -> float = fun o ->
+    B.volume o.cbox
+
+  (* tests if an abstract element is too small to be cut *)
+  let is_small : t -> bool = fun o ->
+    let box_max_range b =
+      let (v,i) = B.max_range b in
+      I.float_size i in
+    let p = R.fold (fun _ b -> min (box_max_range b)) o.rboxes (box_max_range o.cbox) in
+    p <= !Constant.precision
+
+  let is_failed : t -> bool = fun o ->
+    try float_consistent o; false
+    with Bot.Bot_found -> true
+
+  let is_empty : t -> bool
+    = fun o -> Env.is_empty o.env || is_failed o
+
 end
