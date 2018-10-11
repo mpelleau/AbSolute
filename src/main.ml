@@ -119,7 +119,6 @@ let speclist =
     ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
     ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
     ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
-    ("-vpl_split"    , String Vpl_domain.set_split    , "Sets the split strategy of the VPL");
     ("-boct_strat"    , String Boxed_octagon.set_octagonalisation, options "Sets the octogonalisation strategy of the boxed octagon domain (boct)" "cb,random,sl,promising");
     ("-boct_split"    , String Boxed_octagon.set_split, options "Sets the split strategy of the boxed octagon domain (boct)." "lf,lcf,lof,os");
     ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
@@ -167,5 +166,7 @@ let go() =
       lift (set_domain ()) prob
     end
   else Terminal.error()
+
+let _ = Random.init(527)
 
 let _ = go()

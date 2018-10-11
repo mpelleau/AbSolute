@@ -65,6 +65,8 @@ module type ITV = sig
   (** returns a split priority. The higher the better *)
   val score : t -> float
 
+  (** Split on a given value *)
+  val split_on: t -> Mpqf.t -> t list
   val split: t -> t list
 
   (** pruning *)
@@ -140,4 +142,6 @@ module type ITV = sig
   (** generate a random float within the given interval *)
   val spawn : t -> float
 
+  (** shrinks each bound of the interval by the given value *)
+  val shrink : t -> Mpqf.t -> t bot
 end

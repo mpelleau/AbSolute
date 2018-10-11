@@ -17,10 +17,6 @@ module Coeff = Scalar.Rat
 module Domain = NCDomain.NCVPL_Cstr.Q
 include MakeInterface(Coeff)
 
-type split = Pizza | Default
-
-let vpl_split : split ref = ref Default
-
 module Expr = struct
     module Ident = UserInterface.Lift_Ident (struct
         type t = string
@@ -99,6 +95,80 @@ module VPL = struct
 
 end
 
+module PizzaSplit = struct
+    module CPoly = Vpl.WrapperTraductors.CP
+    module FloatPoly = Poly.Make(Vector.Float.Positive)
+    module Poly = CPoly.Poly
+
+    let next_point : float -> FloatPoly.t Cs.Vec.M.t -> Vector.Float.Positive.t -> Vector.Float.Positive.t
+        = fun gamma gradient point ->
+        Vector.Float.Positive.sub
+            point
+            (Vector.Float.Positive.mulc
+                gamma
+                (Cs.Vec.M.map
+                    (fun p -> FloatPoly.eval p (Vector.Float.Positive.get point))
+                    gradient
+                )
+            )
+
+    let norm : Vector.Float.Positive.t -> float
+        = fun vec ->
+        Vector.Float.Positive.toList vec
+        |> List.map (fun (_,coeff) -> coeff)
+        |> List.fold_left (fun acc c -> acc +. c*.c) 0.
+        |> fun f -> sqrt f
+
+    let rec gradient_descent : float -> float -> FloatPoly.t Cs.Vec.M.t -> Vector.Float.Positive.t -> Vector.Float.Positive.t
+        = fun gamma epsilon gradient point ->
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Gradient descent: %s"
+            (Vector.Float.Positive.to_string Vector.Float.Positive.V.to_string point)));
+        let point' = next_point gamma gradient point in
+        if norm (Vector.Float.Positive.sub point' point) < epsilon
+        then point'
+        else gradient_descent gamma epsilon gradient point'
+
+    let find_point : CPoly.t -> Cs.Vec.t
+        = fun cpoly ->
+        Debug.log DebugTypes.Title (lazy "Gradient descent");
+        let starting_point = Vector.Float.Positive.nil
+        and gamma = 0.01
+        and epsilon = 0.00001
+        in
+        Debug.log DebugTypes.MInput (lazy (Printf.sprintf
+                "Polynomial constraint: %s\ngamma = %f\nepsilon = %f\nstarting point : %s"
+                (CPoly.to_string cpoly)
+                gamma epsilon
+                (Vector.Float.Positive.to_string Cs.Vec.V.to_string starting_point)));
+        let poly' = cpoly.CPoly.p (* polynomial of the shape _ <= 0 *)
+            (*|> Poly.neg*)
+            |> fun p -> Poly.pow p 2
+        in
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Squared Polynomial : %s"
+            (Poly.to_string poly')));
+        let poly_float = Poly.data poly'
+            |> List.map (fun (v,coeff) -> (v, Q.to_float coeff))
+            |> FloatPoly.mk2
+        in
+        let gradient = FloatPoly.gradient poly_float in
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Gradient : %s"
+            (Cs.Vec.M.to_string
+                "\n"
+                (fun elem key -> Printf.sprintf "%s -> %s"
+                    key
+                    (FloatPoly.to_string elem))
+                Cs.Vec.V.to_string gradient)));
+        let res = gradient_descent gamma epsilon gradient starting_point in
+        Debug.log DebugTypes.MOutput (lazy (Printf.sprintf
+                "point: %s"
+                (Vector.Float.Positive.to_string Cs.Vec.V.to_string res)));
+        Cs.Vec.M.map Scalar.Rat.of_float res
+
+end
+
 module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     include VPL
@@ -163,19 +233,19 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun p1 p2 ->
         (diff p1 p2, meet p1 p2)
 
-    let split : t -> t list
-        = fun p ->
+    let split : t -> Csp.ctrs -> t list
+        = fun p _ ->
         VPL_CP_Profile.start "split";
-        let res = match !vpl_split with
-            | Default -> split_in_half p
-            | Pizza -> get_regions p
-        in
+        let res = split_in_half p in
         VPL_CP_Profile.stop "split";
         res
 
     (* TODO: can we use this variable? *)
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> Pervasives.failwith "split_along: unimplemented"
+
+    let split_on : t -> Csp.ctrs -> Csp.instance -> t list
+        = fun _ _ _ -> Pervasives.failwith "split_on: unimplemented"
 
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun state (e1,cmp,e2) ->
@@ -194,15 +264,24 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ p ->
         print_endline (to_string Expr.Ident.get_string p)
 
-    (* TODO: to define *)
     let spawn : t -> Csp.instance
-        = fun _ ->
-        Pervasives.failwith "spawn: unimplemented"
+        = fun p ->
+        spawn p
+        |> Vector.Rat.Positive.toList
+        |> List.map
+            (fun (var,coeff) ->
+             Expr.Ident.ofVar var, (Q.to_string coeff |> Mpqf.of_string))
+        |> Tools.VarMap.of_list
 
-    (* TODO: to define *)
     let is_abstraction : t -> Csp.instance -> bool
-        = fun _ ->
-        Pervasives.failwith "is_abstraction: unimplemented"
+        = fun p varmap ->
+        Tools.VarMap.fold
+                (fun var coeff coeffs ->
+                    (Mpqf.to_string coeff |> Q.of_string, Expr.Ident.toVar var) :: coeffs)
+                varmap
+                []
+            |> Vector.Rat.Positive.mk
+            |> satisfy p
 
     let to_bexpr: t -> (Csp.expr * Csp.cmpop * Csp.expr) list
         = let csp_true : Csp.expr * Csp.cmpop * Csp.expr
@@ -248,10 +327,13 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
         | Csp.Not e -> not (is_representable e)
 
+    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+
 end
 
 let setup_flags : unit -> unit
     = fun () ->
+    Flags.lin := Flags.Intervalization;
     Flags.handelman_timeout := None
 
 let set_lin =
@@ -260,12 +342,6 @@ let set_lin =
     | "itv" -> Flags.lin := Flags.Intervalization
     | "both" -> Flags.lin := Flags.Both
     | s -> "Linearization " ^ s ^ "undefined. Should be among : handelman, itv, both" |> invalid_arg
-
-let set_split
-    = function
-    | "pizza" -> vpl_split := Pizza
-    | "default" -> vpl_split := Default
-    | s -> "Splitting strategy " ^ s ^ "undefined. Should be among : pizza, default" |> invalid_arg
 
 let enable_debug : unit -> unit
     = fun () ->

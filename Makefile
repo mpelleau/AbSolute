@@ -32,6 +32,7 @@ MLFILES = \
 	src/lib/argext.ml \
 	src/lib/tools.ml \
 	src/lib/polynom.ml \
+	src/lib/vectorMap.ml \
 	src/lib/array_maker.ml \
 	src/lib/generatorext.ml \
 	src/lib/linconsext.ml \
@@ -60,6 +61,7 @@ MLFILES = \
 	src/domains/adcp_sig.ml \
 	src/domains/apron_domain.ml \
 	src/domains/vpl_domain.ml \
+	src/solver/gradient_descent.ml \
 	src/domains/abstract_box.ml \
 	src/domains/boxed_octagon.ml \
 	src/domains/ADCP.ml \
