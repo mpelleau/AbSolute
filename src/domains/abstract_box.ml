@@ -289,10 +289,10 @@ module Box (I:ITV) = struct
     let (_, bounds) = eval abs cons in
     I.to_rational_range bounds
 
-  let rec is_applicable abs (e:expr) : bool =
+  let rec is_applicable (abs:t) (e:expr) : bool =
     match e with
     | Var v ->
-       (try VarMap.find v abs; true
+       (try ignore (VarMap.find v abs); true
        with Not_found -> false)
     | Cst _ -> true
     | Unary (_, e1) -> is_applicable abs e1

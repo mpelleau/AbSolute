@@ -338,23 +338,27 @@ module BoxedOctagon = struct
 
   (* pruning *)
   let prune : t -> t -> t list * t
-    = fun o o' -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
+    = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
 
   (* Largest first split: select the biggest variable in the canonical box and split on its middle value.
    * We rely on the split of Box. *)
-  let split_lf : t -> t list = fun o ->
+  let split_lf : t -> ctrs -> t list = fun o c ->
     let create_node = fun cbox ->
       let o' = copy o in
       let o' = { o' with cbox=cbox } in
       meet_box_into_dbm o' None o'.cbox in
-    let cboxes = B.split o.cbox in
+    let cboxes = B.split o.cbox c in
     List.map create_node cboxes
 
   (* splits an abstract element *)
-  let split : t -> t list = fun o ->
+  let split : t -> ctrs -> t list = fun o c ->
     match !boct_split with
-    | LargestFirst -> split_lf o
+    | LargestFirst -> split_lf o c
     | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
+
+  let split_on (o:t) (_:ctrs) (_:instance) : t list = [o]
+
+  let shrink (o:t) (_:Mpqf.t) : t = o
 
   let rotate_var : t -> (var * var) -> (expr * expr) = fun o (v1,v2) ->
     (* Symbolic representation of the square root of 2.

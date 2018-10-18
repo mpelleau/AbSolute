@@ -1,0 +1,29 @@
+(include_subdirs unqualified)
+
+(library
+  (name libabsolute)
+  (wrapped false)
+  (libraries zarith bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ str unix graphics
+    (select vpl_domain.ml from
+      (vpl  -> domains/vpl_domain.ok.ml)
+      (!vpl -> domains/vpl_domain.ko.ml))
+     (select vpl_drawer.ml from
+      (vpl  -> print/vpl_drawer.ok.ml)
+      (!vpl -> print/vpl_drawer.ko.ml)))
+  (flags (:standard -w "+a-4-32-27-42" -warn-error "+a-4-32-27-42"))
+  (c_names lib/ml_float)
+  (modules (:standard \ absolute check))
+)
+
+(executable
+ (name absolute)
+ (public_name absolute)
+ (modules absolute)
+ (libraries libabsolute)
+)
+
+(test
+  (name check)
+  (modules check)
+  (libraries libabsolute)
+)
