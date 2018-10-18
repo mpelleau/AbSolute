@@ -56,7 +56,7 @@ opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.
 ```
 
 The next step is to download and build AbSolute.
-If you intent to modify the source code and possibly contribute to the project, jump to the "Developpers" section.
+If you intent to modify the source code and possibly contribute to the project, jump to the developpers [README](https://github.com/mpelleau/AbSolute/blob/master/CONTRIBUTING.md).
 Otherwise, you can install it from `opam`:
 
 ```sh
@@ -69,25 +69,6 @@ absolute booth.abs
 # Display solver options
 absolute --help
 ```
-
-### Developpers
-
-Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
-
-```sh
-opam install apron
-git clone https://github.com/mpelleau/AbSolute
-cd AbSolute
-dune build
-```
-
-Then, verify everything is working well on an example:
-
-```sh
-./absolute problems/booth.abs
-```
-
-The tests are executed with `dune runtest`.
 
 ### Troubleshooting
 
