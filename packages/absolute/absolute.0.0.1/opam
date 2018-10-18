@@ -1,5 +1,5 @@
 url {
-  src: "https://github.com/mpelleau/AbSolute/tree/5ab77ff7934c6e8bd8df3a0dde2a6ed772a1724e"
+  src: "https://github.com/mpelleau/AbSolute/tree/25a71a5012781864000e800e6d8bce451794d063"
 }
 opam-version: "2.0"
 maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
@@ -27,7 +27,7 @@ depopts: [
   "vpl-core"
 ]
 conflicts: [
-  "vpl-core" {< "0.4.1"}
+  "vpl-core" {< "0.4.2"}
 ]
 
 synopsis: "AbSolute solver"
