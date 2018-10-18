@@ -42,7 +42,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
     let goods          = ref 0 in
     let not_bads       = ref 0 in
     let problem        = ref 0 in
-    let output_infeasible arr prob res =
+    let output_infeasible arr _ res =
       if Check.check_infeasible res then begin
           arr.(1) <- "infeasible";
           arr.(3) <- Format.asprintf "%a" print_good ();
@@ -107,7 +107,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
 
   let go () =
     Random.self_init();
-    let dir = "tests/" in
+    let dir = "../../../tests/" in
     let files = Sys.readdir dir in
     checkfiles dir files
 end

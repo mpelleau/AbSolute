@@ -78,7 +78,7 @@ Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and 
 opam install apron
 git clone https://github.com/mpelleau/AbSolute
 cd AbSolute
-make
+dune build
 ```
 
 Then, verify everything is working well on an example:
@@ -86,6 +86,8 @@ Then, verify everything is working well on an example:
 ```sh
 ./absolute problems/booth.abs
 ```
+
+The tests are executed with `dune runtest`.
 
 ### Troubleshooting
 
