@@ -1,5 +1,10 @@
 # AbSolute
 
+[![ptal on Travis CI][travis-image]][travis]
+
+[travis-image]: https://travis-ci.org/ptal/AbSolute.png
+[travis]: https://travis-ci.org/ptal/AbSolute
+
 AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation.
 It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
