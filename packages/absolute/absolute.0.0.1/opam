@@ -19,9 +19,9 @@ run-test: [
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
-  "apron"
-  "ocamlfind" {build}
+  "dune" {build}
   "ocaml" {>= "4.03"}
+  "apron"
 ]
 depopts: [
   "vpl-core"
