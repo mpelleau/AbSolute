@@ -1,5 +1,5 @@
 url {
-  src: "https://github.com/mpelleau/AbSolute/tree/1ad8b641b6b03b6bdcf12fe1fb4d87229f138e72"
+  src: "https://github.com/mpelleau/AbSolute/tree/5ab77ff7934c6e8bd8df3a0dde2a6ed772a1724e"
 }
 opam-version: "2.0"
 maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
