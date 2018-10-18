@@ -1,0 +1,17 @@
+env:
+  global:
+    - secure: dIur06XYomBukvYR0aymt8D6YQpTGYvejZtInEmjOdnWziJJZmQ+HuTXMnXrrwFEFSC21uQfgBwhlItwcEzFu1ydx1LlxuUZh8sFjTFFrCWo3hRpyb4JGCAwoNvUZ1/d7MwHjGxjzFtMvnVPyo/wHlE2xgkWHZqmJfDgGkkpBuk=
+
+language: c
+sudo: true
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
+script: bash -ex .travis-opam.sh
+env:
+  matrix:
+  - OCAML_VERSION=4.03
+  - OCAML_VERSION=4.04
+  - OCAML_VERSION=4.05
+  - OCAML_VERSION=4.06
+  - OCAML_VERSION=4.07
+os:
+- linux
