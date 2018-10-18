@@ -4,14 +4,15 @@ env:
 
 language: c
 sudo: true
-install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
-script: bash -ex .travis-opam.sh
+services: docker
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-docker.sh
+script: bash -ex .travis-docker.sh
+
 env:
   matrix:
   - OCAML_VERSION=4.03
   - OCAML_VERSION=4.04
   - OCAML_VERSION=4.05
   - OCAML_VERSION=4.06
-  - OCAML_VERSION=4.07
 os:
 - linux
