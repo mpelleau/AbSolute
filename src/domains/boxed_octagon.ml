@@ -490,5 +490,4 @@ module BoxedOctagon = struct
 
   let is_empty : t -> bool
     = fun o -> Env.is_empty o.env || is_failed o
-
 end
