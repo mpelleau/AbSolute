@@ -124,13 +124,16 @@ module BoxedOctagon = struct
     if j > i then matpos (j lxor 1) (i lxor 1)
     else matpos i j
 
+  let well_formed_base : base -> bool = fun (d1,d2) ->
+    ((d1 == 0 || d1 <> d2) && d1 <= d2)
+
   (* We represent the canonical base (where d1==d2) only with (0,0). *)
-  let well_formed_base : base -> unit = fun (d1, d2) ->
-    assert (d1 == 0 || d1 <> d2)
+  let assert_well_formed_base : base -> unit = fun base ->
+    assert (well_formed_base base)
 
   (* position of the lower bound element of the variable `k` in the canonical or rotated `base`. *)
   let lb_pos : int -> base -> int = fun k (d1, d2) ->
-    well_formed_base (d1,d2);
+    assert_well_formed_base (d1,d2);
     if k = d1 && d1 <> d2 then matpos2 (2*d2) (2*d1+1)
     else if k = d2 && d1 <> d2 then matpos2 (2*d2) (2*d1)
     (* Non-rotated dimension, or canonical base. *)
@@ -138,7 +141,7 @@ module BoxedOctagon = struct
 
   (* Same as `lb_pos` but for the upper bound. *)
   let ub_pos : int -> base -> int = fun k (d1,d2) ->
-    well_formed_base (d1,d2);
+    assert_well_formed_base (d1,d2);
     if k = d1 && d1 <> d2 then matpos2 (2*d2+1) (2*d1)
     else if k = d2 && d1 <> d2 then matpos2 (2*d2+1) (2*d1+1)
     else matpos2 (k*2+1) (k*2)
