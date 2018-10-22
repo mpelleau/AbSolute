@@ -111,8 +111,8 @@ module BoxedOctagon = struct
     rboxes : rotated_boxes
   }
 
-  let matsize : int -> int
-    = fun dim -> 2 * dim * (dim + 1)
+  (* Canonical base *)
+  let cbase = (0,0)
 
   (* position of (i,j) element, assuming j/2 <= i/2 *)
   let matpos : int -> int -> int
@@ -120,52 +120,69 @@ module BoxedOctagon = struct
 
   (* position of (i,j) element, no assumption *)
   let matpos2 : int -> int -> int = fun i j ->
+    (* Coherence *)
     if j > i then matpos (j lxor 1) (i lxor 1)
     else matpos i j
 
-  let ub_idx : int -> base option -> int = fun dim base ->
-    match base with
-    | Some (d1, d2) when dim = d1 -> matpos2 (2*d2) (2*d1-1)
-    | Some (d1, d2) when dim = d2 -> matpos2 (2*d2) (2*d1)
-    | _ -> matpos2 (dim*2+1) (dim*2)
+  (* We represent the canonical base (where d1==d2) only with (0,0). *)
+  let well_formed_base : base -> unit = fun (d1, d2) ->
+    assert (d1 == 0 || d1 <> d2)
 
-  let lb_idx : int -> base option -> int = fun dim base ->
-    match base with
-    | Some (d1, d2) when dim = d1 -> matpos2 (2*d2-1) (2*d1)
-    | Some (d1, d2) when dim = d2 -> matpos2 (2*d2-1) (2*d1-1)
-    | _ -> matpos2 (dim*2) (dim*2+1)
+  (* position of the lower bound element of the variable `k` in the canonical or rotated `base`. *)
+  let lb_pos : int -> base -> int = fun k (d1, d2) ->
+    well_formed_base (d1,d2);
+    if k = d1 && d1 <> d2 then matpos2 (2*d2) (2*d1+1)
+    else if k = d2 && d1 <> d2 then matpos2 (2*d2) (2*d1)
+    (* Non-rotated dimension, or canonical base. *)
+    else matpos2 (k*2) (k*2+1)
 
-  let if_rotated_else : int -> base option -> 'a -> 'a -> 'a = fun dim base then_b else_b ->
-    match base with
-    | Some (d1, d2) when d1 = dim || d2 = dim -> then_b
-    | _ -> else_b
+  (* Same as `lb_pos` but for the upper bound. *)
+  let ub_pos : int -> base -> int = fun k (d1,d2) ->
+    well_formed_base (d1,d2);
+    if k = d1 && d1 <> d2 then matpos2 (2*d2+1) (2*d1)
+    else if k = d2 && d1 <> d2 then matpos2 (2*d2+1) (2*d1+1)
+    else matpos2 (k*2+1) (k*2)
 
-  let ub : t -> int -> base option -> bound = fun o dim base ->
-    let divider = if_rotated_else dim base (F.sqrt_down 2.) 2. in
-    F.div_up o.dbm.(ub_idx dim base) divider
+  (* If the variable `k` is rotated in the base `(d1,d2)` then returns `then_b`, otherwise `else_b`. *)
+  let if_rotated_else : int -> base -> 'a -> 'a -> 'a = fun k (d1,d2) then_b else_b ->
+    if d1 <> d2 && (d1 = k || d2 = k) then then_b else else_b
 
-  let lb : t -> int -> base option -> bound = fun o dim base ->
-    let divider = if_rotated_else dim base (F.neg (F.sqrt_down 2.)) (-2.) in
-    F.div_down o.dbm.(lb_idx dim base) divider
+  (* Lower bound of the variable `k` of the box in the plane `base` (canonical or rotated).
+     The value is computed directly from the DBM. *)
+  let lb : t -> int -> base -> bound = fun o k base ->
+    let divider = if_rotated_else k base (F.neg (F.sqrt_down 2.)) (-2.) in
+    F.div_down o.dbm.(lb_pos k base) divider
 
-  let set_ub : t -> int -> base option -> bound -> unit = fun o dim base v ->
-    let multiplier = if_rotated_else dim base (F.sqrt_up 2.) 2. in
-    o.dbm.(ub_idx dim base) <- F.mul_up v multiplier
+  (* Same as `lb` but for the upper bound. *)
+  let ub : t -> int -> base -> bound = fun o k base ->
+    let divider = if_rotated_else k base (F.sqrt_down 2.) 2. in
+    F.div_up o.dbm.(ub_pos k base) divider
 
-  let set_lb : t -> int -> base option -> bound -> unit = fun o dim base v ->
-    let multiplier = if_rotated_else dim base (F.neg (F.sqrt_up 2.)) (-2.) in
-    o.dbm.(ub_idx dim base) <- F.mul_down v multiplier
+  (* Set the lower bound of the variable `k` in the DBM.
+     The value `v` is the lower bound in the box in the plane `base`, and is processed to fit in the DBM. *)
+  let set_lb : t -> int -> base -> bound -> unit = fun o k base v ->
+    let multiplier = if_rotated_else k base (F.neg (F.sqrt_up 2.)) (-2.) in
+    o.dbm.(ub_pos k base) <- F.mul_down v multiplier
 
-  (* Add a box rotated in a random plan (d1, d2) such that d2 > d1. *)
+  (* Same as `set_lb` but for the upper bound. *)
+  let set_ub : t -> int -> base -> bound -> unit = fun o k base v ->
+    let multiplier = if_rotated_else k base (F.sqrt_up 2.) 2. in
+    o.dbm.(ub_pos k base) <- F.mul_up v multiplier
+
+  (* Add a box rotated in a random plane (d1, d2) such that 0 <= d1 < d2. *)
   let random_octagonalisation : t -> t = fun o ->
-    Random.init 0;
-    let d1 = (Random.int (o.dim - 1)) in
-    let d2 = (Random.int (o.dim - d1 - 1)) + d1 + 1 in
-    let rboxes = R.add (d1,d2) o.cbox o.rboxes in
-    { o with rboxes=rboxes }
+    if o.dim <= 1 then
+      o
+    else
+    begin
+      Random.init 0;
+      let d1 = (Random.int (o.dim - 1)) in
+      let d2 = (Random.int (o.dim - d1 - 1)) + d1 + 1 in
+      let rboxes = R.add (d1,d2) o.cbox o.rboxes in
+      { o with rboxes=rboxes }
+    end
 
-  (* This function must be called after all the unconstrained variables have been added,
-   * and before any constraint is filtered. *)
+  (* Precondition: This function must be called after all the unconstrained variables have been added, and ideally (but not necessarily) before any constraint is filtered. *)
   let init_octagonalise : t -> t = fun o ->
     if o.dim >= 2 && R.is_empty o.rboxes then
       match !octagonalisation with
@@ -176,47 +193,55 @@ module BoxedOctagon = struct
   (* returns an empty element *)
   let empty : t = { env=Env.empty; renv=REnv.empty; dim=0; dbm=[||]; cbox=B.empty; rboxes=R.empty }
 
+  (* This function copy the imperative data structure of the octagon to create a fresh one.
+     It is necessary for the search algorithm which backtracks since `dbm` is mutable (and thus not automatically copied). *)
   let copy : t -> t = fun o ->
     { env = o.env; renv=o.renv; dim=o.dim; dbm=Array.copy o.dbm; cbox=o.cbox; rboxes=o.rboxes }
 
-  (* returns the variables *)
+  (* Returns the variables registered in the octagon `o`. *)
   let vars : t -> (Csp.annot * Csp.var) list = fun o ->
     Env.fold (fun k _ acc -> (Real, k)::acc) o.env []
 
+  (* This abstract domain only support real variables (for now). *)
   let check_type : Csp.annot -> unit = fun typ ->
     match typ with
     | Int -> Pervasives.failwith "BoxedOctagon: only support real variables."
     | Real -> ()
 
-  (* adds an unconstrained variable to the octagon *)
+  (* Adds an unconstrained variable to the octagon.
+     Precondition: `typ` must be equal to `Real`.
+  *)
   let add_var : t -> Csp.annot * Csp.var -> t = fun o (typ,var) ->
+    check_type typ;
     let o = copy o in
     (* increase the dimension. *)
-    check_type typ;
     let dim' = o.dim + 1 in
     (* map the dimension to the variable name in the environment. *)
     let env' = Env.add var dim' o.env in
     let renv' = REnv.add dim' var o.renv in
-    (* allocate in the matrix two rows of size 2*dim' with a top bound. *)
+    (* allocate in the matrix two rows of size 2*dim' with an infinite bound. *)
     let top = F.inf in
     let row = Array.make (dim'*2*2) top in
     let dbm' = Array.append o.dbm row in
     let cbox' = B.add_var o.cbox (typ, var) in
     { env=env'; renv=renv'; dim=dim'; dbm=dbm'; cbox=cbox'; rboxes=o.rboxes }
 
-  let var_bounds_from_dim : t -> int -> base option -> (Mpqf.t * Mpqf.t) = fun o dim base ->
-    (F.to_rat (lb o dim base), F.to_rat (ub o dim base))
+  (* Returns the bounds of the variable `k` in the plane `base` (as set in the DBM). *)
+  let bounds_of_var : t -> int -> base -> (Mpqf.t * Mpqf.t) = fun o k base ->
+    (F.to_rat (lb o k base), F.to_rat (ub o k base))
 
-  (* returns the bounds of a variable *)
+  (* Returns the bounds of the variable `var`.
+     See also `bounds_of_var`.
+  *)
   let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t) = fun o var ->
-    let dim = Env.find var o.env in
-    var_bounds_from_dim o dim None
+    let k = Env.find var o.env in
+    bounds_of_var o k cbase
 
-  (* returns the bound variables *)
+  (* Returns the variables instantiated (the lower bound is exactly equal to the upper bound). *)
   let bound_vars : t -> Csp.csts = fun o ->
     B.bound_vars o.cbox
 
-  (* removes an unconstrained variable from the environnement *)
+  (* Removes an unconstrained variable from the environment. *)
   let rem_var : t -> Csp.var -> t = fun o _ -> o
 
   let check_same_env : t -> t -> unit = fun large small ->
@@ -252,65 +277,76 @@ module BoxedOctagon = struct
     Array.iteri merge rest.dbm;
     res
 
-  let meet_dbm_into_box : t -> base option -> B.t -> B.t = fun o base box ->
-    let filter_var = fun k dim box ->
-      let (l,u) = var_bounds_from_dim o dim base in
-      let constraints = from_cst_to_expr (k, (l, u)) in
+  let meet_dbm_into_box : t -> base -> B.t -> B.t = fun o base box ->
+    let filter_var = fun var_name k box ->
+      let (l,u) = bounds_of_var o k base in
+      let constraints = from_cst_to_expr (var_name, (l, u)) in
       List.fold_left B.filter box constraints in
     Env.fold filter_var o.env box
 
   let meet_dbm_into_boxes : t -> t = fun o ->
-    let cbox = meet_dbm_into_box o None o.cbox in
-    let meet_rbox = fun k v -> meet_dbm_into_box o (Some k) v in
+    let cbox = meet_dbm_into_box o cbase o.cbox in
+    let meet_rbox = meet_dbm_into_box o in
     let rboxes = R.mapi meet_rbox o.rboxes in
     { o with cbox=cbox; rboxes=rboxes }
 
-  let meet_box_into_dbm : t -> base option -> B.t -> t = fun o base box ->
-    let update_cell = fun k dim ->
-      let (l, u) = B.float_bounds box k in
-      set_lb o dim base l;
-      set_ub o dim base u;
+  let meet_box_into_dbm : t -> base -> B.t -> t = fun o base box ->
+    let update_cell = fun var_name k ->
+      let (l, u) = B.float_bounds box var_name in
+      set_lb o k base l;
+      set_ub o k base u;
     in
     Env.iter update_cell o.env;
     o
 
-  (* Check the consistency of the DBM. *)
-  let float_consistent : t -> unit = fun o ->
-    let n = o.dim in
-    for i = 1 to (2*n) do
-      let idx = matpos2 (i-1) (i-1) in
-      if o.dbm.(idx) < 0. then
+  (* We raise `Bot_found` if there is a negative cycle (v < 0).
+     Otherwise we set the value `v` in the DBM[i,j] if it improves the current value.
+     Note: To avoid overflow, we must check negative cycle at every loop (Hougardy, 2010). *)
+  let update_cell : t -> int -> int -> bound -> unit = fun o i j v ->
+    let idx = matpos2 i j in
+    if v < o.dbm.(idx) then
+      if v < 0. then
         raise Bot.Bot_found
       else
-        o.dbm.(idx) <- 0.
+        o.dbm.(idx) <- v
+        (* TODO: reschedule the corresponding propagators. *)
+    else ()
+
+  (* Check the consistency of the DBM, and update the cell to 0.
+     Note: Since we always update the DBM with `update_cell`, we are actually sure that the matrix is consistent.
+     This method just set the diagonal elements to 0.
+     We keep this name to match the algorithm in (Bagnara, 2009). *)
+  let float_consistent : t -> unit = fun o ->
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      o.dbm.(matpos2 i i) <- 0.
     done
 
-  (* The part of the Floyd-Washall algorithm for a given 'k'. *)
+  (* The part of the modified Floyd-Warshall algorithm for a given 'k'. *)
   let strong_closure_k : t -> int -> unit = fun o k ->
-    let m = fun i j -> o.dbm.(matpos2 (i-1) (j-1)) in
+    let m = fun i j -> o.dbm.(matpos2 i j) in
     let n = o.dim in
-    for i = 1 to (2*n) do
-      for j = 1 to (2*n) do
-        let v = List.fold_left F.min F.inf [
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        let v = List.fold_left F.min (m i j) [
+          F.add_up (m i (2*k+1)) (m (2*k+1) j) ;
           F.add_up (m i (2*k)) (m (2*k) j) ;
-          F.add_up (m i (2*k-1)) (m (2*k-1) j) ;
-          F.add_up (F.add_up (m i (2*k-1)) (m (2*k -1) (2*k))) (m (2*k) j) ;
-          F.add_up (F.add_up (m i (2*k)) (m (2*k) (2*k-1))) (m (2*k-1) j) ] in
-        if v < m i j then
-          o.dbm.(matpos2 (i-1) (j-1)) <- v
+          F.add_up (F.add_up (m i (2*k)) (m (2*k) (2*k+1))) (m (2*k+1) j) ;
+          F.add_up (F.add_up (m i (2*k+1)) (m (2*k+1) (2*k))) (m (2*k) j) ] in
+        update_cell o i j v
       done
     done
 
   (* Strengthening propagates the octagonal constraints in the DBM. *)
   let strengthening : t -> unit = fun o ->
-    let m = fun i j -> o.dbm.(matpos2 (i-1) (j-1)) in
+    let m = fun i j -> o.dbm.(matpos2 i j) in
     let n = o.dim in
-    for i = 1 to (2*n) do
-      for j = 1 to (2*n) do
-        let i' = if i mod 2 = 0 then i - 1 else i + 1 in
-        let j' = if j mod 2 = 0 then j - 1 else j + 1 in
-        if (F.add_up (m i i')  (m j' j)) < (m i j) then
-          o.dbm.(matpos (i-1) (j-1)) <- (F.add_up (m i i') (m j' j))
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        let i' = i lxor 1 in
+        let j' = j lxor 1 in
+        let v = (F.div_up (F.add_up (m i i') (m j' j)) 2.) in
+        update_cell o i j v
       done
     done
 
@@ -318,20 +354,30 @@ module BoxedOctagon = struct
   let strong_closure_mine : t -> t = fun o ->
     let o = copy o in
     let n = o.dim in
-    for k = 1 to n do
+    for k = 0 to n-1 do
       strong_closure_k o k;
       strengthening o
     done;
     float_consistent o;
     o
 
-  (* Strong closure as appearing in (Bagnara, 2009) using Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  (* The Floyd-Warshall algorithm. *)
+  let floyd_warshall : t -> unit = fun o ->
+    let m = fun i j -> o.dbm.(matpos2 i j) in
+    let n = o.dim in
+    for k = 0 to (2*n-1) do
+      for i = 0 to (2*n-1) do
+        for j = 0 to (2*n-1) do
+          let v = F.min (m i j) (F.add_up (m i k) (m k j)) in
+          update_cell o i j v
+        done
+      done
+    done
+
+  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let strong_closure_bagnara : t -> t = fun o ->
     let o = copy o in
-    let n = o.dim in
-    for k = 1 to n do
-      strong_closure_k o k;
-    done;
+    floyd_warshall o;
     float_consistent o;
     strengthening o;
     o
@@ -346,7 +392,7 @@ module BoxedOctagon = struct
     let create_node = fun cbox ->
       let o' = copy o in
       let o' = { o' with cbox=cbox } in
-      meet_box_into_dbm o' None o'.cbox in
+      meet_box_into_dbm o' cbase o'.cbox in
     let cboxes = B.split o.cbox c in
     List.map create_node cboxes
 
@@ -360,7 +406,7 @@ module BoxedOctagon = struct
 
   let shrink (o:t) (_:Mpqf.t) : t = o
 
-  let rotate_var : t -> (var * var) -> (expr * expr) = fun o (v1,v2) ->
+  let rotate_var : (var * var) -> (expr * expr) = fun (v1,v2) ->
     (* Symbolic representation of the square root of 2.
        If it is computed right away, we do not know in what direction we should round the square root.
      *)
@@ -374,7 +420,7 @@ module BoxedOctagon = struct
   let rotate_constraint : t -> bconstraint -> base -> bconstraint option = fun o (e1,op,e2) (d1,d2) ->
     let v1 = REnv.find d1 o.renv in
     let v2 = REnv.find d2 o.renv in
-    let (rv1, rv2) = rotate_var o (v1, v2) in
+    let (rv1, rv2) = rotate_var (v1, v2) in
     let found_var = ref false in
     let replace = fun v ->
       if v = v1 || v = v2 then begin
@@ -386,33 +432,32 @@ module BoxedOctagon = struct
     let e2' = replace_var_in_expr replace e2 in
     if !found_var then Some (e1', op, e2') else None
 
-  let filter_in_base : bconstraint -> base option -> B.t -> t -> t = fun cons base box o ->
-    match base with
-    | None ->
-        let o' = { o with cbox=B.filter box cons } in
-        meet_box_into_dbm o' base o'.cbox
-    | Some base' ->
-        match rotate_constraint o cons base' with
-        | None -> o
-        | Some rcons ->
-            let box' = B.filter box rcons in
-            let rboxes = R.add base' box' o.rboxes in
-            meet_box_into_dbm { o with rboxes=rboxes } base box'
+  let filter_in_base : bconstraint -> base -> B.t -> t -> t = fun cons base box o ->
+    if base = cbase then
+      let o' = { o with cbox=B.filter box cons } in
+      meet_box_into_dbm o' base o'.cbox
+    else
+      match rotate_constraint o cons base with
+      | None -> o
+      | Some rcons ->
+          let box' = B.filter box rcons in
+          let rboxes = R.add base box' o.rboxes in
+          meet_box_into_dbm { o with rboxes=rboxes } base box'
 
   (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
    * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we call a filtering on a constraint.
    * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system in place).
    *
-   * (1) This filter algorithm first filter the constraint and its rotated versions individually and merge their results in the DBM.
+   * (1) This algorithm first filters the constraint and its rotated versions individually and merge their results in the DBM.
    * (2) Then we apply the Floyd Warshall algorithm.
    * (3) We merge the DBM with the boxes.
    *
    * Only rotated constraints with variables appearing in the rotated base are executed. *)
   let filter : t -> bconstraint -> t = fun o cons ->
-    let filter_rotated base = filter_in_base cons (Some base) in
+    let filter_rotated base = filter_in_base cons base in
     o |>
     init_octagonalise |>
-    filter_in_base cons None o.cbox |>
+    filter_in_base cons cbase o.cbox |>
     R.fold filter_rotated o.rboxes |>
     strong_closure_mine |>
     meet_dbm_into_boxes
@@ -479,7 +524,7 @@ module BoxedOctagon = struct
   (* tests if an abstract element is too small to be cut *)
   let is_small : t -> bool = fun o ->
     let box_max_range b =
-      let (v,i) = B.max_range b in
+      let (_,i) = B.max_range b in
       I.float_size i in
     let p = R.fold (fun _ b -> min (box_max_range b)) o.rboxes (box_max_range o.cbox) in
     p <= !Constant.precision
