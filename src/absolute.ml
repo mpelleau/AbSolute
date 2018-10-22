@@ -16,6 +16,7 @@ let go() =
     end
   else Terminal.error()
 
-let _ = Random.init(527)
-
-let _ = go()
+let _ =
+  (* Initializing random with the seed : AbSolute converted to hexa *)
+  Random.init 0x4162536f6c757465;
+  go()

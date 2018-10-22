@@ -56,10 +56,10 @@ module type AbstractCP = sig
 
   val prune : t -> t -> t list * t
 
-  (* splits an abstract element *)
+  (** splits an abstract element *)
   val split : t -> Csp.ctrs -> t list
 
-  (* Pizza splits an abstract element around the given point *)
+  (** Pizza splits an abstract element around the given point *)
   val split_on : t -> Csp.ctrs -> Csp.instance -> t list
 
   (** filters an abstract element with respect to an arithmetic constraint *)
@@ -90,5 +90,5 @@ module type AbstractCP = sig
 
   (** Skrinks the abstract element in every direction by the given value. *)
   val shrink : t -> Mpqf.t -> t
-  
+
  end
