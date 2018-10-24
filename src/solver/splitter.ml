@@ -23,7 +23,7 @@ module Boolean (Abs:AbstractCP) = struct
     (* match constr with
     | Or (b1,b2) ->  sat_cons a b1 || sat_cons a b2
     | And (b1,b2) ->  sat_cons a b1 && sat_cons a b2
-    | Not b -> sat_co ns a (neg_bexpr b)
+    | Not b -> sat_cons a (neg_bexpr b)
     | _ -> *)
     try Abs.is_empty (filter a (neg_bexpr constr))
     with Bot.Bot_found -> true
@@ -33,7 +33,7 @@ module Boolean (Abs:AbstractCP) = struct
 
     let tmp = Csp.get_vars_jacob constrs in
     let ctrs = List.fold_left
-                 (fun l (v, (a, b)) ->
+                 (fun l (v, (a, _)) ->
                    Csp.replace_cst_jacob (v, a) l
                  ) tmp newc in
     let newa = List.fold_left (fun a' (v, i) -> Abs.rem_var a' v) a newc in
@@ -148,7 +148,7 @@ module Make (Abs : AbstractCP) = struct
     (value, Mpqf.div (Mpqf.add xu xl) (Mpqf.of_int 2))
 
   let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
-    let (msmear, vsplit, mid) =
+    let (_, vsplit, mid) =
       List.fold_left (
           fun (m', mv', mid') (_, l) ->
           List.fold_left (
@@ -175,7 +175,7 @@ module Make (Abs : AbstractCP) = struct
             ) map l
         ) VarMap.empty jacobian
     in
-    let (msmear, vsplit, mid) =
+    let (_, vsplit, mid) =
       VarMap.fold (
           fun var (smear, mi) (m, v, s) ->
           if smear > m then (smear, var, mi)

@@ -85,7 +85,7 @@ module type AbstractCP = sig
       values are generated randomly *)
   val spawn : t -> Csp.instance
 
-  (* check if an abstract element is an abstraction of an instance *)
+  (** check if an abstract element is an abstraction of an instance *)
   val is_abstraction : t -> Csp.instance -> bool
 
   (** Skrinks the abstract element in every direction by the given value. *)
