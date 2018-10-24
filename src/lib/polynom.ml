@@ -61,9 +61,27 @@ module Make(R:Ring) = struct
   (* printing utilities *)
   (**********************)
 
+  (**
+   * [leq m1 m2] returns -1 if m1 < m2, 1 if m1 > m2, 0 otherwise
+   *)
+  let rec leq : var list -> var list -> int
+    = fun m1 m2 ->
+    match m1, m2 with
+    | [], [] -> 0
+    | [], _ :: _ -> -1
+    | _ :: _, [] -> 1
+    | (x1, e1) :: m1', (x2, e2) :: m2' ->
+      let i = Pervasives.compare x1 x2 in
+      if i = 0
+      then let j = Pervasives.compare e1 e2 in
+        if j = 0
+        then leq m1' m2'
+        else j
+      else i
+
   let clean (poly:t) : t =
     let remove_null : t = List.filter (fun (c,e) -> c<>R.zero) poly in
-    List.sort (fun (_,v1) (_,v2) -> if v1 >  v2 then 1 else -1) remove_null
+    List.fast_sort (fun (_,v1) (_,v2) -> leq v1 v2) remove_null
 
   let print_varlist fmt =
     List.iter (fun (p,e) ->

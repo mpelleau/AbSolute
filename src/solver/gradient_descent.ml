@@ -35,25 +35,30 @@ let rec descent : (FloatVec.t -> bool) -> float -> float -> FloatVec.t -> gradie
 (**
  * Conversion from an expression into a floating-point polynomial.
  *)
-let rec expr_to_poly : Csp.expr -> P.Float.t
-    = Csp.(function
-    | Var v -> P.Float.of_var v
-    | Cst (i, _) -> P.Float.of_constant (P.FloatRing.of_rational i)
-    | Unary  (NEG, e) -> P.Float.neg (expr_to_poly e)
-    | Binary (ADD, e1, e2) -> P.Float.add (expr_to_poly e1) (expr_to_poly e2)
-    | Binary (SUB, e1, e2) -> P.Float.sub (expr_to_poly e1) (expr_to_poly e2)
-    | Binary (MUL, e1, e2) -> P.Float.mul (expr_to_poly e1) (expr_to_poly e2)
-    | Binary (DIV, e1, e2) -> begin
-        match P.Float.div (expr_to_poly e1) (expr_to_poly e2) with
-        | Some p -> p
-        | _ -> Pervasives.invalid_arg "expr_to_poly:div"
-        end
-    | Binary (POW, e1, e2) -> begin
-        match P.Float.pow (expr_to_poly e1) (expr_to_poly e2) with
-        | Some p -> p
-        | _ -> Pervasives.invalid_arg "expr_to_poly:div"
-        end
-    | _ -> Pervasives.invalid_arg "expr_to_poly")
+let expr_to_poly : Csp.expr -> P.Float.t
+    = let rec expr_to_poly : Csp.expr -> P.Float.t
+      = Csp.(function
+      | Var v -> P.Float.of_var v
+      | Cst (i, _) -> P.Float.of_constant (P.FloatRing.of_rational i)
+      | Unary  (NEG, e) -> P.Float.neg (expr_to_poly e)
+      | Binary (ADD, e1, e2) -> P.Float.add (expr_to_poly e1) (expr_to_poly e2)
+      | Binary (SUB, e1, e2) -> P.Float.sub (expr_to_poly e1) (expr_to_poly e2)
+      | Binary (MUL, e1, e2) -> P.Float.mul (expr_to_poly e1) (expr_to_poly e2)
+      | Binary (DIV, e1, e2) -> begin
+          match P.Float.div (expr_to_poly e1) (expr_to_poly e2) with
+          | Some p -> p
+          | _ -> Pervasives.invalid_arg "expr_to_poly:div"
+          end
+      | Binary (POW, e1, e2) -> begin
+          match P.Float.pow (expr_to_poly e1) (expr_to_poly e2) with
+          | Some p -> p
+          | _ -> Pervasives.invalid_arg "expr_to_poly:div"
+          end
+      | _ -> Pervasives.invalid_arg "expr_to_poly")
+    in
+    fun e ->
+      expr_to_poly e
+      |> P.Float.clean
 
 (**
   * [gradient_descent x includes jacobian] returns the point resulting from the gradient descent along [jacobian], starting at [x].
