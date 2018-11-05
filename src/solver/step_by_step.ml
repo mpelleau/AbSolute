@@ -17,6 +17,7 @@ module Make(Abs : Adcp_sig.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t
 
   let draw_u v1 v2 abs =
     Dr.draw2d abs (v1,v2) color_unsure; View.draw_end v1 v2
+
   let draw_bad v1 v2 abs =
     Dr.draw2d abs (v1,v2) Graphics.red;
     View.draw_end v1 v2
@@ -37,14 +38,13 @@ module Make(Abs : Adcp_sig.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t
     | Some a -> f a
     | None -> ()
 
-  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (view:Csp.jacob) v1 v2 =
+  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (_:Csp.jacob) v1 v2 =
     let selected = ref None in
     let draw_s = draw_s v1 v2 in
     let draw_u = draw_u v1 v2 in
     let draw_n = draw_n v1 v2 in
     let select = select v1 v2 in
     let draw_wait = draw_wait v1 v2 in
-    (*let draw_bad = draw_bad v1 v2 in*)
     let switch abs =
       do_if_not_none draw_n !selected;
       selected := Some abs;
@@ -55,14 +55,21 @@ module Make(Abs : Adcp_sig.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t
       Unix.pause();
       match consistency abs cstrs csts with
       | Empty -> draw_n abs; selected := None;
-      | Full (abs', const) -> draw_n abs; selected := None; draw_s abs'
-      | Maybe(a,cstrs,_) when Abs.is_small a || iter > !Constant.max_iter ->
+      | Full (abs', _) -> draw_n abs; selected := None; draw_s abs'
+      | Maybe(a,_,_) when Abs.is_small a || iter > !Constant.max_iter ->
            draw_n abs; selected := None; draw_u a
-      | Maybe(abs',cstrs,csts) ->
+      | Maybe(abs',cstrs,_) ->
+         draw_n abs; selected := None;
          switch abs';
          Unix.pause ();
          if !Constant.pruning then
-           assert false
+           let ls,lu = prune abs' cstrs in
+           List.iter draw_s ls;
+           let rest = List.flatten (List.map (fun e -> split e cstrs) lu) in
+           List.iter (fun elem -> selected := None; draw_wait elem) rest;
+           List.iter (fun elem ->
+               aux elem cstrs csts (iter +1)
+	           ) rest
          else
            let splits = split abs' cstrs in
            List.iter (fun elem -> selected := None; draw_wait elem) splits;

@@ -5,6 +5,7 @@
 (** Boolean expressions abstractions *)
 module Boolean (Abs:Adcp_sig.AbstractCP) = struct
 
+  (** generic filter function over boolean formulas *)
   let rec filter (value:Abs.t) c =
     let open Csp in
     match c with
