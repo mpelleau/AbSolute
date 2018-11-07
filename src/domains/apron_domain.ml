@@ -284,13 +284,12 @@ module MAKE(AP:ADomain) = struct
 	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
  let split abs _ (e1,e2) =
-   let meet_linexpr abs man env expr =
+   let meet_linexpr abs man expr =
      let cons = Linconsext.make expr Linconsext.SUPEQ in
      A.filter_lincons man abs cons
    in
-   let env = A.env abs in
-   let abs1 = meet_linexpr abs man env e1 in
-   let abs2 = meet_linexpr abs man env e2 in
+   let abs1 = meet_linexpr abs man e1 in
+   let abs2 = meet_linexpr abs man e2 in
    [abs1; abs2]
 
   (************************************************)
@@ -303,7 +302,7 @@ module MAKE(AP:ADomain) = struct
     (*print_gen gens gen_env;*)
     let size = Environment.size gen_env in
     let gen_float_array = gen_to_array poly size in
-    let (p1, i1, p2, i2, dist_max) = maxdisttab gen_float_array in
+    let (p1, _, p2, _, _) = maxdisttab gen_float_array in
     let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
     let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
     let cst_sca2 = Scalar.of_float (cst +. split_prec) in
@@ -354,12 +353,15 @@ module MAKE(AP:ADomain) = struct
     let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
     Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
 
-  (* returns a randomly uniformly chosen instanciation of the variables *)
+  (* returns a randomly pseudo-uniformly chosen instanciation of the variables *)
+  (* only works if the polyhedron has a non nul volume,
+     (i.e no equalities in the constraints) *)
   let spawn pman (poly:Polka.strict Polka.t A.t) =
-    let b = Abstract1.to_box pman poly in
-    let itvs = b.Abstract1.interval_array in
-    let env = b.Abstract1.box1_env in
-    let rec retry n =
+    let nb_try = 10 in
+    let rec retry poly n idx =
+      let b = Abstract1.to_box pman poly in
+      let env = b.Abstract1.box1_env in
+      let itvs = b.Abstract1.interval_array in
       let instance,_ =
         Array.fold_left (fun (acc,idx) i ->
             let v = Environment.var_of_dim env idx in
@@ -370,14 +372,18 @@ module MAKE(AP:ADomain) = struct
       let lin = Abstract1.to_lincons_array pman poly in
       let abs = Abstract1.of_lincons_array man env lin in
       if is_abstraction abs instance then instance
-      else if n > 10 then begin
-          (* let poly = A.to_generator_array pman poly in *)
-          (* Generatorext.array_iter (Format.printf "%a " Generator1.print) poly;
-           * Format.printf "\n-------------------\n%!"; *)
-          failwith "max tries reached"
-        end
-      else retry (n+1)
-    in retry 0
+      else if n > nb_try then
+        (* in case we didnt manage to find an instance, we fix a variable and retry *)
+        let v = Texpr1.var env (Environment.var_of_dim env idx) in
+        let value = Texpr1.cst env (Coeff.s_of_mpqf (spawn_itv itvs.(idx))) in
+        let texpr = Texpr1.binop Texpr1.Sub v value Texpr1.Real Texpr1.Near in
+        let tcons = Tcons1.make texpr Tcons1.EQ in
+        let tearray = Tcons1.array_make env 1 in
+        Tcons1.array_set tearray 0 tcons;
+        let poly = Abstract1.meet_tcons_array pman poly tearray in
+        retry poly 0 (idx+1)
+      else retry poly (n+1) idx
+    in retry poly 0 0
 
   let spawn abs =
     let env = Abstract1.env abs in
