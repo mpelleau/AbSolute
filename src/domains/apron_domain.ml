@@ -36,11 +36,11 @@ module SyntaxTranslator (D:ADomain) = struct
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
     | Binary (o,e1,e2) ->
        let r = match o with
-               | ADD -> Texpr1.Add
-               | SUB -> Texpr1.Sub
-               | DIV -> Texpr1.Div
-               | MUL -> Texpr1.Mul
-               | POW -> Texpr1.Pow
+         | ADD -> Texpr1.Add
+         | SUB -> Texpr1.Sub
+         | DIV -> Texpr1.Div
+         | MUL -> Texpr1.Mul
+         | POW -> Texpr1.Pow
        in
        let e1 = expr_to_apron a e1
        and e2 = expr_to_apron a e2 in
@@ -150,11 +150,8 @@ module MAKE(AP:ADomain) = struct
   let add_var abs (typ,v) =
     let e = A.env abs in
     let ints,reals = if typ = Int then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
-    try
-      let env = Environment.add e ints reals in
-      A.change_environment man abs env false
-    with
-      Failure _ -> abs
+    let env = Environment.add e ints reals in
+    A.change_environment man abs env false
 
   let var_bounds abs v =
     let var = Var.of_string v in
@@ -167,7 +164,7 @@ module MAKE(AP:ADomain) = struct
     let itvs = List.fold_left (fun l v ->
       (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
       ) [] vars in
-    List.filter (fun (v, (l, u)) -> l = u) itvs
+    List.filter (fun (_, (l, u)) -> l = u) itvs
 
   let rem_var abs v =
     let var = Var.of_string v in
@@ -205,21 +202,28 @@ module MAKE(AP:ADomain) = struct
 
   let print = A.print
 
+
+  (* Useful cross-domain conversion utilities *)
+
+  (** computes the smallest enclosing box *)
   let to_box abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
     A.of_lincons_array (Box.manager_alloc ()) env
 
+  (** computes the smallest enclosing octagon *)
   let to_oct abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
     A.of_lincons_array (Oct.manager_alloc ()) env
 
+  (** computes the smallest enclosing polyhedron *)
   let to_poly abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
     A.of_lincons_array (Polka.manager_alloc_strict ()) env
 
+  (** interval evaluation of an expression within an abtract domain *)
   let forward_eval abs cons =
     let ap_expr = T.expr_to_apron abs cons |> Texpr1.of_expr (A.env abs) in
     let obj_itv = A.bound_texpr man abs ap_expr in
@@ -255,38 +259,38 @@ module MAKE(AP:ADomain) = struct
     let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
     ((Environment.var_of_dim env a),c,b)
 
-    (* Compute the minimal and the maximal diameter of an array on intervals *)
-    let rec minmax tab i max i_max min i_min =
-      if i>=Array.length tab then  (max, i_max, min, i_min)
-      else
-        let dim = diam_interval (tab.(i)) in
-        if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
-        else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
-        else minmax tab (i+1) max i_max min i_min
+  (* Compute the minimal and the maximal diameter of an array on intervals *)
+  let rec minmax tab i max i_max min i_min =
+    if i>=Array.length tab then  (max, i_max, min, i_min)
+    else
+      let dim = diam_interval (tab.(i)) in
+      if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
+      else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
+      else minmax tab (i+1) max i_max min i_min
 
-    (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
-     * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line
-     * to the vector p1p2 passing by the center of the vector has for equation:
-     * (p21-p11)(x1-b1) + (p22-p12)(x2-b2) + ... + (p2n-p1n)(xn-bn) = 0
-     * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
-    let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
-      if i >= size then (list1, list2, cst) else
-	      let ci = p2.(i) -. p1.(i) in
-	      let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
-	      let ci' = 2. *. ci in
-	      let coeffi = Coeff.Scalar (Scalar.of_float ci') in
-	      let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
-	      let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
-	      genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
+  (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
+   * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line
+   * to the vector p1p2 passing by the center of the vector has for equation:
+   * (p21-p11)(x1-b1) + (p22-p12)(x2-b2) + ... + (p2n-p1n)(xn-bn) = 0
+   * with b = ((p11+p21)/2, (p12+p22)/2, ..., (p1n+p2n)/2) *)
+  let rec genere_linexpr gen_env size p1 p2 i list1 list2 cst =
+    if i >= size then (list1, list2, cst) else
+	    let ci = p2.(i) -. p1.(i) in
+	    let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
+	    let ci' = 2. *. ci in
+	    let coeffi = Coeff.Scalar (Scalar.of_float ci') in
+	    let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
+	    let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
+	    genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
- let split abs _ (e1,e2) =
-   let meet_linexpr abs man expr =
-     let cons = Linconsext.make expr Linconsext.SUPEQ in
-     A.filter_lincons man abs cons
-   in
-   let abs1 = meet_linexpr abs man e1 in
-   let abs2 = meet_linexpr abs man e2 in
-   [abs1; abs2]
+  let split abs _ (e1,e2) =
+    let meet_linexpr abs man expr =
+      let cons = Linconsext.make expr Linconsext.SUPEQ in
+      A.filter_lincons man abs cons
+    in
+    let abs1 = meet_linexpr abs man e1 in
+    let abs2 = meet_linexpr abs man e2 in
+    [abs1; abs2]
 
   (************************************************)
   (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)
@@ -321,7 +325,7 @@ module MAKE(AP:ADomain) = struct
   (* Sanity and checking functions *)
   (*********************************)
 
-  (* given an abstraction and instance, verifies if the abstraction is implied
+  (** given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
   let is_abstraction poly instance =
     let env = Abstract1.env poly in
@@ -338,21 +342,20 @@ module MAKE(AP:ADomain) = struct
     let poly_subst = Abstract1.substitute_texpr_array man poly varray tarray None in
     Abstract1.is_top man poly_subst
 
+  (** Random uniform value within an interval, according to the type *)
   let spawn_itv typ (i:Interval.t) =
+    let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
+    let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
     match typ with
     | Environment.INT ->
-       let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
-       let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
        let size = Mpqf.sub sup inf |> Mpqf.to_float |> int_of_float in
-       let r = Random.int (size+1) in
-       Mpqf.add inf (Mpqf.of_int r)
+       let r = Mpqf.of_int (Random.int (size+1)) in
+       Mpqf.add inf r
     | Environment.REAL ->
        let r = Mpqf.of_float (Random.float 1.) in
-       let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
-       let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
        Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
 
-  (* spawns an instance within a box *)
+  (** spawns an instance within a box *)
   let spawn_box box =
     let env = box.Abstract1.box1_env in
     let itvs = box.Abstract1.interval_array in
@@ -365,18 +368,17 @@ module MAKE(AP:ADomain) = struct
         ) (Tools.VarMap.empty,0) itvs
     in instance
 
-  (* returns a randomly uniformly chosen instanciation of the variables *)
-  (* if the polyhedron has a nul volume, (e.g equalities in the constraints) *)
-  (* uniformity is not guaranteed *)
+  (** returns a randomly uniformly chosen instanciation of the variables
+      if the polyhedron has a nul volume, (e.g equalities in the constraints)
+      uniformity is not guaranteed *)
   let spawn poly =
     let nb_try = 10 in
+    let env = Abstract1.env poly in
     let rec retry poly n idx =
       let b = Abstract1.to_box man poly in
       let instance = spawn_box b in
       if is_abstraction poly instance then instance
-      else if n > nb_try then
-        try
-        let env = Abstract1.env poly in
+      else if n >= nb_try then
         (* in case we didnt manage to find an instance, we fix a variable and retry *)
         let v = Environment.var_of_dim env idx in
         let typ = Environment.typ_of_var env v in
@@ -389,12 +391,6 @@ module MAKE(AP:ADomain) = struct
         Tcons1.array_set tearray 0 tcons;
         let poly = Abstract1.meet_tcons_array man poly tearray in
         retry poly 0 (idx+1)
-        with e ->
-          let env = Abstract1.env poly in
-          let v = Environment.var_of_dim env idx in
-          Format.printf "%a, nb try: %i, index: % i, var:%a\n%!"
-            Abstract1.print poly n idx Var.print v; raise e
       else retry poly (n+1) idx
     in retry poly 0 0
-
 end
