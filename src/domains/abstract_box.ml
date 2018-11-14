@@ -109,15 +109,23 @@ module Box (I:ITV) = struct
 
   let choose a = mix_range a
 
-  let prune (a:t) (b:t) : t list * t =
-    let rec aux a good = function
-      | [] -> good,a
-      | (v, i_b)::tl ->
-	       let add = fun i -> (Env.add v i a) in
-	       let i_a = Env.find v a in
-	       let sures,unsure = I.prune i_a i_b in
-	       aux (add unsure) (List.rev_append (List.rev_map add sures) good) tl
-    in aux a [] (Env.bindings b)
+  let prune =
+    match I.prune with
+    | None -> None
+    | Some itv_diff ->
+       Some(fun (a:t) (b:t) ->
+           let rec aux a good = function
+             | [] -> good
+             | (v, i_b)::tl ->
+	              let add = fun i -> (Env.add v i a) in
+	              let i_a = Env.find v a in
+	              let sures = itv_diff i_a i_b in
+                let rest = I.meet i_a i_b in
+                match rest with
+                | Bot -> assert false
+                | Nb rest ->
+	                 aux (add rest) (List.rev_append (List.rev_map add sures) good) tl
+           in aux a [] (Env.bindings b))
 
 
   (************************************************************************)

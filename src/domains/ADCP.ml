@@ -378,9 +378,31 @@ module PolyCP = struct
   let split poly jacobian =
     split poly jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
+  let prune a b =
+    let work acc a c =
+      let neg_c = Linconsext.neg c in
+      let a' = A.filter_lincons man a c
+      and s = A.filter_lincons man a neg_c in
+      if is_empty s then a,acc
+      else a',(s::acc)
+    in
+    let _,pruned = Linconsext.array_fold
+                     (fun (abs,acc) c ->
+                       if Linconsext.get_typ c = Linconsext.EQ then
+                         let c1,c2 = Linconsext.spliteq c in
+                         let a',acc' = work acc a c1 in
+                         work acc' a' c2
+                       else work acc a c
+                     ) (a,[]) (A.to_lincons_array man b)
+    in pruned
+
+  let prune = Some prune
+
   let volume box = 0.
 
   let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
 
   let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+
+
 end

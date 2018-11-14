@@ -176,21 +176,9 @@ module MAKE(AP:ADomain) = struct
 
   let join a b = A.join man a b
 
-  let prune a b =
-    let work acc a c =
-      let neg_c = Linconsext.neg c in
-      let a' = A.filter_lincons man a c
-      and s = A.filter_lincons man a neg_c in
-      if is_empty s then a,acc
-      else a',(s::acc)
-    in
-    let _,pruned = Linconsext.array_fold (fun (abs,acc) c ->
-      if Linconsext.get_typ c = Linconsext.EQ then
-        let c1,c2 = Linconsext.spliteq c in
-        let a',acc' = work acc a c1 in
-        work acc' a' c2
-      else work acc a c
-    ) (a,[]) (A.to_lincons_array man b) in pruned,b
+  let meet a b = A.meet man a b
+
+  let prune = None
 
   let filter b (e1,c,e2) =
     let env = A.env b in

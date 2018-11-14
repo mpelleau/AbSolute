@@ -1,7 +1,7 @@
 open Bot
 
 module I = Itv_int
-module R = Itv.ItvF
+module R = Newitv.Test
 
 type t = Int of I.t | Real of R.t
 
@@ -165,9 +165,11 @@ let split_on (x:t) (value : Mpqf.t) : t list =
 
 (* pruning *)
 (* ------- *)
-let prune (x1:t) (x2:t) : t list * t =
+let prune (x1:t) (x2:t) : t list =
   (* TODO: replace the "failwith" with your own code *)
   failwith "function 'prune' in file 'itv_mix.ml' not implemented"
+
+let prune = Some prune
 
 (************************************************************************)
 (* INTERVAL ARITHMETICS (RORWARD EVALUATION) *)

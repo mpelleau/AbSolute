@@ -58,16 +58,16 @@ module MakeProduct (D1 : FullDomain) (D2 : FullDomain) = struct
 end
 
 let get_domain : string -> (module FullDomain) = function
-  | "box" -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
-  | "boxS" -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
+  | "box"    -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
+  | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
   | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix) (Box_drawer.Make(Abstract_box.BoxMix)))
-  | "boxQ" -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
-  | "boxQS" -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
-  | "boxCP" -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
-  | "oct" -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
-  | "poly" -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
-  | "vpl" -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
-  | s -> Tools.fail_fmt "Domain %s does not exist" s
+  | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
+  | "boxQS"  -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
+  | "boxCP"  -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
+  | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
+  | "poly"   -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
+  | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
+  | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
   = fun names ->

@@ -1,60 +1,10 @@
 open Adcp_sig
 open Tools
 
-(* Boolean expressions abstractions *)
-module Boolean (Abs:AbstractCP) = struct
-
-  let rec filter (value:Abs.t) c =
-    let open Csp in
-    match c with
-    | And (b1,b2) -> filter (filter value b2) b1
-    | Or (b1,b2) ->
-       let a1 = try Some(filter value b1) with Bot.Bot_found -> None
-       and a2 = try Some(filter value b2) with Bot.Bot_found -> None in
-       (match (a1,a2) with
-        | (Some a1),(Some a2) -> Abs.join a1 a2
-        | None, (Some x) | (Some x), None -> x
-        | _ -> raise Bot.Bot_found)
-    | Not b -> filter value (neg_bexpr b)
-    | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
-
-  let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
-    let open Csp in
-    (* match constr with
-    | Or (b1,b2) ->  sat_cons a b1 || sat_cons a b2
-    | And (b1,b2) ->  sat_cons a b1 && sat_cons a b2
-    | Not b -> sat_cons a (neg_bexpr b)
-    | _ -> *)
-    try Abs.is_empty (filter a (neg_bexpr constr))
-    with Bot.Bot_found -> true
-
-  let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
-    let newc = Abs.bound_vars a in
-
-    let tmp = Csp.get_vars_jacob constrs in
-    let ctrs = List.fold_left
-                 (fun l (v, (a, _)) ->
-                   Csp.replace_cst_jacob (v, a) l
-                 ) tmp newc in
-    let newa = List.fold_left (fun a' (v, i) -> Abs.rem_var a' v) a newc in
-
-    let (_, vars) = List.split (Abs.vars newa) in
-    let ctrs_vars = List.fold_left
-                      ( fun s (c, v, j) -> Csp.Variables.union s v
-                      ) Csp.Variables.empty ctrs in
-    let unconstrained = List.filter (fun v -> not (Csp.Variables.mem v ctrs_vars)) vars in
-    let v_unconst = List.map (fun v -> (v, Abs.var_bounds newa v)) unconstrained in
-    let abs = List.fold_left (fun a' v -> Abs.rem_var a' v) newa unconstrained in
-
-    let newctrs = List.map (fun (c, _, j) -> (c, j)) ctrs in
-    (abs, newctrs, v_unconst@(newc@const))
-
-end
-
-(* Consistency computation and splitting strategy handling *)
+(** Consistency computation and splitting strategy handling *)
 module Make (Abs : AbstractCP) = struct
 
-  include Boolean(Abs)
+  include Boolean.Make(Abs)
 
   let init (problem:Csp.prog) : Abs.t =
     Csp.(List.fold_left (fun abs (t,v,d) ->
@@ -123,21 +73,25 @@ module Make (Abs : AbstractCP) = struct
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =
     Tools.debug 2 "pruning\n%!";
-    let rec aux abs c_list is_sure sures unsures =
-      match c_list with
-      | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
-      | h::tl ->
-	       try
-           let (c, _) = h in
-	         let neg = Csp.neg_bexpr c |> filter abs in
-	         let s,u = Abs.prune abs neg in
-	         let s',u' = List.fold_left (fun (sures,unsures) elm ->
-	                         aux elm tl is_sure sures unsures)
-	                       (sures,unsures) s
-	         in
-	         aux u tl false s' u'
-	       with Bot.Bot_found -> aux abs tl is_sure sures unsures
-    in aux abs constrs true [] []
+    match Abs.prune with
+    | None -> [],[abs]
+    | Some prune ->
+       let rec aux abs c_list is_sure sures unsures =
+         match c_list with
+         | [] -> if is_sure then (abs::sures),unsures else sures,(abs::unsures)
+         | h::tl ->
+	          try
+              let (c, _) = h in
+	            let neg = Csp.neg_bexpr c |> filter abs in
+	            let s = prune abs neg in
+              let u = Abs.meet abs neg in
+	            let s',u' = List.fold_left (fun (sures,unsures) elm ->
+	                            aux elm tl is_sure sures unsures)
+	                          (sures,unsures) s
+	            in
+	            aux u tl false s' u'
+	          with Bot.Bot_found -> aux abs tl is_sure sures unsures
+       in aux abs constrs true [] []
 
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in

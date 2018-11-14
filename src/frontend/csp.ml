@@ -469,7 +469,7 @@ let add_constr csp c =
   let jac = List.map (
     fun (_, v, _) ->
     let new_c = simplify_bexpr (derivative c v) in
-    let (op, expr) = left_hand new_c in
+    let (_, expr) = left_hand new_c in
     (v, expr)
   ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
@@ -490,13 +490,13 @@ let domain_to_constraints : assign -> bexpr =
 
 (* iter on expr*)
 let rec iter_expr f = function
-  | Binary (op,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
-  | Unary (uop,e) as u -> f u; iter_expr f e
+  | Binary (_,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
+  | Unary (_,e) as u -> f u; iter_expr f e
   | x -> f x
 
 (* iter on constraints *)
 let rec iter_constr f_expr f_constr = function
-  | Cmp (c,e1,e2) as constr ->
+  | Cmp (_,e1,e2) as constr ->
      f_constr constr;
      iter_expr f_expr e1;
      iter_expr f_expr e2
@@ -509,7 +509,6 @@ let rec iter_constr f_expr f_constr = function
      f_constr constr;
      iter_constr f_expr f_constr b
 
-
 (* boolean formules map *)
 let rec map_constr f = function
   | Cmp (op,e1,e2) ->
@@ -519,7 +518,7 @@ let rec map_constr f = function
   | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
   | Not b -> Not (map_constr f b)
 
-(* cmp operator negation *)
+(** comparison operator negation *)
 let neg = function
   | EQ  -> NEQ
   | LEQ -> GT
@@ -528,7 +527,7 @@ let neg = function
   | GT  -> LEQ
   | LT  -> GEQ
 
-(* constraint negation *)
+(** constraint negation *)
 let rec neg_bexpr = function
   | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
@@ -538,7 +537,6 @@ let rec neg_bexpr = function
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
 (*****************************************)
-
 
 let rec replace_cst_expr (id, cst) expr =
   match expr with
@@ -557,7 +555,7 @@ let rec replace_cst_bexpr cst = function
 module Variables = Set.Make(struct type t=var let compare=compare end)
 
 let rec get_vars_expr = function
-  | Cst (c,_)          -> []
+  | Cst (_,_)          -> []
   | Var v              -> [v]
   | Unary (_, e)       -> get_vars_expr e
   | Binary (_, e1, e2) -> List.rev_append (get_vars_expr e1) (get_vars_expr e2)
@@ -582,7 +580,6 @@ let replace_cst_jacob (id, cst) jacob =
       (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
     else (c, vars, j)
   ) jacob
-
 
 let from_cst_to_expr (id, (l, u)) =
   if l = u then [(Var id, EQ, Cst (l,Real))]

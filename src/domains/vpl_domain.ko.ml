@@ -43,9 +43,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let is_small : t -> bool
         = fun _-> fail ()
 
-    (* Note: the last t is the intersection between the two operands *)
-    let prune : t -> t -> t list * t
-        = fun _ _ -> fail ()
+    let prune : (t -> t -> t list) option
+      = Some (fun _ _ -> fail ())
 
     let split : t -> Csp.ctrs -> t list
         = fun _ -> fail ()
