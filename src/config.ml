@@ -34,7 +34,6 @@ end
 (* THE SOLVER INSTANCES *)
 (************************)
 
-
 (***************)
 (*   domains   *)
 (***************)
@@ -146,4 +145,6 @@ let aliases =
 let globaldescr =
   "AbSolute is a constraint solver based on abstract domains. For more info, check out https://github.com/mpelleau/AbSolute\n"
 
-let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr
+let parse_args () =
+  Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr;
+  if !Constant.problem = "" then raise (Constant.Error "no filename specified")

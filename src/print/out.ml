@@ -29,8 +29,8 @@ module Make (D:Drawer) = struct
         let (a,b,c,d) = Mpqf.((to_float a), (to_float b), (to_float c), (to_float d)) in
         View.init (a,b) (c,d));
     List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
-    if !Constant.sure |> not then
-      List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
+      if !Constant.sure |> not then
+        List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
     View.draw_end v1 v2
 
   let print_latex sure unsure (v1,v2) =
@@ -92,14 +92,14 @@ module Make (D:Drawer) = struct
   let terminal_output fmt res =
     let open Result in
     (match res.sure with
-    | [] -> Format.fprintf fmt "No inner solutions found\n"
-    | l ->
-       Format.fprintf fmt "Inner solutions:";
-       if !Constant.trace then begin
-           Format.printf "\n";
+     | [] -> Format.fprintf fmt "No inner solutions found\n"
+     | l ->
+        Format.fprintf fmt "Inner solutions:";
+        if !Constant.trace then begin
+            Format.printf "\n";
            List.iter (fun (e,s) -> Format.fprintf fmt "%a\n" D.print e) l
-         end else
-         Format.printf " %i\n" (res.nb_sure)
+          end else
+          Format.printf " %i\n" (res.nb_sure)
     );
     Format.fprintf fmt "Inner volume : %f\n" (res.vol_sure);
     (match res.unsure with
@@ -122,13 +122,13 @@ module Make (D:Drawer) = struct
     let open Result in
     let open Constant in
     Tools.green_fprintf Format.std_formatter "Results:\n";
-    Format.printf "%a" terminal_output res;
+    Format.printf "%a\n%!" terminal_output res;
     if !visualization || !tex || !obj then
       let s = List.rev_map D.to_abs res.sure in
       let u = if !sure then [] else List.rev_map D.to_abs res.unsure in
-      if !visualization then draw2d s u (vars2D prob);
       if !tex then print_latex s u (vars2D prob);
-      if !obj then draw3d (s@u) (vars3D prob)
+      if !obj then draw3d (s@u) (vars3D prob);
+      if !visualization then draw2d s u (vars2D prob)
 
   let trace_min sure unsure value =
     Format.printf "best value:%s\n%!" (Mpqf.to_string value);
