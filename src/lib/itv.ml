@@ -331,7 +331,7 @@ module Itv(B:BOUND) = struct
   let max ((l1, u1):t) ((l2, u2):t) =
     validate (B.max l1 l2, B.max u1 u2)
 
- (** runtime functions **)
+  (** runtime functions **)
   let eval_fun name args : t bot =
     let arity_1 (f: t -> t) : t bot =
        match args with

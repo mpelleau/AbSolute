@@ -542,12 +542,30 @@ module Make(B:BOUND) = struct
     | Nb i -> div i i_ln10
 
   (* interval min *)
-  let min ((l1, u1):t) ((l2, u2):t) = failwith "todo min"
-    (* validate (B.min l1 l2, B.min u1 u2) *)
+  let min (((kl1, l1), (kh1, h1)):t) (((kl2, l2), (kh2, h2)):t) : t =
+    let low =
+      if l1 < l2 then kl1,l1
+      else if l2 < l1 then kl2,l2
+      else (* l1 = l2 *) (if kl1 = Large then kl1 else kl2),l1
+    and high =
+      if h1 < h2 then kh1,h1
+      else if h2 < h1 then kh2,h2
+      else (* h1 = h2 *) (if kh1 = Strict then kh1 else kh2),h2
+    in
+    (low,high)
 
   (* interval max *)
-  let max ((l1, u1):t) ((l2, u2):t) = failwith "todo max"
-  (* validate (B.max l1 l2, B.max u1 u2) *)
+  let max (((kl1, l1), (kh1, h1)):t) (((kl2, l2), (kh2, h2)):t) : t =
+    let low =
+      if l1 > l2 then kl1,l1
+      else if l2 > l1 then kl2,l2
+      else (* l1 = l2 *) (if kl1 = Strict then kl1 else kl2),l1
+    and high =
+      if h1 > h2 then kh1,h1
+      else if h2 > h1 then kh2,h2
+      else (* h1 = h2 *) (if kh1 = Large then kh1 else kh2),h2
+    in
+    (low,high)
 
   (** runtime functions **)
   let eval_fun name args : t bot =
@@ -840,8 +858,6 @@ module Make(B:BOUND) = struct
     | "max"  -> arity_2 filter_max
     | "min"  -> arity_2 filter_min
     | s -> failwith (Format.sprintf "unknown filter function : %s" s)
-
-  let filter_bounds (l,h) = failwith "todo filter_bound"
 
   let to_float_range ((_,l),(_,h)) = (B.to_float_down l),(B.to_float_up h)
 

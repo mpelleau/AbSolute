@@ -37,7 +37,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
     List.fold_left (fun (g,ng) (i,b) -> if b then (i::g,ng) else g,(i::ng))
       ([],[]) sols
 
-  (* returns true if no version of the problem is buggy *)
+  (* returns true if no version of the solver is buggy *)
   let checkfiles dir files =
     print_sep();
     Constant.set_max_iter 10;
@@ -100,6 +100,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
         arr.(1) <- Format.asprintf "the solver crashed :( ";
         arr.(2) <- msg;
         arr.(3) <- Format.asprintf "%a" print_bad ();
+        incr problem;
         arr
     in
     let mat = Array.map output_msg files in
@@ -140,9 +141,11 @@ let main =
   in
   if bf && bm && p && vpl then begin
       Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";
-      Format.printf "%a\n%!" print_good ()
+      Format.printf "%a\n%!" print_good ();
+      exit 0
     end
   else begin
       Tools.red_fprintf Format.std_formatter "Your version of AbSolute seems to have an issue ";
-      Format.printf "%a\n%!" print_bad ()
+      Format.printf "%a\n%!" print_bad ();
+      exit 1
     end

@@ -58,10 +58,19 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
            | "tan"  -> tan
            | "atan" -> atan
            | "exp"  -> exp
-           | "log"  -> log
+           | "ln"   -> log
            | x -> Tools.fail_fmt "unrecognized function name %s" x
-          in Mpqf.of_float (func e)
-      | Funcall(name, args) -> Tools.fail_fmt "cant evaluate function call %s" name
+         in Mpqf.of_float (func e)
+      | Funcall(name,[e1;e2]) ->
+          let e1 = Mpqf.to_float (aux e1) in
+          let e2 = Mpqf.to_float (aux e2) in
+          let func =
+            match name with
+            | "max" -> max
+            | "min" -> min
+            | x -> Tools.fail_fmt "unrecognized function name %s" x
+          in Mpqf.of_float (func e1 e2)
+      | Funcall(name, _) -> Tools.fail_fmt "cant evaluate function call %s" name
     in aux expr
 
   (* check if an instance is valid wrt to a constraint *)

@@ -11,6 +11,8 @@ end
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.get_manager
 
+  let top_itv = Coeff.i_of_scalar (Scalar.of_infty (-1)) (Scalar.of_infty 1)
+
   let rec expr_to_apron a (e:expr) : Texpr1.expr =
     let env = Abstract1.env a in
     match e with
@@ -19,8 +21,9 @@ module SyntaxTranslator (D:ADomain) = struct
         | "sqrt",[x] ->
            let e1 = expr_to_apron a x in
            Texpr1.Unop (Texpr1.Sqrt, e1, Texpr1.Real, Texpr1.Near)
+        (* for function not supported by apron, we return an approximation *)
         | "cos",[_] | "sin",[_] -> Texpr1.Cst (Coeff.i_of_int (-1) 1)
-        | _ -> failwith ("function not supported "^name)
+        | _ -> Texpr1.Cst top_itv
        )
     | Var v ->
       let var = Var.of_string v in
@@ -30,7 +33,7 @@ module SyntaxTranslator (D:ADomain) = struct
     | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf c)
     | Unary (o,e1) ->
       let r = match o with
-              | NEG  -> Texpr1.Neg
+        | NEG  -> Texpr1.Neg
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
