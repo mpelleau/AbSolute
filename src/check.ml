@@ -2,33 +2,34 @@
 (* this modules checks that the solver implementation works fine *)
 (*****************************************************************)
 
+let print_sep () =
+  Format.printf "----------------------------------------------------------\n"
+
+let print_frontier fmt f =
+  match f with
+  | None -> Format.fprintf fmt "no frontier"
+  | Some f -> Format.fprintf fmt "frontier: %.2f%%" (f *. 100.)
+
+let print_good fmt () =
+  Tools.green_fprintf fmt "\xE2\x9C\x94"
+
+let print_not_bad fmt () =
+  Tools.yellow_fprintf fmt "\xE2\x9C\x94"
+
+let print_bad fmt () =
+  Tools.red_fprintf fmt "\xE2\x9D\x8C"
+
+let print_results not_bads goods nb_files =
+  (if not_bads = nb_files then Tools.green_fprintf else Tools.red_fprintf)
+    Format.std_formatter
+    "success : %i/%i with %i confirmed\n\n"
+    not_bads
+    nb_files
+    goods
+
+
 module Make(Dom:Adcp_sig.AbstractCP) = struct
   module Check = Checker.Make(Dom)
-
-  let print_sep () =
-    Format.printf "----------------------------------------------------------\n"
-
-  let print_frontier fmt f =
-    match f with
-    | None -> Format.fprintf fmt "no frontier"
-    | Some f -> Format.fprintf fmt "frontier: %.2f%%" (f *. 100.)
-
-  let print_good fmt () =
-    Tools.green_fprintf fmt "\xE2\x9C\x94"
-
-  let print_not_bad fmt () =
-    Tools.yellow_fprintf fmt "\xE2\x9C\x94"
-
-  let print_bad fmt () =
-    Tools.red_fprintf fmt "\xE2\x9D\x8C"
-
-  let print_results not_bads goods nb_files =
-    (if not_bads = nb_files then Tools.green_fprintf else Tools.red_fprintf)
-      Format.std_formatter
-      "success : %i/%i with %i confirmed\n\n"
-      not_bads
-      nb_files
-      goods
 
   (* returns the couple (g,b) where g are the known solutions of the problem
    and b are the known nogoods of a problem *)
@@ -36,6 +37,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
     List.fold_left (fun (g,ng) (i,b) -> if b then (i::g,ng) else g,(i::ng))
       ([],[]) sols
 
+  (* returns true if no version of the problem is buggy *)
   let checkfiles dir files =
     print_sep();
     Constant.set_max_iter 10;
@@ -103,7 +105,8 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
     let mat = Array.map output_msg files in
     Format.printf "%a" Tools.matrix_print_indent mat;
     print_sep();
-    print_results (!not_bads) (!goods) (Array.length files)
+    print_results (!not_bads) (!goods) (Array.length files);
+    !problem = 0
 
   let go () =
     Random.self_init();
@@ -124,12 +127,22 @@ let message domain =
 
 let main =
   message "floatting boxes";
-  Check_BoxF.go();
+  let bf = Check_BoxF.go() in
   message "mix real-integer boxes";
-  Check_BoxMix.go();
+  let bm = Check_BoxMix.go() in
   message "polyhedra (Apron)";
-  Check_Poly.go();
-  if Vpl_domain.available then begin
+  let p = Check_Poly.go() in
+  let vpl = if Vpl_domain.available then begin
       message "polyhedra (VPL)";
       Check_Vpl.go()
+              end
+            else true
+  in
+  if bf && bm && p && vpl then begin
+      Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";
+      Format.printf "%a\n%!" print_good ()
+    end
+  else begin
+      Tools.red_fprintf Format.std_formatter "Your version of AbSolute seems to have an issue ";
+      Format.printf "%a\n%!" print_bad ()
     end
