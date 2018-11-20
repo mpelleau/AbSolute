@@ -59,8 +59,19 @@ let debug level fmt =
     let spacing = String.make level ' ' in
     Format.kasprintf (fun msg -> Format.printf "%s%s%s" spacing spacing msg) fmt
 
+
+(******************************)
+(** {2} Conveniency functions *)
+(******************************)
+
+(** Create a list of integers between `i` and `j` included. *)
+let range i j =
+  let rec aux n acc =
+    if i > n then acc else aux (n-1) (n :: acc)
+  in aux j []
+
 (**********************)
-(** {1} Map instances *)
+(** {3} Map instances *)
 (**********************)
 
 (** only one instanciation forall variable maps modules *)
