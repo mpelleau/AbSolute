@@ -410,9 +410,7 @@ module BoxedOctagon = struct
   let filter_in_plane : bconstraint -> t -> plane -> t = fun cons o plane ->
     match rotate_constraint o cons plane with
     | None -> o
-    | Some rcons ->
-        print_cons ("filter in plane " ^ (string_of_plane plane)) rcons;
-        filter_in_box rcons o
+    | Some rcons -> filter_in_box rcons o
 
   (* We update the DBM wit the values contained in the box if they improve the current bound in the DBM. *)
   let meet_box_into_dbm : t -> t = fun o ->
@@ -524,6 +522,49 @@ module BoxedOctagon = struct
     filter_rotated |>
     meet_box_into_dbm
 
+  (* Returns `Some (i,j,c)` which is the value `c` in the DBM at position (i,j) if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
+     We have `dbm[i] - dbm[j] <= c`.
+     This function performs a simple pattern matching on the shape of the constraint: we do not attempt to symbolically rewrite the constraint.
+  *)
+  let extract_octagonal_cons : t -> bconstraint -> (int * int * bound) option = fun o (e1,op,e2) ->
+    let dim_of x = let (dim, _) = Env.find x o.env in dim in
+    let posi x = (dim_of x) * 2 in
+    let nega x = (dim_of x) * 2 + 1 in
+    let bound_of c = F.of_rat_up c in
+    let open Csp in
+    match e1, op, e2 with
+    | Binary (op2, x, y), LEQ, Cst (c, _) ->
+        let c = bound_of c in
+        (match op2, x, y with
+        (* x - y <= c *)
+        | SUB, Var x, Var y
+        | ADD, Var x, Unary (NEG, Var y) -> Some (posi x, posi y, c)
+        (* -x - y <= c *)
+        | SUB, Unary (NEG, Var x), Var y
+        | ADD, Unary (NEG, Var x), Unary (NEG, Var y) -> Some (nega x, posi y, c)
+        (* x - -y <= c *)
+        | SUB, Var x, Unary (NEG, Var y)
+        | ADD, Var x, Var y -> Some (posi x, nega y, c)
+        (* -x - -y <= c *)
+        | SUB, Unary (NEG, Var x), Unary (NEG, Var y)
+        | ADD, Unary (NEG, Var x), Var y -> Some (nega x, nega y, c)
+        | _ -> None
+        )
+    (* x <= c *)
+    | Var x, LEQ, Cst (c, _) -> Some (posi x, nega x, ((bound_of c) *. 2.))
+    (* -x <= c *)
+    | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (nega x, posi x, ((bound_of c) *. -2.))
+    | _ -> None
+
+  let filter_octagonal : t -> bconstraint -> (t * bool) = fun o cons ->
+    match extract_octagonal_cons o cons with
+    | Some (i,j,c) ->
+        let o = copy o in
+        set o (matpos2 j i) c;
+        let o = meet_dbm_into_box o in
+        (o, true)
+    | None -> (o, false)
+
   (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
    * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
    * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
@@ -538,9 +579,11 @@ module BoxedOctagon = struct
    * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
   let filter : t -> bconstraint -> t = fun o cons ->
     let o = init_octagonalise o in
-    let o = filter_box o cons in
+    let o =
+      match filter_octagonal o cons with
+      | (o, true) -> o
+      | (o, false) -> filter_box o cons in
     let o = strong_closure_bagnara o in
-    print_out o;
     o
 
   let list_of_dbm : t -> bound list = fun o ->

@@ -206,12 +206,9 @@ let expect_dbm name o dbm_expected =
     dbm_expected
     dbm
 
-(* This function filters the `constraints` in a octagon created with `make ()`.
-   The lower and upper bounds on the variables are given in `vars_expected`.
-   The constraints are filtered only one time from left to right. *)
-let test_filter_cons' make constraints vars_expected dbm_expected : t =
+let test_filter filter' make constraints vars_expected dbm_expected : t =
   let o = make () in
-  let o = List.fold_left filter_box o constraints in
+  let o = List.fold_left filter' o constraints in
   let name = cons_to_string constraints in
   (match dbm_expected with
   | None -> ()
@@ -222,8 +219,13 @@ let test_filter_cons' make constraints vars_expected dbm_expected : t =
    vars_expected;
   o
 
-let test_filter_cons make constraints vars_expected dbm_expected =
-  ignore (test_filter_cons' make constraints vars_expected dbm_expected)
+(* This function filters the `constraints` in a octagon created with `make ()`.
+   The lower and upper bounds on the variables are given in `vars_expected`.
+   The constraints are filtered only one time from left to right. *)
+let test_filter_cons_in_box' = test_filter filter_box
+
+let test_filter_cons_in_box make constraints vars_expected dbm_expected =
+  ignore (test_filter_cons_in_box' make constraints vars_expected dbm_expected)
 
 (* This octagon is presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
 let pelleau_octagon_constraints =
@@ -266,16 +268,16 @@ let pelleau_dbm_closure =
    2.5; -3.; 0.; -2.;
    10.; 2.; 10.; 0.]
 
-let test_filter () =
-  test_filter_cons make_octagon2 [x_leq_C] [("x", F.minus_inf, (Mpqf.to_float frac5_3))] None;
-  test_filter_cons make_octagon2 [x_geq_C] [("x", (Mpqf.to_float frac5_3), F.inf)] None;
-  test_filter_cons make_octagon2 [x_geq_C; x_leq_C]
+let test_filter_in_box () =
+  test_filter_cons_in_box make_octagon2 [x_leq_C] [("x", F.minus_inf, (Mpqf.to_float frac5_3))] None;
+  test_filter_cons_in_box make_octagon2 [x_geq_C] [("x", (Mpqf.to_float frac5_3), F.inf)] None;
+  test_filter_cons_in_box make_octagon2 [x_geq_C; x_leq_C]
     [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
      ("y", F.minus_inf, F.inf)] None;
-  test_filter_cons make_octagon2 [x_geq_C; x_leq_C; x_leq_y]
+  test_filter_cons_in_box make_octagon2 [x_geq_C; x_leq_C; x_leq_y]
     [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
      ("y", (Mpqf.to_float frac5_3), F.inf)] None;
-  test_filter_cons make_octagon2 pelleau_octagon_constraints
+  test_filter_cons_in_box make_octagon2 pelleau_octagon_constraints
     [("x", 1., 5.);
      ("y", 1., 5.)] None
 
@@ -311,24 +313,34 @@ let box_after_filter =
    (x01, F.minus_inf, F.inf);
    (y01, F.minus_inf, F.inf)]
 
+let box_after_filter_octagonal =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, 2.1213203435596424, 7.07106781187);
+   (y01, -1.76776695297, 1.41421356238)]
+
 let test_filter_on_rotated () =
   (* According to this test, the box abstract domain alone cannot propagate octagonal rotated constraints. *)
-  let o1 = test_filter_cons' make_rotated_octagon_2 pelleau_octagon_constraints
+  let o1 = test_filter_cons_in_box' make_rotated_octagon_2 pelleau_octagon_constraints
     box_after_filter
     (Some pelleau_after_box_filtering) in
-  let o2 = test_filter_cons' (fun () -> o1) pelleau_octagon_constraints
+  let o2 = test_filter_cons_in_box' (fun () -> o1) pelleau_octagon_constraints
     box_after_filter
     (Some pelleau_after_box_filtering) in
   Alcotest.(check bool) "idempotent filtering" true (equal o1 o2);
   let o3 = test_dbm_closure o2 pelleau_after_box_filtering pelleau_after_box_filtering_and_closure in
-  let o4 = test_filter_cons' (fun () -> o3) pelleau_octagon_constraints
+  let o4 = test_filter_cons_in_box' (fun () -> o3) pelleau_octagon_constraints
     box_after_filter_closure
     (Some pelleau_after_box_filtering_and_closure) in
-  Alcotest.(check bool) "idempotent filtering and closure" true (equal o3 o4)
+  Alcotest.(check bool) "idempotent filtering and closure" true (equal o3 o4);
+  let _ = test_filter filter (fun () -> o4) pelleau_octagon_constraints
+    box_after_filter_octagonal
+    (Some pelleau_dbm_closure) in
+  ()
 
 (* This test is just to confirm that Box cannot prune domain just with a rotated constraint.
    Actually it is normal since the rotated constraint both depends on x and y, which are both unbounded at the time of the filtering. *)
-let test_rotated_constraint () =
+let test_rotated_constraint_on_box () =
   let box = B.add_var B.empty (Real, "x0_1") in
   let box = B.add_var box (Real, "y0_1") in
   let (rv1, _) = symbolic_var_rotation ("x0_1", "y0_1") in
@@ -355,8 +367,8 @@ let tests = [
   "vars", `Quick, test_vars;
   "all_vars", `Quick, test_all_vars;
   "add_plane", `Quick, test_add_plane;
-  "filter", `Quick, test_filter;
+  "filter", `Quick, test_filter_in_box;
   "dbm", `Quick, test_dbm;
+  "rotated_constraint_on_box", `Quick, test_rotated_constraint_on_box;
   "filter_on_rotated", `Quick, test_filter_on_rotated;
-  "rotated_constraint", `Quick, test_rotated_constraint;
 ]
