@@ -46,10 +46,10 @@ let to_string x = string_of_float (x+.0.)
 
 let to_float_up x : float = x
 let to_float_down x : float = x
-let to_rat = function
-  | infinity -> Mpqf.of_frac 1 0
-  | neg_infinity -> Mpqf.of_frac (-1) 0
-  | x -> Mpqf.of_float x
+let to_rat x =
+  if x = infinity then  Mpqf.of_frac 1 0
+  else if x = neg_infinity then Mpqf.of_frac (-1) 0
+  else Mpqf.of_float x
 
 (* printing *)
 let output chan x = output_string chan (to_string x)
