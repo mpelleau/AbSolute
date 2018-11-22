@@ -128,9 +128,9 @@ module BoxedOctagon = struct
     else matpos i j
 
   let well_formed_plane : plane -> bool = fun (d1,d2) ->
-    ((d1 == 0 || d1 <> d2) && d1 <= d2)
+    ((d1 = 0 || d1 <> d2) && d1 <= d2)
 
-  (* We represent the canonical plane (where d1==d2) only with (0,0). *)
+  (* We represent the canonical plane (where d1=d2) only with (0,0). *)
   let check_well_formed_plane : plane -> unit = fun plane ->
     assert (well_formed_plane plane)
 
@@ -152,6 +152,22 @@ module BoxedOctagon = struct
   (* If the variable `v` is rotated in the plane `(d1,d2)` then returns `then_b`, otherwise `else_b`. *)
   let if_rotated_else : key -> 'a -> 'a -> 'a = fun (v, (d1,d2)) then_b else_b ->
     if d1 <> d2 && (d1 = v || d2 = v) then then_b else else_b
+
+  let print : Format.formatter -> t -> unit = fun fmt o ->
+    Format.fprintf fmt "Box representation: ";
+    B.print fmt o.box;
+    Format.fprintf fmt "\nMatrix representation:\n";
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        Format.fprintf fmt "%a " Format.pp_print_float (o.dbm.(matpos2 i j))
+      done;
+      Format.fprintf fmt "\n"
+    done
+
+  let print_out : t -> unit = fun o ->
+    Format.printf "%a" print o
+
 
   (* returns an empty element *)
   let empty : t = { env=Env.empty; renv=REnv.empty; dim=0; dbm=[||]; box=B.empty; planes=[] }
@@ -184,7 +200,6 @@ module BoxedOctagon = struct
     let renv' = REnv.add key var o.renv in
     let box' = B.add_var o.box (Real, var) in
     { o with env=env'; renv=renv'; box=box' }
-
 
   (* Adds an unconstrained variable to the octagon.
      Precondition: `typ` must be equal to `Real`.
@@ -228,6 +243,9 @@ module BoxedOctagon = struct
     let divider = if_rotated_else k sqrt2_it two_it in
     ub_it (Bot.nobot (I.div v divider))
 
+  let lb' : t -> var -> bound = fun o name -> lb o (Env.find name o.env)
+  let ub' : t -> var -> bound = fun o name -> ub o (Env.find name o.env)
+
   (* Monotonic write: We set a value in the DBM only if the current one is larger. *)
   let set : t -> int -> bound -> unit = fun o pos v ->
     if o.dbm.(pos) > v then
@@ -252,16 +270,16 @@ module BoxedOctagon = struct
 
   let is_canonical_name : t -> var -> bool = fun o name ->
     let (_,plane) = Env.find name o.env in
-    cplane == plane
+    cplane = plane
 
   let var_name : t -> key -> var = fun o (v, (d1,d2)) ->
     try
     let canonical_name = REnv.find (v, cplane) o.renv in
-    if (d1,d2) == cplane then
+    if (d1,d2) = cplane then
       canonical_name
     else
       internal_name canonical_name d1 d2
-    with Not_found -> failwith (string_of_int v)
+    with Not_found -> failwith ("var_name " ^ (string_of_int v))
 
   let check_add_plane : t -> plane -> unit = fun o (d1,d2) ->
     check_well_formed_plane (d1,d2);
@@ -291,12 +309,13 @@ module BoxedOctagon = struct
 
   (* Precondition: This function should be called after all the unconstrained variables have been added, and ideally (but not necessarily) before any constraint is filtered. *)
   let init_octagonalise : t -> t = fun o ->
-    if o.dim >= 2 && (List.length o.planes) = 0 then
+    if o.dim >= 2 && o.planes = [] then
       match !octagonalisation with
         Random -> random_octagonalisation o
       | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
     else o
 
+  (* It returns all variables including those created for the planes. *)
   let all_vars : t -> (Csp.annot * Csp.var) list = fun o ->
     Env.fold (fun v _ acc -> (Real, v)::acc) o.env []
 
@@ -309,6 +328,7 @@ module BoxedOctagon = struct
       (all_vars o)
 
   (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
+  (* BUG: F.to_rat F.inf throws a signal FPE (see #11). *)
   let bounds_of_var : t -> key -> (Mpqf.t * Mpqf.t) = fun o key ->
     (F.to_rat (lb o key), F.to_rat (ub o key))
 
@@ -327,11 +347,216 @@ module BoxedOctagon = struct
       (fun (v, _) -> is_canonical_name o v)
       (B.bound_vars o.box)
 
-(*
-
   (* Removes an unconstrained variable from the environment. *)
   let rem_var : t -> Csp.var -> t = fun o _ -> o
 
+  (* Symbolic representation of the square root of 2.
+     If it is computed right away, we do not know in what direction we should round the square root.
+   *)
+  let sym_sqrt2 = Funcall ("sqrt", [(Cst (Mpqf.of_int 2, Real))])
+
+  (* To rotate the variables `(v1,v2)` in the plane they describe, we perform:
+       v1 -> cos(45°)*v1 - sin(45°)*v2
+       v2 -> sin(45°)*v1 + cos(45°)*v2
+      Note that we have cos(45°) = sin(45°) = 1/(sqrt 2).
+  *)
+  let symbolic_var_rotation : (var * var) -> (expr * expr) = fun (v1,v2) ->
+    let left = Binary (DIV, Var v1, sym_sqrt2) in
+    let right = Binary (DIV, Var v2, sym_sqrt2) in
+    let rv1 = Binary (SUB, left, right) in
+    let rv2 = Binary (ADD, left, right) in
+    (rv1, rv2)
+
+  (* To rotate a constraint in the plane `(d1,d2)`:
+      1. We rotate the variables at dimensions `d1` and `d2` (see `symbolic_var_rotation`).
+      2. We replace every occurrence of these variables in the constraint.
+      3. If they do not occur we return None, otherwise the rotated constraint.
+  *)
+  let rotate_constraint : t -> bconstraint -> plane -> bconstraint option = fun o (e1,op,e2) (d1,d2) ->
+    let get_names di =
+      let cvi = REnv.find (di, cplane) o.renv in
+      let vi = REnv.find (di, (d1,d2)) o.renv in
+      (cvi, vi) in
+    let (cv1, v1) = get_names d1 in
+    let (cv2, v2) = get_names d2 in
+    let (rv1, rv2) = symbolic_var_rotation (v1, v2) in
+    let found_var = ref false in
+    let replace = fun v ->
+      if v = cv1 || v = cv2 then begin
+        found_var := true;
+        if v = cv1 then rv1 else rv2 end
+      else Var v
+    in
+    let e1' = replace_var_in_expr replace e1 in
+    let e2' = replace_var_in_expr replace e2 in
+    if !found_var then Some (e1', op, e2') else None
+
+  (* We filter the constraint `cons` in `o.box`.
+     We do not merge the box into the DBM here.
+  *)
+  let filter_in_box : bconstraint -> t -> t = fun cons o ->
+    let box' = B.filter o.box cons in
+    { o with box=box' }
+
+  let print_cons name (e1, op, e2) =
+    Format.printf "%s" name;
+    Format.printf ": %a\n" Csp.print_bexpr (Csp.Cmp (op, e1, e2))
+
+  let string_of_plane (x,y) = "(" ^ string_of_int x ^ "," ^ string_of_int y ^ ")"
+
+  (* We filter the constraint in the rotated `plane`.
+     The constraint is not filtered if none of its variables is rotated in `plane`.
+     We do not merge the box into the DBM here. *)
+  let filter_in_plane : bconstraint -> t -> plane -> t = fun cons o plane ->
+    match rotate_constraint o cons plane with
+    | None -> o
+    | Some rcons ->
+        print_cons ("filter in plane " ^ (string_of_plane plane)) rcons;
+        filter_in_box rcons o
+
+  (* We update the DBM wit the values contained in the box if they improve the current bound in the DBM. *)
+  let meet_box_into_dbm : t -> t = fun o ->
+    let update_cell_from_box = fun var_name k ->
+      let (l, u) = B.float_bounds o.box var_name in
+      set_lb o k l;
+      set_ub o k u;
+    in
+    Env.iter update_cell_from_box o.env;
+    o
+
+  let meet_dbm_into_box : t -> t = fun o ->
+    let filter_var = fun var_name key box ->
+      let i = I.of_floats (lb o key) (ub o key) in
+      B.meet_var box var_name i in
+    { o with box=Env.fold filter_var o.env o.box }
+
+
+  (* We raise `Bot_found` if there is a negative cycle (v < 0).
+     Otherwise we set the value `v` in the DBM[i,j] if it improves the current value. *)
+  let update_cell : t -> int -> int -> bound -> unit = fun o i j v ->
+    let idx = matpos2 i j in
+    if v < o.dbm.(idx) then
+      (* if i = j && v < 0. then
+        raise Bot.Bot_found
+      else *)
+        o.dbm.(idx) <- v
+        (* Possible improvement: reschedule the corresponding propagators. *)
+    else ()
+
+  (* Check the consistency of the DBM, and update the cell to 0.
+     Note: Since we always update the DBM with `update_cell`, we are actually sure that the matrix is consistent.
+     This method just set the diagonal elements to 0.
+     We keep this name to match the algorithm in (Bagnara, 2009). *)
+  let float_consistent : t -> unit = fun o ->
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      if o.dbm.(matpos2 i i) < 0. then
+        raise Bot.Bot_found
+      else
+        o.dbm.(matpos2 i i) <- 0.
+    done
+
+  (* The part of the modified Floyd-Warshall algorithm for a given 'k'. *)
+  let strong_closure_k : t -> int -> unit = fun o k ->
+    let m = fun i j -> o.dbm.(matpos2 i j) in
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        let v = List.fold_left F.min (m i j) [
+          F.add_up (m i (2*k+1)) (m (2*k+1) j) ;
+          F.add_up (m i (2*k)) (m (2*k) j) ;
+          F.add_up (F.add_up (m i (2*k)) (m (2*k) (2*k+1))) (m (2*k+1) j) ;
+          F.add_up (F.add_up (m i (2*k+1)) (m (2*k+1) (2*k))) (m (2*k) j) ] in
+        update_cell o i j v
+      done
+    done
+
+  (* Strengthening propagates the octagonal constraints in the DBM. *)
+  let strengthening : t -> unit = fun o ->
+    let m = fun i j -> o.dbm.(matpos2 i j) in
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        let i' = i lxor 1 in
+        let j' = j lxor 1 in
+        let v = (F.div_up (F.add_up (m i i') (m j' j)) 2.) in
+        update_cell o i j v
+      done
+    done
+
+  (* The Floyd-Warshall algorithm. *)
+  let floyd_warshall : t -> unit = fun o ->
+    let m = fun i j -> o.dbm.(matpos2 i j) in
+    let n = o.dim in
+    for k = 0 to (2*n-1) do
+      for i = 0 to (2*n-1) do
+        for j = 0 to (2*n-1) do
+          let v = F.min (m i j) (F.add_up (m i k) (m k j)) in
+          update_cell o i j v
+        done
+      done
+    done
+
+  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let strong_closure_bagnara : t -> t = fun o ->
+    let o = copy o in
+    floyd_warshall o;
+    float_consistent o;
+    strengthening o;
+    meet_dbm_into_box o
+
+  (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
+  let strong_closure_mine : t -> t = fun o ->
+    let o = copy o in
+    let n = o.dim in
+    for k = 0 to n-1 do
+      strong_closure_k o k;
+      strengthening o
+    done;
+    float_consistent o;
+    meet_dbm_into_box o
+
+  let filter_box : t -> bconstraint -> t = fun o cons ->
+    let filter_rotated o = List.fold_left (filter_in_plane cons) o o.planes in
+    (* filter in the canonical plane. *)
+    o |>
+    filter_in_box cons |>
+    filter_rotated |>
+    meet_box_into_dbm
+
+  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
+   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
+   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
+   *
+   * (1) This algorithm first filters the constraint and its rotated versions individually.
+   * (2) We merge the box in the DBM.
+   * (3) Then we apply the Floyd Warshall algorithm.
+   * (4) We merge the DBM in the box.
+   *
+   * Only rotated constraints with variables appearing in the rotated plane are executed.
+   *
+   * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
+  let filter : t -> bconstraint -> t = fun o cons ->
+    let o = init_octagonalise o in
+    let o = filter_box o cons in
+    let o = strong_closure_bagnara o in
+    print_out o;
+    o
+
+  let list_of_dbm : t -> bound list = fun o ->
+    Array.to_list o.dbm
+
+  (* True if the two representations (DBM and BOX) of `o` and `o'` are identical.
+     Precondition: o <= o' or o' <= o. *)
+  let equal : t -> t -> bool = fun o o' ->
+    let rec aux eq l1 l2 = match l1, l2 with
+      | [], [] -> true
+      | [], _ | _, [] -> false
+      | x::xs, y::ys -> eq x y && aux eq xs ys in
+    aux F.equal (list_of_dbm o) (list_of_dbm o') &&
+    (B.volume o.box) = (B.volume o'.box)
+
+(*
   let check_same_env : t -> t -> unit = fun large small ->
     let checker = fun k v ->
       if Env.find k large.env <> v then
@@ -365,111 +590,6 @@ module BoxedOctagon = struct
     Array.iteri merge rest.dbm;
     res
 
-  let meet_dbm_into_box : t -> plane -> B.t -> B.t = fun o plane box ->
-    let filter_var = fun var_name k box ->
-      let (l,u) = bounds_of_var o k plane in
-      let constraints = from_cst_to_expr (var_name, (l, u)) in
-      List.fold_left B.filter box constraints in
-    Env.fold filter_var o.env box
-
-  let meet_dbm_into_boxes : t -> t = fun o ->
-    let cbox = meet_dbm_into_box o cplane o.cbox in
-    let meet_rbox = meet_dbm_into_box o in
-    let rboxes = R.mapi meet_rbox o.rboxes in
-    { o with cbox=cbox; rboxes=rboxes }
-
-  let meet_box_into_dbm : t -> plane -> B.t -> t = fun o plane box ->
-    let update_cell = fun var_name k ->
-      let (l, u) = B.float_bounds box var_name in
-      set_lb o k plane l;
-      set_ub o k plane u;
-    in
-    Env.iter update_cell o.env;
-    o
-
-  (* We raise `Bot_found` if there is a negative cycle (v < 0).
-     Otherwise we set the value `v` in the DBM[i,j] if it improves the current value.
-     Note: To avoid overflow, we must check negative cycle at every loop (Hougardy, 2010). *)
-  let update_cell : t -> int -> int -> bound -> unit = fun o i j v ->
-    let idx = matpos2 i j in
-    if v < o.dbm.(idx) then
-      if v < 0. then
-        raise Bot.Bot_found
-      else
-        o.dbm.(idx) <- v
-        (* TODO: reschedule the corresponding propagators. *)
-    else ()
-
-  (* Check the consistency of the DBM, and update the cell to 0.
-     Note: Since we always update the DBM with `update_cell`, we are actually sure that the matrix is consistent.
-     This method just set the diagonal elements to 0.
-     We keep this name to match the algorithm in (Bagnara, 2009). *)
-  let float_consistent : t -> unit = fun o ->
-    let n = o.dim in
-    for i = 0 to (2*n-1) do
-      o.dbm.(matpos2 i i) <- 0.
-    done
-
-  (* The part of the modified Floyd-Warshall algorithm for a given 'k'. *)
-  let strong_closure_k : t -> int -> unit = fun o k ->
-    let m = fun i j -> o.dbm.(matpos2 i j) in
-    let n = o.dim in
-    for i = 0 to (2*n-1) do
-      for j = 0 to (2*n-1) do
-        let v = List.fold_left F.min (m i j) [
-          F.add_up (m i (2*k+1)) (m (2*k+1) j) ;
-          F.add_up (m i (2*k)) (m (2*k) j) ;
-          F.add_up (F.add_up (m i (2*k)) (m (2*k) (2*k+1))) (m (2*k+1) j) ;
-          F.add_up (F.add_up (m i (2*k+1)) (m (2*k+1) (2*k))) (m (2*k) j) ] in
-        update_cell o i j v
-      done
-    done
-
-  (* Strengthening propagates the octagonal constraints in the DBM. *)
-  let strengthening : t -> unit = fun o ->
-    let m = fun i j -> o.dbm.(matpos2 i j) in
-    let n = o.dim in
-    for i = 0 to (2*n-1) do
-      for j = 0 to (2*n-1) do
-        let i' = i lxor 1 in
-        let j' = j lxor 1 in
-        let v = (F.div_up (F.add_up (m i i') (m j' j)) 2.) in
-        update_cell o i j v
-      done
-    done
-
-  (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
-  let strong_closure_mine : t -> t = fun o ->
-    let o = copy o in
-    let n = o.dim in
-    for k = 0 to n-1 do
-      strong_closure_k o k;
-      strengthening o
-    done;
-    float_consistent o;
-    o
-
-  (* The Floyd-Warshall algorithm. *)
-  let floyd_warshall : t -> unit = fun o ->
-    let m = fun i j -> o.dbm.(matpos2 i j) in
-    let n = o.dim in
-    for k = 0 to (2*n-1) do
-      for i = 0 to (2*n-1) do
-        for j = 0 to (2*n-1) do
-          let v = F.min (m i j) (F.add_up (m i k) (m k j)) in
-          update_cell o i j v
-        done
-      done
-    done
-
-  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
-  let strong_closure_bagnara : t -> t = fun o ->
-    let o = copy o in
-    floyd_warshall o;
-    float_consistent o;
-    strengthening o;
-    o
-
   (* pruning *)
   let prune : t -> t -> t list * t
     = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
@@ -493,62 +613,6 @@ module BoxedOctagon = struct
   let split_on (o:t) (_:ctrs) (_:instance) : t list = [o]
 
   let shrink (o:t) (_:Mpqf.t) : t = o
-
-  let rotate_var : (var * var) -> (expr * expr) = fun (v1,v2) ->
-    (* Symbolic representation of the square root of 2.
-       If it is computed right away, we do not know in what direction we should round the square root.
-     *)
-    let sqrt2 = Binary (POW, (Cst (Mpqf.of_int 2, Real)), (Cst (Mpqf.of_frac 1 2, Real))) in
-    let left = Binary (DIV, Var v1, sqrt2) in
-    let right = Binary (DIV, Var v2, sqrt2) in
-    let rv1 = Binary (SUB, left, right) in
-    let rv2 = Binary (ADD, left, right) in
-    (rv1, rv2)
-
-  let rotate_constraint : t -> bconstraint -> plane -> bconstraint option = fun o (e1,op,e2) (d1,d2) ->
-    let v1 = REnv.find d1 o.renv in
-    let v2 = REnv.find d2 o.renv in
-    let (rv1, rv2) = rotate_var (v1, v2) in
-    let found_var = ref false in
-    let replace = fun v ->
-      if v = v1 || v = v2 then begin
-        found_var := true;
-        if v = v1 then rv1 else rv2 end
-      else Var v
-    in
-    let e1' = replace_var_in_expr replace e1 in
-    let e2' = replace_var_in_expr replace e2 in
-    if !found_var then Some (e1', op, e2') else None
-
-  let filter_in_plane : bconstraint -> plane -> B.t -> t -> t = fun cons plane box o ->
-    if plane = cplane then
-      let o' = { o with cbox=B.filter box cons } in
-      meet_box_into_dbm o' plane o'.cbox
-    else
-      match rotate_constraint o cons plane with
-      | None -> o
-      | Some rcons ->
-          let box' = B.filter box rcons in
-          let rboxes = R.add plane box' o.rboxes in
-          meet_box_into_dbm { o with rboxes=rboxes } plane box'
-
-  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
-   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we call a filtering on a constraint.
-   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system in place).
-   *
-   * (1) This algorithm first filters the constraint and its rotated versions individually and merge their results in the DBM.
-   * (2) Then we apply the Floyd Warshall algorithm.
-   * (3) We merge the DBM with the boxes.
-   *
-   * Only rotated constraints with variables appearing in the rotated plane are executed. *)
-  let filter : t -> bconstraint -> t = fun o cons ->
-    let filter_rotated plane = filter_in_plane cons plane in
-    o |>
-    init_octagonalise |>
-    filter_in_plane cons cplane o.cbox |>
-    R.fold filter_rotated o.rboxes |>
-    strong_closure_mine |>
-    meet_dbm_into_boxes
 
   (* We delegate this evaluation to the canonical box.
    * Possible improvement: obtain a better approximation by turning the expression and forward_eval it in different plane. *)
@@ -586,9 +650,6 @@ module BoxedOctagon = struct
   (* check if a constraint is suited for this abstract domain *)
   let is_representable : Csp.bexpr -> answer =
     fun _ -> Adcp_sig.Yes
-
-  let print : Format.formatter -> t -> unit = fun fmt o ->
-    B.print fmt o.cbox
 
   (* concretization function. we call it a spawner.
      useful to do tests, and to reuse the results.

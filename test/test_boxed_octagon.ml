@@ -109,10 +109,13 @@ let test_add_var () =
   Alcotest.(check int) "add_var (2)" 12 (dbm_length (make_octagon2 ()));
   end
 
+(* We test that the `obtained` bound is less or greater than (depending on `cmp`) the `expected` bound.
+   We allow some rounding errors to occur, but they must be in the right direction (thus we do not lose potential solutions).
+   In addition, we test that the delta between the bounds is not greater than `epsilon`. *)
 let expect_bound fun_name cmp expected obtained =
   let name = fun_name ^ " (expected: " ^ (string_of_float expected) ^ ", obtained: " ^ (string_of_float obtained) ^ ")" in
   Alcotest.(check bool) name true (cmp expected obtained);
-  if expected != F.inf && expected != F.minus_inf then
+  if expected <> obtained then
     let delta = (F.abs (expected -. obtained)) in
     let name = name ^ ".(epsilon: " ^ (string_of_float epsilon) ^ ", delta: " ^ (string_of_float delta) ^ ")" in
     Alcotest.(check bool) name true (delta <= epsilon)
@@ -163,14 +166,177 @@ let add_all_planes o = List.fold_left add_plane o (gen_all_planes_but_cplane o)
 let make_rotated_octagon_2 () = add_all_planes (make_octagon2 ())
 let make_rotated_octagon_3 () = add_all_planes (make_octagon3 ())
 
+
+let x01 = internal_name "x" 0 1
+let y01 = internal_name "y" 0 1
+
 let test_add_plane () =
   List.iter2
     (fun o expected -> Alcotest.(check (list string)) "all_vars_all_plane" expected (clean_vars (all_vars o)))
   [make_rotated_octagon_2 (); make_rotated_octagon_3 ()]
-  [sort_string ["x"; "y"; internal_name "x" 0 1; internal_name "y" 0 1];
-   sort_string ["x"; "y"; "z"; internal_name "x" 0 1; internal_name "x" 0 2;
-      internal_name "y" 0 1; internal_name "y" 1 2;
+  [sort_string ["x"; "y"; x01; y01];
+   sort_string ["x"; "y"; "z"; x01; internal_name "x" 0 2;
+      y01; internal_name "y" 1 2;
       internal_name "z" 0 2; internal_name "z" 1 2]]
+
+(* Choose 5/3 because it is not representable in a float, and might generate rounding errors. *)
+let frac5_3 = Mpqf.of_frac 5 3
+let c = Csp.Cst (frac5_3, Real)
+let x = Csp.Var "x"
+let y = Csp.Var "y"
+let x_leq_C = (x, Csp.LEQ, c)
+let x_geq_C = (x, Csp.GEQ, c)
+let x_leq_y = (x, Csp.LEQ, y)
+
+let c_m1 = Csp.Cst ((Mpqf.of_int (-1)), Real)
+let c_5 = Csp.Cst ((Mpqf.of_int 5), Real)
+let c_2 = Csp.Cst ((Mpqf.of_int 2), Real)
+let c_2_5 = Csp.Cst ((Mpqf.of_frac 5 2), Real)
+let c_m3 = Csp.Cst ((Mpqf.of_int (-3)), Real)
+
+let cons_to_string cons =
+  let constraints = List.map (fun (e1, op, e2) -> (Csp.Cmp (op, e1, e2))) cons in
+  Format.fprintf Format.str_formatter "%a" Csp.print_constraints constraints;
+  Format.flush_str_formatter ()
+
+let expect_dbm name o dbm_expected =
+  let dbm = list_of_dbm o in
+  List.iter2
+    (expect_le (name ^ ".dbm cell"))
+    dbm_expected
+    dbm
+
+(* This function filters the `constraints` in a octagon created with `make ()`.
+   The lower and upper bounds on the variables are given in `vars_expected`.
+   The constraints are filtered only one time from left to right. *)
+let test_filter_cons' make constraints vars_expected dbm_expected : t =
+  let o = make () in
+  let o = List.fold_left filter_box o constraints in
+  let name = cons_to_string constraints in
+  (match dbm_expected with
+  | None -> ()
+  | Some dbm_expected -> expect_dbm name o dbm_expected);
+  List.iter (fun (var, l, u) ->
+    expect_le ("ub(" ^ var ^ "): " ^ name) u (ub' o var);
+    expect_ge ("lb(" ^ var ^ "): " ^ name) l (lb' o var))
+   vars_expected;
+  o
+
+let test_filter_cons make constraints vars_expected dbm_expected =
+  ignore (test_filter_cons' make constraints vars_expected dbm_expected)
+
+(* This octagon is presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
+let pelleau_octagon_constraints =
+  let open Csp in
+  [(Unary (NEG, x), LEQ, c_m1);        (* -x <= -1 *)
+   (x, LEQ, c_5);                      (* x <= 5 *)
+   (Unary (NEG, y), LEQ, c_m1);        (* -y <= -1 *)
+   (y, LEQ, c_5);                      (* y <= 5 *)
+   (Binary (SUB, Unary (NEG, x), y), LEQ, c_m3); (* -x - y <= -3 *)
+   (Binary (SUB, y, x), LEQ, c_2);     (* y - x <= 2 *)
+   (Binary (SUB, x, y), LEQ, c_2_5)]   (* x - y <= 2.5 *)
+
+let octagonal_inf_matrix2 =
+  [F.inf; F.inf;
+   F.inf; F.inf;
+   F.inf; F.inf; F.inf; F.inf;
+   F.inf; F.inf; F.inf; F.inf]
+
+let pelleau_after_box_filtering =
+  [F.inf; -2.;
+   10.; F.inf;
+   F.inf; F.inf; F.inf; -2.;
+   F.inf; F.inf; 10.; F.inf]
+
+let pelleau_after_box_filtering_and_closure =
+  [0.; -2.;
+   10.; 0.;
+   4.; -2.; 0.; -2.;
+   10.; 4.; 10.; 0.]
+
+let pelleau_dbm =
+  [F.inf; -2.;
+   10.; F.inf;
+   2.5; -3.; F.inf; -2.;
+   F.inf; 2.; 10.; F.inf]
+
+let pelleau_dbm_closure =
+  [0.; -2.;
+   10.; 0.;
+   2.5; -3.; 0.; -2.;
+   10.; 2.; 10.; 0.]
+
+let test_filter () =
+  test_filter_cons make_octagon2 [x_leq_C] [("x", F.minus_inf, (Mpqf.to_float frac5_3))] None;
+  test_filter_cons make_octagon2 [x_geq_C] [("x", (Mpqf.to_float frac5_3), F.inf)] None;
+  test_filter_cons make_octagon2 [x_geq_C; x_leq_C]
+    [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
+     ("y", F.minus_inf, F.inf)] None;
+  test_filter_cons make_octagon2 [x_geq_C; x_leq_C; x_leq_y]
+    [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
+     ("y", (Mpqf.to_float frac5_3), F.inf)] None;
+  test_filter_cons make_octagon2 pelleau_octagon_constraints
+    [("x", 1., 5.);
+     ("y", 1., 5.)] None
+
+let test_dbm_closure o before after =
+  expect_dbm "dbm.before_closure" o before;
+  let bagnara_o = strong_closure_bagnara o in
+  expect_dbm "dbm.after_closure_bagnara" bagnara_o after;
+  let mine_o = strong_closure_mine o in
+  expect_dbm "dbm.after_closure_mine" mine_o after;
+  bagnara_o
+
+let test_dbm () =
+  let o = make_rotated_octagon_2 () in
+  set_lb o (0,cplane) 1.;
+  set_ub o (0,cplane) 5.;
+  set_lb o (1,cplane) 1.;
+  set_ub o (1,cplane) 5.;
+  set_lb o (0,(0,1)) 2.1213203435596424;
+  set_ub o (0,(0,1)) F.inf;
+  set_lb o (1,(0,1)) (-.1.7677669529663687);
+  set_ub o (1,(0,1)) 1.414213562373095;
+  ignore (test_dbm_closure o pelleau_dbm pelleau_dbm_closure)
+
+let box_after_filter_closure =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, 1.414213562373095, 7.07106781187);
+   (y01, -2.82842712475, 2.82842712475)]
+
+let box_after_filter =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, F.minus_inf, F.inf);
+   (y01, F.minus_inf, F.inf)]
+
+let test_filter_on_rotated () =
+  (* According to this test, the box abstract domain alone cannot propagate octagonal rotated constraints. *)
+  let o1 = test_filter_cons' make_rotated_octagon_2 pelleau_octagon_constraints
+    box_after_filter
+    (Some pelleau_after_box_filtering) in
+  let o2 = test_filter_cons' (fun () -> o1) pelleau_octagon_constraints
+    box_after_filter
+    (Some pelleau_after_box_filtering) in
+  Alcotest.(check bool) "idempotent filtering" true (equal o1 o2);
+  let o3 = test_dbm_closure o2 pelleau_after_box_filtering pelleau_after_box_filtering_and_closure in
+  let o4 = test_filter_cons' (fun () -> o3) pelleau_octagon_constraints
+    box_after_filter_closure
+    (Some pelleau_after_box_filtering_and_closure) in
+  Alcotest.(check bool) "idempotent filtering and closure" true (equal o3 o4)
+
+(* This test is just to confirm that Box cannot prune domain just with a rotated constraint.
+   Actually it is normal since the rotated constraint both depends on x and y, which are both unbounded at the time of the filtering. *)
+let test_rotated_constraint () =
+  let box = B.add_var B.empty (Real, "x0_1") in
+  let box = B.add_var box (Real, "y0_1") in
+  let (rv1, _) = symbolic_var_rotation ("x0_1", "y0_1") in
+  let rcons = (rv1, Csp.LEQ, c_5) in
+  let box = B.filter box rcons in
+  let (l,u) = B.float_bounds box "x0_1" in
+  expect_ge "filter.rotated(x <= 5).ub" F.inf u;
+  expect_le "filter.rotated(x <= 5).lb" F.minus_inf l
 
 let tests = [
   "matpos", `Quick, test_matpos;
@@ -189,4 +355,8 @@ let tests = [
   "vars", `Quick, test_vars;
   "all_vars", `Quick, test_all_vars;
   "add_plane", `Quick, test_add_plane;
+  "filter", `Quick, test_filter;
+  "dbm", `Quick, test_dbm;
+  "filter_on_rotated", `Quick, test_filter_on_rotated;
+  "rotated_constraint", `Quick, test_rotated_constraint;
 ]

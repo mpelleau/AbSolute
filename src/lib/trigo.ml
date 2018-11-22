@@ -11,7 +11,7 @@ module F = Bound_float
 
 module Make (I:Itv_sig.ITV) = struct
 
-  (* All the classical interval computations are keeped *)
+  (* All the classical interval computations are kept *)
   include I
 
 

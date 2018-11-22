@@ -76,6 +76,9 @@ module Box (I:ITV) = struct
   let meet (a:t) (b:t) : t =
     Env.map2z (fun _ x y -> debot(I.meet x y)) a b
 
+  let meet_var (a:t) (v:var) (value:i) : t =
+    Env.add v (debot (I.meet (Env.find v a) value)) a
+
   (* predicates *)
   (* ---------- *)
 
