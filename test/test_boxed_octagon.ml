@@ -46,6 +46,113 @@ let gen_all_key: t -> key list = fun o ->
 let gen_octagon4 () = [empty; make_octagon1 (); make_octagon2 (); make_octagon3 ()]
 let gen_bound () = [0.; 1.; 1.5; -1.; -1.5; F.minus_inf; F.inf; F.minus_one; F.sqrt_up 2.; F.sqrt_down 2.; F.neg (F.sqrt_up 2.); F.neg (F.sqrt_down 2.)]
 
+let x01 = internal_name "x" 0 1
+let y01 = internal_name "y" 0 1
+
+(* Choose 5/3 because it is not representable in a float, and might generate rounding errors. *)
+let frac5_3 = Mpqf.of_frac 5 3
+let c = Csp.Cst (frac5_3, Real)
+let x = Csp.Var "x"
+let y = Csp.Var "y"
+let x_leq_C = (x, Csp.LEQ, c)
+let x_geq_C = (x, Csp.GEQ, c)
+let x_leq_y = (x, Csp.LEQ, y)
+
+let c_m1 = Csp.Cst ((Mpqf.of_int (-1)), Real)
+let c_5 = Csp.Cst ((Mpqf.of_int 5), Real)
+let c_2 = Csp.Cst ((Mpqf.of_int 2), Real)
+let c_2_5 = Csp.Cst ((Mpqf.of_frac 5 2), Real)
+let c_m3 = Csp.Cst ((Mpqf.of_int (-3)), Real)
+
+let make_mpelleau_octagon constants =
+  let open Csp in
+  let constraints =           (* NOTE: the constants on the right depends on "constants". *)
+    [(Unary (NEG, x), LEQ);         (* -x <= -1 *)
+     (x, LEQ);                      (* x <= 5 *)
+     (Unary (NEG, y), LEQ);         (* -y <= -1 *)
+     (y, LEQ);                      (* y <= 5 *)
+     (Binary (SUB, Unary (NEG, x), y), LEQ); (* -x - y <= -3 *)
+     (Binary (SUB, y, x), LEQ);     (* y - x <= 2 *)
+     (Binary (SUB, x, y), LEQ)] in  (* x - y <= 2.5 *)
+  List.map2 (fun (l,op) r -> (l, op, Csp.Cst (r, Real))) constraints constants
+
+(* These octagons are presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
+let blue_octagon =
+  make_mpelleau_octagon [
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_int (-3); Mpqf.of_int 2;
+    Mpqf.of_frac 5 2]
+
+let pink_octagon =
+  make_mpelleau_octagon [
+    Mpqf.of_int (-3); Mpqf.of_int 7;
+    Mpqf.of_int (-2); Mpqf.of_int 6;
+    Mpqf.of_int (-6); Mpqf.of_int 1;
+    Mpqf.of_frac 7 2]
+
+let orange_octagon =
+  make_mpelleau_octagon [
+    Mpqf.of_int (-1); Mpqf.of_int 7;
+    Mpqf.of_int (-1); Mpqf.of_int 6;
+    Mpqf.of_int (-3); Mpqf.of_int 2;
+    Mpqf.of_frac 7 2]
+
+let green_octagon =
+  make_mpelleau_octagon [
+    Mpqf.of_int (-3); Mpqf.of_int 5;
+    Mpqf.of_int (-2); Mpqf.of_int 5;
+    Mpqf.of_int (-6); Mpqf.of_int 1;
+    Mpqf.of_frac 5 2]
+
+let inf_dbm =
+  [F.inf; F.inf;
+   F.inf; F.inf;
+   F.inf; F.inf; F.inf; F.inf;
+   F.inf; F.inf; F.inf; F.inf]
+
+let blue_dbm_after_box_filtering =
+  [F.inf; -2.;
+   10.; F.inf;
+   F.inf; F.inf; F.inf; -2.;
+   F.inf; F.inf; 10.; F.inf]
+
+let blue_dbm_after_box_filtering_and_closure =
+  [0.; -2.;
+   10.; 0.;
+   4.; -2.; 0.; -2.;
+   10.; 4.; 10.; 0.]
+
+let blue_dbm =
+  [F.inf; -2.;
+   10.; F.inf;
+   2.5; -3.; F.inf; -2.;
+   F.inf; 2.; 10.; F.inf]
+
+let blue_dbm_closure =
+  [0.; -2.;
+   10.; 0.;
+   2.5; -3.; 0.; -2.;
+   10.; 2.; 10.; 0.]
+
+let blue_box_after_filter_closure =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, 1.414213562373095, 7.07106781187);
+   (y01, -2.82842712475, 2.82842712475)]
+
+let blue_box_after_filter =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, F.minus_inf, F.inf);
+   (y01, F.minus_inf, F.inf)]
+
+let blue_box_after_filter_octagonal =
+  [("x", 1., 5.);
+   ("y", 1., 5.);
+   (x01, 2.1213203435596424, 7.07106781187);
+   (y01, -1.76776695297, 1.41421356238)]
+
 (* 3. Unit testing *)
 
 let test_matpos_gen name matpos' =
@@ -166,10 +273,6 @@ let add_all_planes o = List.fold_left add_plane o (gen_all_planes_but_cplane o)
 let make_rotated_octagon_2 () = add_all_planes (make_octagon2 ())
 let make_rotated_octagon_3 () = add_all_planes (make_octagon3 ())
 
-
-let x01 = internal_name "x" 0 1
-let y01 = internal_name "y" 0 1
-
 let test_add_plane () =
   List.iter2
     (fun o expected -> Alcotest.(check (list string)) "all_vars_all_plane" expected (clean_vars (all_vars o)))
@@ -178,21 +281,6 @@ let test_add_plane () =
    sort_string ["x"; "y"; "z"; x01; internal_name "x" 0 2;
       y01; internal_name "y" 1 2;
       internal_name "z" 0 2; internal_name "z" 1 2]]
-
-(* Choose 5/3 because it is not representable in a float, and might generate rounding errors. *)
-let frac5_3 = Mpqf.of_frac 5 3
-let c = Csp.Cst (frac5_3, Real)
-let x = Csp.Var "x"
-let y = Csp.Var "y"
-let x_leq_C = (x, Csp.LEQ, c)
-let x_geq_C = (x, Csp.GEQ, c)
-let x_leq_y = (x, Csp.LEQ, y)
-
-let c_m1 = Csp.Cst ((Mpqf.of_int (-1)), Real)
-let c_5 = Csp.Cst ((Mpqf.of_int 5), Real)
-let c_2 = Csp.Cst ((Mpqf.of_int 2), Real)
-let c_2_5 = Csp.Cst ((Mpqf.of_frac 5 2), Real)
-let c_m3 = Csp.Cst ((Mpqf.of_int (-3)), Real)
 
 let cons_to_string cons =
   let constraints = List.map (fun (e1, op, e2) -> (Csp.Cmp (op, e1, e2))) cons in
@@ -209,6 +297,7 @@ let expect_dbm name o dbm_expected =
 let test_filter filter' make constraints vars_expected dbm_expected : t =
   let o = make () in
   let o = List.fold_left filter' o constraints in
+  print_out o;
   let name = cons_to_string constraints in
   (match dbm_expected with
   | None -> ()
@@ -226,77 +315,6 @@ let test_filter_cons_in_box' = test_filter filter_box
 
 let test_filter_cons_in_box make constraints vars_expected dbm_expected =
   ignore (test_filter_cons_in_box' make constraints vars_expected dbm_expected)
-
-let make_mpelleau_octagon constants =
-  let open Csp in
-  let constraints =           (* NOTE: the constants on the right depends on "constants". *)
-    [(Unary (NEG, x), LEQ);         (* -x <= -1 *)
-     (x, LEQ);                      (* x <= 5 *)
-     (Unary (NEG, y), LEQ);         (* -y <= -1 *)
-     (y, LEQ);                      (* y <= 5 *)
-     (Binary (SUB, Unary (NEG, x), y), LEQ); (* -x - y <= -3 *)
-     (Binary (SUB, y, x), LEQ);     (* y - x <= 2 *)
-     (Binary (SUB, x, y), LEQ)] in  (* x - y <= 2.5 *)
-  List.map2 (fun (l,op) r -> (l, op, Csp.Cst (r, Real))) constraints constants
-
-(* These octagons are presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
-let blue_octagon =
-  make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-3); Mpqf.of_int 2;
-    Mpqf.of_frac 5 2]
-
-let pink_octagon =
-  make_mpelleau_octagon [
-    Mpqf.of_int (-3); Mpqf.of_int 7;
-    Mpqf.of_int (-2); Mpqf.of_int 6;
-    Mpqf.of_int (-6); Mpqf.of_int 1;
-    Mpqf.of_frac 7 2]
-
-let orange_octagon =
-  make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 7;
-    Mpqf.of_int (-1); Mpqf.of_int 6;
-    Mpqf.of_int (-3); Mpqf.of_int 2;
-    Mpqf.of_frac 7 2]
-
-let green_octagon =
-  make_mpelleau_octagon [
-    Mpqf.of_int (-3); Mpqf.of_int 5;
-    Mpqf.of_int (-2); Mpqf.of_int 5;
-    Mpqf.of_int (-6); Mpqf.of_int 1;
-    Mpqf.of_frac 5 2]
-
-let inf_dbm =
-  [F.inf; F.inf;
-   F.inf; F.inf;
-   F.inf; F.inf; F.inf; F.inf;
-   F.inf; F.inf; F.inf; F.inf]
-
-let blue_dbm_after_box_filtering =
-  [F.inf; -2.;
-   10.; F.inf;
-   F.inf; F.inf; F.inf; -2.;
-   F.inf; F.inf; 10.; F.inf]
-
-let blue_dbm_after_box_filtering_and_closure =
-  [0.; -2.;
-   10.; 0.;
-   4.; -2.; 0.; -2.;
-   10.; 4.; 10.; 0.]
-
-let blue_dbm =
-  [F.inf; -2.;
-   10.; F.inf;
-   2.5; -3.; F.inf; -2.;
-   F.inf; 2.; 10.; F.inf]
-
-let blue_dbm_closure =
-  [0.; -2.;
-   10.; 0.;
-   2.5; -3.; 0.; -2.;
-   10.; 2.; 10.; 0.]
 
 let test_filter_in_box () =
   test_filter_cons_in_box make_octagon2 [x_leq_C] [("x", F.minus_inf, (Mpqf.to_float frac5_3))] None;
@@ -331,24 +349,6 @@ let test_dbm () =
   set_ub o (1,(0,1)) 1.414213562373095;
   ignore (test_dbm_closure o blue_dbm blue_dbm_closure)
 
-let blue_box_after_filter_closure =
-  [("x", 1., 5.);
-   ("y", 1., 5.);
-   (x01, 1.414213562373095, 7.07106781187);
-   (y01, -2.82842712475, 2.82842712475)]
-
-let blue_box_after_filter =
-  [("x", 1., 5.);
-   ("y", 1., 5.);
-   (x01, F.minus_inf, F.inf);
-   (y01, F.minus_inf, F.inf)]
-
-let blue_box_after_filter_octagonal =
-  [("x", 1., 5.);
-   ("y", 1., 5.);
-   (x01, 2.1213203435596424, 7.07106781187);
-   (y01, -1.76776695297, 1.41421356238)]
-
 let test_filter_on_rotated () =
   (* According to this test, the box abstract domain alone cannot propagate octagonal rotated constraints. *)
   let o1 = test_filter_cons_in_box' make_rotated_octagon_2 blue_octagon
@@ -380,11 +380,33 @@ let test_rotated_constraint_on_box () =
   expect_ge "filter.rotated(x <= 5).ub" F.inf u;
   expect_le "filter.rotated(x <= 5).lb" F.minus_inf l
 
+let octagon_from constraints =
+  List.fold_left filter (make_rotated_octagon_2 ()) constraints
+
+let test_laws name a b c m =
+  (* Let '+' be either join or meet *)
+  (* a + b = c *)
+  Alcotest.(check bool) name true (equal (m a b) c epsilon);
+  (* commutative: a + b = b + a *)
+  Alcotest.(check bool) (name ^ " commutative: ") true (equal (m b a) (m a b) epsilon);
+  (* if a + b = c then a + c = c and c + b = c *)
+  Alcotest.(check bool) (name ^ "a + c = c: ") true (equal (m a c) c epsilon);
+  Alcotest.(check bool) (name ^ "c + b = c: ") true (equal (m c b) c epsilon);
+  (* idempotent *)
+  Alcotest.(check bool) (name ^ "idempotent1") true (equal (m (m a b) (m a b)) (m a b) epsilon);
+  Alcotest.(check bool) (name ^ "idempotent2") true (equal (m a a) a epsilon);
+  (* associativy *)
+  Alcotest.(check bool) (name ^ "associativy") true (equal (m (m a b) c) (m a (m b c)) epsilon)
+
+let test_absorption name a b c =
+  Alcotest.(check bool) (name ^ "absorption1") true (equal (meet a (join a b)) a epsilon);
+  Alcotest.(check bool) (name ^ "absorption2") true (equal (join c (meet c a)) c epsilon)
+
 let test_join_meet () =
-  let blue = List.fold_left filter (make_rotated_octagon_2 ()) blue_octagon in
-  let pink = List.fold_left filter (make_rotated_octagon_2 ()) pink_octagon in
-  let orange = List.fold_left filter (make_rotated_octagon_2 ()) orange_octagon in
-  let green = List.fold_left filter (make_rotated_octagon_2 ()) green_octagon in
+  let blue = octagon_from blue_octagon in
+  let pink = octagon_from pink_octagon in
+  let orange = octagon_from orange_octagon in
+  let green = octagon_from green_octagon in
   let join_blue_pink = join blue pink in
   let meet_blue_pink = meet blue pink in
   Printf.printf "\nblue:\n"; print_out blue;
@@ -393,23 +415,6 @@ let test_join_meet () =
   Printf.printf "\ngreen:\n"; print_out green;
   Printf.printf "\njoin blue pink:\n"; print_out join_blue_pink;
   Printf.printf "\nmeet blue pink:\n"; print_out meet_blue_pink;
-  let test_laws name a b c m =
-    (* Let '+' be either join or meet *)
-    (* a + b = c *)
-    Alcotest.(check bool) name true (equal (m a b) c epsilon);
-    (* commutative: a + b = b + a *)
-    Alcotest.(check bool) (name ^ " commutative: ") true (equal (m b a) (m a b) epsilon);
-    (* if a + b = c then a + c = c and c + b = c *)
-    Alcotest.(check bool) (name ^ "a + c = c: ") true (equal (m a c) c epsilon);
-    Alcotest.(check bool) (name ^ "c + b = c: ") true (equal (m c b) c epsilon);
-    (* idempotent *)
-    Alcotest.(check bool) (name ^ "idempotent1") true (equal (m (m a b) (m a b)) (m a b) epsilon);
-    Alcotest.(check bool) (name ^ "idempotent2") true (equal (m a a) a epsilon);
-    (* associativy *)
-    Alcotest.(check bool) (name ^ "associativy") true (equal (m (m a b) c) (m a (m b c)) epsilon) in
-  let test_absorption name a b c =
-    Alcotest.(check bool) (name ^ "absorption1") true (equal (meet a (join a b)) a  epsilon);
-    Alcotest.(check bool) (name ^ "absorption2") true (equal (join c (meet c a)) c epsilon) in
   test_laws "join(blue,pink)=orange" blue pink orange join;
   test_laws "meet(blue,pink)=green" blue pink green meet;
   test_laws "join(green,orange)=orange" green orange orange join;
@@ -420,6 +425,53 @@ let test_lb_y () =
   let open Csp in
   let o = filter (make_rotated_octagon_2 ()) (Unary (NEG, y), LEQ, Cst ((Mpqf.of_int (-1)), Real)) in
   expect_le "lb_y" (1.) (lb' o "y")
+
+let blue_left =
+  Csp.(Binary (ADD, x, y), LEQ, Cst ((Mpqf.of_frac 13 2), Real)) (* x + y <= c *)
+  ::(make_mpelleau_octagon [
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_int (-3); Mpqf.of_int 2;
+    Mpqf.of_frac 5 2])
+
+let blue_right =
+  make_mpelleau_octagon [
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_int (-1); Mpqf.of_int 5;
+    Mpqf.of_frac (-13) 2; Mpqf.of_int 2;
+    Mpqf.of_frac 5 2]
+
+let test_split_lf () =
+  let blue = octagon_from blue_octagon in
+  let right = octagon_from blue_right in
+  let left = octagon_from blue_left in
+  let splits = split_lf blue [] in
+  match splits with
+  | [left'; right'] ->
+      test_laws "join(blue_left,blue_right): " left right blue join;
+      test_laws "join after split: " left' right' blue join;
+      let left' = strong_closure_bagnara left' in
+      let right' = strong_closure_bagnara right' in
+      test_laws "join after split and closure: " left' right' blue join;
+      Printf.printf "\n\nLEFT expected: "; print_out left;
+      Printf.printf "\n\nLEFT obtained: "; print_out left';
+      Printf.printf "\n\nRIGHT expected: "; print_out right;
+      Printf.printf "\n\nRIGHT obtained: "; print_out right';
+      Alcotest.(check bool) "split_lf(left)" true (equal left left' epsilon);
+      Alcotest.(check bool) "split_lf(right)" true (equal right right' epsilon)
+  | _ -> Alcotest.(check bool) "expected a binary split for split_lf" true false
+
+let test_to_bexpr () =
+  let blue = octagon_from blue_octagon in
+  let constraints = to_bexpr blue in
+  Printf.printf "\n%s\n\n" (cons_to_string blue_octagon);
+  print_out blue;
+  Printf.printf "\n%s\n\n" (cons_to_string constraints);
+  let blue' = test_filter filter make_rotated_octagon_2 constraints
+    blue_box_after_filter_octagonal
+    (Some blue_dbm_closure) in
+  print_out blue';
+  ()
 
 let tests = [
   "matpos", `Quick, test_matpos;
@@ -444,4 +496,6 @@ let tests = [
   "filter_on_rotated", `Quick, test_filter_on_rotated;
   "lb_y", `Quick, test_lb_y;
   "join_meet", `Quick, test_join_meet;
+  "split_lf", `Quick, test_split_lf;
+  "to_bexpr", `Quick, test_to_bexpr;
 ]

@@ -116,6 +116,8 @@ module Check_BoxF = Make(Abstract_box.BoxF)
 module Check_BoxMix = Make(Abstract_box.BoxMix)
 module Check_Poly = Make(ADCP.PolyCP)
 module Check_Vpl = Make(Vpl_domain.VplCP)
+module Check_BoxedOctagon = Make(Boxed_octagon.BoxedOctagon)
+module Check_OctBox = Make(ADCP.OctBoxCP)
 
 let message domain =
   Format.printf "regression test of the solver using the ";
@@ -132,4 +134,8 @@ let main =
   if Vpl_domain.available then begin
       message "polyhedra (VPL)";
       Check_Vpl.go()
-    end
+  end;
+  message "OctBox (Apron)";
+  Check_OctBox.go();
+  message "Boxed octagon";
+  Check_BoxedOctagon.go()

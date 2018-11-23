@@ -165,9 +165,7 @@ module BoxedOctagon = struct
       Format.fprintf fmt "\n"
     done
 
-  let print_out : t -> unit = fun o ->
-    Format.printf "%a" print o
-
+  let print_out : t -> unit = fun o -> Format.printf "%a" print o
 
   (* returns an empty element *)
   let empty : t = { env=Env.empty; renv=REnv.empty; dim=0; dbm=[||]; box=B.empty; planes=[] }
@@ -433,13 +431,8 @@ module BoxedOctagon = struct
      Otherwise we set the value `v` in the DBM[i,j] if it improves the current value. *)
   let update_cell : t -> int -> int -> bound -> unit = fun o i j v ->
     let idx = matpos2 i j in
-    if v < o.dbm.(idx) then
-      (* if i = j && v < 0. then
-        raise Bot.Bot_found
-      else *)
-        o.dbm.(idx) <- v
-        (* Possible improvement: reschedule the corresponding propagators. *)
-    else ()
+    set o idx v
+    (* Possible improvement: reschedule the corresponding propagators. *)
 
   (* Check the consistency of the DBM, and update the cells in the diagonal to 0.
      Note: Since we always update the DBM with `update_cell`, we are actually sure that the matrix is consistent.
@@ -599,7 +592,7 @@ module BoxedOctagon = struct
       | [], _ | _, [] -> false
       | x::xs, y::ys -> eq x y && aux eq xs ys in
     aux bound_equal (list_of_dbm o) (list_of_dbm o') &&
-    (B.volume o.box) = (B.volume o'.box)
+    bound_equal (B.volume o.box) (B.volume o'.box)
 
   let check_same_env : t -> t -> unit = fun large small ->
     let checker = fun k v ->
@@ -644,21 +637,15 @@ module BoxedOctagon = struct
     | Csp.Or (e1, e2) -> and_ans (is_representable e1) (is_representable e2)
     | Csp.Not e -> is_representable e)
 
-(*
-
-  (* pruning *)
-  let prune : t -> t -> t list * t
-    = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
-
-  (* Largest first split: select the biggest variable in the canonical box and split on its middle value.
+  (* Largest first split: select the biggest variable in all planes and split on its middle value.
    * We rely on the split of Box. *)
   let split_lf : t -> ctrs -> t list = fun o c ->
-    let create_node = fun cbox ->
+    let create_node = fun box ->
       let o' = copy o in
-      let o' = { o' with cbox=cbox } in
-      meet_box_into_dbm o' cplane o'.cbox in
-    let cboxes = B.split o.cbox c in
-    List.map create_node cboxes
+      let o' = { o' with box=box } in
+      meet_box_into_dbm o' in
+    let boxes = B.split o.box c in
+    List.map create_node boxes
 
   (* splits an abstract element *)
   let split : t -> ctrs -> t list = fun o c ->
@@ -666,66 +653,72 @@ module BoxedOctagon = struct
     | LargestFirst -> split_lf o c
     | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
 
-  let split_on (o:t) (_:ctrs) (_:instance) : t list = [o]
-
-  let shrink (o:t) (_:Mpqf.t) : t = o
-
   (* We delegate this evaluation to the canonical box.
-   * Possible improvement: obtain a better approximation by turning the expression and forward_eval it in different plane. *)
+   * Possible improvement: obtain a better approximation by turning the expression and forward_eval it in different plane.
+   *   We would then meet the results of all planes. *)
   let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t) = fun o e ->
-    B.forward_eval o.cbox e
+    B.forward_eval o.box e
 
   let create_var_from_cell : t -> int -> expr = fun o i ->
-    let x = REnv.find (i/2) o.renv in
+    let x = REnv.find ((i/2), cplane) o.renv in
     if i mod 2 = 0 then
       Var x
     else
       Unary (NEG, Var x)
 
   let dbm_cell_to_bexpr : t -> int -> bconstraint list -> int -> bconstraint list = fun o i res j ->
+    let open Csp in
     let idx = matpos i j in
+    Printf.printf "pos: (%d %d)\n" i j;
     (* We do not generate the constraint where the coefficient is infinite. *)
-    if o.dbm.(idx) <> F.inf then
-      (* x - y <= c *)
-      let x = create_var_from_cell o i in
-      let y = create_var_from_cell o j in
-      let c = Cst ((Mpqf.of_float o.dbm.(idx)), Real) in
-      let left = simplify_fp (Binary (SUB, x, y)) in
-      res@[(left,LEQ,c)]
-    else
-      res
+    res@(
+      if o.dbm.(idx) <> F.inf && i <> j then
+        let x = create_var_from_cell o j in
+        let y = create_var_from_cell o i in
+        (* -x <= -c *)
+        if i mod 2 = 0 && j mod 2 = 1 && i = j - 1 then
+          let c = Cst ((Mpqf.div (Mpqf.of_float o.dbm.(idx)) (Mpqf.of_int 2)), Real) in
+          [(x,LEQ,c)]
+        (* x <= c *)
+        else if i mod 2 = 1 && j mod 2 = 0 && i = j + 1 then
+          let c = Cst ((Mpqf.div (Mpqf.of_float o.dbm.(idx)) (Mpqf.of_int 2)), Real) in
+          [(x,LEQ,c)]
+        (* x - y <= c *)
+        else
+          let c = Cst ((Mpqf.of_float o.dbm.(idx)), Real) in
+          let left = (Binary (SUB, x, y)) in (* NOTE: we could use `Csp.simplify_fp` but the problem is that the generated constraint does not match `is_representable` anymore. *)
+          [(left,LEQ,c)]
+      else
+        [])
 
-  (* transforms an abstract element in constraints *)
+  (* Extract the octagonal constraints from the DBM in `o`.
+     We do not extract "useless" constraints such as `x - y <= inf`. *)
   let to_bexpr : t -> bconstraint list = fun o ->
-    let n = o.dim in
     let aux res i =
-      List.fold_left (dbm_cell_to_bexpr o i) res (range 0 ((i lxor 1)*2-1))
+      List.fold_left (dbm_cell_to_bexpr o i) res (Tools.range 0 (i lxor 1))
     in
-    List.fold_left aux [] (range 0 (2*n-1))
-
-  (* concretization function. we call it a spawner.
-     useful to do tests, and to reuse the results.
-     values are generated randomly *)
-  let spawn : t -> Csp.instance = fun o ->
-    B.spawn o.cbox
-
-  (* check if an abstract element is an abstractin of an instance *)
-  let is_abstraction : t -> Csp.instance -> bool = fun o vars ->
-    B.is_abstraction o.cbox vars
-
-  (*** PREDICATES ***)
-  let volume : t -> float = fun o ->
-    B.volume o.cbox
-
-  (* tests if an abstract element is too small to be cut *)
-  let is_small : t -> bool = fun o ->
-    let box_max_range b =
-      let (_,i) = B.max_range b in
-      I.float_size i in
-    let p = R.fold (fun _ b -> min (box_max_range b)) o.rboxes (box_max_range o.cbox) in
-    p <= !Constant.precision
+    List.fold_left aux [] (Tools.range 0 ((2*o.dim)-1))
 
   let is_failed : t -> bool = fun o ->
     try float_consistent o; false
-    with Bot.Bot_found -> true *)
+    with Bot.Bot_found -> true
+
+  let volume : t -> float = fun o -> B.volume o.box
+
+  (* tests if an abstract element is too small to be cut *)
+  let is_small : t -> bool = fun o -> B.is_small o.box
+
+  let spawn : t -> Csp.instance = fun o -> B.spawn o.box
+
+  let prune : t -> t -> t list * t
+    = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
+
+  (* split_on and shrink are relevant to pizza split.
+     We do not implement yet this splitting strategy in the octagons. *)
+  let split_on : t -> ctrs -> instance -> t list = fun _ _ _ ->
+    Pervasives.failwith "BoxedOctagon: `split_on` is not implemented."
+  let shrink : t -> Mpqf.t -> t = fun _ _ ->
+    Pervasives.failwith "BoxedOctagon: function `shrink` unimplemented."
+  let is_abstraction : t -> Csp.instance -> bool = fun _ _ ->
+    Pervasives.failwith "BoxedOctagon: function `is_abstraction` unimplemented."
 end
