@@ -441,7 +441,7 @@ module BoxedOctagon = struct
         (* Possible improvement: reschedule the corresponding propagators. *)
     else ()
 
-  (* Check the consistency of the DBM, and update the cell to 0.
+  (* Check the consistency of the DBM, and update the cells in the diagonal to 0.
      Note: Since we always update the DBM with `update_cell`, we are actually sure that the matrix is consistent.
      This method just set the diagonal elements to 0.
      We keep this name to match the algorithm in (Bagnara, 2009). *)
@@ -522,7 +522,7 @@ module BoxedOctagon = struct
     filter_rotated |>
     meet_box_into_dbm
 
-  (* Returns `Some (i,j,c)` which is the value `c` in the DBM at position (i,j) if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
+  (* Returns `Some (j,i,c)` which is the value `c` in the DBM at position (j,i) if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
      We have `dbm[i] - dbm[j] <= c`.
      This function performs a simple pattern matching on the shape of the constraint: we do not attempt to symbolically rewrite the constraint.
   *)
@@ -553,7 +553,7 @@ module BoxedOctagon = struct
     (* x <= c *)
     | Var x, LEQ, Cst (c, _) -> Some (posi x, nega x, ((bound_of c) *. 2.))
     (* -x <= c *)
-    | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (nega x, posi x, ((bound_of c) *. -2.))
+    | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (nega x, posi x, ((bound_of c) *. 2.))
     | _ -> None
 
   let filter_octagonal : t -> bconstraint -> (t * bool) = fun o cons ->
@@ -589,17 +589,19 @@ module BoxedOctagon = struct
   let list_of_dbm : t -> bound list = fun o ->
     Array.to_list o.dbm
 
-  (* True if the two representations (DBM and BOX) of `o` and `o'` are identical.
+  (* True if the two representations (DBM and BOX) of `o` and `o'` are identical up to an epsilon.
      Precondition: o <= o' or o' <= o. *)
-  let equal : t -> t -> bool = fun o o' ->
+  let equal : t -> t -> bound -> bool = fun o o' epsilon ->
+    let bound_equal x y =
+      if x <> y then (F.abs (x -. y)) <= epsilon
+      else true in
     let rec aux eq l1 l2 = match l1, l2 with
       | [], [] -> true
       | [], _ | _, [] -> false
       | x::xs, y::ys -> eq x y && aux eq xs ys in
-    aux F.equal (list_of_dbm o) (list_of_dbm o') &&
+    aux bound_equal (list_of_dbm o) (list_of_dbm o') &&
     (B.volume o.box) = (B.volume o'.box)
 
-(*
   let check_same_env : t -> t -> unit = fun large small ->
     let checker = fun k v ->
       if Env.find k large.env <> v then
@@ -611,27 +613,26 @@ module BoxedOctagon = struct
       Pervasives.failwith "check_same_env: try to join two octagons s.t.\
                            their environments is not included in the other."
 
-  (*** OPERATIONS ***)
-  (* We only keep the intersection of the rotated boxes. *)
-  let join_rboxes : rotated_boxes -> rotated_boxes -> rotated_boxes = fun a b ->
-    let c: rotated_boxes = R.filter (fun k _ -> R.exists (fun k' _ -> k = k') b) a in
-    R.mapi (fun k -> B.join (R.find k b)) c
+  (* An octagons is a lattice, thus it has a join and meet operators.
+     `join` performs the union of the two octagons `o` and `o'`, and `meet` their intersection.
+     Precondition: `o` and `o'` are defined on the same set of variables (due to condition on `Abstract_box.join`).
+     Consequently, they have the same octagonalisation strategy.
+  *)
+  let merge_with : t -> t -> (B.t -> B.t -> B.t) -> (bound -> bound -> bound) -> t =
+   fun o o' merge_box merge_bound ->
+    if Array.length o.dbm <> Array.length o'.dbm then
+      Pervasives.failwith "BoxedOctagon.join: two octagons not defined on the same set of variables."
+    else ();
+    check_same_env o o';
+    let o = copy o in
+    let merge = fun idx x -> o.dbm.(idx) <- (merge_bound x o.dbm.(idx)) in
+    Array.iteri merge o'.dbm;
+    { o with box=merge_box o.box o'.box }
 
-  let join : t -> t -> t = fun o o' ->
-    let (res, rest) =
-      if Array.length o.dbm >= Array.length o'.dbm then
-        (o, o')
-      else
-        (o', o)
-    in
-    let res = copy res in
-    let res = { res with
-      cbox=(B.join res.cbox rest.cbox);
-      rboxes=(join_rboxes res.rboxes rest.rboxes) } in
-    check_same_env res rest;
-    let merge = fun idx x -> res.dbm.(idx) <- (F.max x res.dbm.(idx)) in
-    Array.iteri merge rest.dbm;
-    res
+  let join : t -> t -> t = fun o o' -> merge_with o o' B.join F.max
+  let meet : t -> t -> t = fun o o' -> merge_with o o' B.meet F.min
+
+(*
 
   (* pruning *)
   let prune : t -> t -> t list * t
