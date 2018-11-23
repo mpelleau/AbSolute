@@ -522,14 +522,10 @@ module BoxedOctagon = struct
     filter_rotated |>
     meet_box_into_dbm
 
-  (* Returns `Some (j,i,c)` which is the value `c` in the DBM at position (j,i) if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
-     We have `dbm[i] - dbm[j] <= c`.
+  (* Returns `Some (x,y,c)` where the value `c` in the DBM at position of `x - y <= c` if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
      This function performs a simple pattern matching on the shape of the constraint: we do not attempt to symbolically rewrite the constraint.
   *)
-  let extract_octagonal_cons : t -> bconstraint -> (int * int * bound) option = fun o (e1,op,e2) ->
-    let dim_of x = let (dim, _) = Env.find x o.env in dim in
-    let posi x = (dim_of x) * 2 in
-    let nega x = (dim_of x) * 2 + 1 in
+  let extract_octagonal_cons : (var -> 'a) -> (var -> 'a) -> bconstraint -> ('a * 'a * bound) option = fun posi nega (e1,op,e2) ->
     let bound_of c = F.of_rat_up c in
     let open Csp in
     match e1, op, e2 with
@@ -557,7 +553,10 @@ module BoxedOctagon = struct
     | _ -> None
 
   let filter_octagonal : t -> bconstraint -> (t * bool) = fun o cons ->
-    match extract_octagonal_cons o cons with
+    let dim_of x = let (dim, _) = Env.find x o.env in dim in
+    let posi x = (dim_of x) * 2 in
+    let nega x = (dim_of x) * 2 + 1 in
+    match extract_octagonal_cons posi nega cons with
     | Some (i,j,c) ->
         let o = copy o in
         set o (matpos2 j i) c;
@@ -632,6 +631,19 @@ module BoxedOctagon = struct
   let join : t -> t -> t = fun o o' -> merge_with o o' B.join F.max
   let meet : t -> t -> t = fun o o' -> merge_with o o' B.meet F.min
 
+  (* check if a constraint is suited for this abstract domain *)
+  let rec is_representable : Csp.bexpr -> Adcp_sig.answer =
+    let cons_is_representable cons =
+      let id x = x in
+      match extract_octagonal_cons id id cons with
+      | Some (_) -> Adcp_sig.Yes
+      | None -> Adcp_sig.Maybe in
+    Adcp_sig.(function
+    | Csp.Cmp (op, b1, b2) -> cons_is_representable (b1, op, b2)
+    | Csp.And (e1, e2) -> and_ans (is_representable e1) (is_representable e2)
+    | Csp.Or (e1, e2) -> and_ans (is_representable e1) (is_representable e2)
+    | Csp.Not e -> is_representable e)
+
 (*
 
   (* pruning *)
@@ -690,10 +702,6 @@ module BoxedOctagon = struct
       List.fold_left (dbm_cell_to_bexpr o i) res (range 0 ((i lxor 1)*2-1))
     in
     List.fold_left aux [] (range 0 (2*n-1))
-
-  (* check if a constraint is suited for this abstract domain *)
-  let is_representable : Csp.bexpr -> answer =
-    fun _ -> Adcp_sig.Yes
 
   (* concretization function. we call it a spawner.
      useful to do tests, and to reuse the results.

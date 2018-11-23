@@ -235,23 +235,11 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             then Adcp_sig.Yes
             else Adcp_sig.Maybe
         in
-        let combine : Adcp_sig.answer * Adcp_sig.answer -> Adcp_sig.answer
-            = Adcp_sig.(function
-            | (No,_) | (_,No) -> No
-            | (Maybe,_) | (_,Maybe) -> Maybe
-            | _ -> Yes)
-        in
-        let not : Adcp_sig.answer -> Adcp_sig.answer
-            = Adcp_sig.(function
-            | No -> Yes
-            | Maybe -> Maybe
-            | Yes -> No)
-        in
-        function
-        | Csp.Cmp (_, e1, e2) -> combine (expr_is_representable e1, expr_is_representable e2)
-        | Csp.And (e1, e2) -> combine (is_representable e1, is_representable e2)
-        | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
-        | Csp.Not e -> not (is_representable e)
+        Adcp_sig.(function
+        | Csp.Cmp (_, b1, b2) -> and_ans (expr_is_representable b1) (expr_is_representable b2)
+        | Csp.And (e1, e2) -> and_ans (is_representable e1) (is_representable e2)
+        | Csp.Or (e1, e2) -> and_ans Adcp_sig.Maybe (and_ans (is_representable e1) (is_representable e2))
+        | Csp.Not e -> not_ans (is_representable e))
 
     let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
 
