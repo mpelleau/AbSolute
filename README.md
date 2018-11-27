@@ -6,7 +6,7 @@ It implements the solving method presented in: ["A Constraint Solver Based on Ab
 AbSolute is still in developpement, and have not been fully tested.
 Feel free to fill an [issue](https://github.com/mpelleau/AbSolute/issues) or contact any member of the developpement team if you want to report a bug or suggest a feature.
 
-Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Antoine Miné, Charlotte Truchet.
+Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Pierre Talbot, Antoine Miné, Charlotte Truchet.
 Supported by ANR CoVerif.
 
 ## Quick introductory example
@@ -26,8 +26,8 @@ constraints{
 }
 ```
 
-This model is saved into a file that can be fed into the AbSolute solver.
-We have nice graphics showing how the problem was solved:
+This model is saved into a file that can be fed into the AbSolute solver. You can checkout our Emacs mode for a more convenient use<sup id="a1">[1](#emacs)</sup>.
+We also have nice graphics showing how the problem was solved:
 
 <img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="400" height="400">
 
@@ -56,7 +56,7 @@ opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.
 ```
 
 The next step is to download and build AbSolute.
-If you intent to modify the source code and possibly contribute to the project, jump to the developpers [README](https://github.com/mpelleau/AbSolute/blob/master/CONTRIBUTING.md).
+If you intent to modify the source code and possibly contribute to the project, jump to the "Developpers" section.
 Otherwise, you can install it from `opam`:
 
 ```sh
@@ -68,6 +68,23 @@ wget https://raw.githubusercontent.com/mpelleau/AbSolute/master/problems/booth.a
 absolute booth.abs
 # Display solver options
 absolute --help
+```
+
+### Developpers
+
+Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
+
+```sh
+opam install apron
+git clone https://github.com/mpelleau/AbSolute
+cd AbSolute
+make
+```
+
+Then, verify everything is working well on an example:
+
+```sh
+./absolute problems/booth.abs
 ```
 
 ### Troubleshooting
@@ -95,4 +112,21 @@ Therefore, the easiest way to deal with apron is to install it with and only wit
   biburl    = {https://dblp.org/rec/bib/conf/vmcai/PelleauMTB13},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
+```
+
+##### <b id="emacs">1</b>. A simple emacs mode for editing AbSolute problem description files[↩](#a1):
+You can simply add the following to your .emacs:
+```lisp
+(require 'generic-x) ;; you will need this
+
+(define-generic-mode 'absolute-mode          ;; name of the mode
+  '("/*" "*/")                               ;; comments start with '/*' and end with '*/'
+  '("init" "constraints" "solutions"
+    "real" "int")                            ;; keywords
+  '(("\\(?:cos\\|exp\\|s\\(?:in\\|qrt\\)\\)"
+     . 'font-lock-function-name-face))       ;; function names
+  '("\\.abs$")                               ;; files for which to activate this mode
+  nil                                        ;; other actions to perform
+  "A mode for AbSolute files"                ;; doc string
+  )
 ```
