@@ -710,6 +710,20 @@ module BoxedOctagon = struct
 
   let spawn : t -> Csp.instance = fun o -> B.spawn o.box
 
+  (* We check if `o` is an abstraction of `i` by adding `i` into the current octagon, and then check if it is consistent. *)
+  let is_abstraction : t -> Csp.instance -> bool = fun o i ->
+    if not (B.is_abstraction o.box i) then
+      false
+    else
+      let o = copy o in
+      let set_bound k v =
+        let key = Env.find k o.env in
+        set_lb o key (F.of_rat_down v);
+        set_ub o key (F.of_rat_up v) in
+      Tools.VarMap.iter set_bound i;
+      floyd_warshall o;
+      not (is_failed o)
+
   let prune : t -> t -> t list * t
     = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
 
@@ -719,6 +733,4 @@ module BoxedOctagon = struct
     Pervasives.failwith "BoxedOctagon: `split_on` is not implemented."
   let shrink : t -> Mpqf.t -> t = fun _ _ ->
     Pervasives.failwith "BoxedOctagon: function `shrink` unimplemented."
-  let is_abstraction : t -> Csp.instance -> bool = fun _ _ ->
-    Pervasives.failwith "BoxedOctagon: function `is_abstraction` unimplemented."
 end
