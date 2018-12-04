@@ -167,7 +167,7 @@ let draw_end v1 v2 =
   draw_string (padding/.2.-.5.) (sy-.2.*.padding+.15.) v2 black
 
 (* dummy main loop *)
-let loop state =
+let loop _ =
   loop_at_exit [] (fun _ -> ())
 
 (* window creation and initialization *)

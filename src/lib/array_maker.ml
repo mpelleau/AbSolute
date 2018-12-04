@@ -40,8 +40,8 @@ module Make (A:ArrayLike) = struct
 
   let array_of_list = function
     | [] -> A.empty
-    | h::tl as l ->
-       let size = List.length tl in
+    | h::_ as l ->
+       let size = List.length l in
        let ear = A.make h size in
        List.iteri (fun i b -> A.set ear i b) l;
        ear

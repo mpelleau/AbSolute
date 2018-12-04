@@ -70,7 +70,7 @@ module type ITV = sig
   val split: t -> t list
 
   (** pruning *)
-  val prune : t -> t -> t list * t
+  val prune : (t -> t -> t list) option
 
   (************************************************************************)
   (** {1 INTERVAL ARITHMETICS (FORWARD EVALUATION)} *)

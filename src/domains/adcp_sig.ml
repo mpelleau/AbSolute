@@ -51,18 +51,23 @@ module type AbstractCP = sig
   (** joins two abstract elements *)
   val join: t -> t -> t
 
+  (** meet two abstract elements, may raise bot_found *)
+  val meet: t -> t -> t
+
   (** substracts the second abstract element from the first (difference operator)
+      if an exact operator can not be defined (None), the solver doesn't use the pruning
+      features.
       precondition: the two abstract elements must be defined onto the same set of variables. *)
+  val prune : (t -> t -> t list) option
 
-  val prune : t -> t -> t list * t
-
-  (* splits an abstract element *)
+  (** splits an abstract element *)
   val split : t -> Csp.ctrs -> t list
 
-  (* Pizza splits an abstract element around the given point *)
+  (** Pizza splits an abstract element around the given point *)
   val split_on : t -> Csp.ctrs -> Csp.instance -> t list
 
-  (** filters an abstract element with respect to an arithmetic constraint *)
+  (** filters an abstract element with respect to an arithmetic constraint,
+      may raise bot found. *)
   val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
 
   (** returns the range of value of a given expression for an abstract element *)
@@ -85,10 +90,10 @@ module type AbstractCP = sig
       values are generated randomly *)
   val spawn : t -> Csp.instance
 
-  (* check if an abstract element is an abstraction of an instance *)
+  (** check if an abstract element is an abstraction of an instance *)
   val is_abstraction : t -> Csp.instance -> bool
 
   (** Skrinks the abstract element in every direction by the given value. *)
   val shrink : t -> Mpqf.t -> t
-  
+
  end

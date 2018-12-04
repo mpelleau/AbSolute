@@ -31,7 +31,7 @@ module Itv(B:BOUND) = struct
   let validate ((l,h):t) : t =
     match B.classify l, B.classify h with
     | B.INVALID,_ | _,B.INVALID  | B.MINF,_ | _,B.INF
-    | _ when  B.gt l h -> invalid_arg "int.validate"
+    | _ when B.gt l h -> invalid_arg "int.validate"
     | _ -> l,h
 
   (* maps empty intervals to explicit bottom *)
@@ -208,17 +208,8 @@ module Itv(B:BOUND) = struct
   (* splits in two, around the middle *)
   let split (i:t) : t list = split_on_value i (mean i)
 
-  let prune ((l,h):t) ((l',h'):t) : t list * t  =
-    let epsilon = B.of_float_up 0.000001 in
-    let h'_eps = B.add_up h' epsilon and l'_eps = B.add_down l' (B.neg epsilon) in
-    (* It may not be worth to use the pruning to win a very small step *)
-    let step = B.of_float_up 0.1 in
-    let h_step = B.add_up h'_eps step and l_step = B.sub_down l'_eps step in
-    match (B.gt l_step l),(B.lt h_step h) with
-    | true , true  -> [(l,l'_eps);(h'_eps,h)],(l'_eps,h'_eps)
-    | true , false -> [(l,l'_eps)],(l'_eps,h)
-    | false, true  -> [(h'_eps,h)],(l,h'_eps)
-    | false, false -> [],(l,h)
+  (* there's no exact difference operator on itv with closed bounds *)
+  let prune = None
 
   (************************************************************************)
   (* INTERVAL ARITHMETICS (FORWARD EVALUATION) *)
@@ -340,7 +331,7 @@ module Itv(B:BOUND) = struct
   let max ((l1, u1):t) ((l2, u2):t) =
     validate (B.max l1 l2, B.max u1 u2)
 
- (** runtime functions **)
+  (** runtime functions **)
   let eval_fun name args : t bot =
     let arity_1 (f: t -> t) : t bot =
        match args with

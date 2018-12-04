@@ -46,7 +46,10 @@ let to_string x = string_of_float (x+.0.)
 
 let to_float_up x : float = x
 let to_float_down x : float = x
-let to_rat = Mpqf.of_float
+let to_rat x =
+  if x = infinity then  Mpqf.of_frac 1 0
+  else if x = neg_infinity then Mpqf.of_frac (-1) 0
+  else Mpqf.of_float x
 
 (* printing *)
 let output chan x = output_string chan (to_string x)
@@ -88,7 +91,7 @@ let abs x = abs_float x
 let add_up a b = a +. b
 let sub_up a b = a -. b
 let mul_up a b = a *. b
-let div_up a b = 
+let div_up a b =
   match sign a, sign b with
   |  0,_ -> zero
   |  1,0 -> inf
@@ -98,7 +101,7 @@ let div_up a b =
 let add_down a b = -. (-. a -. b)
 let sub_down a b = -. (b -. a)
 let mul_down a b = -. ((-. a) *. b)
-let div_down a b = 
+let div_down a b =
     match sign a, sign b with
     |  0,_ -> zero
     |  1,0 -> inf

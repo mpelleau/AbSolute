@@ -426,7 +426,6 @@ module BoxedOctagon = struct
       B.meet_var box var_name i in
     { o with box=Env.fold filter_var o.env o.box }
 
-
   (* We raise `Bot_found` if there is a negative cycle (v < 0).
      Otherwise we set the value `v` in the DBM[i,j] if it improves the current value. *)
   let update_cell : t -> int -> int -> bound -> unit = fun o i j v ->
@@ -724,8 +723,7 @@ module BoxedOctagon = struct
       floyd_warshall o;
       not (is_failed o)
 
-  let prune : t -> t -> t list * t
-    = fun _ _ -> Pervasives.failwith "BoxedOctagon: function `prune` unimplemented."
+  let prune : (t -> t -> t list) option = None
 
   (* split_on and shrink are relevant to pizza split.
      We do not implement yet this splitting strategy in the octagons. *)

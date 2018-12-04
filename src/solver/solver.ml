@@ -6,31 +6,44 @@ module Solve(Abs : AbstractCP) = struct
   include Splitter.Make(Abs)
   include Result.Make(Abs)
 
-  (* main propagation loop *)
   let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) =
-    Tools.debug 1 "entering the solving loop\n%!";
-    let rec aux abs cstrs csts res depth =
+    (* propagation/exploration loop *)
+    let rec aux cstrs csts depth res abs =
       match consistency abs cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res (abs', const, views)
-      | Maybe(a, cstrs, csts) when stop res a || Abs.is_small a -> add_u res (a, csts, views)
+      | Maybe(a, _, csts) when stop res a || Abs.is_small a -> add_u res (a, csts, views)
       | Maybe(abs', cstrs, csts) ->
-         (* We do not "prune by finding inconsistencies" under a certain depth. *)
-         if !Constant.pruning && depth < !Constant.pruning_iter then
+         List.fold_left (fun res elem ->
+             aux cstrs csts (depth +1) (incr_step res) elem
+           ) res (split abs' cstrs)
+    in
+    (* propagation/elimination/exploration loop *)
+    let rec aux_elim cstrs csts depth res abs =
+      match consistency abs cstrs csts with
+      | Empty -> res
+      | Full (abs', const) -> add_s res (abs', const, views)
+      | Maybe(a, _, csts) when stop res a || Abs.is_small a -> add_u res (a, csts, views)
+      | Maybe(abs', cstrs, csts) ->
+         if depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in
            let res = List.fold_left (fun r x -> add_s r (x, csts, views)) res ls in
            List.fold_left (fun res x ->
                List.fold_left (fun res elem ->
-                   aux elem cstrs csts (incr_step res) (depth +1)
+                   aux_elim cstrs csts (depth +1) (incr_step res) elem
                  ) res (split x cstrs)
-           ) res lu
+             ) res lu
          else
            List.fold_left (fun res elem ->
-             aux elem cstrs csts (incr_step res) (depth +1)
-           ) res (split abs' cstrs)
-    in aux abs constrs consts empty_res 0
+               aux cstrs csts (depth +1) (incr_step res) elem
+             ) res (split abs' cstrs)
+    in
+    (if !Constant.pruning then aux_elim else aux)
+      constrs consts 0 empty_res abs
 
+  (* entry point of the solver *)
   let solving prob =
+    Tools.debug 1 "entering the resolution\n";
     let abs = init prob in
     let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
     res

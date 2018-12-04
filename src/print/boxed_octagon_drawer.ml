@@ -2,18 +2,14 @@ let fail () = Pervasives.failwith "Boxed_octagon_drawer: unimplemented"
 
 module Make(A:Adcp_sig.AbstractCP) = struct
   type t = A.t
-  let is_empty _ = fail ()
+  let is_empty = A.is_empty
+  let print = A.print
+  let bound = A.var_bounds
 
   let to_abs _ = fail ()
 
-  let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
-      = fun _ _ -> fail ()
-
   let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
       = fun _ _ _ -> ()
-
-  let print : Format.formatter -> t -> unit
-      = fun _ _ -> ()
 
   let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
       = fun _ _ _ _ -> ()

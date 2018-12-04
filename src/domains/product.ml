@@ -98,17 +98,21 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
 
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
-    let prune (a, b) (a', b') =
-      let la, ua =  A.prune a a'
-      and lb, ub = if b = b' then ([b], b) else B.prune b b' in
-      let l = List.fold_left (fun acc ea ->
-                  List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
-                ) [] la in
-      let l' = List.filter (fun (abs, abs') ->
-                   try (not (is_empty (reduced_product abs abs')))
-                   with Bot.Bot_found -> false
-                 ) l in
-      l',(ua, ub)
+    let prune : (t -> t -> t list) option =
+      match A.prune, B.prune with
+      | Some a_p, Some b_p ->
+         Some (fun (a, b) (a', b') ->
+             let la = a_p a a' and lb = b_p b b' in
+             let l = List.fold_left (fun acc ea ->
+                         List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
+                       ) [] la in
+             let l' = List.filter (fun (abs, abs') ->
+                          try (not (is_empty (reduced_product abs abs')))
+                          with Bot.Bot_found -> false
+                        ) l in
+             l'
+           )
+      | _ -> None
 
     let split ((abs, abs'):t) (jacobian : Csp.ctrs) =
       let split_a = A.split abs jacobian in
@@ -119,6 +123,8 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       List.map (fun x -> (x, abs')) split_a
 
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
+
+    let meet (a,a') (b,b') = reduced_product (A.meet a b) (B.meet a' b')
 
     let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
       match B.is_representable (Csp.Cmp(op, e1, e2)) with

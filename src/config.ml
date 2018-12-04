@@ -34,7 +34,6 @@ end
 (* THE SOLVER INSTANCES *)
 (************************)
 
-
 (***************)
 (*   domains   *)
 (***************)
@@ -58,17 +57,17 @@ module MakeProduct (D1 : FullDomain) (D2 : FullDomain) = struct
 end
 
 let get_domain : string -> (module FullDomain) = function
-  | "box" -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
-  | "boxS" -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
+  | "box"    -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
+  | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
   | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix) (Box_drawer.Make(Abstract_box.BoxMix)))
-  | "boxQ" -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
-  | "boxQS" -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
-  | "boxCP" -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
-  | "oct" -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
-  | "poly" -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
-  | "vpl" -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
+  | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
+  | "boxQS"  -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
+  | "boxCP"  -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
+  | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
+  | "poly"   -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
+  | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
   | "boct" -> (module MakeFullDomain (Boxed_octagon.BoxedOctagon) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagon)))
-  | s -> Tools.fail_fmt "Domain %s does not exist" s
+  | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
   = fun names ->
@@ -149,4 +148,6 @@ let aliases =
 let globaldescr =
   "AbSolute is a constraint solver based on abstract domains. For more info, check out https://github.com/mpelleau/AbSolute\n"
 
-let parse_args () = Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr
+let parse_args () =
+  Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr;
+  if !Constant.problem = "" then raise (Constant.Error "no filename specified")

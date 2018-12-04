@@ -154,10 +154,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun p ->
         volume p <= !Constant.precision
 
-    (* Note: the last t is the intersection between the two operands *)
-    let prune : t -> t -> t list * t
-        = fun p1 p2 ->
-        (diff p1 p2, meet p1 p2)
+    let prune : (t -> t -> t list) option
+        = Some (fun p1 p2 -> (diff p1 p2))
 
     let split : t -> Csp.ctrs -> t list
         = fun p _ ->

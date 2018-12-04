@@ -58,6 +58,10 @@ let x_leq_C = (x, Csp.LEQ, c)
 let x_geq_C = (x, Csp.GEQ, c)
 let x_leq_y = (x, Csp.LEQ, y)
 
+
+let c_0 = Csp.Cst ((Mpqf.of_int 0), Real)
+let c_1 = Csp.Cst ((Mpqf.of_int 0), Real)
+let c_1000 = Csp.Cst ((Mpqf.of_int 1000), Real)
 let c_m1 = Csp.Cst ((Mpqf.of_int (-1)), Real)
 let c_5 = Csp.Cst ((Mpqf.of_int 5), Real)
 let c_2 = Csp.Cst ((Mpqf.of_int 2), Real)
@@ -473,6 +477,25 @@ let test_to_bexpr () =
   print_out blue';
   ()
 
+(*
+init{
+  real x = [0;1000];
+  real y  = [0;1000];
+}
+constraints { x-1=y; } *)
+let make_unit_sub_pb =
+  let open Csp in
+    [(Unary (NEG, x), LEQ, c_0);    (* -x <= 0 *)
+     (x, LEQ, c_1000);              (* x <= 1000 *)
+     (Unary (NEG, y), LEQ, c_0);    (* -y <= 0 *)
+     (y, LEQ, c_1000);              (* y <= 1000 *)
+     (Binary (SUB, x, c_1), EQ, y)] (* x-1 = y *)
+
+
+let test_bug_unit_sub () =
+  let o = octagon_from make_unit_sub_pb in
+  let _ = strong_closure_bagnara o in ()
+
 let tests = [
   "matpos", `Quick, test_matpos;
   "matpos2", `Quick, test_matpos2;
@@ -498,4 +521,5 @@ let tests = [
   "join_meet", `Quick, test_join_meet;
   "split_lf", `Quick, test_split_lf;
   "to_bexpr", `Quick, test_to_bexpr;
+  "bug_unit_sub", `Quick, test_bug_unit_sub;
 ]
