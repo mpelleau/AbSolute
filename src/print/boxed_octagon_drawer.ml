@@ -9,7 +9,7 @@ module Make(A:Adcp_sig.AbstractCP) = struct
   let to_abs _ = fail ()
 
   let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
-      = fun _ _ _ -> ()
+    = fun o (v1, v2) col -> ()
 
   let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
       = fun _ _ _ _ -> ()

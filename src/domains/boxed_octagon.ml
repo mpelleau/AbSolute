@@ -228,18 +228,22 @@ module BoxedOctagon = struct
   let lb_it i = let (l,_) = I.to_float_range i in l
   let ub_it i = let (_,u) = I.to_float_range i in u
 
+  let lb_value : key -> bound -> bound = fun k v ->
+    let vi = I.of_float v in
+    let divider = if_rotated_else k minus_sqrt2_it minus_two_it in
+    lb_it (Bot.nobot (I.div vi divider))
+
+  let ub_value : key -> bound -> bound = fun k v ->
+    let vi = I.of_float v in
+    let divider = if_rotated_else k sqrt2_it two_it in
+    ub_it (Bot.nobot (I.div vi divider))
+
   (* Lower bound of the variable at key `k`.
    The value is computed directly from the DBM with care on rounding. *)
-  let lb : t -> key -> bound = fun o k ->
-    let v = I.of_float o.dbm.(lb_pos k) in
-    let divider = if_rotated_else k minus_sqrt2_it minus_two_it in
-    lb_it (Bot.nobot (I.div v divider))
+  let lb : t -> key -> bound = fun o k -> lb_value k o.dbm.(lb_pos k)
 
   (* Same as `lb` but for the upper bound. *)
-  let ub : t -> key -> bound = fun o k ->
-    let v = I.of_float o.dbm.(ub_pos k) in
-    let divider = if_rotated_else k sqrt2_it two_it in
-    ub_it (Bot.nobot (I.div v divider))
+  let ub : t -> key -> bound = fun o k -> ub_value k o.dbm.(ub_pos k)
 
   let lb' : t -> var -> bound = fun o name -> lb o (Env.find name o.env)
   let ub' : t -> var -> bound = fun o name -> ub o (Env.find name o.env)
@@ -574,7 +578,7 @@ module BoxedOctagon = struct
       match filter_octagonal o cons with
       | (o, true) -> o
       | (o, false) -> filter_box o cons in
-    let o = strong_closure_bagnara o in
+    let o = strong_closure_mine o in
     o
 
   let list_of_dbm : t -> bound list = fun o ->
@@ -668,7 +672,6 @@ module BoxedOctagon = struct
   let dbm_cell_to_bexpr : t -> int -> bconstraint list -> int -> bconstraint list = fun o i res j ->
     let open Csp in
     let idx = matpos i j in
-    Printf.printf "pos: (%d %d)\n" i j;
     (* We do not generate the constraint where the coefficient is infinite. *)
     res@(
       if o.dbm.(idx) <> F.inf && i <> j then
