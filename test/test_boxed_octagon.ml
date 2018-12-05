@@ -8,6 +8,7 @@ open Tools
 (* 1. Some utilities to print names with argument of functions. *)
 
 let tname2 (x,y) = "(" ^ string_of_int x ^ "," ^ string_of_int y ^ ")"
+let tfname2 (x,y) = "(" ^ string_of_float x ^ "," ^ string_of_float y ^ ")"
 let fname name (arg1: int) = name ^ " " ^ string_of_int arg1
 let fname2 name (arg1: int) (arg2: int) = fname name arg1 ^ " " ^ string_of_int arg2
 let string_of_key (v, plane) = string_of_int v ^ " " ^ tname2 plane
@@ -220,17 +221,19 @@ let test_add_var () =
   Alcotest.(check int) "add_var (2)" 12 (dbm_length (make_octagon2 ()));
   end
 
+let test_bound_delta name expected obtained =
+  if expected <> obtained then
+    let delta = (F.abs (expected -. obtained)) in
+    let name = name ^ ".(epsilon: " ^ (string_of_float epsilon) ^ ", delta: " ^ (string_of_float delta) ^ ")" in
+    Alcotest.(check bool) name true (delta <= epsilon)
+
 (* We test that the `obtained` bound is less or greater than (depending on `cmp`) the `expected` bound.
    We allow some rounding errors to occur, but they must be in the right direction (thus we do not lose potential solutions).
    In addition, we test that the delta between the bounds is not greater than `epsilon`. *)
 let expect_bound fun_name cmp expected obtained =
   let name = fun_name ^ " (expected: " ^ (string_of_float expected) ^ ", obtained: " ^ (string_of_float obtained) ^ ")" in
   Alcotest.(check bool) name true (cmp expected obtained);
-  if expected <> obtained then
-    let delta = (F.abs (expected -. obtained)) in
-    let name = name ^ ".(epsilon: " ^ (string_of_float epsilon) ^ ", delta: " ^ (string_of_float delta) ^ ")" in
-    Alcotest.(check bool) name true (delta <= epsilon)
-  else ()
+  test_bound_delta name expected obtained
 
 let expect_ge fun_name = expect_bound (fun_name ^ ".expect_ge") (<=)
 let expect_le fun_name = expect_bound (fun_name ^ ".expect_le") (>=)
@@ -477,6 +480,22 @@ let test_to_bexpr () =
   print_out blue';
   ()
 
+let test_shape2d () =
+  let point_equal (x,y) (x', y') =
+    let name elem = elem ^ " with p1:" ^ (tfname2 (x,y)) ^ " p2:" ^ (tfname2  (x',y')) in
+    test_bound_delta (name "x") x x';
+    test_bound_delta (name "y") y y' in
+  let blue = octagon_from blue_octagon in
+  let points = shape2d blue ("x","y") in
+  point_equal (List.nth points 0) (3.,5.);
+  point_equal (List.nth points 1) (5.,5.);
+  point_equal (List.nth points 2) (5.,5.);
+  point_equal (List.nth points 3) (5.,2.5);
+  point_equal (List.nth points 4) (3.5,1.);
+  point_equal (List.nth points 5) (2.,1.);
+  point_equal (List.nth points 6) (1.,2.);
+  point_equal (List.nth points 7) (1.,3.)
+
 let tests = [
   "matpos", `Quick, test_matpos;
   "matpos2", `Quick, test_matpos2;
@@ -502,4 +521,5 @@ let tests = [
   "join_meet", `Quick, test_join_meet;
   "split_lf", `Quick, test_split_lf;
   "to_bexpr", `Quick, test_to_bexpr;
+  "shape2d", `Quick, test_shape2d;
 ]

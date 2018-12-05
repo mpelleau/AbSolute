@@ -245,8 +245,9 @@ module BoxedOctagon = struct
   (* Same as `lb` but for the upper bound. *)
   let ub : t -> key -> bound = fun o k -> ub_value k o.dbm.(ub_pos k)
 
-  let lb' : t -> var -> bound = fun o name -> lb o (Env.find name o.env)
-  let ub' : t -> var -> bound = fun o name -> ub o (Env.find name o.env)
+  let key_of : t -> var -> key = fun o name -> Env.find name o.env
+  let lb' : t -> var -> bound = fun o name -> lb o (key_of o name)
+  let ub' : t -> var -> bound = fun o name -> ub o (key_of o name)
 
   (* Monotonic write: We set a value in the DBM only if the current one is larger. *)
   let set : t -> int -> bound -> unit = fun o pos v ->
@@ -281,7 +282,7 @@ module BoxedOctagon = struct
       canonical_name
     else
       internal_name canonical_name d1 d2
-    with Not_found -> failwith ("var_name " ^ (string_of_int v))
+    with Not_found -> failwith ("var_name: cannot find variable " ^ (string_of_int v))
 
   let check_add_plane : t -> plane -> unit = fun o (d1,d2) ->
     check_well_formed_plane (d1,d2);
@@ -426,7 +427,10 @@ module BoxedOctagon = struct
 
   let meet_dbm_into_box : t -> t = fun o ->
     let filter_var = fun var_name key box ->
-      let i = I.of_floats (lb o key) (ub o key) in
+      let l = lb o key in
+      let u = ub o key in
+      if l > u then raise Bot.Bot_found;
+      let i = I.of_floats l u in
       B.meet_var box var_name i in
     { o with box=Env.fold filter_var o.env o.box }
 
@@ -518,12 +522,19 @@ module BoxedOctagon = struct
     filter_rotated |>
     meet_box_into_dbm
 
+  let rec normalize : bconstraint -> bconstraint = fun (e1, op, e2) ->
+    match (e1, op, e2) with
+    | e1, op, Unary (NEG, Cst(c,a)) -> normalize (e1, op, Cst (Mpqf.neg c,a))
+    | Var x, GEQ, Cst (c,a) -> normalize (Unary (NEG, Var x), LEQ, Unary (NEG, Cst(c,a)))
+    | _ -> (e1, op, e2)
+
   (* Returns `Some (x,y,c)` where the value `c` in the DBM at position of `x - y <= c` if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
      This function performs a simple pattern matching on the shape of the constraint: we do not attempt to symbolically rewrite the constraint.
   *)
   let extract_octagonal_cons : (var -> 'a) -> (var -> 'a) -> bconstraint -> ('a * 'a * bound) option = fun posi nega (e1,op,e2) ->
     let bound_of c = F.of_rat_up c in
     let open Csp in
+    let (e1, op, e2) = normalize (e1, op, e2) in
     match e1, op, e2 with
     | Binary (op2, x, y), LEQ, Cst (c, _) ->
         let c = bound_of c in
@@ -574,10 +585,11 @@ module BoxedOctagon = struct
    * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
   let filter : t -> bconstraint -> t = fun o cons ->
     let o = init_octagonalise o in
+    if !Constant.debug > 1 then print_cons "filter: " cons;
     let o =
       match filter_octagonal o cons with
-      | (o, true) -> o
-      | (o, false) -> filter_box o cons in
+      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
     let o = strong_closure_mine o in
     o
 
@@ -585,7 +597,7 @@ module BoxedOctagon = struct
     Array.to_list o.dbm
 
   (* True if the two representations (DBM and BOX) of `o` and `o'` are identical up to an epsilon.
-     Precondition: o <= o' or o' <= o. *)
+     Precondition: o <= o' or o' <= o with `<=` the order on the lattice of octagons. *)
   let equal : t -> t -> bound -> bool = fun o o' epsilon ->
     let bound_equal x y =
       if x <> y then (F.abs (x -. y)) <= epsilon
@@ -705,26 +717,74 @@ module BoxedOctagon = struct
     try float_consistent o; false
     with Bot.Bot_found -> true
 
-  let volume : t -> float = fun o -> B.volume o.box
+  let project_canonical_box : t -> B.t = fun o ->
+    let is_canonical v =
+      let (_,plane) = (Env.find v o.env) in
+      plane = cplane in
+    B.project is_canonical o.box
+
+  let volume : t -> float = fun o -> B.volume (project_canonical_box o)
+
+  let shape2d : t -> (var * var) -> (float * float) list = fun o (v1, v2) ->
+   let (v1_k, _) = key_of o v1 in
+   let (v2_k, _) = key_of o v2 in
+   (* Order the variables *)
+   let (v1, v2, v1_k, v2_k) =
+    if v1_k < v2_k then (v1, v2, v1_k, v2_k)
+    else (v2, v1, v2_k, v1_k) in
+   (* Get the rotated plane of these two variables. *)
+   let plane = (v1_k, v2_k) in
+   (* Retreive the bounds of the box. *)
+   let (v1_lb, v1_ub, v2_lb, v2_ub) = (lb' o v1, ub' o v1, lb' o v2, ub' o v2) in
+   (* Retreive the bounds of the rotated box. *)
+   let k1 = (v1_k, plane) in
+   let k2 = (v2_k, plane) in
+   let (rv1_lb, rv1_ub, rv2_lb, rv2_ub) = (o.dbm.(lb_pos k1), o.dbm.(ub_pos k1), o.dbm.(lb_pos k2), o.dbm.(ub_pos k2)) in
+   (* Compute the points of the bounding box. *)
+   (* In the following order :
+          a_b
+         g/ \c
+          | |
+           ..
+   *)
+   let points =
+    [(v2_ub -. rv2_ub, v2_ub);
+     (rv1_ub -. v2_ub, v2_ub);
+     (v1_ub, rv1_ub -. v1_ub);
+     (v1_ub, v1_ub -. rv2_lb);
+     (rv2_lb +. v2_lb, v2_lb);
+     (-.rv1_lb -. v2_lb, v2_lb);
+     (v1_lb, -.rv1_lb -. v1_lb);
+     (v1_lb, rv2_ub +. v1_lb)] in
+   points
 
   (* tests if an abstract element is too small to be cut *)
-  let is_small : t -> bool = fun o -> B.is_small o.box
+  let is_small : t -> bool = fun o -> B.is_small (project_canonical_box o)
 
-  let spawn : t -> Csp.instance = fun o -> B.spawn o.box
+  let join_vars : t -> Csp.csts -> t = fun o vars ->
+    let o = copy o in
+    let set_bound (k, (l, u)) =
+      let key = Env.find k o.env in
+      set_lb o key (F.of_rat_down l);
+      set_ub o key (F.of_rat_up u) in
+    List.iter set_bound vars;
+    strong_closure_mine o
 
   (* We check if `o` is an abstraction of `i` by adding `i` into the current octagon, and then check if it is consistent. *)
   let is_abstraction : t -> Csp.instance -> bool = fun o i ->
-    if not (B.is_abstraction o.box i) then
+    if not (B.is_abstraction (project_canonical_box o) i) then
       false
     else
-      let o = copy o in
-      let set_bound k v =
-        let key = Env.find k o.env in
-        set_lb o key (F.of_rat_down v);
-        set_ub o key (F.of_rat_up v) in
-      Tools.VarMap.iter set_bound i;
-      floyd_warshall o;
-      not (is_failed o)
+      try
+        let _ = join_vars o (List.map (fun (k,v) -> (k,(v,v))) (Tools.VarMap.bindings i)) in
+        true
+      with Bot.Bot_found -> false
+
+  (* TODO: improve to avoid long (infinite?) recursion. *)
+  let rec spawn : t -> Csp.instance = fun o ->
+    let t = B.spawn (project_canonical_box o) in
+    if not (is_abstraction o t) then spawn o
+    else t
 
   let prune : (t -> t -> t list) option = None
 

@@ -1,19 +1,24 @@
-let fail () = Pervasives.failwith "Boxed_octagon_drawer: unimplemented"
+open Boxed_octagon
 
-module Make(A:Adcp_sig.AbstractCP) = struct
-  type t = A.t
-  let is_empty = A.is_empty
-  let print = A.print
-  let bound = A.var_bounds
+let fail n = Pervasives.failwith (": Boxed_octagon_drawer." ^ n ^ ": unimplemented")
 
-  let to_abs _ = fail ()
+module A = BoxedOctagon
+type t = A.t
+let is_empty = A.is_empty
+let print = A.print
+let bound = A.var_bounds
 
-  let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
-    = fun o (v1, v2) col -> ()
+let to_abs (o, consts) = A.join_vars o consts
 
-  let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
-      = fun _ _ _ _ -> ()
+let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
+ = fun o vars col ->
+ let points = A.shape2d o vars in
+ (* Draw the segments *)
+ View.fill_poly points col;
+ View.draw_poly points Graphics.black
 
-  let draw3d : Format.formatter -> t list -> (Csp.var * Csp.var * Csp.var) -> unit
-      = fun _ _ _ -> ()
-end
+let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
+    = fun _ _ _ _ -> fail "print_latex"
+
+let draw3d : Format.formatter -> t list -> (Csp.var * Csp.var * Csp.var) -> unit
+    = fun _ _ _ -> fail "draw3d"

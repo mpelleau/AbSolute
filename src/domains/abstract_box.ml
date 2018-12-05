@@ -79,6 +79,10 @@ module Box (I:ITV) = struct
   let meet_var (a:t) (v:var) (value:i) : t =
     Env.add v (debot (I.meet (Env.find v a) value)) a
 
+  (* Projection of the variables `v` of `a` satisfying `f v`. *)
+  let project (f: var -> bool) (a:t) : t =
+    Env.filter (fun v _ -> f v) a
+
   (* predicates *)
   (* ---------- *)
 
