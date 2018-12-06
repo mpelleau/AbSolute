@@ -408,7 +408,6 @@ module Itv(B:BOUND) = struct
     else if B.sign ih <= 0 then meet i (neg r)
     else meet i (B.neg rh, rh)
 
-
   (* r = i + c => i = r - c *)
   let filter_add_f (i:t) (c:t) (r:t) : t bot =
     meet i (sub r c)

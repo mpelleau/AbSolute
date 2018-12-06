@@ -522,11 +522,28 @@ module BoxedOctagon = struct
     filter_rotated |>
     meet_box_into_dbm
 
+  let rec propagate_neg : expr -> expr = fun e ->
+    let neg e = Unary (NEG, e) in
+    match e with
+    | Unary (NEG, Cst(c,a)) -> Cst (Mpqf.neg c,a)
+    | Unary (NEG, Unary (NEG, e)) -> propagate_neg e
+    | Unary (NEG, Binary (SUB, x, y)) -> propagate_neg (Binary (ADD, neg x, y))
+    | Unary (NEG, Binary (ADD, x, y)) -> propagate_neg (Binary (SUB, neg x, y))
+    | Unary (op, x) -> Unary(op, propagate_neg x)
+    | Binary (SUB, x, Unary (NEG, y)) -> propagate_neg (Binary (ADD, x, y))
+    | Binary (ADD, x, Unary (NEG, y)) -> propagate_neg (Binary (SUB, x, y))
+    | Binary (op, x, y) -> Binary (op, propagate_neg x, propagate_neg y)
+    | e -> e
+
   let rec normalize : bconstraint -> bconstraint = fun (e1, op, e2) ->
+    let prop_neg e1 op e2 = ((propagate_neg e1), op, (propagate_neg e2)) in
+    let (e1, op, e2) = prop_neg e1 op e2 in
     match (e1, op, e2) with
-    | e1, op, Unary (NEG, Cst(c,a)) -> normalize (e1, op, Cst (Mpqf.neg c,a))
-    | Var x, GEQ, Cst (c,a) -> normalize (Unary (NEG, Var x), LEQ, Unary (NEG, Cst(c,a)))
-    | _ -> (e1, op, e2)
+    | e1, GEQ, Cst (c,a) -> normalize (Unary (NEG, e1), LEQ, Unary (NEG, Cst(c,a)))
+    (* Relaxing e1 < e2 and e1 > e2 to e1 <= e2 and e1 >= e2 *)
+    | e1, LT, e2 -> normalize (e1, LEQ, e2)
+    | e1, GT, e2 -> normalize (e1, GEQ, e2)
+    | _ -> prop_neg e1 op e2
 
   (* Returns `Some (x,y,c)` where the value `c` in the DBM at position of `x - y <= c` if `(e1,op,e2)` is an octagonal constraint, otherwise `None`.
      This function performs a simple pattern matching on the shape of the constraint: we do not attempt to symbolically rewrite the constraint.
@@ -658,12 +675,17 @@ module BoxedOctagon = struct
     let create_node = fun box ->
       let o' = copy o in
       let o' = { o' with box=box } in
-      meet_box_into_dbm o' in
+      let o' = meet_box_into_dbm o' in
+      try Some (strong_closure_mine o')
+      with Bot.Bot_found -> None in
     let boxes = B.split o.box c in
-    List.map create_node boxes
+    let splits = List.map create_node boxes in
+    let unwrap x = match x with Some x -> x | None -> raise (Invalid_argument "unreachable") in
+    List.map unwrap (List.filter (fun x -> x <> None) splits)
 
   (* splits an abstract element *)
   let split : t -> ctrs -> t list = fun o c ->
+    if !Constant.debug > 1 then Printf.printf "split";
     match !boct_split with
     | LargestFirst -> split_lf o c
     | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."

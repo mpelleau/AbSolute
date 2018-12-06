@@ -19,7 +19,7 @@ module Make (Abs:Adcp_sig.AbstractCP) = struct
     | Not b -> filter value (neg_bexpr b)
     | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
 
-  (** checks if an abstract satisfies a constraint, i.e all of the concrete
+  (** checks if an abstract element satisfies a constraint, i.e all of the concrete
       instances abstracted by the element satisfy the constraint *)
   let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
     let open Csp in
