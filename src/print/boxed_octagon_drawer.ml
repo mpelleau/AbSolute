@@ -12,10 +12,10 @@ let to_abs (o, consts) = A.join_vars o consts
 
 let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
  = fun o vars col ->
- let points = A.shape2d o vars in
- (* Draw the segments *)
- View.fill_poly points col;
- View.draw_poly points Graphics.black
+  let points = A.shape2d o vars in
+  (* Draw the segments *)
+  View.fill_poly points col;
+  View.draw_poly points Graphics.black
 
 let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
     = fun _ _ _ _ -> fail "print_latex"

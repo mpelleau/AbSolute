@@ -1,0 +1,13 @@
+/* One circle */
+
+init{
+  real x = [1;5];
+  real y = [1;5];
+}
+
+constraints{
+  -x - y <= -3;
+  y - x <= 2;
+  x - y <= 2.5;
+  x + y <= 9;
+}

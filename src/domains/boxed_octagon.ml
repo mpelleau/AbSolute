@@ -176,11 +176,12 @@ module BoxedOctagon = struct
     { env = o.env; renv=o.renv; dim=o.dim; dbm=Array.copy o.dbm; box=o.box; planes=o.planes }
 
   let length : t -> int = fun o -> o.dim
-  let is_empty : t -> bool = fun o -> (length o) = 0
   let dbm_length : t -> int = fun o -> Array.length o.dbm
   let planes_length : t -> int = fun o -> List.length o.planes
 
   let support_only_real_msg : string = "BoxedOctagon: only support real variables."
+
+  let is_empty : t -> bool = fun o -> (length o) = 0
 
   (* Allocate in the matrix two rows of size 2*dim' with an infinite bound. *)
   let add_var_in_dbm : t -> t = fun o ->
@@ -271,10 +272,6 @@ module BoxedOctagon = struct
   let internal_name canonical_name d1 d2 =
     canonical_name ^ "_in_" ^ (string_of_int d1) ^ "_" ^ (string_of_int d2) ^ internal_suffix
 
-  let is_canonical_name : t -> var -> bool = fun o name ->
-    let (_,plane) = Env.find name o.env in
-    cplane = plane
-
   let var_name : t -> key -> var = fun o (v, (d1,d2)) ->
     try
     let canonical_name = REnv.find (v, cplane) o.renv in
@@ -322,12 +319,16 @@ module BoxedOctagon = struct
   let all_vars : t -> (Csp.annot * Csp.var) list = fun o ->
     Env.fold (fun v _ acc -> (Real, v)::acc) o.env []
 
+  let is_canonical : t -> var -> bool = fun o v ->
+    let (_,plane) = (Env.find v o.env) in
+    plane = cplane
+
   (* Returns the variables registered in the octagon `o`.
      It does not return the variables created by the octagon (those on planes).
   *)
   let vars : t -> (Csp.annot * Csp.var) list = fun o ->
     List.filter
-      (fun (_, v) -> is_canonical_name o v)
+      (fun (_, v) -> is_canonical o v)
       (all_vars o)
 
   (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
@@ -347,7 +348,7 @@ module BoxedOctagon = struct
   *)
   let bound_vars : t -> Csp.csts = fun o ->
     List.filter
-      (fun (v, _) -> is_canonical_name o v)
+      (fun (v, _) -> is_canonical o v)
       (B.bound_vars o.box)
 
   (* Removes an unconstrained variable from the environment. *)
@@ -601,14 +602,14 @@ module BoxedOctagon = struct
    *
    * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
   let filter : t -> bconstraint -> t = fun o cons ->
+    let o = copy o in
     let o = init_octagonalise o in
     if !Constant.debug > 1 then print_cons "filter: " cons;
     let o =
       match filter_octagonal o cons with
       | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
       | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
-    let o = strong_closure_mine o in
-    o
+    strong_closure_mine o
 
   let list_of_dbm : t -> bound list = fun o ->
     Array.to_list o.dbm
@@ -672,7 +673,7 @@ module BoxedOctagon = struct
   (* Largest first split: select the biggest variable in all planes and split on its middle value.
    * We rely on the split of Box. *)
   let split_lf : t -> ctrs -> t list = fun o c ->
-    let create_node = fun box ->
+    let create_node box =
       let o' = copy o in
       let o' = { o' with box=box } in
       let o' = meet_box_into_dbm o' in
@@ -740,10 +741,7 @@ module BoxedOctagon = struct
     with Bot.Bot_found -> true
 
   let project_canonical_box : t -> B.t = fun o ->
-    let is_canonical v =
-      let (_,plane) = (Env.find v o.env) in
-      plane = cplane in
-    B.project is_canonical o.box
+    B.project (is_canonical o) o.box
 
   let volume : t -> float = fun o -> B.volume (project_canonical_box o)
 
