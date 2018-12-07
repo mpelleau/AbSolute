@@ -95,7 +95,7 @@ module BoxedOctagon = struct
   type e = key Env.t
   type re = string REnv.t
   (* Invariants:
-      * For all key, we have: `key = REnv.find renv (Env.find env key)`
+      * For all key, we have: `key = REnv.find (Env.find env key) renv`
       * `B.length box = (dim + 2 * (List.length planes))`
   *)
   type t = {
@@ -800,11 +800,20 @@ module BoxedOctagon = struct
         true
       with Bot.Bot_found -> false
 
-  (* TODO: improve to avoid long (infinite?) recursion. *)
-  let rec spawn : t -> Csp.instance = fun o ->
-    let t = B.spawn (project_canonical_box o) in
-    if not (is_abstraction o t) then spawn o
-    else t
+  let spawn : t -> Csp.instance = fun o ->
+    let rec try_spawn o d =
+      if d >= (length o) then Pervasives.failwith "unreachable";
+      let t = B.spawn (project_canonical_box o) in
+      if not (is_abstraction o t) then
+        let key = (d, cplane) in
+        let lb_v = lb o key in
+        let ub_v = ub o key in
+        let x = Mpqf.of_float (I.spawn (lb_v, ub_v)) in
+        let v = var_name o key in
+        let o = join_vars o [(v, (x,x))] in
+        try_spawn o (d+1)
+      else t in
+    try_spawn o 0
 
   let prune : (t -> t -> t list) option = None
 
