@@ -11,6 +11,7 @@
       (vpl zarith -> print/vpl_drawer.ok.ml)
       (!vpl       -> print/vpl_drawer.ko.ml)))
   (flags (:standard -w "+a-4-32-27-42" -warn-error "+a-4-32-27-42"))
+  ;(ocamlopt_flags (:standard -p))
   (c_names lib/ml_float)
   (modules (:standard \ absolute check))
 )
@@ -18,6 +19,7 @@
 (executable
  (name absolute)
  (public_name absolute)
+ ;(ocamlopt_flags (:standard -p))
  (modules absolute)
  (libraries libabsolute)
 )

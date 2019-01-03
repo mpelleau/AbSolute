@@ -1,4 +1,4 @@
-/* One circle */
+/* One octagon */
 
 init{
   real x = [1;5];

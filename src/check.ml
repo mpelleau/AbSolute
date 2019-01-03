@@ -140,11 +140,11 @@ let main =
   message "Boxed octagon (real)";
   let bo = Check_BoxedOctagon.go() in
   let vpl =
-    if Vpl_domain.available then begin
+    (* if Vpl_domain.available then begin
       message "polyhedra (VPL)";
       Check_Vpl.go()
     end
-    else true
+    else *) true
   in
   if bf && bm && p && vpl && apo && bo then begin
     Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";

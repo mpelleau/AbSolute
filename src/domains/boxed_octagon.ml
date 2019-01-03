@@ -642,6 +642,7 @@ module BoxedOctagon = struct
      `join` performs the union of the two octagons `o` and `o'`, and `meet` their intersection.
      Precondition: `o` and `o'` are defined on the same set of variables (due to condition on `Abstract_box.join`).
      Consequently, they have the same octagonalisation strategy.
+     Note: If both octagons are in normal form, their join is also in normal form (see Mine, 2017, p.131).
   *)
   let merge_with : t -> t -> (B.t -> B.t -> B.t) -> (bound -> bound -> bound) -> t =
    fun o o' merge_box merge_bound ->
