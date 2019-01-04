@@ -201,15 +201,9 @@ module BoxedOctagon = struct
     { o with env=env'; renv=renv'; box=box' }
 
   (* Adds an unconstrained variable to the octagon.
-     Precondition: `typ` must be equal to `Real`.
+     Warning: if `typ` is equal to `Int`, then the variable is relaxed to be on Real numbers.
   *)
   let add_var : t -> Csp.annot * Csp.var -> t = fun o (typ,var) ->
-    (* This abstract domain only support real variables (for now). *)
-    let check_type : Csp.annot -> unit = fun typ ->
-      match typ with
-      | Int -> Pervasives.failwith support_only_real_msg
-      | Real -> () in
-    check_type typ;
     let o = add_var_in_dbm o in
     let key = (o.dim-1, cplane) in
     add_var_in_box o var key

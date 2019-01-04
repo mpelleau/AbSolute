@@ -118,6 +118,7 @@ end
 
 module Check_BoxF = Make(Abstract_box.BoxF)
 module Check_BoxMix = Make(Abstract_box.BoxMix)
+module Check_BoxI = Make(Abstract_box.BoxI)
 module Check_Poly = Make(ADCP.PolyCP)
 module Check_Vpl = Make(Vpl_domain.VplCP)
 module Check_BoxedOctagon = Make(Boxed_octagon.BoxedOctagon)
@@ -130,6 +131,8 @@ let message domain =
 
 let main =
   message "floatting boxes";
+  let bi = Check_BoxF.go() in
+  message "integer boxes";
   let bf = Check_BoxF.go() in
   message "mix real-integer boxes";
   let bm = Check_BoxMix.go() in
@@ -137,7 +140,7 @@ let main =
   let p = Check_Poly.go() in
   message "OctBox (Apron)";
   let apo = Check_OctBox.go() in
-  message "Boxed octagon (real)";
+  message "Boxed octagon (floating)";
   let bo = Check_BoxedOctagon.go() in
   let vpl =
     (* if Vpl_domain.available then begin
@@ -146,7 +149,7 @@ let main =
     end
     else *) true
   in
-  if bf && bm && p && vpl && apo && bo then begin
+  if bi && bf && bm && p && vpl && apo && bo then begin
     Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";
     Format.printf "%a\n%!" print_good ();
     exit 0

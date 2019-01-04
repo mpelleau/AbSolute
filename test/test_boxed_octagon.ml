@@ -215,7 +215,6 @@ let test_copy () =
 
 let test_add_var () =
   begin
-  Alcotest.(check_raises) "add_var" (Failure support_only_real_msg) (fun () -> ignore (add_var empty (Int, "x")));
   Alcotest.(check int) "add_var (0)" 0 (dbm_length empty);
   Alcotest.(check int) "add_var (1)" 4 (dbm_length (make_octagon1 ()));
   Alcotest.(check int) "add_var (2)" 12 (dbm_length (make_octagon2 ()));

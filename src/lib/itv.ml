@@ -566,3 +566,4 @@ end
 
 module ItvF = Itv(Bound_float)
 module ItvQ = Itv(Bound_mpqf)
+module ItvI = Itv(Bound_int)
