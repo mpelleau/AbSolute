@@ -2,7 +2,7 @@ open Boxed_octagon
 
 let fail n = Pervasives.failwith (": Boxed_octagon_drawer." ^ n ^ ": unimplemented")
 
-module A = BoxedOctagon
+module A = BoxedOctagonF
 type t = A.t
 let is_empty = A.is_empty
 let print = A.print

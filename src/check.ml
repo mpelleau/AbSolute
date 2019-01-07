@@ -121,7 +121,7 @@ module Check_BoxMix = Make(Abstract_box.BoxMix)
 module Check_BoxI = Make(Abstract_box.BoxI)
 module Check_Poly = Make(ADCP.PolyCP)
 module Check_Vpl = Make(Vpl_domain.VplCP)
-module Check_BoxedOctagon = Make(Boxed_octagon.BoxedOctagon)
+module Check_BoxedOctagon = Make(Boxed_octagon.BoxedOctagonF)
 module Check_OctBox = Make(ADCP.OctBoxCP)
 
 let message domain =

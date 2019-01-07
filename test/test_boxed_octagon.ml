@@ -2,7 +2,7 @@
    Tests for domains/boxed_octagon.ml
 *)
 
-open Boxed_octagon.BoxedOctagon
+open Boxed_octagon.BoxedOctagonF
 open Tools
 
 (* 1. Some utilities to print names with argument of functions. *)
@@ -377,12 +377,12 @@ let test_filter_on_rotated () =
 (* This test is just to confirm that Box cannot prune domain just with a rotated constraint.
    Actually it is normal since the rotated constraint both depends on x and y, which are both unbounded at the time of the filtering. *)
 let test_rotated_constraint_on_box () =
-  let box = B.add_var B.empty (Real, "x0_1") in
-  let box = B.add_var box (Real, "y0_1") in
+  let box = Box.add_var Box.empty (Real, "x0_1") in
+  let box = Box.add_var box (Real, "y0_1") in
   let (rv1, _) = symbolic_var_rotation ("x0_1", "y0_1") in
   let rcons = (rv1, Csp.LEQ, c_5) in
-  let box = B.filter box rcons in
-  let (l,u) = B.float_bounds box "x0_1" in
+  let box = Box.filter box rcons in
+  let (l,u) = Box.float_bounds box "x0_1" in
   expect_ge "filter.rotated(x <= 5).ub" F.inf u;
   expect_le "filter.rotated(x <= 5).lb" F.minus_inf l
 
