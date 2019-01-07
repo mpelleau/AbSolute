@@ -29,7 +29,7 @@ module Box (I:ITV) = struct
   let find v (a:t) = VarMap.find_fail v a
 
   (* returns true if var is an integer in the given environment *)
-  let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
+  let is_integer abs var = I.to_annot (VarMap.find var abs) = Csp.Int
 
   let vars abs =
     Env.fold (fun v x acc ->

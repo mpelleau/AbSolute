@@ -886,4 +886,3 @@ end
 
 module Test = Make(Bound_float)
 module TestQ = Make(Bound_mpqf)
-module TestI = Make(Bound_int)

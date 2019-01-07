@@ -106,7 +106,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
     let check_dom dom value =
       match dom with
       | Finite (l,u) -> l < value && value < u
-    | _ -> failwith "cant handle infinite domains for now"
+      | _ -> failwith "cant handle infinite domains for now"
     in
     let value = VarMap.find_fail var instance |> Mpqf.to_float in
     check_type typ value && check_dom dom (Mpqf.of_float value)

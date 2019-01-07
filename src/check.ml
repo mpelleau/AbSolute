@@ -131,9 +131,9 @@ let message domain =
 
 let main =
   message "floatting boxes";
-  let bi = Check_BoxF.go() in
-  message "integer boxes";
   let bf = Check_BoxF.go() in
+  message "integer boxes";
+  let bi = Check_BoxI.go() in
   message "mix real-integer boxes";
   let bm = Check_BoxMix.go() in
   message "polyhedra (Apron)";

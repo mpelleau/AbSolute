@@ -672,12 +672,10 @@ module BoxedOctagon = struct
       let o' = copy o in
       let o' = { o' with box=box } in
       let o' = meet_box_into_dbm o' in
-      try Some (strong_closure_mine o')
-      with Bot.Bot_found -> None in
+      o' in
     let boxes = B.split o.box c in
     let splits = List.map create_node boxes in
-    let unwrap x = match x with Some x -> x | None -> raise (Invalid_argument "unreachable") in
-    List.map unwrap (List.filter (fun x -> x <> None) splits)
+    splits
 
   (* splits an abstract element *)
   let split : t -> ctrs -> t list = fun o c ->
@@ -783,7 +781,7 @@ module BoxedOctagon = struct
       set_lb o key (F.of_rat_down l);
       set_ub o key (F.of_rat_up u) in
     List.iter set_bound vars;
-    strong_closure_mine o
+    o
 
   (* We check if `o` is an abstraction of `i` by adding `i` into the current octagon, and then check if it is consistent. *)
   let is_abstraction : t -> Csp.instance -> bool = fun o i ->

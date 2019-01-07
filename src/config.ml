@@ -58,6 +58,7 @@ end
 
 let get_domain : string -> (module FullDomain) = function
   | "box"    -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
+  | "boxI"   -> (module MakeFullDomain (Abstract_box.BoxI) (Box_drawer.Make(Abstract_box.BoxI)))
   | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
   | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix) (Box_drawer.Make(Abstract_box.BoxMix)))
   | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
