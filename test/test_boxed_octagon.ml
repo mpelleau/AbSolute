@@ -2,6 +2,7 @@
    Tests for domains/boxed_octagon.ml
 *)
 
+open Boxed_octagon
 open Boxed_octagon.BoxedOctagonF
 open Tools
 

@@ -79,15 +79,140 @@ let set_octagonalisation =
 (* binary constraint *)
 type bconstraint = (expr * cmpop * expr)
 
-module BoxedOctagon2(B:BOUND) = struct
-  module B = B
+type plane = int * int
+(* An element in the DBM is uniquely identified by its plane and dimension. *)
+type key = int * plane
+
+(* If the variable `v` is rotated in the plane `(d1,d2)` then returns `then_b`, otherwise `else_b`. *)
+let if_rotated_else : key -> 'a -> 'a -> 'a = fun (v, (d1,d2)) then_b else_b ->
+  if d1 <> d2 && (d1 = v || d2 = v) then then_b else else_b
+
+(* This module signature provides function to view DBM's values as interval bounds.
+   Rational: We must extract this code from `BoxedOctagon` because it depends on the bound type. *)
+module type IntervalViewDBM = sig
+  type bound
+  type itv
+
+  val dbm_to_lb : key -> bound -> bound
+  val dbm_to_ub : key -> bound -> bound
+  val lb_to_dbm : key -> bound -> bound
+  val ub_to_dbm : key -> bound -> bound
+
+  val itv_to_range : itv -> (bound * bound)
+  val range_to_itv : bound -> bound -> itv
+end
+
+module FloatIntervalDBM = struct
+  module B = Bound_float
+  module I = Trigo.Make(Itv.Itv(B))
   type bound = B.t
+  type itv = I.t
+
+  (* Rules for coping with rounding when transferring from DBM to BOX:
+    * From BOX to DBM: every number is rounded UP because these numbers only decrease during the Floyd Warshall algorithm.
+    * From DBM to BOX: the number is rounded DOWN for lower bound and UP for upper bound.
+
+   To simplify the treatment (and improve soundness), we use interval arithmetic: (sqrt 2) is interpreted as the interval [sqrt_down 2, sqrt_up 2].
+   Further operations are performed on this interval, and we chose the lower or upper bound at the end depending on what we need.
+  *)
+  let two_it = I.of_float (B.two)
+  let minus_two_it = I.neg two_it
+  let sqrt2_it = I.of_floats (B.sqrt_down B.two) (B.sqrt_up B.two)
+  let minus_sqrt2_it = I.neg sqrt2_it
+  let lb_it i = let (l,_) = I.to_float_range i in l
+  let ub_it i = let (_,u) = I.to_float_range i in u
+
+  let dbm_to_lb : key -> bound -> bound = fun k v ->
+    let vi = I.of_float v in
+    let divider = if_rotated_else k minus_sqrt2_it minus_two_it in
+    lb_it (Bot.nobot (I.div vi divider))
+
+  let dbm_to_ub : key -> bound -> bound = fun k v ->
+    let vi = I.of_float v in
+    let divider = if_rotated_else k sqrt2_it two_it in
+    ub_it (Bot.nobot (I.div vi divider))
+
+  let lb_to_dbm : key -> bound -> bound = fun k v ->
+    let multiplier = if_rotated_else k minus_sqrt2_it minus_two_it in
+    lb_it (I.mul (I.of_float v) multiplier)
+
+  let ub_to_dbm : key -> bound -> bound = fun k v ->
+    let multiplier = if_rotated_else k sqrt2_it two_it in
+    ub_it (I.mul (I.of_float v) multiplier)
+
+  let itv_to_range : itv -> (bound * bound) = I.to_float_range
+  let range_to_itv : bound -> bound -> itv = I.of_floats
+end
+
+module RationalIntervalDBM = struct
+  module B = Bound_mpqf
+  module I = Trigo.Make(Itv.Itv(B))
+  type bound = B.t
+  type itv = I.t
+
+  let of_int : int -> bound = Bound_mpqf.of_int_up
+
+  let sqrt2_it = I.of_rats (B.sqrt_down B.two) (B.sqrt_up B.two)
+  let minus_sqrt2_it = I.neg sqrt2_it
+  let lb_it i = let (l,_) = I.to_rational_range i in l
+  let ub_it i = let (_,u) = I.to_rational_range i in u
+
+  let dbm_to_lb : key -> bound -> bound = fun k v ->
+    let vi = I.of_rat v in
+    let in_plane = lb_it (Bot.nobot (I.div vi minus_sqrt2_it)) in
+    if_rotated_else k in_plane (B.div_down v B.minus_two)
+
+  let dbm_to_ub : key -> bound -> bound = fun k v ->
+    let vi = I.of_rat v in
+    let in_plane = ub_it (Bot.nobot (I.div vi sqrt2_it)) in
+    if_rotated_else k in_plane (B.div_up v B.two)
+
+  let lb_to_dbm : key -> bound -> bound = fun k v ->
+    let in_plane = lb_it (I.mul (I.of_rat v) minus_sqrt2_it) in
+    if_rotated_else k in_plane (B.mul_down v B.minus_two)
+
+  let ub_to_dbm : key -> bound -> bound = fun k v ->
+    let in_plane = ub_it (I.mul (I.of_rat v) sqrt2_it) in
+    if_rotated_else k in_plane (B.mul_up v B.two)
+
+  let itv_to_range : itv -> (bound * bound) = I.to_rational_range
+  let range_to_itv : bound -> bound -> itv = I.of_rats
+end
+
+module IntegerIntervalDBM = struct
+  module B = Bound_int
+  module I = Trigo.Make(Itv.Itv(B))
+  type bound = B.t
+  type itv = I.t
+
+  let dbm_to_lb : key -> bound -> bound = fun k v ->
+    B.of_rat_down (RationalIntervalDBM.dbm_to_lb k (RationalIntervalDBM.of_int v))
+  let dbm_to_ub : key -> bound -> bound = fun k v ->
+    B.of_rat_up (RationalIntervalDBM.dbm_to_lb k (RationalIntervalDBM.of_int v))
+  let lb_to_dbm : key -> bound -> bound = fun k v ->
+    B.of_rat_up (RationalIntervalDBM.lb_to_dbm k (RationalIntervalDBM.of_int v))
+  let ub_to_dbm : key -> bound -> bound = fun k v ->
+    B.of_rat_up (RationalIntervalDBM.ub_to_dbm k (RationalIntervalDBM.of_int v))
+
+  let itv_to_range : itv -> (bound * bound) = fun (l,u) ->
+    let (l,u) = I.to_float_range (l,u) in
+    (int_of_float l, int_of_float (ceil u))
+
+  let range_to_itv : bound -> bound -> itv = I.of_ints
+end
+
+module BoxedOctagon
+  (B:BOUND)
+  (ItvDBM:IntervalViewDBM with
+    type bound = B.t and
+    type itv = Trigo.Make(Itv.Itv(B)).t)
+= struct
+  include ItvDBM
+
+  module B = B
   type m = bound array
   module I = Trigo.Make(Itv.Itv(B))
   module Box = Box(I)
-  type plane = int * int
-  (* An element in the DBM is uniquely identified by its plane and dimension. *)
-  type key = int * plane
 
   module Env = Tools.VarMap
   module REnv = Mapext.Make(struct
@@ -150,10 +275,6 @@ module BoxedOctagon2(B:BOUND) = struct
     else if v = d2 && d1 <> d2 then matpos2 (2*d2+1) (2*d1+1)
     else matpos2 (v*2+1) (v*2)
 
-  (* If the variable `v` is rotated in the plane `(d1,d2)` then returns `then_b`, otherwise `else_b`. *)
-  let if_rotated_else : key -> 'a -> 'a -> 'a = fun (v, (d1,d2)) then_b else_b ->
-    if d1 <> d2 && (d1 = v || d2 = v) then then_b else else_b
-
   let print : Format.formatter -> t -> unit = fun fmt o ->
     Format.fprintf fmt "Box representation: ";
     Box.print fmt o.box;
@@ -211,6 +332,36 @@ module BoxedOctagon2(B:BOUND) = struct
     if o.dbm.(pos) > v then
       o.dbm.(pos) <- v
 
+  (* Set the lower bound of the variable `k` in the DBM.
+     The value `v` is the lower bound of the value at key `k`, and is processed to fit in the DBM. *)
+  let set_lb : t -> key -> bound -> unit = fun o k v ->
+    set o (lb_pos k) (lb_to_dbm k v)
+
+  (* Same as `set_lb` but for the upper bound. *)
+  let set_ub : t -> key -> bound -> unit = fun o k v ->
+    set o (ub_pos k) (ub_to_dbm k v)
+
+  (* Lower bound of the variable at key `k`.
+     The value is computed directly from the DBM with care on rounding. *)
+  let lb : t -> key -> bound = fun o k -> dbm_to_lb k o.dbm.(lb_pos k)
+
+  (* Same as `lb` but for the upper bound. *)
+  let ub : t -> key -> bound = fun o k -> dbm_to_ub k o.dbm.(ub_pos k)
+
+  let lb' : t -> var -> bound = fun o name -> lb o (key_of o name)
+  let ub' : t -> var -> bound = fun o name -> ub o (key_of o name)
+
+  (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
+  (* BUG: F.to_rat F.inf throws a signal FPE (see #11). *)
+  let bounds_of_var : t -> key -> (Mpqf.t * Mpqf.t) = fun o key ->
+    (B.to_rat (lb o key), B.to_rat (ub o key))
+
+  (* Returns the bounds of the variable `var`.
+     See also `bounds_of_var`. *)
+  let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t) = fun o var ->
+    let key = Env.find var o.env in
+    bounds_of_var o key
+
   let internal_suffix = "_BoxedOctagon_internal"
   let internal_name canonical_name d1 d2 =
     canonical_name ^ "_in_" ^ (string_of_int d1) ^ "_" ^ (string_of_int d2) ^ internal_suffix
@@ -240,7 +391,6 @@ module BoxedOctagon2(B:BOUND) = struct
     let o = add o (d2, plane) in
     { o with planes=plane::o.planes }
 
-
   (* Add a box rotated in a random plane (d1, d2) such that 0 <= d1 < d2 < length o.
      Precondition: `o.dim > 1`
   *)
@@ -257,7 +407,7 @@ module BoxedOctagon2(B:BOUND) = struct
     if o.dim >= 2 && o.planes = [] then
       match !octagonalisation with
         Random -> random_octagonalisation o
-      | _ -> Pervasives.failwith "BoxedOctagon2: this split is not implemented; only LargestFirst (lf) is currently implemented."
+      | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
     else o
 
   (* It returns all variables including those created for the planes. *)
@@ -327,18 +477,38 @@ module BoxedOctagon2(B:BOUND) = struct
     let e2' = replace_var_in_expr replace e2 in
     if !found_var then Some (e1', op, e2') else None
 
-  (* We filter the constraint `cons` in `o.box`.
-     We do not merge the box into the DBM here.
-  *)
-  let filter_in_box : bconstraint -> t -> t = fun cons o ->
-    let box' = Box.filter o.box cons in
-    { o with box=box' }
+  (* We update the DBM with the values contained in the box if they improve the current bound in the DBM. *)
+  let meet_box_into_dbm : t -> t = fun o ->
+    let update_cell_from_box = fun var_name k ->
+      let it = Box.find var_name o.box in
+      let (l, u) = itv_to_range it in
+      set_lb o k l;
+      set_ub o k u;
+    in
+    Env.iter update_cell_from_box o.env;
+    o
+
+  let meet_dbm_into_box : t -> t = fun o ->
+    let filter_var = fun var_name key box ->
+      let l = lb o key in
+      let u = ub o key in
+      if l > u then raise Bot.Bot_found;
+      let i = range_to_itv l u in
+      Box.meet_var box var_name i in
+    { o with box=Env.fold filter_var o.env o.box }
 
   let print_cons name (e1, op, e2) =
     Format.printf "%s" name;
     Format.printf ": %a\n" Csp.print_bexpr (Csp.Cmp (op, e1, e2))
 
   let string_of_plane (x,y) = "(" ^ string_of_int x ^ "," ^ string_of_int y ^ ")"
+
+  (* We filter the constraint `cons` in `o.box`.
+     We do not merge the box into the DBM here.
+  *)
+  let filter_in_box : bconstraint -> t -> t = fun cons o ->
+    let box' = Box.filter o.box cons in
+    { o with box=box' }
 
   (* We filter the constraint in the rotated `plane`.
      The constraint is not filtered if none of its variables is rotated in `plane`.
@@ -347,6 +517,14 @@ module BoxedOctagon2(B:BOUND) = struct
     match rotate_constraint o cons plane with
     | None -> o
     | Some rcons -> filter_in_box rcons o
+
+  let filter_box : t -> bconstraint -> t = fun o cons ->
+    let filter_rotated o = List.fold_left (filter_in_plane cons) o o.planes in
+    (* filter in the canonical plane. *)
+    o |>
+    filter_in_box cons |>
+    filter_rotated |>
+    meet_box_into_dbm
 
   (* We raise `Bot_found` if there is a negative cycle (v < 0).
      Otherwise we set the value `v` in the DBM[i,j] if it improves the current value. *)
@@ -450,6 +628,18 @@ module BoxedOctagon2(B:BOUND) = struct
     | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (nega x, posi x, (B.mul_up (bound_of c) B.two))
     | _ -> None
 
+  let filter_octagonal : t -> bconstraint -> (t * bool) = fun o cons ->
+    let dim_of x = let (dim, _) = Env.find x o.env in dim in
+    let posi x = (dim_of x) * 2 in
+    let nega x = (dim_of x) * 2 + 1 in
+    match extract_octagonal_cons posi nega cons with
+    | Some (i,j,c) ->
+        let o = copy o in
+        set o (matpos2 j i) c;
+        let o = meet_dbm_into_box o in
+        (o, true)
+    | None -> (o, false)
+
   let list_of_dbm : t -> bound list = fun o ->
     Array.to_list o.dbm
 
@@ -485,7 +675,7 @@ module BoxedOctagon2(B:BOUND) = struct
   let merge_with : t -> t -> (Box.t -> Box.t -> Box.t) -> (bound -> bound -> bound) -> t =
    fun o o' merge_box merge_bound ->
     if Array.length o.dbm <> Array.length o'.dbm then
-      Pervasives.failwith "BoxedOctagon2.join: two octagons not defined on the same set of variables."
+      Pervasives.failwith "BoxedOctagon.join: two octagons not defined on the same set of variables."
     else ();
     check_same_env o o';
     let o = copy o in
@@ -546,6 +736,25 @@ module BoxedOctagon2(B:BOUND) = struct
       else
         [])
 
+  (* Largest first split: select the biggest variable in all planes and split on its middle value.
+   * We rely on the split of Box. *)
+  let split_lf : t -> ctrs -> t list = fun o c ->
+    let create_node box =
+      let o' = copy o in
+      let o' = { o' with box=box } in
+      let o' = meet_box_into_dbm o' in
+      o' in
+    let boxes = Box.split o.box c in
+    let splits = List.map create_node boxes in
+    splits
+
+  (* splits an abstract element *)
+  let split : t -> ctrs -> t list = fun o c ->
+    if !Constant.debug > 1 then Printf.printf "split";
+    match !boct_split with
+    | LargestFirst -> split_lf o c
+    | _ -> Pervasives.failwith "BoxedOctagon: this split is not implemented; only LargestFirst (lf) is currently implemented."
+
   (* Extract the octagonal constraints from the DBM in `o`.
      We do not extract "useless" constraints such as `x - y <= inf`. *)
   let to_bexpr : t -> bconstraint list = fun o ->
@@ -564,239 +773,12 @@ module BoxedOctagon2(B:BOUND) = struct
 
   let prune : (t -> t -> t list) option = None
 
-  (* split_on and shrink are relevant to pizza split.
-     We do not implement yet this splitting strategy in the octagons. *)
-  let split_on : t -> ctrs -> instance -> t list = fun _ _ _ ->
-    Pervasives.failwith "BoxedOctagon2: `split_on` is not implemented."
-  let shrink : t -> Mpqf.t -> t = fun _ _ ->
-    Pervasives.failwith "BoxedOctagon2: function `shrink` unimplemented."
-end
-
-module BoxedOctagonReal(B:BOUND) = struct
-  include BoxedOctagon2(B)
-
-  (* We add the variable regardless of its type (integer or real).
-     It is an over-approximation to add integer. *)
-  let add_var : t -> Csp.annot * Csp.var -> t = fun o (typ,var) ->
-    add_var o typ var
-
-  (* Check the consistency of the DBM, and update the cells in the diagonal to 0 (Miné, 2004). *)
-  let is_consistent : t -> unit = fun o ->
-    let n = o.dim in
-    for i = 0 to (2*n-1) do
-      if o.dbm.(matpos2 i i) < B.zero then
-        raise Bot.Bot_found
-      else
-        o.dbm.(matpos2 i i) <- B.zero
-    done
-
-  let is_failed : t -> bool = fun o ->
-    try is_consistent o; false
-    with Bot.Bot_found -> true
-end
-
-module BoxedOctagonF = struct
-  include BoxedOctagonReal(Bound_float)
-  module F = Bound_float
-
-  (* Rules for coping with rounding when transferring from DBM to BOX:
-      * From BOX to DBM: every number is rounded UP because these numbers only decrease during the Floyd Warshall algorithm.
-      * From DBM to BOX: the number is rounded DOWN for lower bound and UP for upper bound.
-
-     To simplify the treatment (and improve soundness), we use interval arithmetic: (sqrt 2) is interpreted as the interval [sqrt_down 2, sqrt_up 2].
-     Further operations are performed on this interval, and we chose the lower or upper bound at the end depending on what we need.
-  *)
-  let two_it = I.of_float (F.two)
-  let minus_two_it = I.neg two_it
-  let sqrt2_it = I.of_floats (F.sqrt_down F.two) (F.sqrt_up F.two)
-  let minus_sqrt2_it = I.neg sqrt2_it
-  let lb_it i = let (l,_) = I.to_float_range i in l
-  let ub_it i = let (_,u) = I.to_float_range i in u
-
-  let lb_value : key -> bound -> bound = fun k v ->
-    let vi = I.of_float v in
-    let divider = if_rotated_else k minus_sqrt2_it minus_two_it in
-    lb_it (Bot.nobot (I.div vi divider))
-
-  let ub_value : key -> bound -> bound = fun k v ->
-    let vi = I.of_float v in
-    let divider = if_rotated_else k sqrt2_it two_it in
-    ub_it (Bot.nobot (I.div vi divider))
-
-  (* Lower bound of the variable at key `k`.
-     The value is computed directly from the DBM with care on rounding. *)
-  let lb : t -> key -> bound = fun o k -> lb_value k o.dbm.(lb_pos k)
-
-  (* Same as `lb` but for the upper bound. *)
-  let ub : t -> key -> bound = fun o k -> ub_value k o.dbm.(ub_pos k)
-
-  let lb' : t -> var -> bound = fun o name -> lb o (key_of o name)
-  let ub' : t -> var -> bound = fun o name -> ub o (key_of o name)
-
-  (* Set the lower bound of the variable `k` in the DBM.
-     The value `v` is the lower bound of the value at key `k`, and is processed to fit in the DBM. *)
-  let set_lb : t -> key -> bound -> unit = fun o k v ->
-    let pos = (lb_pos k) in
-    let multiplier = if_rotated_else k minus_sqrt2_it minus_two_it in
-    set o pos (lb_it (I.mul (I.of_float v) multiplier))
-
-  (* Same as `set_lb` but for the upper bound. *)
-  let set_ub : t -> key -> bound -> unit = fun o k v ->
-    let pos = (ub_pos k) in
-    let multiplier = if_rotated_else k sqrt2_it two_it in
-    set o pos (ub_it (I.mul (I.of_float v) multiplier))
-
-
-  (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
-  (* BUG: F.to_rat F.inf throws a signal FPE (see #11). *)
-  let bounds_of_var : t -> key -> (Mpqf.t * Mpqf.t) = fun o key ->
-    (F.to_rat (lb o key), F.to_rat (ub o key))
-
-  (* Returns the bounds of the variable `var`.
-     See also `bounds_of_var`.
-  *)
-  let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t) = fun o var ->
-    let key = Env.find var o.env in
-    bounds_of_var o key
-
-  (* We update the DBM with the values contained in the box if they improve the current bound in the DBM. *)
-  let meet_box_into_dbm : t -> t = fun o ->
-    let update_cell_from_box = fun var_name k ->
-      let (l, u) = Box.float_bounds o.box var_name in
-      set_lb o k l;
-      set_ub o k u;
-    in
-    Env.iter update_cell_from_box o.env;
-    o
-
-  let meet_dbm_into_box : t -> t = fun o ->
-    let filter_var = fun var_name key box ->
-      let l = lb o key in
-      let u = ub o key in
-      if l > u then raise Bot.Bot_found;
-      let i = I.of_floats l u in
-      Box.meet_var box var_name i in
-    { o with box=Env.fold filter_var o.env o.box }
-
-  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
-  let strong_closure_bagnara : t -> t = fun o ->
-    let o = copy o in
-    floyd_warshall o;
-    is_consistent o;
-    strengthening o;
-    meet_dbm_into_box o
-
-  (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
-  let strong_closure_mine : t -> t = fun o ->
-    let o = copy o in
-    let n = o.dim in
-    for k = 0 to n-1 do
-      strong_closure_k o k;
-      strengthening o
-    done;
-    is_consistent o;
-    meet_dbm_into_box o
-
-  let filter_box : t -> bconstraint -> t = fun o cons ->
-    let filter_rotated o = List.fold_left (filter_in_plane cons) o o.planes in
-    (* filter in the canonical plane. *)
-    o |>
-    filter_in_box cons |>
-    filter_rotated |>
-    meet_box_into_dbm
-
-  let filter_octagonal : t -> bconstraint -> (t * bool) = fun o cons ->
-    let dim_of x = let (dim, _) = Env.find x o.env in dim in
-    let posi x = (dim_of x) * 2 in
-    let nega x = (dim_of x) * 2 + 1 in
-    match extract_octagonal_cons posi nega cons with
-    | Some (i,j,c) ->
-        let o = copy o in
-        set o (matpos2 j i) c;
-        let o = meet_dbm_into_box o in
-        (o, true)
-    | None -> (o, false)
-
-  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
-   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
-   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
-   *
-   * (1) This algorithm first filters the constraint and its rotated versions individually.
-   * (2) We merge the box in the DBM.
-   * (3) Then we apply the Floyd Warshall algorithm.
-   * (4) We merge the DBM in the box.
-   *
-   * Only rotated constraints with variables appearing in the rotated plane are executed.
-   *
-   * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
-  let filter : t -> bconstraint -> t = fun o cons ->
-    let o = copy o in
-    let o = init_octagonalise o in
-    if !Constant.debug > 1 then print_cons "filter: " cons;
-    let o =
-      match filter_octagonal o cons with
-      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
-      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
-    strong_closure_mine o
-
-  (* Largest first split: select the biggest variable in all planes and split on its middle value.
-   * We rely on the split of Box. *)
-  let split_lf : t -> ctrs -> t list = fun o c ->
-    let create_node box =
-      let o' = copy o in
-      let o' = { o' with box=box } in
-      let o' = meet_box_into_dbm o' in
-      o' in
-    let boxes = Box.split o.box c in
-    let splits = List.map create_node boxes in
-    splits
-
-  (* splits an abstract element *)
-  let split : t -> ctrs -> t list = fun o c ->
-    if !Constant.debug > 1 then Printf.printf "split";
-    match !boct_split with
-    | LargestFirst -> split_lf o c
-    | _ -> Pervasives.failwith "BoxedOctagon2: this split is not implemented; only LargestFirst (lf) is currently implemented."
-
-  let shape2d : t -> (var * var) -> (float * float) list = fun o (v1, v2) ->
-   let (v1_k, _) = key_of o v1 in
-   let (v2_k, _) = key_of o v2 in
-   (* Order the variables *)
-   let (v1, v2, v1_k, v2_k) =
-    if v1_k < v2_k then (v1, v2, v1_k, v2_k)
-    else (v2, v1, v2_k, v1_k) in
-   (* Get the rotated plane of these two variables. *)
-   let plane = (v1_k, v2_k) in
-   (* Retreive the bounds of the box. *)
-   let (v1_lb, v1_ub, v2_lb, v2_ub) = (lb' o v1, ub' o v1, lb' o v2, ub' o v2) in
-   (* Retreive the bounds of the rotated box. *)
-   let k1 = (v1_k, plane) in
-   let k2 = (v2_k, plane) in
-   let (rv1_lb, rv1_ub, rv2_lb, rv2_ub) = (o.dbm.(lb_pos k1), o.dbm.(ub_pos k1), o.dbm.(lb_pos k2), o.dbm.(ub_pos k2)) in
-   (* Compute the points of the bounding box. *)
-   (* In the following order :
-          a_b
-         g/ \c
-          | |
-           ..
-   *)
-   let points =
-    [(v2_ub -. rv2_ub, v2_ub);
-     (rv1_ub -. v2_ub, v2_ub);
-     (v1_ub, rv1_ub -. v1_ub);
-     (v1_ub, v1_ub -. rv2_lb);
-     (rv2_lb +. v2_lb, v2_lb);
-     (-.rv1_lb -. v2_lb, v2_lb);
-     (v1_lb, -.rv1_lb -. v1_lb);
-     (v1_lb, rv2_ub +. v1_lb)] in
-   points
-
   let join_vars : t -> Csp.csts -> t = fun o vars ->
     let o = copy o in
     let set_bound (k, (l, u)) =
       let key = Env.find k o.env in
-      set_lb o key (F.of_rat_down l);
-      set_ub o key (F.of_rat_up u) in
+      set_lb o key (B.of_rat_down l);
+      set_ub o key (B.of_rat_up u) in
     List.iter set_bound vars;
     o
 
@@ -824,14 +806,128 @@ module BoxedOctagonF = struct
         try_spawn o (d+1)
       else t in
     try_spawn o 0
+
+  let shape2d : t -> (var * var) -> (float * float) list = fun o (v1, v2) ->
+   let (v1_k, _) = key_of o v1 in
+   let (v2_k, _) = key_of o v2 in
+   (* Order the variables *)
+   let (v1, v2, v1_k, v2_k) =
+    if v1_k < v2_k then (v1, v2, v1_k, v2_k)
+    else (v2, v1, v2_k, v1_k) in
+   (* Get the rotated plane of these two variables. *)
+   let plane = (v1_k, v2_k) in
+   (* Retreive the bounds of the box. *)
+   let (v1_lb, v1_ub, v2_lb, v2_ub) = (lb' o v1, ub' o v1, lb' o v2, ub' o v2) in
+   (* Retreive the bounds of the rotated box. *)
+   let k1 = (v1_k, plane) in
+   let k2 = (v2_k, plane) in
+   let (rv1_lb, rv1_ub, rv2_lb, rv2_ub) = (o.dbm.(lb_pos k1), o.dbm.(ub_pos k1), o.dbm.(lb_pos k2), o.dbm.(ub_pos k2)) in
+   (* Compute the points of the bounding box. *)
+   (* In the following order :
+          a_b
+         g/ \c
+          | |
+           ..
+   *)
+   let points =
+    [(B.sub_up v2_ub rv2_ub, v2_ub);
+     (B.sub_up rv1_ub v2_ub, v2_ub);
+     (v1_ub, B.sub_up rv1_ub v1_ub);
+     (v1_ub, B.sub_up v1_ub rv2_lb);
+     (B.add_up rv2_lb v2_lb, v2_lb);
+     (B.sub_up (B.neg rv1_lb) v2_lb, v2_lb);
+     (v1_lb, B.sub_up (B.neg rv1_lb) v1_lb);
+     (v1_lb, B.add_up rv2_ub v1_lb)] in
+   List.map (fun (x,y) -> (B.to_float_up x, B.to_float_up y)) points
+
+  (* split_on and shrink are relevant to pizza split.
+     We do not implement yet this splitting strategy in the octagons. *)
+  let split_on : t -> ctrs -> instance -> t list = fun _ _ _ ->
+    Pervasives.failwith "BoxedOctagon: `split_on` is not implemented."
+  let shrink : t -> Mpqf.t -> t = fun _ _ ->
+    Pervasives.failwith "BoxedOctagon: function `shrink` unimplemented."
+end
+
+module BoxedOctagonReal
+  (B:BOUND)
+  (ItvDBM: IntervalViewDBM with
+    type bound = B.t and
+    type itv = Trigo.Make(Itv.Itv(B)).t)
+= struct
+  include BoxedOctagon(B)(ItvDBM)
+
+  (* We add the variable regardless of its type (integer or real).
+     It is an over-approximation to add integer. *)
+  let add_var : t -> Csp.annot * Csp.var -> t = fun o (typ,var) ->
+    add_var o typ var
+
+  (* Check the consistency of the DBM, and update the cells in the diagonal to 0 (Miné, 2004). *)
+  let is_consistent : t -> unit = fun o ->
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      if o.dbm.(matpos2 i i) < B.zero then
+        raise Bot.Bot_found
+      else
+        o.dbm.(matpos2 i i) <- B.zero
+    done
+
+  let is_failed : t -> bool = fun o ->
+    try is_consistent o; false
+    with Bot.Bot_found -> true
+end
+
+module BoxedOctagonF = struct
+  include BoxedOctagonReal(Bound_float)(FloatIntervalDBM)
+  module F = Bound_float
+
+  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let strong_closure_bagnara : t -> t = fun o ->
+    let o = copy o in
+    floyd_warshall o;
+    is_consistent o;
+    strengthening o;
+    meet_dbm_into_box o
+
+  (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
+  let strong_closure_mine : t -> t = fun o ->
+    let o = copy o in
+    let n = o.dim in
+    for k = 0 to n-1 do
+      strong_closure_k o k;
+      strengthening o
+    done;
+    is_consistent o;
+    meet_dbm_into_box o
+
+  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
+   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
+   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
+   *
+   * (1) This algorithm first filters the constraint and its rotated versions individually.
+   * (2) We merge the box in the DBM.
+   * (3) Then we apply the Floyd Warshall algorithm.
+   * (4) We merge the DBM in the box.
+   *
+   * Only rotated constraints with variables appearing in the rotated plane are executed.
+   *
+   * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
+  let filter : t -> bconstraint -> t = fun o cons ->
+    let o = copy o in
+    let o = init_octagonalise o in
+    if !Constant.debug > 1 then print_cons "filter: " cons;
+    let o =
+      match filter_octagonal o cons with
+      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+    strong_closure_mine o
 end
 
 module BoxedOctagonQ = struct
-  include BoxedOctagonReal(Bound_mpqf)
+  include BoxedOctagonReal(Bound_mpqf)(RationalIntervalDBM)
 end
 
 module BoxedOctagonI = struct
-  include BoxedOctagon2(Bound_int)
+  include BoxedOctagon(Bound_int)(IntegerIntervalDBM)
 
   let support_only_integer_msg : string = "BoxedOctagonI: support only integer variables."
 

@@ -67,6 +67,7 @@ let zero : t = Mpqf.of_int 0
 let one : t = Mpqf.of_int 1
 let two : t = Mpqf.of_int 2
 let minus_one : t = Mpqf.of_int (-1)
+let minus_two : t = Mpqf.of_int (-2)
 let inf : t = Mpqf.of_frac 1 0
 let minus_inf : t = Mpqf.of_frac (-1) 0
 let nan : t = Mpqf.of_frac 0 0
