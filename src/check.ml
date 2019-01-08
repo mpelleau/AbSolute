@@ -119,11 +119,12 @@ end
 module Check_BoxF = Make(Abstract_box.BoxF)
 module Check_BoxQ = Make(Abstract_box.BoxQ)
 module Check_BoxMix = Make(Abstract_box.BoxMix)
-module Check_BoxI = Make(Abstract_box.BoxI)
+module Check_BoxZ = Make(Abstract_box.BoxI)
 module Check_Poly = Make(ADCP.PolyCP)
 module Check_Vpl = Make(Vpl_domain.VplCP)
 module Check_BoxedOctagonF = Make(Boxed_octagon.BoxedOctagonF)
 module Check_BoxedOctagonQ = Make(Boxed_octagon.BoxedOctagonQ)
+module Check_BoxedOctagonZ = Make(Boxed_octagon.BoxedOctagonZ)
 module Check_OctBox = Make(ADCP.OctBoxCP)
 
 let message domain =
@@ -137,7 +138,7 @@ let main =
   message "rational boxes";
   let bq = Check_BoxQ.go() in
   message "integer boxes";
-  let bi = Check_BoxI.go() in
+  let bi = Check_BoxZ.go() in
   message "mix real-integer boxes";
   let bm = Check_BoxMix.go() in
   message "polyhedra (Apron)";
@@ -148,6 +149,8 @@ let main =
   let bo = Check_BoxedOctagonF.go() in
   message "Boxed octagon (rational)";
   let boq = Check_BoxedOctagonQ.go() in
+  message "Boxed octagon (integer)";
+  let boz = Check_BoxedOctagonZ.go() in
   let vpl =
     (* if Vpl_domain.available then begin
       message "polyhedra (VPL)";
@@ -155,7 +158,7 @@ let main =
     end
     else *) true
   in
-  if bf && bq && bi && bm && p && vpl && apo && bo && boq then begin
+  if bf && bq && bi && bm && p && vpl && apo && bo && boq && boz then begin
     Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";
     Format.printf "%a\n%!" print_good ();
     exit 0

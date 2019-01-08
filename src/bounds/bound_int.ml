@@ -119,12 +119,12 @@ let wrap fop iop a b =
 let add_up a b = wrap (+.) (+) a b
 let sub_up a b = wrap (-.) (-) a b
 let mul_up a b = wrap ( *.) ( * ) a b
-let div_up a b = bound_div (wrap (/.) (/)) a b
+let div_up a b = wrap (/.) (fun a b -> (a / b) + (b mod 2)) a b
 
 let add_down = add_up
 let sub_down = sub_up
 let mul_down = mul_up
-let div_down = div_up
+let div_down a b = wrap (/.) (/) a b
 
 let fwrap_up fop x = fwrap (fop (to_float_up x)) of_float_up
 let fwrap_down fop x = fwrap (fop (to_float_down x)) of_float_down

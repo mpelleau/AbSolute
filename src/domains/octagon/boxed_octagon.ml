@@ -947,10 +947,10 @@ module BoxedOctagonQ = struct
     strong_closure_bagnara o
 end
 
-module BoxedOctagonI = struct
+module BoxedOctagonZ = struct
   include BoxedOctagon(Bound_int)(IntegerIntervalDBM)
 
-  let support_only_integer_msg : string = "BoxedOctagonI: support only integer variables."
+  let support_only_integer_msg : string = "BoxedOctagonZ: support only integer variables."
 
   (* Precondition: `typ` must be equal to `Int`. *)
   let add_var : t -> Csp.annot * Csp.var -> t = fun o (typ,var) ->
@@ -961,4 +961,54 @@ module BoxedOctagonI = struct
       | Real -> Pervasives.failwith support_only_integer_msg in
     check_type typ;
     add_var o Int var
+
+  let tightening : t -> unit = fun o ->
+    let m = fun i j -> o.dbm.(matpos2 i j) in
+    let n = o.dim in
+    for i = 0 to (2*n-1) do
+      let i' = i lxor 1 in
+      let v = B.mul_up (B.div_down (m i i') B.two) B.two in
+      update_cell o i i' v
+    done
+
+  let is_consistent : t -> unit = fun o ->
+    let n = o.dim in
+    for i = 0 to (2*n-2)/2 do
+      let i = i * 2 in
+      let i' = i lxor 1 in
+      if B.lt (B.add_up o.dbm.(matpos2 i i') o.dbm.(matpos2 i' i)) B.zero then
+        raise Bot.Bot_found
+    done
+
+  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let tight_closure_bagnara : t -> t = fun o ->
+    let o = copy o in
+    floyd_warshall o;
+    is_consistent o;
+    tightening o;
+    is_consistent o;
+    strengthening o;
+    meet_dbm_into_box o
+
+  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
+   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
+   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
+   *
+   * (1) This algorithm first filters the constraint and its rotated versions individually.
+   * (2) We merge the box in the DBM.
+   * (3) Then we apply the Floyd Warshall algorithm.
+   * (4) We merge the DBM in the box.
+   *
+   * Only rotated constraints with variables appearing in the rotated plane are executed.
+   *
+   * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
+  let filter : t -> bconstraint -> t = fun o cons ->
+    let o = copy o in
+    let o = init_octagonalise o in
+    if !Constant.debug > 1 then print_cons "filter: " cons;
+    let o =
+      match filter_octagonal o cons with
+      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+    tight_closure_bagnara o
 end

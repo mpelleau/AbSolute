@@ -69,6 +69,7 @@ let get_domain : string -> (module FullDomain) = function
   | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
   | "boctF"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonF) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonF)))
   | "boctQ"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonQ) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonQ)))
+  | "boctZ"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonZ) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonZ)))
   | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
