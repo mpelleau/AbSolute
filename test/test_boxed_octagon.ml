@@ -338,11 +338,12 @@ let test_filter_in_box () =
 
 let test_dbm_closure o before after =
   expect_dbm "dbm.before_closure" o before;
-  let bagnara_o = strong_closure_bagnara o in
-  expect_dbm "dbm.after_closure_bagnara" bagnara_o after;
+  (* let bagnara_o = strong_closure_bagnara o in
+  expect_dbm "dbm.after_closure_bagnara" bagnara_o after; *)
   let mine_o = strong_closure_mine o in
   expect_dbm "dbm.after_closure_mine" mine_o after;
-  bagnara_o
+  mine_o
+  (* bagnara_o *)
 
 let test_dbm () =
   let o = make_rotated_octagon_2 () in
@@ -457,8 +458,8 @@ let test_split_lf () =
   | [left'; right'] ->
       test_laws "join(blue_left,blue_right): " left right blue join;
       test_laws "join after split: " left' right' blue join;
-      let left' = strong_closure_bagnara left' in
-      let right' = strong_closure_bagnara right' in
+      let left' = strong_closure_mine left' in
+      let right' = strong_closure_mine right' in
       test_laws "join after split and closure: " left' right' blue join;
       Printf.printf "\n\nLEFT expected: "; print_out left;
       Printf.printf "\n\nLEFT obtained: "; print_out left';

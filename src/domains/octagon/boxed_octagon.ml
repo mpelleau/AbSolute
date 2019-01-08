@@ -880,14 +880,6 @@ module BoxedOctagonF = struct
   include BoxedOctagonReal(Bound_float)(FloatIntervalDBM)
   module F = Bound_float
 
-  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
-  let strong_closure_bagnara : t -> t = fun o ->
-    let o = copy o in
-    floyd_warshall o;
-    is_consistent o;
-    strengthening o;
-    meet_dbm_into_box o
-
   (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
   let strong_closure_mine : t -> t = fun o ->
     let o = copy o in
@@ -924,6 +916,36 @@ end
 
 module BoxedOctagonQ = struct
   include BoxedOctagonReal(Bound_mpqf)(RationalIntervalDBM)
+
+  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let strong_closure_bagnara : t -> t = fun o ->
+    let o = copy o in
+    floyd_warshall o;
+    is_consistent o;
+    strengthening o;
+    meet_dbm_into_box o
+
+  (* Throw Bot.Bot_found if an inconsistent abstract element is reached.
+   * This filter procedure is currently very inefficient since we perform the closure (with Floyd-Warshall) every time we filter a constraint.
+   * However, performing the better algorithm presented in (Pelleau, Chapter 5, 2012) requires we have all the constraints to filter at once (or an event system is implemented).
+   *
+   * (1) This algorithm first filters the constraint and its rotated versions individually.
+   * (2) We merge the box in the DBM.
+   * (3) Then we apply the Floyd Warshall algorithm.
+   * (4) We merge the DBM in the box.
+   *
+   * Only rotated constraints with variables appearing in the rotated plane are executed.
+   *
+   * We could apply the step (1) to (4) until a fixpoint is reached but we leave the fixpoint computation to the propagation engine. *)
+  let filter : t -> bconstraint -> t = fun o cons ->
+    let o = copy o in
+    let o = init_octagonalise o in
+    if !Constant.debug > 1 then print_cons "filter: " cons;
+    let o =
+      match filter_octagonal o cons with
+      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+    strong_closure_bagnara o
 end
 
 module BoxedOctagonI = struct
