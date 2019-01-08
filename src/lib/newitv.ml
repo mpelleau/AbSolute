@@ -51,6 +51,19 @@ module Make(B:BOUND) = struct
 
   type t = real_bound * real_bound
 
+  (************************************************************************)
+  (* PRINTING *)
+  (************************************************************************)
+  let to_string (((kl,l),(kh,h)):t) : string =
+    Printf.sprintf
+      "%c%a;%a%c"
+      (if kl = Strict then ']' else '[')
+      B.sprint l
+      B.sprint h
+      (if kh = Large then ']' else '[')
+
+  let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
+
   (* returns the half space defined by a bound and a direction.
      - true for going toward +oo
      - false for going toward -oo
@@ -102,7 +115,7 @@ module Make(B:BOUND) = struct
 
   (* not all pairs of rationals are valid intervals *)
   let validate x =
-    if check_bot x = Bot then failwith "invalid interval" else x
+    if check_bot x = Bot then failwith ("invalid interval: " ^ to_string x)  else x
 
     (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
@@ -162,19 +175,6 @@ module Make(B:BOUND) = struct
 
   let half_inf (x:B.t) : t = strict_large B.minus_inf x
 
-
-  (************************************************************************)
-  (* PRINTING *)
-  (************************************************************************)
-  let to_string (((kl,l),(kh,h)):t) : string =
-    Printf.sprintf
-      "%c%a;%a%c"
-      (if kl = Strict then ']' else '[')
-      B.sprint l
-      B.sprint h
-      (if kh = Large then ']' else '[')
-
-  let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
 
   let to_expr (((kl, l), (kh, h)):t) =
     match kl, kh with

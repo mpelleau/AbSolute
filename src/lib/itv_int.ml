@@ -59,6 +59,7 @@ let print (fmt:Format.formatter) ((a,b):t) =
 (* ---------- *)
 let join (l1,h1:t) (l2,h2:t) : t = (min l1 l2), (max h1 h2)
 let meet (l1,h1:t) (l2,h2:t) : t bot = check_bot ((max l1 l2), (min h1 h2))
+let equal (l1,h1:t) (l2,h2:t) : bool = l1 = l2 && h1 = h2
 
 (* predicates *)
 (* ---------- *)

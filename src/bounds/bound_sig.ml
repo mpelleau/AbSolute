@@ -5,15 +5,11 @@
   Copyright 2015
 *)
 
-
-(* Signature for bounds: numeric values enriched with +oo and -oo.
- *)
-
+(* Signature for bounds: numeric values enriched with +oo and -oo. *)
 
 module type BOUND = sig
 
   type t
-
 
   (* ordering *)
   (* ******** *)
@@ -35,7 +31,6 @@ module type BOUND = sig
 
   val sign: t -> int
 
-
   (* construction *)
   (* ************ *)
 
@@ -55,7 +50,6 @@ module type BOUND = sig
   val of_string_up: string -> t
   val of_string_down: string -> t
 
-
   (* printing *)
   (* ******** *)
 
@@ -65,15 +59,12 @@ module type BOUND = sig
   val bprint: Buffer.t -> t -> unit
   val pp_print: Format.formatter -> t -> unit
 
-
   (* conversion *)
   (* ********** *)
 
   val to_float_up: t -> float
   val to_float_down: t -> float
   val to_rat: t -> Mpqf.t
-
-
 
   (* classification *)
   (* ************** *)
@@ -99,12 +90,9 @@ module type BOUND = sig
   (* operators *)
   (* ********* *)
 
-
   (* exact operators *)
-
   val neg: t -> t
   val abs: t -> t
-
 
   (* operators with rounding *)
   val add_up: t -> t -> t

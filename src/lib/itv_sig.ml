@@ -57,6 +57,8 @@ module type ITV = sig
   val is_singleton: t -> bool
   val check_bot: t -> t bot
 
+  val equal : t -> t -> bool
+
   (** mesure *)
   val float_size: t -> float
 

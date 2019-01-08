@@ -110,6 +110,12 @@ let meet (x1:t) (x2:t) : t bot =
      let x1 = to_float x1 in
      lift_bot make_int (strict_bot to_int (R.meet x1 x2))
 
+let equal (x1:t) (x2:t) : bool =
+  match x1,x2 with
+  | Int x1, Int x2 -> I.equal x1 x2
+  | Real x1, Real x2 -> R.equal x1 x2
+  | _,_ -> false
+
 (* predicates *)
 (* ---------- *)
 

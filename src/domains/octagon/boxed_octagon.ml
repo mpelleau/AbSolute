@@ -329,7 +329,7 @@ module BoxedOctagon
 
   (* Monotonic write: We set a value in the DBM only if the current one is larger. *)
   let set : t -> int -> bound -> unit = fun o pos v ->
-    if o.dbm.(pos) > v then
+    if B.gt o.dbm.(pos) v then
       o.dbm.(pos) <- v
 
   (* Set the lower bound of the variable `k` in the DBM.
@@ -352,7 +352,6 @@ module BoxedOctagon
   let ub' : t -> var -> bound = fun o name -> ub o (key_of o name)
 
   (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
-  (* BUG: F.to_rat F.inf throws a signal FPE (see #11). *)
   let bounds_of_var : t -> key -> (Mpqf.t * Mpqf.t) = fun o key ->
     (B.to_rat (lb o key), B.to_rat (ub o key))
 
@@ -647,7 +646,7 @@ module BoxedOctagon
      Precondition: o <= o' or o' <= o with `<=` the order on the lattice of octagons. *)
   let equal : t -> t -> bound -> bool = fun o o' epsilon ->
     let bound_equal x y =
-      if x <> y then (B.abs (B.sub_up x y)) <= epsilon
+      if B.neq x y then B.leq (B.abs (B.sub_up x y)) epsilon
       else true in
     let rec aux eq l1 l2 = match l1, l2 with
       | [], [] -> true
@@ -717,7 +716,7 @@ module BoxedOctagon
     let idx = matpos i j in
     (* We do not generate the constraint where the coefficient is infinite. *)
     res@(
-      if o.dbm.(idx) <> B.inf && i <> j then
+      if B.neq o.dbm.(idx) B.inf && i <> j then
         let x = create_var_from_cell o j in
         let y = create_var_from_cell o i in
         (* -x <= -c *)
@@ -865,7 +864,7 @@ module BoxedOctagonReal
   let is_consistent : t -> unit = fun o ->
     let n = o.dim in
     for i = 0 to (2*n-1) do
-      if o.dbm.(matpos2 i i) < B.zero then
+      if B.lt o.dbm.(matpos2 i i) B.zero then
         raise Bot.Bot_found
       else
         o.dbm.(matpos2 i i) <- B.zero

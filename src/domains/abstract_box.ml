@@ -267,7 +267,7 @@ module Box (I:ITV) = struct
       | EQ  -> debot (I.filter_eq i1 i2)
     in
     Tools.debug 2 "HC4 - refine\n%!";
-    let refined1 = if j1 = i1 then a else refine a b1 j1 in
+    let refined1 = if I.equal j1 i1 then a else refine a b1 j1 in
     Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
   let filter (a:t) (e1,binop,e2) : t =

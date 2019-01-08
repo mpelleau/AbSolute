@@ -5,15 +5,14 @@ open Config
 (***************)
 
 let go() =
-  let open Constant in
   try
     parse_args ();
     Terminal.go();
-    let prob = File_parser.parse !problem in
+    let prob = File_parser.parse !Constant.problem in
     Format.printf "%a\n" Csp.print prob;
-    if !debug > 0 then Vpl_domain.enable_debug();
+    if !Constant.debug > 0 then Vpl_domain.enable_debug();
     lift (set_domain ()) prob
-  with Error msg -> Terminal.error msg
+  with Constant.Error msg -> Terminal.error msg
 
 let _ =
   (* Initializing random with the seed : AbSolute converted to hexa *)

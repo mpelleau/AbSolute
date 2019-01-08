@@ -117,6 +117,7 @@ module Make(Dom:Adcp_sig.AbstractCP) = struct
 end
 
 module Check_BoxF = Make(Abstract_box.BoxF)
+module Check_BoxQ = Make(Abstract_box.BoxQ)
 module Check_BoxMix = Make(Abstract_box.BoxMix)
 module Check_BoxI = Make(Abstract_box.BoxI)
 module Check_Poly = Make(ADCP.PolyCP)
@@ -133,6 +134,8 @@ let message domain =
 let main =
   message "floatting boxes";
   let bf = Check_BoxF.go() in
+  message "rational boxes";
+  let bq = Check_BoxQ.go() in
   message "integer boxes";
   let bi = Check_BoxI.go() in
   message "mix real-integer boxes";
@@ -144,7 +147,7 @@ let main =
   message "Boxed octagon (floating)";
   let bo = Check_BoxedOctagonF.go() in
   message "Boxed octagon (rational)";
-  let bq = Check_BoxedOctagonQ.go() in
+  let boq = Check_BoxedOctagonQ.go() in
   let vpl =
     (* if Vpl_domain.available then begin
       message "polyhedra (VPL)";
@@ -152,7 +155,7 @@ let main =
     end
     else *) true
   in
-  if bi && bf && bm && p && vpl && apo && bo && bq then begin
+  if bf && bq && bi && bm && p && vpl && apo && bo && boq then begin
     Tools.green_fprintf Format.std_formatter "Your version of AbSolute looks fine ";
     Format.printf "%a\n%!" print_good ();
     exit 0
