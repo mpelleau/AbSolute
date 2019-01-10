@@ -30,7 +30,7 @@ module SyntaxTranslator (D:ADomain) = struct
       if not (Environment.mem_var env var)
       then failwith ("variable not found: "^v);
       Texpr1.Var var
-    | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf c)
+    | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf (Bound_rat.to_mpqf c))
     | Unary (o,e1) ->
       let r = match o with
         | NEG  -> Texpr1.Neg
@@ -75,7 +75,7 @@ module SyntaxTranslator (D:ADomain) = struct
 
   let rec apron_to_expr texpr env =
     match texpr with
-    | Texpr1.Cst c -> Cst (coeff_to_mpqf c,Real)
+    | Texpr1.Cst c -> Cst (Bound_rat.of_mpqf (coeff_to_mpqf c), Real)
     | Texpr1.Var v ->
       let e = match (Environment.typ_of_var env v) with
               | Environment.INT -> Var ((Var.to_string v)^"%")
@@ -159,13 +159,13 @@ module MAKE(AP:ADomain) = struct
   let var_bounds abs v =
     let var = Var.of_string v in
     let i = A.bound_variable man abs var in
-    itv_to_mpqf i
+    itv_to_rat i
 
   let bound_vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->
-      (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
+      (Var.to_string v, itv_to_rat (A.bound_variable man abs v))::l
       ) [] vars in
     List.filter (fun (_, (l, u)) -> l = u) itvs
 
@@ -220,7 +220,7 @@ module MAKE(AP:ADomain) = struct
     let obj_itv = A.bound_texpr man abs ap_expr in
     let obj_inf = obj_itv.Interval.inf
     and obj_sup = obj_itv.Interval.sup in
-    (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
+    (scalar_to_rat obj_inf, scalar_to_rat obj_sup)
 
   (* utilties for splitting *)
   (* Similar to `largest abs` but does not deal with variables or abstract domain.
@@ -318,7 +318,7 @@ module MAKE(AP:ADomain) = struct
 
   (** given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
-  let is_abstraction poly instance =
+  let is_abstraction_internal poly instance =
     let env = Abstract1.env poly in
     let var_texpr =
       Tools.VarMap.fold (fun var value acc ->
@@ -332,6 +332,10 @@ module MAKE(AP:ADomain) = struct
     let tarray = Array.of_list texpr in
     let poly_subst = Abstract1.substitute_texpr_array man poly varray tarray None in
     Abstract1.is_top man poly_subst
+
+  let is_abstraction poly instance =
+    let instance = Tools.VarMap.map Bound_rat.to_mpqf instance in
+    is_abstraction_internal poly instance
 
   (** Random uniform value within an interval, according to the type *)
   let spawn_itv typ (i:Interval.t) =
@@ -368,7 +372,7 @@ module MAKE(AP:ADomain) = struct
     let rec retry poly n idx =
       let b = Abstract1.to_box man poly in
       let instance = spawn_box b in
-      if is_abstraction poly instance then instance
+      if is_abstraction_internal poly instance then instance
       else if n >= nb_try then
         (* in case we didnt manage to find an instance, we fix a variable and retry *)
         let v = Environment.var_of_dim env idx in
@@ -383,5 +387,7 @@ module MAKE(AP:ADomain) = struct
         let poly = Abstract1.meet_tcons_array man poly tearray in
         retry poly 0 (idx+1)
       else retry poly (n+1) idx
-    in retry poly 0 0
+    in
+    let res = retry poly 0 0 in
+    Tools.VarMap.map Bound_rat.of_mpqf res
 end

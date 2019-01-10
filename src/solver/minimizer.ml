@@ -13,7 +13,7 @@ module Minimize(Abs : AbstractCP) = struct
 
   let is_small a obj =
     let (obj_inf, obj_sup) = Abs.forward_eval a obj in
-    Mpqf.to_float (Mpqf.sub obj_sup  obj_inf) <= !Constant.precision
+    Bound_rat.to_float_up (Bound_rat.sub obj_sup obj_inf) <= !Constant.precision
 
   let explore abs constrs obj consts views splitting =
     let open Res in

@@ -31,7 +31,7 @@ module type AbstractCP = sig
   val add_var : t -> Csp.annot * Csp.var -> t
 
   (** returns the bounds of a variable *)
-  val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
+  val var_bounds : t -> Csp.var -> (Bound_rat.t * Bound_rat.t)
 
   (** returns the bound variables *)
   val bound_vars : t -> Csp.csts
@@ -71,7 +71,7 @@ module type AbstractCP = sig
   val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
 
   (** returns the range of value of a given expression for an abstract element *)
-  val forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
+  val forward_eval : t -> Csp.expr -> (Bound_rat.t * Bound_rat.t)
 
   (** transforms an abstract element into constraints *)
   val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list
@@ -94,6 +94,6 @@ module type AbstractCP = sig
   val is_abstraction : t -> Csp.instance -> bool
 
   (** Skrinks the abstract element in every direction by the given value. *)
-  val shrink : t -> Mpqf.t -> t
+  val shrink : t -> Bound_rat.t -> t
 
  end

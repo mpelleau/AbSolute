@@ -44,8 +44,8 @@ module type BOUND = sig
   (* val of_z_down: Z.t -> t *)
   val of_float_up: float -> t
   val of_float_down: float -> t
-  val of_rat_up: Mpqf.t -> t
-  val of_rat_down: Mpqf.t -> t
+  val of_rat_up: Bound_rat.t -> t
+  val of_rat_down: Bound_rat.t -> t
 
   val of_string_up: string -> t
   val of_string_down: string -> t
@@ -64,7 +64,7 @@ module type BOUND = sig
 
   val to_float_up: t -> float
   val to_float_down: t -> float
-  val to_rat: t -> Mpqf.t
+  val to_rat: t -> Bound_rat.t
 
   (* classification *)
   (* ************** *)

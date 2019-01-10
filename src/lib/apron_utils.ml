@@ -3,6 +3,11 @@ open Apron
 (***************** Different conversion operators *****************)
 (******************************************************************)
 
+let scalar_to_rat = function
+  | Scalar.Mpqf x -> Bound_rat.of_mpqf x
+  | Scalar.Float x -> Bound_rat.of_float x
+  | Scalar.Mpfrf x -> Bound_rat.of_mpqf (Mpfrf.to_mpqf x)
+
 let scalar_to_mpqf = function
   | Scalar.Mpqf x -> x
   | Scalar.Float x -> Mpqf.of_float x
@@ -17,7 +22,7 @@ let scalar_to_int x = scalar_to_float x |> int_of_float
 
 let itv_to_float i = (scalar_to_float i.Interval.inf, scalar_to_float i.Interval.sup)
 
-let itv_to_mpqf i = (scalar_to_mpqf i.Interval.inf, scalar_to_mpqf i.Interval.sup)
+let itv_to_rat i = (scalar_to_rat i.Interval.inf, scalar_to_rat i.Interval.sup)
 
 let coeff_to_float = function
   | Coeff.Scalar x -> scalar_to_float x

@@ -45,7 +45,7 @@ let to_float_range ((a,b):t) = (float a), (float b)
 
 let float_size ((a,b):t) = float (b - a)
 
-let to_rational_range ((a,b):t) = (Mpqf.of_int a),(Mpqf.of_int b)
+let to_rational_range ((a,b):t) = (Bound_rat.of_int a),(Bound_rat.of_int b)
 
 let print (fmt:Format.formatter) ((a,b):t) =
   if a = b then Format.print_int a
@@ -209,8 +209,8 @@ let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
      else strict_bot (meet i2) (div r i1))
 
 let to_expr ((l,h):t) =
-  ((Csp.GEQ, Csp.Cst(Mpqf.of_int l, Csp.Int)),
-   (Csp.LEQ, Csp.Cst(Mpqf.of_int h, Csp.Int)))
+  ((Csp.GEQ, Csp.Cst(Bound_rat.of_int l, Csp.Int)),
+   (Csp.LEQ, Csp.Cst(Bound_rat.of_int h, Csp.Int)))
 
 (* returns the type annotation of the represented values *)
 let to_annot _ = Csp.Int
@@ -228,9 +228,9 @@ let spawn (l,h:t) : int =
   let r = Random.int ((h-l)+1) in
   l + r
 
-let shrink (i : t) (c:Mpqf.t) : t bot =
+let shrink (i : t) (c:Bound_rat.t) : t bot =
   try
-    let c' = Mpqf.to_float c |> int_of_float in
+    let c' = Bound_rat.to_float_up c |> int_of_float in
     let i' =
       (c', -1*c')
       |> add i

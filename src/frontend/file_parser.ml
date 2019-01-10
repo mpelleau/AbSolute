@@ -69,7 +69,7 @@ let check_ast p =
     let aux (_, var, d) =
       match d with
       | Finite (f1,f2) -> if f1 > f2 then
-	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%s;%s]" var (Mpqf.to_string f1) (Mpqf.to_string f2)))
+          raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%s;%s]" var (Bound_rat.to_string f1) (Bound_rat.to_string f2)))
       | _ -> ()
     in List.iter aux p.init
   and check_constrs () =

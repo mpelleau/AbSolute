@@ -22,7 +22,7 @@ module Make (Abs : AbstractCP) = struct
       match obj with
       | Some obj ->
          let (inf, sup) = Abs.forward_eval abs obj in
-         Format.printf "%sabs = %a\tobjective = (%s, %s)@." tab Abs.print abs (Mpqf.to_string inf) (Mpqf.to_string sup)
+         Format.printf "%sabs = %a\tobjective = (%s, %s)@." tab Abs.print abs (Bound_rat.to_string inf) (Bound_rat.to_string sup)
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
   let print_debug_const tab cstrs csts =
@@ -95,11 +95,11 @@ module Make (Abs : AbstractCP) = struct
 
   let get_value abs v e =
     let (lb, ub) = Abs.forward_eval abs e in
-    let slope = max (Mpqf.abs lb) (Mpqf.abs ub) in
+    let slope = max (Bound_rat.abs lb) (Bound_rat.abs ub) in
     let (xl, xu) = Abs.forward_eval abs (Csp.Var v) in
-    let diam = Mpqf.sub xu xl in
-    let value = Mpqf.mul slope diam in
-    (value, Mpqf.div (Mpqf.add xu xl) (Mpqf.of_int 2))
+    let diam = Bound_rat.sub xu xl in
+    let value = Bound_rat.mul slope diam in
+    (value, Bound_rat.div (Bound_rat.add xu xl) Bound_rat.two)
 
   let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let (_, vsplit, mid) =
@@ -111,7 +111,7 @@ module Make (Abs : AbstractCP) = struct
               if m < value then (value, v, half)
               else (m, mv, mid)
             ) (m', mv', mid') l
-        ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
+        ) (Bound_rat.minus_one, "", Bound_rat.minus_one) jacobian
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
@@ -125,7 +125,7 @@ module Make (Abs : AbstractCP) = struct
               let (value, half) = get_value abs v e in
               match (VarMap.find_opt v m) with
               | None -> VarMap.add v (value, half) m
-              | Some (s, _) -> VarMap.add v (Mpqf.add s value, half) m
+              | Some (s, _) -> VarMap.add v (Bound_rat.add s value, half) m
             ) map l
         ) VarMap.empty jacobian
     in
@@ -134,13 +134,13 @@ module Make (Abs : AbstractCP) = struct
           fun var (smear, mi) (m, v, s) ->
           if smear > m then (smear, var, mi)
           else (m, v, s)
-        ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
+        ) smear (Bound_rat.minus_one, "", Bound_rat.minus_one)
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
 
   let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
-    let abs' = (!Constant.precision *. 2. |> Mpqf.of_float)
+    let abs' = (!Constant.precision *. 2. |> Bound_rat.of_float)
       |> Abs.shrink abs
     in
     if Abs.is_empty abs'
@@ -148,13 +148,13 @@ module Make (Abs : AbstractCP) = struct
     else begin
         let splits = begin
           let starting_point = Abs.spawn abs'
-            |> VectorMap.RationalVec.map Mpqf.to_float
-          and includes x = VectorMap.FloatVec.map Mpqf.of_float x
+            |> VectorMap.RationalVec.map Bound_rat.to_float_up
+          and includes x = VectorMap.FloatVec.map Bound_rat.of_float x
             |> Abs.is_abstraction abs'
           in
           match Gradient_descent.gradient_descent starting_point includes jacobian with
           | Some xs -> Abs.split_on abs jacobian
-            (VectorMap.FloatVec.map Mpqf.of_float xs)
+            (VectorMap.FloatVec.map Bound_rat.of_float xs)
           | None -> Abs.split abs jacobian
           end
         in (* case where the pizza split has been made on a corner *)

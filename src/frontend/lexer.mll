@@ -81,7 +81,7 @@ rule token = parse
 | "!"    { TOK_NOT }
 | ":"    { TOK_COLON }
 (* literals *)
-| const as c { TOK_const (Mpqf.of_float (float_of_string c)) }
+| const as c { TOK_const (Bound_rat.of_float_up (float_of_string c)) }
 
 (* spaces, comments *)
 | "/*" { comment lexbuf; token lexbuf }

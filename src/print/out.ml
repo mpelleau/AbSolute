@@ -24,9 +24,9 @@ module Make (D:Drawer) = struct
     and v2_b = bound_dim v2 sure unsure in
     (match v1_b,v2_b with
      | None, None -> failwith "nothing to draw"
-     | Some(a,b),None | None, Some(a,b) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
+     | Some(a,b),None | None, Some(a,b) -> View.init ((Bound_rat.to_float_up a), (Bound_rat.to_float_up b)) (1.,1.)
      | Some(a,b),Some(c,d) ->
-        let (a,b,c,d) = Mpqf.((to_float a), (to_float b), (to_float c), (to_float d)) in
+        let (a,b,c,d) = Bound_rat.((to_float_up a), (to_float_up b), (to_float_up c), (to_float_up d)) in
         View.init (a,b) (c,d));
     List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
       if !Constant.sure |> not then
@@ -39,8 +39,8 @@ module Make (D:Drawer) = struct
     and v2_b = bound_dim v2 sure unsure in
     (match v1_b,v2_b with
      | None, None -> failwith "nothing to draw"
-     | Some(a,b),None | None, Some(a,b) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
-     | Some(a,b),Some(c,d) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
+     | Some(a,b),None | None, Some(a,b) -> Latex.init ((Bound_rat.to_float_up a), (Bound_rat.to_float_up b)) (1.,1.)
+     | Some(a,b),Some(c,d) -> Latex.init ((Bound_rat.to_float_up a), (Bound_rat.to_float_up b)) ((Bound_rat.to_float_up c), (Bound_rat.to_float_up d)));
     let name = Filename.(basename !Constant.problem |> chop_extension) in
     let out = ("out/"^name^"_"^(!Constant.domain)^".tex") in
     let fmt = Format.formatter_of_out_channel (open_out out) in
@@ -131,7 +131,7 @@ module Make (D:Drawer) = struct
       if !visualization then draw2d s u (vars2D prob)
 
   let trace_min sure unsure value =
-    Format.printf "best value:%s\n%!" (Mpqf.to_string value);
+    Format.printf "best value:%s\n%!" (Bound_rat.to_string value);
     traceout sure unsure
 
   let out_min prob res =

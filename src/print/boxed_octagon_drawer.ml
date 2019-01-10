@@ -2,7 +2,7 @@ module Make(A:sig
   type t
   val is_empty: t -> bool
   val print: Format.formatter -> t -> unit
-  val var_bounds: t -> Csp.var -> (Mpqf.t * Mpqf.t)
+  val var_bounds: t -> Csp.var -> (Bound_rat.t * Bound_rat.t)
   val join_vars: t -> Csp.csts -> t
   val shape2d: t -> (Csp.var * Csp.var) -> (float * float) list
 end) = struct

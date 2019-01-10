@@ -9,7 +9,7 @@ and sx = ref 0.
 and sy = ref 0.
 
 let to_float (a, b) =
-  (Mpqf.to_float a, Mpqf.to_float b)
+  (Bound_rat.to_float_up a, Bound_rat.to_float_up b)
 
 let l_to_float l = List.map (to_float) l
 
@@ -65,7 +65,7 @@ let fill_circle a b r =
   let a,b = normalize (a,b) in
   fill_circle a b r
 
-let fill_poly_mpqf l col =
+let fill_poly_rat l col =
   set_color col;
   let l = l_to_float l in
   let l = graham_sort l in
@@ -90,7 +90,7 @@ let draw_poly l col =
   List.iteri (fun i (x,y) -> arr.(i) <- normalize (x,y)) l;
   draw_poly arr
 
-let draw_seg_mpqf p1 p2 col =
+let draw_seg_rat p1 p2 col =
   set_color col;
   let p1 = to_float p1 and
       p2 = to_float p2 in

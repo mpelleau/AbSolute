@@ -14,7 +14,6 @@ module Make(A:Adcp_sig.AbstractCP) = struct
     let a = List.fold_left (A.add_var) abs new_vars in
     List.fold_left (fun a c -> A.filter a c) a csts_expr
 
-
   let draw draw_f fillpol abs (v1,v2) col =
     let ((xl,xu) as i1) = bound abs v1 and ((yl,yu) as i2) = bound abs v2 in
     fillpol [(xl,yl);(xl,yu);(xu,yu);(xu,yl)] col;
@@ -32,7 +31,7 @@ module Make(A:Adcp_sig.AbstractCP) = struct
     fillbox (xl,yl) (xu,yu) col
 
   let draw2d =
-    draw View.draw_seg_mpqf View.fill_poly_mpqf
+    draw View.draw_seg_rat View.fill_poly_rat
 
   let print_latex fmt = Latex.(fill (filldrawbox fmt))
 

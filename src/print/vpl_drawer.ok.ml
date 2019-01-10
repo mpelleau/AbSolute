@@ -267,16 +267,16 @@ let to_abs : t * Csp.csts -> t
             Vpl_domain.VplCP.User.assume cond p)
         p csts
 
-let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
+let bound : t -> Csp.var -> Bound_rat.t * Bound_rat.t
     = fun pol var ->
     let term = Vpl_domain.Expr.to_term (Csp.Var var) in
     let itv = Vpl_domain.VplCP.itvize pol term in
     let low = match itv.Pol.low with
-        | Pol.Infty -> Mpqf.of_float min_float
-    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
+        | Pol.Infty -> Bound_rat.of_float min_float
+    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Bound_rat.of_string
     and up = match itv.Pol.up with
-        | Pol.Infty -> Mpqf.of_float max_float
-    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
+        | Pol.Infty -> Bound_rat.of_float max_float
+    	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Bound_rat.of_string
     in
     (low,up)
 

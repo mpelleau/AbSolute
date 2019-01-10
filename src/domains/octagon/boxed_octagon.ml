@@ -145,12 +145,12 @@ module FloatIntervalDBM = struct
 end
 
 module RationalIntervalDBM = struct
-  module B = Bound_mpqf
+  module B = Bound_rat
   module I = Trigo.Make(Itv.Itv(B))
   type bound = B.t
   type itv = I.t
 
-  let of_int : int -> bound = Bound_mpqf.of_int_up
+  let of_int : int -> bound = Bound_rat.of_int_up
 
   let sqrt2_it = I.of_rats (B.sqrt_down B.two) (B.sqrt_up B.two)
   let minus_sqrt2_it = I.neg sqrt2_it
@@ -352,12 +352,12 @@ module BoxedOctagon
   let ub' : t -> var -> bound = fun o name -> ub o (key_of o name)
 
   (* Returns the bounds of the variable `k` in `plane` (as currently set in the DBM). *)
-  let bounds_of_var : t -> key -> (Mpqf.t * Mpqf.t) = fun o key ->
+  let bounds_of_var : t -> key -> (Bound_rat.t * Bound_rat.t) = fun o key ->
     (B.to_rat (lb o key), B.to_rat (ub o key))
 
   (* Returns the bounds of the variable `var`.
      See also `bounds_of_var`. *)
-  let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t) = fun o var ->
+  let var_bounds : t -> Csp.var -> (Bound_rat.t * Bound_rat.t) = fun o var ->
     let key = Env.find var o.env in
     bounds_of_var o key
 
@@ -438,7 +438,7 @@ module BoxedOctagon
   (* Symbolic representation of the square root of 2.
      If it is computed right away, we do not know in what direction we should round the square root.
    *)
-  let sym_sqrt2 = Funcall ("sqrt", [(Cst (Mpqf.of_int 2, Real))])
+  let sym_sqrt2 = Funcall ("sqrt", [(Cst (Bound_rat.two, Real))])
 
   (* To rotate the variables `(v1,v2)` in the plane they describe, we perform:
        v1 -> cos(45°)*v1 - sin(45°)*v2
@@ -576,7 +576,7 @@ module BoxedOctagon
   let rec propagate_neg : expr -> expr = fun e ->
     let neg e = Unary (NEG, e) in
     match e with
-    | Unary (NEG, Cst(c,a)) -> Cst (Mpqf.neg c,a)
+    | Unary (NEG, Cst(c,a)) -> Cst (Bound_rat.neg c,a)
     | Unary (NEG, Unary (NEG, e)) -> propagate_neg e
     | Unary (NEG, Binary (SUB, x, y)) -> propagate_neg (Binary (ADD, neg x, y))
     | Unary (NEG, Binary (ADD, x, y)) -> propagate_neg (Binary (SUB, neg x, y))
@@ -701,7 +701,7 @@ module BoxedOctagon
   (* We delegate this evaluation to the canonical box.
    * Possible improvement: obtain a better approximation by turning the expression and forward_eval it in different plane.
    *   We would then meet the results of all planes. *)
-  let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t) = fun o e ->
+  let forward_eval : t -> Csp.expr -> (Bound_rat.t * Bound_rat.t) = fun o e ->
     Box.forward_eval o.box e
 
   let create_var_from_cell : t -> int -> expr = fun o i ->
@@ -721,11 +721,11 @@ module BoxedOctagon
         let y = create_var_from_cell o i in
         (* -x <= -c *)
         if i mod 2 = 0 && j mod 2 = 1 && i = j - 1 then
-          let c = Cst ((Mpqf.div (B.to_rat o.dbm.(idx)) (Mpqf.of_int 2)), Real) in
+          let c = Cst ((Bound_rat.div (B.to_rat o.dbm.(idx)) Bound_rat.two), Real) in
           [(x,LEQ,c)]
         (* x <= c *)
         else if i mod 2 = 1 && j mod 2 = 0 && i = j + 1 then
-          let c = Cst ((Mpqf.div (B.to_rat o.dbm.(idx)) (Mpqf.of_int 2)), Real) in
+          let c = Cst ((Bound_rat.div (B.to_rat o.dbm.(idx)) Bound_rat.two), Real) in
           [(x,LEQ,c)]
         (* x - y <= c *)
         else
@@ -799,7 +799,7 @@ module BoxedOctagon
         let key = (d, cplane) in
         let lb_v = lb o key in
         let ub_v = ub o key in
-        let x = Mpqf.of_float (I.spawn (lb_v, ub_v)) in
+        let x = Bound_rat.of_float (I.spawn (lb_v, ub_v)) in
         let (_,v) = var_info o key in
         let o = join_vars o [(v, (x,x))] in
         try_spawn o (d+1)
@@ -843,7 +843,7 @@ module BoxedOctagon
      We do not implement yet this splitting strategy in the octagons. *)
   let split_on : t -> ctrs -> instance -> t list = fun _ _ _ ->
     Pervasives.failwith "BoxedOctagon: `split_on` is not implemented."
-  let shrink : t -> Mpqf.t -> t = fun _ _ ->
+  let shrink : t -> Bound_rat.t -> t = fun _ _ ->
     Pervasives.failwith "BoxedOctagon: function `shrink` unimplemented."
 end
 
@@ -914,7 +914,7 @@ module BoxedOctagonF = struct
 end
 
 module BoxedOctagonQ = struct
-  include BoxedOctagonReal(Bound_mpqf)(RationalIntervalDBM)
+  include BoxedOctagonReal(Bound_rat)(RationalIntervalDBM)
 
   (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let strong_closure_bagnara : t -> t = fun o ->

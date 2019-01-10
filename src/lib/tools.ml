@@ -43,13 +43,14 @@ let matrix_print_indent fmt mat =
     Format.fprintf fmt "\n"
   done
 
-(** Mpqf human understandable printing *)
-let pp_print_mpqf fmt (m:Mpqf.t) =
-  let f = Mpqf.to_float m in
-  if Mpqf.of_float f = m then
-    Format.pp_print_float fmt f
+(** Rational human understandable printing *)
+let pp_print_rat fmt (m:Bound_rat.t) =
+  let up = Bound_rat.to_float_up m in
+  let down = Bound_rat.to_float_down m in
+  if up = down then
+    Format.pp_print_float fmt up
   else
-    Mpqf.print fmt m
+    Bound_rat.pp_print fmt m
 
 (** debug utility that indents according to the debug level *)
 let debug level fmt =

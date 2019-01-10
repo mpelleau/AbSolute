@@ -341,13 +341,13 @@ module Box (I:ITV) = struct
 
   (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn (a:t) : instance =
-    VarMap.fold (fun k itv acc -> VarMap.add k (Mpqf.of_float (I.spawn itv)) acc) a VarMap.empty
+    VarMap.fold (fun k itv acc -> VarMap.add k (Bound_rat.of_float (I.spawn itv)) acc) a VarMap.empty
 
   (* given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
   let is_abstraction (a:t) (i:instance) =
     VarMap.for_all (fun k value ->
-        let value = Mpqf.to_float value in
+        let value = Bound_rat.to_float_up value in
         let itv = VarMap.find_fail k a in
         I.contains_float itv value
       ) i
@@ -368,7 +368,7 @@ module Box (I:ITV) = struct
     split_along a v
 
   let split_on (a:t) (_:ctrs) (xs : instance) : t list =
-    let split_on_one (a:t) ((v,value) : (var * Mpqf.t)) : t list =
+    let split_on_one (a:t) ((v,value) : (var * Bound_rat.t)) : t list =
       let i = Env.find v a in
       I.split_on i value
       |> List.fold_left (fun acc b ->
@@ -382,7 +382,7 @@ module Box (I:ITV) = struct
       ) [] box_list
     ) [a]
 
-  let shrink (a:t) (c:Mpqf.t) : t =
+  let shrink (a:t) (c:Bound_rat.t) : t =
     Env.fold (fun var itv (b,acc) ->
       if b && is_empty acc
       then (b,acc)

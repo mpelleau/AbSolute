@@ -22,7 +22,7 @@ module Make(AP:ADomain) = struct
 
   let bound abs v =
     let i = A.bound_variable man abs (Apron.Var.of_string v) in
-    Apron.Interval.(scalar_to_mpqf i.inf,scalar_to_mpqf i.sup)
+    Apron.Interval.(scalar_to_rat i.inf,scalar_to_rat i.sup)
 
   let is_empty = A.is_bottom man
 
@@ -34,11 +34,11 @@ module Make(AP:ADomain) = struct
     let a = List.fold_left (T.add_var) abs new_vars in
 
     List.fold_left (fun a c -> T.filter a c) a csts_expr
-    
+
   let get_indexes env (x,y) = Environment.(
       dim_of_var env (Var.of_string x),
       dim_of_var env (Var.of_string y))
-                            
+
   let vertices2d abs (v1,v2) =
     let env = A.env abs in
     let draw_pol pol =
@@ -54,7 +54,7 @@ module Make(AP:ADomain) = struct
       List.map (fun(a,b)-> (coeff_to_float a, coeff_to_float b)) v
     in
     draw_pol (to_poly abs env)
-    
+
 
   let draw draw_f fillpol abs (v1,v2) col =
     let vert = vertices2d abs (v1,v2) in

@@ -43,7 +43,6 @@ module BoxCP =
       let tab = box.Abstract1.interval_array in
       let vol = Array.fold_left (fun v itv -> Mpqf.mul v (diam_interval itv)) (Mpqf.of_int 1) tab in
       Mpqf.to_float vol
-
   end
 
 (**

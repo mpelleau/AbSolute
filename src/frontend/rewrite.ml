@@ -104,7 +104,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
   let cell_to_expr ((c,v) as m) =
     let c = PI.to_rational c in
     if PI.is_monom_constant m then Cst (c,Real)
-    else if Mpqf.equal c (Mpqf.of_int 1) then
+    else if Bound_rat.equal c Bound_rat.one then
       match v with
       | h::tl -> List.fold_left (fun acc e ->
           Binary(MUL,acc,(var_to_expr e))

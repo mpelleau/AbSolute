@@ -22,11 +22,11 @@ module type ITV = sig
   val top_real : t
 
   val of_ints: int -> int -> t
-  val of_rats: Mpqf.t -> Mpqf.t -> t
+  val of_rats: Bound_rat.t -> Bound_rat.t -> t
   val of_floats: float -> float -> t
 
   val of_int: int -> t
-  val of_rat: Mpqf.t -> t
+  val of_rat: Bound_rat.t -> t
   val of_float: float -> t
 
   (************************************************************************)
@@ -34,7 +34,7 @@ module type ITV = sig
   (************************************************************************)
 
   val to_float_range : t -> float * float
-  val to_rational_range : t -> Mpqf.t * Mpqf.t
+  val to_rational_range : t -> Bound_rat.t * Bound_rat.t
 
   (** returns the type annotation of the represented values *)
   val to_annot : t -> Csp.annot
@@ -68,7 +68,7 @@ module type ITV = sig
   val score : t -> float
 
   (** Split on a given value *)
-  val split_on: t -> Mpqf.t -> t list
+  val split_on: t -> Bound_rat.t -> t list
   val split: t -> t list
 
   (** pruning *)
@@ -145,5 +145,5 @@ module type ITV = sig
   val spawn : t -> float
 
   (** shrinks each bound of the interval by the given value *)
-  val shrink : t -> Mpqf.t -> t bot
+  val shrink : t -> Bound_rat.t -> t bot
 end

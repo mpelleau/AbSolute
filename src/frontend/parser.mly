@@ -46,7 +46,7 @@ open Csp
 %token TOK_NOT           /* ! */
 
 %token <string> TOK_id
-%token <Mpqf.t> TOK_const
+%token <Bound_rat.t> TOK_const
 
 %token TOK_EOF
 
@@ -136,7 +136,7 @@ value:
   | rational {($1, $1)}
 
 rational:
-  | const TOK_DIVIDE const {Mpqf.div $1 $3}
+  | const TOK_DIVIDE const {Bound_rat.div $1 $3}
   | const {$1}
 
 annot2:
@@ -179,7 +179,7 @@ consts:
 
 const:
   | TOK_const {$1}
-  | TOK_MINUS TOK_const {(Mpqf.neg $2)}
+  | TOK_MINUS TOK_const {(Bound_rat.neg $2)}
 
 bexpr:
   | expr cmp expr                       {Cmp ($2, $1, $3)}

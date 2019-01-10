@@ -88,7 +88,7 @@ module Make(Abs : Adcp_sig.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t
     let (_,_,dom1) = List.find (fun (_,v',_) -> v1 = v') prob.init in
     let (_,_,dom2) = List.find (fun (_,v',_) -> v2 = v') prob.init in
     (match dom1,dom2 with
-    | Finite(l1,h1),Finite(l2,h2)-> View.init (Mpqf.to_float l1,Mpqf.to_float h1) (Mpqf.to_float l2,Mpqf.to_float h2)
+    | Finite(l1,h1),Finite(l2,h2)-> View.init (Bound_rat.to_float_up l1,Bound_rat.to_float_up h1) (Bound_rat.to_float_up l2,Bound_rat.to_float_up h2)
     | _ -> failwith "non finite domain");
     let abs = init prob in
     Format.printf "abs = %a\tvolume = %f@." Abs.print abs (Abs.volume abs);

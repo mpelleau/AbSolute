@@ -8,7 +8,7 @@ module type Reduction =
     module B : AbstractCP
     type t = A.t * B.t
 
-    val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
+    val var_bounds : t -> Csp.var -> (Bound_rat.t * Bound_rat.t)
 
     val add_var : t -> Csp.annot * Csp.var -> t
 

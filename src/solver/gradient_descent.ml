@@ -103,8 +103,8 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
         |> function
         | Csp.Cmp (op,e1,e2) ->
             let bexpr' = Csp.(Cmp (op,
-                Binary (POW, e1, Cst (Mpqf.of_int 2, Csp.Int)),
-                Binary (POW, e2, Cst (Mpqf.of_int 2, Csp.Int))))
+                Binary (POW, e1, Cst (Bound_rat.two, Csp.Int)),
+                Binary (POW, e2, Cst (Bound_rat.two, Csp.Int))))
             in
             let vars' = List.map (
                 fun v -> (Csp.Real, v, Csp.Top))

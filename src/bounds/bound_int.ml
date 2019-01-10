@@ -47,8 +47,20 @@ let of_int_up a = a
 let of_int_down a = a
 let of_float_up a : t = fwrap a (fun a -> int_of_float (ceil a))
 let of_float_down a : t = fwrap a (fun a -> int_of_float (floor a))
-let of_rat_down a : t = fwrap (Mpqf.to_float a) of_float_down
-let of_rat_up a : t = fwrap (Mpqf.to_float a) of_float_up
+
+let of_rat_down a : t =
+  match Bound_rat.classify a with
+  | Bound_rat.FINITE -> fwrap (Bound_rat.to_float_down a) of_float_down
+  | Bound_rat.INF -> inf
+  | Bound_rat.MINF -> minus_inf
+  | Bound_rat.INVALID -> raise NotAnIntegerNumber
+
+let of_rat_up a : t =
+  match Bound_rat.classify a with
+  | Bound_rat.FINITE -> fwrap (Bound_rat.to_float_up a) of_float_up
+  | Bound_rat.INF -> inf
+  | Bound_rat.MINF -> minus_inf
+  | Bound_rat.INVALID -> raise NotAnIntegerNumber
 
 let of_string = int_of_string
 
@@ -67,10 +79,7 @@ let iwrap (a:t) op =
 
 let to_float_up x : float = iwrap x Bound_float.of_int_up
 let to_float_down x : float = iwrap x Bound_float.of_int_down
-let to_rat x =
-  if x = inf then Mpqf.of_frac 1 0
-  else if x = minus_inf then Mpqf.of_frac (-1) 0
-  else Mpqf.of_int x
+let to_rat x = Bound_rat.of_int x
 
 (* printing *)
 let output chan x = output_string chan (to_string x)

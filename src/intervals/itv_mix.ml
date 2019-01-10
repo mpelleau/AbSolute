@@ -56,10 +56,10 @@ let of_int (x1:int) : t =
 let of_float (x1:float) : t =
   of_floats x1 x1
 
-let of_rats (m1:Mpqf.t) (m2:Mpqf.t) : t =
+let of_rats (m1:Bound_rat.t) (m2:Bound_rat.t) : t =
   Real(R.of_rats m1 m2)
 
-let of_rat (m1:Mpqf.t) : t =
+let of_rat (m1:Bound_rat.t) : t =
   of_rats m1 m1
 
 (* maps empty intervals to explicit bottom *)
@@ -80,7 +80,7 @@ let top_real : t = Real (R.top_real)
 let to_float_range (x:t) : float * float =
   dispatch I.to_float_range R.to_float_range x
 
-let to_rational_range (x:t) : Mpqf.t * Mpqf.t =
+let to_rational_range (x:t) : Bound_rat.t * Bound_rat.t =
   dispatch I.to_rational_range R.to_rational_range x
 
 let print (fmt:Format.formatter) (x:t) : unit =
@@ -164,10 +164,10 @@ let split (x:t) : t list =
   | Real x -> R.split x |> List.map make_real
   | Int x -> I.split x  |> List.map make_int
 
-let split_on (x:t) (value : Mpqf.t) : t list =
+let split_on (x:t) (value : Bound_rat.t) : t list =
   match x with
   | Real x -> R.split_on x value |> List.map make_real
-  | Int x -> I.split_on x (Mpqf.to_float value |> int_of_float) |> List.map make_int
+  | Int x -> I.split_on x (Bound_rat.to_float_up value |> int_of_float) |> List.map make_int
 
 (* pruning *)
 (* ------- *)
@@ -458,7 +458,7 @@ let spawn (x:t) : float =
   | Int x  -> float (I.spawn x)
   | Real x -> R.spawn x
 
-let shrink (i : t) (c:Mpqf.t) : t bot =
+let shrink (i : t) (c:Bound_rat.t) : t bot =
   match i with
   | Int i -> I.shrink i c |> lift_bot make_int
   | Real i -> R.shrink i c |> lift_bot make_real

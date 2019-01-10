@@ -163,9 +163,9 @@ module Make(B:BOUND) = struct
 
   let of_float (x:float) : t = of_floats x x
 
-  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
+  let of_rats (l:Bound_rat.t) (h:Bound_rat.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
 
-  let of_rat (x:Mpqf.t) = of_rats x x
+  let of_rat (x:Bound_rat.t) = of_rats x x
 
   let hull (x:B.t) (y:B.t) : t =
     try large x y
@@ -276,7 +276,7 @@ module Make(B:BOUND) = struct
            itv::acc
     in aux [] l [x]
 
-  let split_on (i : t) (x: Mpqf.t) : t list =
+  let split_on (i : t) (x: Bound_rat.t) : t list =
     split_on_value i (B.of_rat_up x)
 
   (* splits in two, around the middle *)
@@ -873,7 +873,7 @@ module Make(B:BOUND) = struct
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
 
-  let shrink (i : t) (c:Mpqf.t) : t bot =
+  let shrink (i : t) (c:Bound_rat.t) : t bot =
     try
       let i' =
         ((Large, B.of_rat_up c), (Large, B.of_rat_down c |> B.neg))
@@ -885,4 +885,4 @@ module Make(B:BOUND) = struct
 end
 
 module Test = Make(Bound_float)
-module TestQ = Make(Bound_mpqf)
+module TestQ = Make(Bound_rat)

@@ -70,9 +70,9 @@ module Itv(B:BOUND) = struct
 
   let of_int (x:int) = of_ints x x
 
-  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
+  let of_rats (l:Bound_rat.t) (h:Bound_rat.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
 
-  let of_rat (x:Mpqf.t) = of_rats x x
+  let of_rat (x:Bound_rat.t) = of_rats x x
 
   let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
 
@@ -202,7 +202,7 @@ module Itv(B:BOUND) = struct
 	       itv::acc
     in aux [] l [x]
 
-  let split_on (i : t) (x: Mpqf.t) : t list =
+  let split_on (i : t) (x: Bound_rat.t) : t list =
     split_on_value i (B.of_rat_up x)
 
   (* splits in two, around the middle *)
@@ -555,7 +555,7 @@ module Itv(B:BOUND) = struct
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
 
-  let shrink ((l,h) : t) (c:Mpqf.t) : t bot =
+  let shrink ((l,h) : t) (c:Bound_rat.t) : t bot =
     try
       let c' = B.of_rat_up c in
       (B.add_up l c', B.sub_down h c')
@@ -565,5 +565,5 @@ module Itv(B:BOUND) = struct
 end
 
 module ItvF = Itv(Bound_float)
-module ItvQ = Itv(Bound_mpqf)
+module ItvQ = Itv(Bound_rat)
 module ItvI = Itv(Bound_int)

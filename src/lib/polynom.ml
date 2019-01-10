@@ -24,7 +24,7 @@ module type Ring = sig
   (* None if the value cannot be converted exactly to an integer *)
   val to_int : t -> int option
   val to_float : t -> float
-  val to_rational : t -> Mpqf.t
+  val to_rational : t -> Bound_rat.t
   val floor : t -> int
 
   val zero  : t
@@ -33,7 +33,7 @@ module type Ring = sig
   (* entry points *)
   val of_int : int -> t
   val of_float : float -> t
-  val of_rational : Mpqf.t -> t
+  val of_rational : Bound_rat.t -> t
 
   val equal : t -> t -> bool
 
@@ -313,12 +313,12 @@ module IntRing = struct
 
   let to_int x = Some x
   let to_float = float_of_int
-  let to_rational = Mpqf.of_int
+  let to_rational = Bound_rat.of_int
   let floor x = x
 
   let of_int x = x
   let of_float = int_of_float
-  let of_rational x = of_float (Mpqf.to_float x)
+  let of_rational x = of_float (Bound_rat.to_float_up x)
 
   let equal x y = (x = y)
   let print fmt x = Format.fprintf fmt "%i" x
@@ -344,12 +344,12 @@ module FloatRing = struct
     if float xi = x then Some xi
     else None
   let to_float x = x
-  let to_rational = Mpqf.of_float
+  let to_rational = Bound_rat.of_float
   let floor = int_of_float
 
   let of_int = float_of_int
   let of_float x = x
-  let of_rational = Mpqf.to_float
+  let of_rational = Bound_rat.to_float_up
 
   let equal x y = (x = y)
 
@@ -359,32 +359,32 @@ end
 
 module RationalRing = struct
 
-  type t = Mpqf.t
-  let add = Mpqf.add
-  let mul = Mpqf.mul
-  let zero = Mpqf.of_int 0
-  let one = Mpqf.of_int 1
+  type t = Bound_rat.t
+  let add = Bound_rat.add
+  let mul = Bound_rat.mul
+  let zero = Bound_rat.zero
+  let one = Bound_rat.one
 
-  let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
+  let div x y = if not (Bound_rat.equal zero y) then Some (Bound_rat.div x y) else None
 
-  let neg x = Mpqf.neg x
+  let neg x = Bound_rat.neg x
 
   let to_int x =
-    let xi = int_of_float (Mpqf.to_float x) in
-    if Mpqf.equal x (Mpqf.of_int xi) then Some xi
+    let xi = int_of_float (Bound_rat.to_float_up x) in
+    if Bound_rat.equal x (Bound_rat.of_int xi) then Some xi
     else None
-  let to_float = Mpqf.to_float
+  let to_float = Bound_rat.to_float_up
   let to_rational x = x
   let floor x = to_float x |> int_of_float
 
-  let of_int = Mpqf.of_int
-  let of_float = Mpqf.of_float
+  let of_int = Bound_rat.of_int
+  let of_float = Bound_rat.of_float_up
   let of_rational x = x
 
-  let equal = Mpqf.equal
+  let equal = Bound_rat.equal
 
-  let print fmt x = Format.fprintf fmt "%s" (Mpqf.to_string x)
-  let to_string = Mpqf.to_string
+  let print fmt x = Format.fprintf fmt "%s" (Bound_rat.to_string x)
+  let to_string = Bound_rat.to_string
 end
 
 

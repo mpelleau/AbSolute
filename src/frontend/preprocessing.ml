@@ -43,20 +43,20 @@ let rec get_cst_value expr c =
   match expr with
   | Binary (ADD, e1, e2) ->
      (match e1, e2 with
-      | Cst (a,annot), e | e, Cst (a,annot) -> (e, Mpqf.add c a)
+      | Cst (a,annot), e | e, Cst (a,annot) -> (e, Bound_rat.add c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
-         (Binary (ADD, e1', e2'), Mpqf.add c1 c2)
+         (Binary (ADD, e1', e2'), Bound_rat.add c1 c2)
      )
   | Binary (SUB, e1, e2) ->
      (match e1, e2 with
-      | Cst (a,annot), e -> (Unary (NEG, e), Mpqf.add c a)
-      | e, Cst (a,annot) -> (e, Mpqf.sub c a)
+      | Cst (a,annot), e -> (Unary (NEG, e), Bound_rat.add c a)
+      | e, Cst (a,annot) -> (e, Bound_rat.sub c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
-         (Binary (SUB, e1', e2'), Mpqf.sub c1 c2)
+         (Binary (SUB, e1', e2'), Bound_rat.sub c1 c2)
      )
   | _ -> (expr, c)
 
@@ -65,8 +65,8 @@ let rewrite_ctr (op, e1, e2) =
   let (_, e1', _) = rewrite (op, expand e1, expand e2) in
   (* Format.printf "\t\t%a ; %a\n" print_expr e1' print_expr ttt; *)
   let (e, cst) = get_cst_value e1' zero_val in
-  let neg_cst = if is_zero cst then cst else Mpqf.neg cst in
-  (* Format.printf "\t\t%a ; %s\n" print_expr e (Mpqf.to_string neg_cst); *)
+  let neg_cst = if is_zero cst then cst else Bound_rat.neg cst in
+  (* Format.printf "\t\t%a ; %s\n" print_expr e (Bound_rat.to_string neg_cst); *)
   (e, cst, neg_cst)
 
 let rewrite_constraint = function
@@ -82,12 +82,12 @@ let filter_cstrs ctr_vars consts =
         | Cmp (EQ, e1, e2) ->
            ((* Format.printf "%a@." print_bexpr c; *)
             let (e, cst, negc) = rewrite_ctr (EQ, e1, e2) in
-            (* Format.printf "%a ===== (%s) %s@." print_expr e (Mpqf.to_string cst) (Mpqf.to_string negc); *)
+            (* Format.printf "%a ===== (%s) %s@." print_expr e (Bound_rat.to_string cst) (Bound_rat.to_string negc); *)
             match e with
             | Var var -> (cstr, (var, (negc, negc))::csts, true)
             | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
-            | Binary(MUL, Var var, Cst (a,annot)) | Binary(MUL, Cst (a,annot), Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
-            | Unary(NEG, (Binary(MUL, Var var, Cst (a,annot)))) |  Unary(NEG, (Binary(MUL, Cst (a,annot), Var var))) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
+            | Binary(MUL, Var var, Cst (a,annot)) | Binary(MUL, Cst (a,annot), Var var) -> (cstr, (var, (Bound_rat.div negc a, Bound_rat.div negc a))::csts, true)
+            | Unary(NEG, (Binary(MUL, Var var, Cst (a,annot)))) |  Unary(NEG, (Binary(MUL, Cst (a,annot), Var var))) -> (cstr, (var, (Bound_rat.div cst a, Bound_rat.div cst a))::csts, true)
             | _ -> ((c, v)::cstr, csts, b))
         | _ -> ((c, v)::cstr, csts, b)
       else ((c, v)::cstr, csts, b)

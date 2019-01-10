@@ -52,7 +52,7 @@ let x01 = internal_name "x" 0 1
 let y01 = internal_name "y" 0 1
 
 (* Choose 5/3 because it is not representable in a float, and might generate rounding errors. *)
-let frac5_3 = Mpqf.of_frac 5 3
+let frac5_3 = Bound_rat.of_frac 5 3
 let c = Csp.Cst (frac5_3, Real)
 let x = Csp.Var "x"
 let y = Csp.Var "y"
@@ -61,14 +61,14 @@ let x_geq_C = (x, Csp.GEQ, c)
 let x_leq_y = (x, Csp.LEQ, y)
 
 
-let c_0 = Csp.Cst ((Mpqf.of_int 0), Real)
-let c_1 = Csp.Cst ((Mpqf.of_int 0), Real)
-let c_1000 = Csp.Cst ((Mpqf.of_int 1000), Real)
-let c_m1 = Csp.Cst ((Mpqf.of_int (-1)), Real)
-let c_5 = Csp.Cst ((Mpqf.of_int 5), Real)
-let c_2 = Csp.Cst ((Mpqf.of_int 2), Real)
-let c_2_5 = Csp.Cst ((Mpqf.of_frac 5 2), Real)
-let c_m3 = Csp.Cst ((Mpqf.of_int (-3)), Real)
+let c_0 = Csp.Cst (Bound_rat.zero, Real)
+let c_1 = Csp.Cst (Bound_rat.zero, Real)
+let c_1000 = Csp.Cst ((Bound_rat.of_int 1000), Real)
+let c_m1 = Csp.Cst (Bound_rat.minus_one, Real)
+let c_5 = Csp.Cst ((Bound_rat.of_int 5), Real)
+let c_2 = Csp.Cst (Bound_rat.two, Real)
+let c_2_5 = Csp.Cst ((Bound_rat.of_frac 5 2), Real)
+let c_m3 = Csp.Cst ((Bound_rat.of_int (-3)), Real)
 
 let make_mpelleau_octagon constants =
   let open Csp in
@@ -85,31 +85,31 @@ let make_mpelleau_octagon constants =
 (* These octagons are presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
 let blue_octagon =
   make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-3); Mpqf.of_int 2;
-    Mpqf.of_frac 5 2]
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_int (-3); Bound_rat.of_int 2;
+    Bound_rat.of_frac 5 2]
 
 let pink_octagon =
   make_mpelleau_octagon [
-    Mpqf.of_int (-3); Mpqf.of_int 7;
-    Mpqf.of_int (-2); Mpqf.of_int 6;
-    Mpqf.of_int (-6); Mpqf.of_int 1;
-    Mpqf.of_frac 7 2]
+    Bound_rat.of_int (-3); Bound_rat.of_int 7;
+    Bound_rat.of_int (-2); Bound_rat.of_int 6;
+    Bound_rat.of_int (-6); Bound_rat.of_int 1;
+    Bound_rat.of_frac 7 2]
 
 let orange_octagon =
   make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 7;
-    Mpqf.of_int (-1); Mpqf.of_int 6;
-    Mpqf.of_int (-3); Mpqf.of_int 2;
-    Mpqf.of_frac 7 2]
+    Bound_rat.of_int (-1); Bound_rat.of_int 7;
+    Bound_rat.of_int (-1); Bound_rat.of_int 6;
+    Bound_rat.of_int (-3); Bound_rat.of_int 2;
+    Bound_rat.of_frac 7 2]
 
 let green_octagon =
   make_mpelleau_octagon [
-    Mpqf.of_int (-3); Mpqf.of_int 5;
-    Mpqf.of_int (-2); Mpqf.of_int 5;
-    Mpqf.of_int (-6); Mpqf.of_int 1;
-    Mpqf.of_frac 5 2]
+    Bound_rat.of_int (-3); Bound_rat.of_int 5;
+    Bound_rat.of_int (-2); Bound_rat.of_int 5;
+    Bound_rat.of_int (-6); Bound_rat.of_int 1;
+    Bound_rat.of_frac 5 2]
 
 let inf_dbm =
   [F.inf; F.inf;
@@ -324,14 +324,14 @@ let test_filter_cons_in_box make constraints vars_expected dbm_expected =
   ignore (test_filter_cons_in_box' make constraints vars_expected dbm_expected)
 
 let test_filter_in_box () =
-  test_filter_cons_in_box make_octagon2 [x_leq_C] [("x", F.minus_inf, (Mpqf.to_float frac5_3))] None;
-  test_filter_cons_in_box make_octagon2 [x_geq_C] [("x", (Mpqf.to_float frac5_3), F.inf)] None;
+  test_filter_cons_in_box make_octagon2 [x_leq_C] [("x", F.minus_inf, (Bound_rat.to_float_up frac5_3))] None;
+  test_filter_cons_in_box make_octagon2 [x_geq_C] [("x", (Bound_rat.to_float_up frac5_3), F.inf)] None;
   test_filter_cons_in_box make_octagon2 [x_geq_C; x_leq_C]
-    [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
+    [("x", (Bound_rat.to_float_up frac5_3), (Bound_rat.to_float_up frac5_3));
      ("y", F.minus_inf, F.inf)] None;
   test_filter_cons_in_box make_octagon2 [x_geq_C; x_leq_C; x_leq_y]
-    [("x", (Mpqf.to_float frac5_3), (Mpqf.to_float frac5_3));
-     ("y", (Mpqf.to_float frac5_3), F.inf)] None;
+    [("x", (Bound_rat.to_float_up frac5_3), (Bound_rat.to_float_up frac5_3));
+     ("y", (Bound_rat.to_float_up frac5_3), F.inf)] None;
   test_filter_cons_in_box make_octagon2 blue_octagon
     [("x", 1., 5.);
      ("y", 1., 5.)] None
@@ -431,23 +431,23 @@ let test_join_meet () =
 
 let test_lb_y () =
   let open Csp in
-  let o = filter (make_rotated_octagon_2 ()) (Unary (NEG, y), LEQ, Cst ((Mpqf.of_int (-1)), Real)) in
+  let o = filter (make_rotated_octagon_2 ()) (Unary (NEG, y), LEQ, Cst ((Bound_rat.of_int (-1)), Real)) in
   expect_le "lb_y" (1.) (lb' o "y")
 
 let blue_left =
-  Csp.(Binary (ADD, x, y), LEQ, Cst ((Mpqf.of_frac 13 2), Real)) (* x + y <= c *)
+  Csp.(Binary (ADD, x, y), LEQ, Cst ((Bound_rat.of_frac 13 2), Real)) (* x + y <= c *)
   ::(make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-3); Mpqf.of_int 2;
-    Mpqf.of_frac 5 2])
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_int (-3); Bound_rat.of_int 2;
+    Bound_rat.of_frac 5 2])
 
 let blue_right =
   make_mpelleau_octagon [
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_int (-1); Mpqf.of_int 5;
-    Mpqf.of_frac (-13) 2; Mpqf.of_int 2;
-    Mpqf.of_frac 5 2]
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_int (-1); Bound_rat.of_int 5;
+    Bound_rat.of_frac (-13) 2; Bound_rat.of_int 2;
+    Bound_rat.of_frac 5 2]
 
 let test_split_lf () =
   let blue = octagon_from blue_octagon in

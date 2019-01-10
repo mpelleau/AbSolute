@@ -5,8 +5,8 @@ module type Drawer = sig
   val is_empty : t -> bool
 
   val to_abs : t * Csp.csts -> t
-    
-  val bound : t -> Csp.var -> Mpqf.t * Mpqf.t
+
+  val bound : t -> Csp.var -> Bound_rat.t * Bound_rat.t
 
   val draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
 

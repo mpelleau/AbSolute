@@ -14,7 +14,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
     let print_bind fmt (var,value) =
       Format.fprintf fmt "%s:%a"
                      var
-                     Mpqf.print value
+                     Bound_rat.pp_print value
     in
     Format.pp_print_list ~pp_sep:(fun fmt () -> Format.fprintf fmt " ; ")
                          (fun fmt -> Format.fprintf fmt "%a" print_bind)
@@ -25,9 +25,9 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
                    print_instance instance
                    print_bexpr cstr;
     Format.eprintf "it evaluates to %a %a %a\n"
-                   Mpqf.print e1
+                   Bound_rat.pp_print e1
                    print_cmpop cmp
-                   Mpqf.print e2
+                   Bound_rat.pp_print e2
 
   (* evaluate an expression according to an instance *)
   let eval (instance:Csp.instance) expr =
@@ -37,17 +37,17 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
       | Binary(op,e1,e2) ->
          let e1' = aux e1 and e2' = aux e2 in
          (match op with
-          | ADD -> Mpqf.add e1' e2'
-          | SUB -> Mpqf.sub e1' e2'
-          | MUL -> Mpqf.mul e1' e2'
-          | DIV -> Mpqf.div e1' e2'
-        | POW -> Mpqf.of_float ((Mpqf.to_float e1') ** (Mpqf.to_float e2')))
+          | ADD -> Bound_rat.add e1' e2'
+          | SUB -> Bound_rat.sub e1' e2'
+          | MUL -> Bound_rat.mul e1' e2'
+          | DIV -> Bound_rat.div e1' e2'
+        | POW -> Bound_rat.of_float ((Bound_rat.to_float_up e1') ** (Bound_rat.to_float_up e2')))
       | Unary(u,e) ->
          let e' = aux e in
          (match u with
-          | NEG -> (Mpqf.neg e'))
+          | NEG -> (Bound_rat.neg e'))
       | Funcall(name, [e]) ->
-         let e = Mpqf.to_float (aux e) in
+         let e = Bound_rat.to_float_up (aux e) in
          let func =
            match name with
            | "sqrt" -> sqrt
@@ -60,16 +60,16 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
            | "exp"  -> exp
            | "ln"   -> log
            | x -> Tools.fail_fmt "unrecognized function name %s" x
-         in Mpqf.of_float (func e)
+         in Bound_rat.of_float (func e)
       | Funcall(name,[e1;e2]) ->
-          let e1 = Mpqf.to_float (aux e1) in
-          let e2 = Mpqf.to_float (aux e2) in
+          let e1 = Bound_rat.to_float_up (aux e1) in
+          let e2 = Bound_rat.to_float_up (aux e2) in
           let func =
             match name with
             | "max" -> max
             | "min" -> min
             | x -> Tools.fail_fmt "unrecognized function name %s" x
-          in Mpqf.of_float (func e1 e2)
+          in Bound_rat.of_float (func e1 e2)
       | Funcall(name, _) -> Tools.fail_fmt "cant evaluate function call %s" name
     in aux expr
 
@@ -108,8 +108,8 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
       | Finite (l,u) -> l < value && value < u
       | _ -> failwith "cant handle infinite domains for now"
     in
-    let value = VarMap.find_fail var instance |> Mpqf.to_float in
-    check_type typ value && check_dom dom (Mpqf.of_float value)
+    let value = VarMap.find_fail var instance |> Bound_rat.to_float_up in
+    check_type typ value && check_dom dom (Bound_rat.of_float value)
 
   (* checks if an instance satisfies a csp *)
   let check_instance fn print (instance:Csp.instance) csp =

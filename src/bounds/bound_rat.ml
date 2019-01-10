@@ -63,9 +63,13 @@ let odd (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float <>  (
 let even (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float =  (Mpqf.to_float x)
 
 (* conversion, printing *)
+(* Is equal to Bound_int.inf and Bound_int.minus_inf.
+   We cannot use them directly otherwise we have a circular dependency.*)
+let int_inf = max_int
+let int_minus_inf = min_int
 let of_int a =
-  if a = Bound_int.inf then inf
-  else if a = Bound_int.minus_inf then minus_inf
+  if a = int_inf then inf
+  else if a = int_minus_inf then minus_inf
   else Mpqf.of_int a
 let of_int_up a = of_int a
 let of_int_down a = of_int a
@@ -79,6 +83,8 @@ let of_float_up a : t = of_float a
 let of_float_down a : t = of_float a
 let of_rat_up a : t = a
 let of_rat_down a : t = a
+
+let of_frac a b = Mpqf.of_frac a b
 
 let of_string x = Mpqf.of_string x
 
@@ -95,6 +101,9 @@ let wrap f rinf rminf rnan x =
   | INVALID -> rnan
 
 let to_string x = wrap Mpqf.to_string "inf" "-inf" "nan" x
+
+let of_mpqf a : t = a
+let to_mpqf x : Mpqf.t = x
 
 let to_float_up x : float =
   wrap Mpqf.to_float infinity neg_infinity nan x
@@ -122,15 +131,20 @@ let wrap2 f f' x y =
   | _, INVALID -> rat_nan
   | _, _ -> (of_float (f' (to_float_up x) (to_float_up y)))
 
-let add_up a b = wrap2 Mpqf.add (+.) a b
-let sub_up a b = wrap2 Mpqf.sub (-.) a b
-let mul_up a b = wrap2 Mpqf.mul ( *.) a b
-let div_up a b = wrap2 Mpqf.div (/.) a b
+let add a b = wrap2 Mpqf.add (+.) a b
+let sub a b = wrap2 Mpqf.sub (-.) a b
+let mul a b = wrap2 Mpqf.mul ( *.) a b
+let div a b = wrap2 Mpqf.div (/.) a b
 
-let add_down = add_up
-let sub_down = sub_up
-let mul_down = mul_up
-let div_down = div_up
+let add_up = add
+let sub_up = sub
+let mul_up = mul
+let div_up = div
+
+let add_down = add
+let sub_down = sub
+let mul_down = mul
+let div_down = div
 
 (* helper: oo * 0 = 0 when multiplying bounds *)
 let bound_mul f x y =

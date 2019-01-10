@@ -8,7 +8,7 @@ type 'a res = {
     vol_sure   : float;     (* volume of the elements in the sure list *)
     vol_unsure : float;     (* volume of the elements in the unsure list *)
     nb_steps   : int;       (* number of steps of the solving process *)
-    best_value : Mpqf.t     (* best value found during the optimization *)
+    best_value : Bound_rat.t     (* best value found during the optimization *)
   }
 
 (* returns the inner ratio (between 0 and 1) of a solution *)
@@ -24,7 +24,7 @@ module type Res = sig
 
   val empty : t
 
-  val forward_eval : t -> Csp.expr -> Mpqf.t * Mpqf.t
+  val forward_eval : t -> Csp.expr -> Bound_rat.t * Bound_rat.t
 
   val add_var : t -> Csp.annot * Csp.var -> t
 

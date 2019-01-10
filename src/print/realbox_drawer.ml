@@ -40,7 +40,7 @@ let draw draw_f draw_dashed_f fillpol abs (v1,v2) col =
 let print_latex fmt =
   Latex.(draw (drawseg fmt) (draw_dashed_seg fmt) (fillpol fmt))
 
-let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly_mpqf)
+let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly_rat)
 
 let draw3d fmt abs_list (v1,v2,v3) =
   let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
