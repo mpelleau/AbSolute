@@ -19,6 +19,7 @@
 (executable
  (name absolute)
  (public_name absolute)
+ (package absolute)
  ;(ocamlopt_flags (:standard -p))
  (modules absolute)
  (libraries libabsolute)

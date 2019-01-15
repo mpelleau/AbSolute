@@ -1,0 +1,5 @@
+type bound = [
+    Rational
+  | Integer
+  | Float
+]

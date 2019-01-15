@@ -27,7 +27,6 @@ let print_results not_bads goods nb_files =
     nb_files
     goods
 
-
 module Make(Dom:Adcp_sig.AbstractCP) = struct
   module Check = Checker.Make(Dom)
 

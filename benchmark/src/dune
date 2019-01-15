@@ -1,0 +1,17 @@
+(executable
+ (name absolute_bench)
+ (public_name absolute-bench)
+ (package absolute-bench)
+ (modules :standard)
+ (libraries libabsolute atdgen)
+)
+
+(rule
+ (targets bench_desc_j.ml bench_desc_j.mli)
+ (deps    bench_desc.atd)
+ (action  (run atdgen -j -j-std -j-strict-fields %{deps})))
+
+(rule
+ (targets bench_desc_t.ml bench_desc_t.mli)
+ (deps    bench_desc.atd)
+ (action  (run atdgen -t %{deps})))
