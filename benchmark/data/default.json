@@ -1,0 +1,6 @@
+{
+  "domains" :
+    [<Box : <Interval : <Rational>>>,
+     <BoxedOctagon : <Rational>>],
+  "data_path" : "problems/bench-boct/octagon.abs"
+}

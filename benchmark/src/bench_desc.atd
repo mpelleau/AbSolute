@@ -3,3 +3,19 @@ type bound = [
   | Integer
   | Float
 ]
+
+type interval = [
+    Interval of bound
+  | IntervalOpenClose of bound
+  | IntervalMixFloatInteger
+]
+
+type abstract_domain = [
+    Box of interval
+  | BoxedOctagon of bound
+]
+
+type benchmark = {
+  domains : abstract_domain list;
+  data_path : string
+}
