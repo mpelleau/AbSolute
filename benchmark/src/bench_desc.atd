@@ -15,7 +15,42 @@ type abstract_domain = [
   | BoxedOctagon of bound
 ]
 
+type time_unit = [
+    NSec
+  | MSec
+  | Sec
+]
+
+type csv_field = [
+    ProblemPath
+  | ProblemName
+  | Time of time_unit
+  | AbstractDomain
+  | Precision
+]
+
+type csv_desc = {
+  human: bool;
+  fields: csv_field list
+}
+
+type center_of_trials = [
+    Average
+  | Median
+]
+
+type problem_kind = [
+  | Absolute
+  | PSPlib
+]
+
 type benchmark = {
-  domains : abstract_domain list;
-  data_path : string
+  problem_set: string;
+  problem_kind: problem_kind;
+  domains: abstract_domain list;
+  precisions: float list;
+  trials: int;
+  timeout: int;
+  center_of_trials: center_of_trials;
+  csv: csv_desc
 }

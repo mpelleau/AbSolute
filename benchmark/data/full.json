@@ -1,0 +1,16 @@
+{
+  "problem_set" : "problems/",
+  "problem_kind" : <Absolute>,
+  "domains" :
+    [<Box : <Interval : <Rational>>>,
+     <BoxedOctagon : <Rational>>,
+     <BoxedOctagon : <Float>>],
+  "precisions": [0.5, 0.1, 0.01, 0.001],
+  "trials" : 5,
+  "timeout" : 60,
+  "center_of_trials": <Median>,
+  "csv" : {
+    "human" : true,
+    "fields" : ["ProblemPath", "ProblemName", "AbstractDomain", "Precision", <Time : <Sec>>, <Time : <MSec>>, <Time : <NSec>>]
+  }
+}

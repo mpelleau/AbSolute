@@ -1,7 +1,12 @@
 open Printf
 
-let json_ext = "json"
+let json_ext = ".json"
+let absolute_ext = ".abs"
+let psplib_ext = ".sm"
 let usage = "Usage: absolute_bench <configuration file>\n"
+
+let print_warning msg =
+  eprintf "[Warning] %s\n%!" msg
 
 let eprintf_and_exit msg =
   eprintf "[Error] %s\n%!" msg;
@@ -13,7 +18,7 @@ let file_argument fname =
     fname
   else
     eprintf_and_exit (sprintf
-      "Unknown file extension: %s. We expect %s.\n" fname json_ext)
+      "Unknown file extension: %s. We expect `%s`.\n" fname json_ext)
 
 let find_file fname =
   if Sys.file_exists fname then

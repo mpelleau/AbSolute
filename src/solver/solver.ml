@@ -6,9 +6,11 @@ module Solve(Abs : AbstractCP) = struct
   include Splitter.Make(Abs)
   include Result.Make(Abs)
 
-  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) (views:Csp.jacob) =
+  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts)
+   (views:Csp.jacob) (enter_node: unit -> unit) =
     (* propagation/exploration loop *)
     let rec aux cstrs csts depth res abs =
+      enter_node ();
       match consistency abs cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res (abs', const, views)
@@ -20,6 +22,7 @@ module Solve(Abs : AbstractCP) = struct
     in
     (* propagation/elimination/exploration loop *)
     let rec aux_elim cstrs csts depth res abs =
+      enter_node ();
       match consistency abs cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res (abs', const, views)
@@ -41,10 +44,13 @@ module Solve(Abs : AbstractCP) = struct
     (if !Constant.pruning then aux_elim else aux)
       constrs consts 0 empty_res abs
 
-  (* entry point of the solver *)
-  let solving prob =
+  let solving_instrumented prob enter_node =
     Tools.debug 1 "entering the resolution\n";
     let abs = init prob in
-    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    let res = explore abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view enter_node in
     res
+
+  (* entry point of the solver *)
+  let solving prob =
+    solving_instrumented prob (fun () -> ())
 end
