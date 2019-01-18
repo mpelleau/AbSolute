@@ -41,12 +41,16 @@ let warm_up config prob (module S: Solver_sig) =
     true
   with TimeoutException -> false
 
+let absolute_problem_of_path config problem_path =
+  match config.problem_kind with
+  | `Absolute -> File_parser.parse problem_path
+  | `PSPlib -> Rcpsp.Psplib.psp_to_absolute problem_path
 
 let bench config problem_path domain precision =
   let measure = Measurement.init problem_path domain precision in
   let (module Abs) = make_abstract_domain domain in
   let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
-  let prob = File_parser.parse problem_path in
+  let prob = absolute_problem_of_path config problem_path in
   Constant.set_prec precision;
   let measure =
     if warm_up config prob (module S) then

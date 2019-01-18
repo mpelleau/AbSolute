@@ -1,6 +1,6 @@
 {
-  "problem_set" : "problems/bench-boct/",
-  "problem_kind" : <Absolute>,
+  "problem_set" : "benchmark/data/rcpsp/j30.sm/j3010_1.sm",
+  "problem_kind" : <PSPlib>,
   "domains" :
     [<Box : <Interval : <Rational>>>,
      <BoxedOctagon : <Float>>],

@@ -3,7 +3,7 @@
  (public_name absolute-bench)
  (package absolute-bench)
  (modules :standard)
- (libraries libabsolute atdgen extlib mtime mtime.clock.os)
+ (libraries rcpsp libabsolute atdgen extlib mtime mtime.clock.os)
 )
 
 (rule
