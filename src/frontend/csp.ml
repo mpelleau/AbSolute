@@ -460,9 +460,12 @@ let empty = {init = []; constraints= []; constants=[]; objective = zero; to_draw
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
 
-let add_real_var csp name inf sup =
-  let assign = (Real, name, (Finite(inf,sup))) in
+let add_var csp name inf sup kind =
+  let assign = (kind, name, (Finite(inf,sup))) in
   {csp with init = assign::csp.init}
+
+let add_real_var csp name inf sup = add_var csp name inf sup Real
+let add_int_var csp name inf sup = add_var csp name inf sup Int
 
 let add_constr csp c =
   let jac = List.map (
