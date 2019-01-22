@@ -15,9 +15,13 @@ let extract_config_from_json json_data =
         [help] You can find a full example of the JSON format in benchmark/data/example.json." msg)
 
 module type Solver_sig = sig
-  type t
+  module Abs : Adcp_sig.AbstractCP
+  type t = Abs.t Result.res
   val solving_instrumented : Csp.prog -> (unit -> unit) -> t
   val solving : Csp.prog -> t
+  val get_solution : Csp.jacob -> ?obj:Csp.expr -> Abs.t -> Csp.csts ->
+    Abs.t * (string * (Bound_rat.t * Bound_rat.t)) list * float * Bound_rat.t
+
 end
 
 let measure_sample prob (module S: Solver_sig) _ =
@@ -37,7 +41,7 @@ let warm_up config prob (module S: Solver_sig) =
       raise TimeoutException
   in
   try
-    ignore (S.solving_instrumented prob check_timeout);
+    ignore(S.solving_instrumented prob check_timeout);
     true
   with TimeoutException -> false
 

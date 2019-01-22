@@ -30,8 +30,8 @@ let classify (x:t) : kind =
 (* For NAN comparison, we try to follow the same rules as for floating point numbers. *)
 
 (* `c` is what to return if one argument is `nan`. *)
-let rec compare' a b c =
-  match classify a, classify b with
+let compare' a b c =
+  let rec aux = function
   | INVALID, _ -> c
   | _, INVALID -> c
   | FINITE, FINITE -> Mpqf.cmp a b
@@ -39,7 +39,8 @@ let rec compare' a b c =
   | INF, _ -> 1
   | MINF, MINF -> 0
   | MINF, _ -> -1
-  | _, _ -> -(compare' b a c)
+  | a', b' -> -(aux (b', a')) in
+  aux ((classify a), (classify b))
 
 let compare (a:t) (b:t) = compare' a b (-1)
 let equal (a:t) (b:t) = (compare' a b 1) = 0

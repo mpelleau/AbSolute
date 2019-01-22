@@ -52,5 +52,5 @@ type benchmark = {
   trials: int;
   timeout: int;
   center_of_trials: center_of_trials;
-  csv: csv_desc
+  csv: csv_desc;
 }

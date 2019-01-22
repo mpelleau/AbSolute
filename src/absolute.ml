@@ -10,7 +10,9 @@ let go() =
     Terminal.go();
     let prob = File_parser.parse !Constant.problem in
     Format.printf "%a\n" Csp.print prob;
-    if !Constant.debug > 0 then Vpl_domain.enable_debug();
+    (if !Constant.debug > 0 then
+      Vpl_domain.enable_debug();
+      Printexc.record_backtrace true);
     lift (set_domain ()) prob
   with Constant.Error msg -> Terminal.error msg
 

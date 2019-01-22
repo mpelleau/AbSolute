@@ -3,6 +3,8 @@ open Adcp_sig
 (* Solver *)
 module Solve(Abs : AbstractCP) = struct
 
+  module Abs = Abs
+
   include Splitter.Make(Abs)
   include Result.Make(Abs)
 

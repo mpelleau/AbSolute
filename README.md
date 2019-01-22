@@ -26,8 +26,8 @@ init{
 }
 
 constraints{
-  y < (sin x) + 1;
-  y > (cos x) - 1;
+  y < sin(x) + 1;
+  y > cos(x) - 1;
 }
 ```
 

@@ -145,5 +145,4 @@ module Make (D:Drawer) = struct
     if !obj then draw3d s (vars3D prob);
     let u = if !sure then [] else res.unsure in
     if !trace then trace_min res.sure u res.best_value
-
 end

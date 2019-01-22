@@ -188,7 +188,7 @@ module IntegerIntervalDBM = struct
   let dbm_to_lb : key -> bound -> bound = fun k v ->
     B.of_rat_down (RationalIntervalDBM.dbm_to_lb k (RationalIntervalDBM.of_int v))
   let dbm_to_ub : key -> bound -> bound = fun k v ->
-    B.of_rat_up (RationalIntervalDBM.dbm_to_lb k (RationalIntervalDBM.of_int v))
+    B.of_rat_up (RationalIntervalDBM.dbm_to_ub k (RationalIntervalDBM.of_int v))
   let lb_to_dbm : key -> bound -> bound = fun k v ->
     B.of_rat_up (RationalIntervalDBM.lb_to_dbm k (RationalIntervalDBM.of_int v))
   let ub_to_dbm : key -> bound -> bound = fun k v ->
@@ -491,7 +491,8 @@ module BoxedOctagon
     let filter_var = fun var_name key box ->
       let l = lb o key in
       let u = ub o key in
-      if l > u then raise Bot.Bot_found;
+      (* Format.printf "%a %a\n" B.pp_print l B.pp_print u; *)
+      if B.gt l u then raise Bot.Bot_found;
       let i = range_to_itv l u in
       Box.meet_var box var_name i in
     { o with box=Env.fold filter_var o.env o.box }
@@ -905,11 +906,11 @@ module BoxedOctagonF = struct
   let filter : t -> bconstraint -> t = fun o cons ->
     let o = copy o in
     let o = init_octagonalise o in
-    if !Constant.debug > 1 then print_cons "filter: " cons;
+    if !Constant.debug > 0 then print_cons "filter: " cons;
     let o =
       match filter_octagonal o cons with
-      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
-      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+      | (o, true) -> if !Constant.debug > 0 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 0 then Printf.printf "non octagonal\n"; filter_box o cons in
     strong_closure_mine o
 end
 
@@ -939,11 +940,11 @@ module BoxedOctagonQ = struct
   let filter : t -> bconstraint -> t = fun o cons ->
     let o = copy o in
     let o = init_octagonalise o in
-    if !Constant.debug > 1 then print_cons "filter: " cons;
+    if !Constant.debug > 0 then print_cons "filter: " cons;
     let o =
       match filter_octagonal o cons with
-      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
-      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+      | (o, true) -> if !Constant.debug > 0 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 0 then Printf.printf "non octagonal\n"; filter_box o cons in
     strong_closure_bagnara o
 end
 
@@ -1005,10 +1006,10 @@ module BoxedOctagonZ = struct
   let filter : t -> bconstraint -> t = fun o cons ->
     let o = copy o in
     let o = init_octagonalise o in
-    if !Constant.debug > 1 then print_cons "filter: " cons;
+    if !Constant.debug > 0 then print_cons "filter: " cons;
     let o =
       match filter_octagonal o cons with
-      | (o, true) -> if !Constant.debug > 1 then Printf.printf "octagonal\n"; o
-      | (o, false) -> if !Constant.debug > 1 then Printf.printf "non octagonal\n"; filter_box o cons in
+      | (o, true) -> if !Constant.debug > 0 then Printf.printf "octagonal\n"; o
+      | (o, false) -> if !Constant.debug > 0 then Printf.printf "non octagonal\n"; filter_box o cons in
     tight_closure_bagnara o
 end
