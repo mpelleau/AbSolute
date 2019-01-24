@@ -55,4 +55,18 @@ module Solve(Abs : AbstractCP) = struct
   (* entry point of the solver *)
   let solving prob =
     solving_instrumented prob (fun () -> ())
+
+  module Branching = Brancher.Combine(Abs)
+  module Prec = Precision.Combine(Branching)
+  module Prop = Propagation.Combine(Prec)
+  module Sol = Solutions_collector.Combine(Prop)
+  module DFS = Dfs.Combine(Sol)
+
+  let solving' prob =
+    let abs = init prob in
+    let global, backtrackable = () |>
+      Branching.init |> (Prec.init !Constant.precision) |> Prop.init |> Sol.init |>  DFS.init in
+    let state = State.create backtrackable abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    let (res, _) = DFS.search global state in
+    res
 end
