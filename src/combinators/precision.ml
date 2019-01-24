@@ -11,13 +11,11 @@ module Combine(Sub: Combinator) = struct
   let init prec ((subg:Sub.global), (subb:Sub.backtrackable)) =
     (prec, subg), subb
 
-  let lift prec sub = (prec, sub)
-
-  let search this state =
+  let search global state =
     if Abs.is_small state.abs then
-      this, Prune state
+      global, [Prune state]
     else
-      let (prec, sub) = this in
-      let (sub, state) = Sub.search sub state in
-      (lift prec sub, state)
+      let (prec, subg) = global in
+      let (subg, state) = Sub.search subg state in
+      (prec, subg), state
 end

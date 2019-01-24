@@ -13,8 +13,8 @@ module Combine(Sub: Combinator) = struct
   let init sub = sub
 
   let search global state =
-    match consistency state.abs state.constraints state.constants with
-    | Empty -> global, [Fail state]
-    | Full (abs', const) -> global, [Satisfiable {state with abs=abs'; constants=const}]
-    | Maybe(abs', ctrs', csts') -> Sub.search global {state with abs=abs'; constraints=ctrs'; constants=csts'}
+    let satisfiable_abs,unknown_abs = prune state.abs state.constraints in
+    let satisfiable_space = List.map (satisfiable state) satisfiable_abs in
+    let unknown_space = List.map (unknown state) unknown_abs in
+    global, satisfiable_space@unknown_space
 end

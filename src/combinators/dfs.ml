@@ -9,9 +9,13 @@ module Combine(Sub: Combinator) = struct
 
   let init sub = sub
 
+  let unknown_branches branches =
+    let unwrap_unknown = function
+    | Unknown s -> [s]
+    | _ -> [] in
+    List.flatten (List.map unwrap_unknown branches)
+
   let rec search global state =
-    match Sub.search global state with
-    | global, Unknown child_nodes ->
-        List.fold_left search global child_nodes
-    | global, _ -> global
+    let global, branches = Sub.search global state in
+    List.fold_left search global (unknown_branches branches)
 end

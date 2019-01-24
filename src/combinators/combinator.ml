@@ -6,5 +6,5 @@ module type Combinator = sig
   type backtrackable
   type state = (backtrackable, Abs.t) State.state
 
-  val search: global -> state -> (global * state node_status)
+  val search: global -> state -> (global * state branches)
 end

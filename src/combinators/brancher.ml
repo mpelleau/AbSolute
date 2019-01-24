@@ -9,6 +9,5 @@ module Combine(Abs: AbstractCP) = struct
   type state = (backtrackable, Abs.t) State.state
   include Splitter.Make(Abs)
   let init () = (), ()
-  let lift state' abs = {state' with abs=abs}
-  let search global state = global, Unknown (List.map (lift state) (split state.abs state.constraints))
+  let search global state = global, (List.map (unknown state) (split state.abs state.constraints))
 end
