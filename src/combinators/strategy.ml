@@ -8,6 +8,7 @@ type combinator =
 | Solutions_collector
 | Elimination
 | DFS
+| Statistics
 
 type atom =
 | Branching
@@ -18,6 +19,10 @@ type t =
 
 let propagate_and_search = C (DFS, C (Solutions_collector, C (Propagation, C (Precision, A Branching))))
 let propagate_eliminate_and_search = C (DFS, C (Solutions_collector, C (Elimination, C (Propagation, C (Precision, A Branching)))))
+
+
+let propagate_and_search_stats = C (DFS, C (Statistics, C (Solutions_collector, C (Propagation, C (Precision, A Branching)))))
+let propagate_eliminate_and_search_stats = C (DFS, C(Statistics, C (Solutions_collector, C (Elimination, C (Propagation, C (Precision, A Branching))))))
 
 module Make(Abs : AbstractCP) = struct
 
@@ -51,4 +56,8 @@ module Make(Abs : AbstractCP) = struct
       let (module Sub), state = make_strategy (sub, state) in
       let (module D: CSig) = (module Dfs.Combine(Sub)) in
       (module D), D.init state
+  | C (Statistics, sub), state ->
+      let (module Sub), state = make_strategy (sub, state) in
+      let (module S: CSig) = (module Statistics.Combine(Sub)) in
+      (module S), S.init state
 end

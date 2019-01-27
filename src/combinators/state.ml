@@ -1,25 +1,49 @@
+
+type global_statistics = {
+  start: Mtime_clock.counter;
+  elapsed: Mtime.span;
+  nodes: int;
+  fails: int;
+  solutions: int;
+  pruned: int;
+  depth_max: int
+}
+
+type backtrackable_statistics = {
+  phantom: int;
+  depth: int
+}
+
+type precision = float
+
+type 'a solutions_collector = 'a Result.res
+
 type 'a backtrackable = {
   abs: 'a;
   constraints: Csp.ctrs;
   constants: Csp.csts;
   view: Csp.jacob;
+  bt_stats: backtrackable_statistics option
 }
 
 (* Global state proper to each strategy. *)
 type 'a global = {
-  precision: float option;
-  res: ('a Result.res) option;
+  precision: precision option;
+  res: ('a solutions_collector) option;
+  statistics: global_statistics option;
 }
 
 type 'a state = 'a global * 'a backtrackable
 
 let init abs constraints constants view =
   {precision=None;
-   res=None},
+   res=None;
+   statistics=None},
   {abs=abs;
    constraints=constraints;
    constants=constants;
-   view=view}
+   view=view;
+   bt_stats=None}
 
 exception Field_not_found of string
 
@@ -32,6 +56,17 @@ let res global =
   match global.res with
   | Some(r) -> r
   | None -> raise (Field_not_found "res")
+
+let statistics s =
+  match s.statistics with
+  | Some(s) -> s
+  | None -> raise (Field_not_found "statistics")
+
+let bt_stats s =
+  match s.bt_stats with
+  | Some(s) -> s
+  | None -> raise (Field_not_found "bt_stats")
+
 
 type 'a branch_kind =
   | Satisfiable of 'a backtrackable
