@@ -1,5 +1,4 @@
 open Combinator
-open Node_status
 open State
 
 module Combine(Sub: Combinator) = struct
@@ -7,22 +6,18 @@ module Combine(Sub: Combinator) = struct
 
   include Result.Make(Abs)
 
-  type backtrackable = Sub.backtrackable
-  type global = Abs.t Result.res * Sub.global
-  type state = (backtrackable, Abs.t) State.state
+  let init (global, backtrackable) =
+    {global with res=Some(empty_res)}, backtrackable
 
-  let init ((subg:Sub.global), (subb:Sub.backtrackable)) =
-    (empty_res, subg), subb
+  let collect_branch res branch =
+     match branch with
+    | Satisfiable backtrackable -> add_s res (backtrackable.abs, backtrackable.constants, backtrackable.view)
+    | Fail backtrackable -> res
+    | Prune backtrackable -> add_u res (backtrackable.abs, backtrackable.constants, backtrackable.view)
+    | Unknown _ -> res
 
-  let collect_branch res state =
-     match state with
-    | Satisfiable state -> add_s res (state.abs, state.constants, state.view)
-    | Fail state -> res
-    | Prune state -> add_u res (state.abs, state.constants, state.view)
-    | unknown -> res
-
-  let search (res, subg) state =
-    let subg', branches = Sub.search subg state in
-    let res = List.fold_left collect_branch res branches in
-    ((res, subg'), branches)
+  let search state =
+    let (global, branches) = Sub.search state in
+    let res = List.fold_left collect_branch (res global) branches in
+    {global with res=Some(res)}, branches
 end

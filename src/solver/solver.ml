@@ -56,17 +56,38 @@ module Solve(Abs : AbstractCP) = struct
   let solving prob =
     solving_instrumented prob (fun () -> ())
 
-  module Branching = Brancher.Combine(Abs)
+(*   module Branching = Brancher.Combine(Abs)
   module Prec = Precision.Combine(Branching)
   module Prop = Propagation.Combine(Prec)
   module Sol = Solutions_collector.Combine(Prop)
   module DFS = Dfs.Combine(Sol)
 
+  module Elim = Elimination.Combine(Prop)
+  module Sol_Elim = Solutions_collector.Combine(Elim)
+  module DFS_Elim = Dfs.Combine(Sol_Elim)
+
   let solving' prob =
     let abs = init prob in
-    let global, backtrackable = () |>
-      Branching.init |> (Prec.init !Constant.precision) |> Prop.init |> Sol.init |>  DFS.init in
-    let state = State.create backtrackable abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
-    let (res, _) = DFS.search global state in
-    res
+    let data = () |>
+      Branching.init |> (Prec.init !Constant.precision) |> Prop.init in
+    if !Constant.pruning then
+      let global, backtrackable = data |> Elim.init |> Sol_Elim.init |> DFS_Elim.init in
+      let state = State.create backtrackable abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+      let (res, _) = DFS_Elim.search global state in
+      res
+    else
+      let global, backtrackable = data |> Sol.init |> DFS.init in
+      let state = State.create backtrackable abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+      let (res, _) = DFS.search global state in
+      res
+ *)
+
+  module Strat = Strategy.Make(Abs)
+
+  let solving' prob =
+    let abs = init prob in
+    let state = State.init abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    let ((module S: Strat.Combi), state) = Strat.make_strategy (Strategy.propagate_eliminate_and_search, state) in
+    let global, _ = S.search state in
+    (State.res global)
 end

@@ -16,7 +16,7 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) =
     Format.printf "Starting the resolution using the ";
     Tools.green_fprintf Format.std_formatter "%s" (!Constant.domain);
     Format.printf " domain ...\n%!";
-    let res = Sol.solving prob in
+    let res = Sol.solving' prob in
     Format.printf "Solving finished\n\n%!";
     Print.out prob res
 end

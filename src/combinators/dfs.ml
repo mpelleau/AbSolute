@@ -1,13 +1,10 @@
 open Combinator
-open Node_status
+open State
 
 module Combine(Sub: Combinator) = struct
   module Abs = Sub.Abs
-  type backtrackable = Sub.backtrackable
-  type global = Sub.global
-  type state = (backtrackable, Abs.t) State.state
 
-  let init sub = sub
+  let init state = state
 
   let unknown_branches branches =
     let unwrap_unknown = function
@@ -15,7 +12,9 @@ module Combine(Sub: Combinator) = struct
     | _ -> [] in
     List.flatten (List.map unwrap_unknown branches)
 
-  let rec search global state =
-    let global, branches = Sub.search global state in
-    List.fold_left search global (unknown_branches branches)
+  let search (global, backtrackable) =
+    let rec aux global backtrackable =
+      let global, branches = Sub.search (global, backtrackable) in
+      List.fold_left aux global (unknown_branches branches) in
+    aux global backtrackable, []
 end
