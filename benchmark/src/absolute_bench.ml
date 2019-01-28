@@ -1,6 +1,7 @@
 open Bench_desc_j
 open System
 open Factory
+open Strategy
 
 let extract_config_from_json json_data =
   try
@@ -16,34 +17,55 @@ let extract_config_from_json json_data =
 
 module type Solver_sig = sig
   module Abs : Adcp_sig.AbstractCP
-  type t = Abs.t Result.res
-  val solving_instrumented : Csp.prog -> (unit -> unit) -> t
-  val solving : Csp.prog -> t
-  val get_solution : Csp.jacob -> ?obj:Csp.expr -> Abs.t -> Csp.csts ->
-    Abs.t * (string * (Bound_rat.t * Bound_rat.t)) list * float * Bound_rat.t
-
+  val execute_strategy : Csp.prog -> Strategy.t -> Abs.t State.global
 end
 
-let measure_sample prob (module S: Solver_sig) _ =
-  let start = Mtime_clock.counter () in
-  ignore (S.solving prob);
-  Mtime.Span.to_uint64_ns (Mtime_clock.count start)
+let base_strategy =
+  C (BoundSolutions,
+  C (Statistics,
+  C (Collect_solutions,
+  C (Propagation,
+  A Branching))))
 
-exception TimeoutException
+let dfs_search_with_timeout =
+  C (DFS,
+  C (BoundTime,
+  base_strategy))
+
+let dfs_search =
+  C (DFS,
+  base_strategy)
+
+let measure_sample prob (module S: Solver_sig) _ =
+  let global = S.execute_strategy prob dfs_search in
+  Mtime.Span.to_uint64_ns (State.statistics global).elapsed
 
 (* We warm up the CPU/caches/garbage collector with the current problem.
    In addition, we verify that this problem does not timeout. *)
 let warm_up config prob (module S: Solver_sig) =
-  let start = Mtime_clock.counter () in
-  let check_timeout () =
-    let elapsed_time = Mtime_clock.count start in
-    if (Mtime.Span.to_s elapsed_time) > (float_of_int config.timeout) then
-      raise TimeoutException
-  in
-  try
-    ignore(S.solving_instrumented prob check_timeout);
-    true
-  with TimeoutException -> false
+  let global = S.execute_strategy prob dfs_search_with_timeout in
+  if config.print_solutions then begin
+    let res = (State.solutions global) in
+    Format.printf "%a\n" Csp.print prob;
+    Printf.printf "Number of solutions: %d\n" (List.length res.sure);
+    let print_sol (abs, constants) =
+      List.iter
+        (fun (kind, var) ->
+            let (l, u) = S.Abs.var_bounds abs var in
+            let kind = match kind with
+            | Csp.Int -> "int"
+            | Csp.Real -> "real" in
+            let (l, u) = (Bound_rat.to_string l, Bound_rat.to_string u) in
+            Printf.printf "%s:%s[%s,%s]\n" var kind l u) (S.Abs.vars abs);
+      List.iter
+        (fun (var, (l, u)) ->
+            let (l, u) = (Bound_rat.to_string l, Bound_rat.to_string u) in
+            Printf.printf "%s:_[%s,%s]\n" var l u) constants in
+      List.iter print_sol res.sure
+  end;
+  let stats = (State.statistics global) in
+  let elapsed_time = stats.elapsed in
+  stats, (Mtime.Span.compare elapsed_time (State.timeout global) >= 0)
 
 let absolute_problem_of_path config problem_path =
   match config.problem_kind with
@@ -51,17 +73,17 @@ let absolute_problem_of_path config problem_path =
   | `PSPlib -> Rcpsp.Psplib.psp_to_absolute problem_path
 
 let bench config problem_path domain precision =
-  let measure = Measurement.init problem_path domain precision in
+  Constant.set_prec precision;
   let (module Abs) = make_abstract_domain domain in
   let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
   let prob = absolute_problem_of_path config problem_path in
-  Constant.set_prec precision;
-  let measure =
-    if warm_up config prob (module S) then
-      let samples = List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
-      Measurement.process_samples measure samples
-    else
-      measure in
+  let stats, timed_out = warm_up config prob (module S) in
+  let measure = Measurement.init stats problem_path domain precision in
+  let measure = if timed_out then
+    measure
+  else
+    let samples = List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
+    Measurement.process_samples measure samples in
   Measurement.print_as_csv config measure
 
 let iter_precision config problem_path domain =
@@ -101,6 +123,7 @@ let iter_problem config =
 
 let start_benchmarking config =
   Measurement.print_csv_header config;
+  Constant.set_timeout_sec config.timeout;
   iter_problem config
 
 let () =

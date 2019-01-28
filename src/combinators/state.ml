@@ -4,7 +4,7 @@ type global_statistics = {
   elapsed: Mtime.span;
   nodes: int;
   fails: int;
-  solutions: int;
+  sols: int;
   pruned: int;
   depth_max: int;
 }
@@ -15,8 +15,9 @@ type backtrackable_statistics = {
 }
 
 type precision = float
-
-type 'a solutions_collector = 'a Result.res
+type 'a collect_solutions = 'a Result.res
+type timeout_bound = Mtime.span
+type max_solutions_bound = int
 
 type 'a backtrackable = {
   abs: 'a;
@@ -29,17 +30,17 @@ type 'a backtrackable = {
 (* Global state proper to each strategy. *)
 type 'a global = {
   precision: precision option;
-  res: ('a solutions_collector) option;
+  solutions: ('a collect_solutions) option;
   statistics: global_statistics option;
-  timeout: Mtime.span option;
-  max_solutions: int option
+  timeout: timeout_bound option;
+  max_solutions: max_solutions_bound option
 }
 
 type 'a state = 'a global * 'a backtrackable
 
 let init abs constraints constants view =
   {precision=None;
-   res=None;
+   solutions=None;
    statistics=None;
    timeout=None;
    max_solutions=None},
@@ -56,10 +57,10 @@ let precision global =
   | Some(p) -> p
   | None -> raise (Field_not_found "precision")
 
-let res global =
-  match global.res with
+let solutions global =
+  match global.solutions with
   | Some(r) -> r
-  | None -> raise (Field_not_found "res")
+  | None -> raise (Field_not_found "solutions")
 
 let statistics s =
   match s.statistics with

@@ -10,7 +10,7 @@ module Combine(Sub: Combinator) = struct
   let search (global, backtrackable) =
     let (global, branches) = Sub.search (global, backtrackable) in
     let max_solutions = (max_solutions global) in
-    let solutions = (statistics global).solutions in
+    let solutions = (statistics global).sols in
     if solutions >= max_solutions then
       global, [Stop backtrackable]@branches
     else

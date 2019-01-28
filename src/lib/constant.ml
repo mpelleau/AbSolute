@@ -20,6 +20,7 @@ let iter            = ref false
 let pruning_iter    = ref 100000000
 let rewrite         = ref false
 let step_by_step    = ref false
+let timeout_sec     = ref 60
 
 let set_debug_lv lv =
   if lv >= 0 then debug := lv
@@ -30,6 +31,10 @@ let set_debug () = debug := 1
 let set_prec f =
   if f > 0. then precision := f
   else raise (Error "precision must be stricly positive")
+
+let set_timeout_sec t =
+  if t > 0 then timeout_sec := t
+  else raise (Error "timeout must be stricly positive")
 
 let set_max_iter i =
   if i > 0 then max_iter := i

@@ -27,6 +27,9 @@ type csv_field = [
   | Time of time_unit
   | AbstractDomain
   | Precision
+  | Solutions
+  | Fails
+  | Nodes
 ]
 
 type csv_desc = {
@@ -51,6 +54,7 @@ type benchmark = {
   precisions: float list;
   trials: int;
   timeout: int;
+  print_solutions: bool;
   center_of_trials: center_of_trials;
   csv: csv_desc;
 }

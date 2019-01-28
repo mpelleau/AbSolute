@@ -58,13 +58,18 @@ module Solve(Abs : AbstractCP) = struct
 
 
   module Strat = Strategy.Make(Abs)
-  let strat = Strategy.propagate_eliminate_and_search_stats
 
-  let solving' prob =
+  let execute_strategy prob strategy =
     let abs = init prob in
     let state = State.init abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
-    let ((module S: Strat.Combi), state) = Strat.make_strategy (strat, state) in
+    let ((module S: Strat.Combi), state) = Strat.make_strategy (strategy, state) in
     let global, _ = S.search state in
+    global
+
+  let solving' prob =
+    let global = execute_strategy prob Strategy.propagate_eliminate_and_search_stats in
     Statistics.print_stats (State.statistics global);
-    (State.res global)
+    let res = (State.solutions global) in
+    res
+
 end

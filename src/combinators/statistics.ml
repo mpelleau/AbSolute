@@ -18,7 +18,7 @@ module Combine(Sub: Combinator) = struct
       elapsed = Mtime.Span.zero;
       nodes=0;
       fails=0;
-      solutions=0;
+      sols=0;
       pruned=0;
       depth_max=0
     }
@@ -54,7 +54,7 @@ module Combine(Sub: Combinator) = struct
       elapsed = Mtime_clock.count stats.start;
       nodes = stats.nodes + 1;
       fails = stats.fails + to_int (sols = 0 && pruned = 0 && fails > 0);
-      solutions = stats.solutions + to_int (pruned = 0 && sols > 0);
+      sols = stats.sols + to_int (pruned = 0 && sols > 0);
       pruned = stats.pruned + to_int (pruned > 0);
       depth_max = max stats.depth_max ((bt_stats backtrackable).depth + 1)
     } in
@@ -72,4 +72,4 @@ let print_stats stats =
      \tPruned: %d\n\
      \tDepth max: %d\n"
   (Mtime.Span.to_s stats.elapsed) stats.nodes stats.fails
-  stats.solutions stats.pruned stats.depth_max
+  stats.sols stats.pruned stats.depth_max

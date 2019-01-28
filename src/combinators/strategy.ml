@@ -7,7 +7,7 @@ type combinator =
 | BoundTime
 | BoundSolutions
 | Propagation
-| Solutions_collector
+| Collect_solutions
 | Elimination
 | DFS
 | Statistics
@@ -19,12 +19,11 @@ type t =
 | A of atom
 | C of combinator * t
 
-let propagate_and_search = C (DFS, C (Solutions_collector, C (Propagation, C (BoundPrecision, A Branching))))
-let propagate_eliminate_and_search = C (DFS, C (Solutions_collector, C (Elimination, C (Propagation, C (BoundPrecision, A Branching)))))
+let propagate_and_search = C (DFS, C (Collect_solutions, C (Propagation, C (BoundPrecision, A Branching))))
+let propagate_eliminate_and_search = C (DFS, C (Collect_solutions, C (Elimination, C (Propagation, C (BoundPrecision, A Branching)))))
 
-
-let propagate_and_search_stats = C (DFS, C (Statistics, C (Solutions_collector, C (Propagation, C (BoundPrecision, A Branching)))))
-let propagate_eliminate_and_search_stats = C (DFS,  C (BoundSolutions, C(Statistics, C (Solutions_collector, C (Elimination, C (Propagation, C (BoundPrecision, A Branching)))))))
+let propagate_and_search_stats = C (DFS, C (Statistics, C (Collect_solutions, C (Propagation, C (BoundPrecision, A Branching)))))
+let propagate_eliminate_and_search_stats = C (DFS,  C (BoundSolutions, C(Statistics, C (Collect_solutions, C (Elimination, C (Propagation, C (BoundPrecision, A Branching)))))))
 
 module Make(Abs : AbstractCP) = struct
 
@@ -47,18 +46,18 @@ module Make(Abs : AbstractCP) = struct
   | C (BoundTime, sub), state ->
       let (module Sub), state = make_strategy (sub, state) in
       let (module T: TSig) = (module Time.Combine(Sub)) in
-      (module T), T.init (Mtime.Span.of_uint64_ns (Int64.of_int 10000000000)) state
+      (module T), T.init (Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int 1000000000) (Int64.of_int !Constant.timeout_sec))) state
   | C (BoundSolutions, sub), state ->
       let (module Sub), state = make_strategy (sub, state) in
-      let (module S: SSig) = (module Solutions.Combine(Sub)) in
-      (module S), S.init 1000 state
+      let (module S: SSig) = (module Max_solutions.Combine(Sub)) in
+      (module S), S.init 1 state
   | C (Propagation, sub), state ->
       let (module Sub), state = make_strategy (sub, state) in
       let (module P: CSig) = (module Propagation.Combine(Sub)) in
       (module P), P.init state
-  | C (Solutions_collector, sub), state ->
+  | C (Collect_solutions, sub), state ->
       let (module Sub), state = make_strategy (sub, state) in
-      let (module S: CSig) = (module Solutions_collector.Combine(Sub)) in
+      let (module S: CSig) = (module Collect_solutions.Combine(Sub)) in
       (module S), S.init state
   | C (Elimination, sub), state ->
       let (module Sub), state = make_strategy (sub, state) in

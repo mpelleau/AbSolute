@@ -1,15 +1,15 @@
 {
-  "problem_set" : "benchmark/data/rcpsp/j30.sm/j3010_1.sm",
+  "problem_set" : "benchmark/data/rcpsp/j3.sm/j3_1.sm",
   "problem_kind" : <PSPlib>,
   "domains" :
-    [<Box : <Interval : <Integer>>>,
-     <BoxedOctagon : <Integer>>],
-  "precisions": [1],
+    [<Box : <Interval : <Rational>>>],
+  "precisions": [0.0001],
   "trials" : 1,
   "timeout" : 60,
   "center_of_trials": <Median>,
+  "print_solutions": true,
   "csv" : {
     "human" : true,
-    "fields" : ["ProblemName", "AbstractDomain", <Time : <Sec>>]
+    "fields" : ["ProblemName", "AbstractDomain", <Time : <Sec>>, <Solutions>, <Fails>, <Nodes>]
   }
 }

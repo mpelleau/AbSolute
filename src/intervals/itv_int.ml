@@ -97,6 +97,8 @@ let split_on ((a,b):t) (x : bound) =
 (* splits in two, around the middle *)
 let split ((a,b):t) = split_on (a,b) (a + (b-a)/2)
 
+let assign ((a,b):t) = [(a,a); (a+1,b)]
+
 let prune (l1,u1:t) (l2,u2:t) : t list * t =
   match (l1 < l2),(u2 < u1) with
   | true , true  -> [(l1,(l2-1));((u2+1),u1)],(l2,u2)

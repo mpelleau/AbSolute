@@ -7,7 +7,7 @@ module Combine(Sub: Combinator) = struct
   include Result.Make(Abs)
 
   let init (global, backtrackable) =
-    {global with res=Some(empty_res)}, backtrackable
+    {global with solutions=Some(empty_res)}, backtrackable
 
   let collect_branch res branch =
      match branch with
@@ -19,6 +19,6 @@ module Combine(Sub: Combinator) = struct
 
   let search state =
     let (global, branches) = Sub.search state in
-    let res = List.fold_left collect_branch (res global) branches in
-    {global with res=Some(res)}, branches
+    let res = List.fold_left collect_branch (solutions global) branches in
+    {global with solutions=Some(res)}, branches
 end

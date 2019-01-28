@@ -8,16 +8,18 @@ type measure = {
   samples: int64 list;
   average: int64;
   median: int64;
-  precision: float
+  precision: float;
+  stats: State.global_statistics
 }
 
-let init problem_path domain precision =
+let init stats problem_path domain precision =
   { problem_path=problem_path;
     domain=domain;
     precision=precision;
     samples=[];
     average=Int64.zero;
-    median=Int64.zero }
+    median=Int64.zero;
+    stats=stats; }
 
 let process_samples this samples =
   let n = List.length samples in
@@ -47,6 +49,9 @@ let csv_field_name config = function
       ^ "; timeout=" ^ (string_of_int config.timeout) ^ "s)"
   | `AbstractDomain -> "domain"
   | `Precision -> "precision"
+  | `Solutions -> "solutions"
+  | `Fails -> "fails"
+  | `Nodes -> "nodes"
 
 let csv_header config =
   let names = List.map (csv_field_name config) config.csv.fields in
@@ -92,6 +97,9 @@ let csv_field_value (config : benchmark) measure = function
   | `Time(u) -> csv_time_field config measure u
   | `AbstractDomain -> name_of_abstract_domain measure.domain
   | `Precision -> (string_of_float (measure.precision -. 0.0000000000000001))
+  | `Solutions -> (string_of_int measure.stats.sols)
+  | `Fails -> (string_of_int measure.stats.fails)
+  | `Nodes -> (string_of_int measure.stats.nodes)
 
 let bench_to_csv config measure =
   let values = List.map (csv_field_value config measure) config.csv.fields in
