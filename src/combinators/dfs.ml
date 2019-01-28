@@ -1,20 +1,27 @@
 open Combinator
 open State
 
+(* Depth-first search.
+   It terminates whenever it encounters a "Stop" branch or the tree has been fully explored by the sub strategy.
+   If search was stopped, then it returns a list with the branch that stopped the search; otherwise an empty list.
+*)
+
 module Combine(Sub: Combinator) = struct
   module Abs = Sub.Abs
 
   let init state = state
 
-  let unknown_branches branches =
-    let unwrap_unknown = function
-    | Unknown s -> [s]
-    | _ -> [] in
-    List.flatten (List.map unwrap_unknown branches)
+  exception Stop_search of Abs.t state
 
   let search (global, backtrackable) =
-    let rec aux global backtrackable =
-      let global, branches = Sub.search (global, backtrackable) in
-      List.fold_left aux global (unknown_branches branches) in
-    aux global backtrackable, []
+    let rec aux global = function
+      | Unknown backtrackable ->
+          let global, branches = Sub.search (global, backtrackable) in
+          List.fold_left aux global branches
+      | Stop backtrackable -> raise (Stop_search (global, backtrackable))
+      | _ -> global in
+    try
+      aux global (Unknown backtrackable), []
+    with Stop_search (global, backtrackable) ->
+      global, [Stop backtrackable]
 end

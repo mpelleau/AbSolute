@@ -31,7 +31,8 @@ module Combine(Sub: Combinator) = struct
       | Satisfiable _ -> (fails, sats + 1, pruned)
       | Fail _ ->  (fails + 1, sats, pruned)
       | Prune _ -> (fails, sats, pruned + 1)
-      | Unknown _ -> (fails, sats, pruned)
+      | Unknown _
+      | Stop _ -> (fails, sats, pruned)
     in
     List.fold_left increase_counters (0,0,0) branches
 

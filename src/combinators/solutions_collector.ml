@@ -15,6 +15,7 @@ module Combine(Sub: Combinator) = struct
     | Fail backtrackable -> res
     | Prune backtrackable -> add_u res (backtrackable.abs, backtrackable.constants, backtrackable.view)
     | Unknown _ -> res
+    | Stop _ -> res
 
   let search state =
     let (global, branches) = Sub.search state in

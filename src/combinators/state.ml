@@ -6,7 +6,7 @@ type global_statistics = {
   fails: int;
   solutions: int;
   pruned: int;
-  depth_max: int
+  depth_max: int;
 }
 
 type backtrackable_statistics = {
@@ -31,6 +31,8 @@ type 'a global = {
   precision: precision option;
   res: ('a solutions_collector) option;
   statistics: global_statistics option;
+  timeout: Mtime.span option;
+  max_solutions: int option
 }
 
 type 'a state = 'a global * 'a backtrackable
@@ -38,7 +40,9 @@ type 'a state = 'a global * 'a backtrackable
 let init abs constraints constants view =
   {precision=None;
    res=None;
-   statistics=None},
+   statistics=None;
+   timeout=None;
+   max_solutions=None},
   {abs=abs;
    constraints=constraints;
    constants=constants;
@@ -67,12 +71,22 @@ let bt_stats s =
   | Some(s) -> s
   | None -> raise (Field_not_found "bt_stats")
 
+let timeout global =
+  match global.timeout with
+  | Some(t) -> t
+  | None -> raise (Field_not_found "timeout")
+
+let max_solutions global =
+  match global.max_solutions with
+  | Some(s) -> s
+  | None -> raise (Field_not_found "max_solutions")
 
 type 'a branch_kind =
   | Satisfiable of 'a backtrackable
   | Fail of 'a backtrackable
   | Prune of 'a backtrackable
   | Unknown of 'a backtrackable
+  | Stop of 'a backtrackable
 
 type 'a branches = 'a global * 'a branch_kind list
 
