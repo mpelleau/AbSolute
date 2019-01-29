@@ -9,8 +9,8 @@ module Combine(Sub: Combinator) = struct
   let init state = state
 
   let search (global, backtrackable) =
-    match consistency backtrackable.abs backtrackable.constraints backtrackable.constants with
+    match consistency backtrackable.abs backtrackable.jacobian backtrackable.constants with
     | Empty -> global, [Fail backtrackable]
     | Full (abs', const) -> global, [Satisfiable {backtrackable with abs=abs'; constants=const}]
-    | Maybe(abs', ctrs', csts') -> Sub.search (global, {backtrackable with abs=abs'; constraints=ctrs'; constants=csts'})
+    | Maybe(abs', ctrs', csts') -> Sub.search (global, {backtrackable with abs=abs'; jacobian=ctrs'; constants=csts'})
 end

@@ -25,6 +25,7 @@ let base_strategy =
   C (Statistics,
   C (Collect_solutions,
   C (Propagation,
+  (* C (BoundPrecision, *)   (* does not work with j3_2.sm, no solution. *)
   A Branching))))
 
 let dfs_search_with_timeout =

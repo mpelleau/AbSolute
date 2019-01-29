@@ -95,7 +95,11 @@ let split_on ((a,b):t) (x : bound) =
   | r -> [(a,x); (x+1,b)]
 
 (* splits in two, around the middle *)
-let split ((a,b):t) = split_on (a,b) (a + (b-a)/2)
+(* let split ((a,b):t) = split_on (a,b) (a + (b-a)/2) *)
+
+let split ((a,b):t) =
+  let mid = (a + (b-a)/2) in
+  [(a,mid);(mid+1,b)]
 
 let assign ((a,b):t) = [(a,a); (a+1,b)]
 

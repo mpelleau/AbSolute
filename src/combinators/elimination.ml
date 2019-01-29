@@ -11,7 +11,7 @@ module Combine(Sub: Combinator) = struct
   let prune branch =
     match branch with
     | Unknown state ->
-        let satisfiable_abs,unknown_abs = prune state.abs state.constraints in
+        let satisfiable_abs,unknown_abs = prune state.abs state.jacobian in
         let satisfiable_space = List.map (satisfiable state) satisfiable_abs in
         let unknown_space = List.map (unknown state) unknown_abs in
         satisfiable_space@unknown_space

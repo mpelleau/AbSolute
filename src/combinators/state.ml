@@ -21,7 +21,8 @@ type max_solutions_bound = int
 
 type 'a backtrackable = {
   abs: 'a;
-  constraints: Csp.ctrs;
+  constraints: Csp.constrs;
+  jacobian: Csp.ctrs;
   constants: Csp.csts;
   view: Csp.jacob;
   bt_stats: backtrackable_statistics option
@@ -39,6 +40,7 @@ type 'a global = {
 type 'a state = 'a global * 'a backtrackable
 
 let init abs constraints constants view =
+  let jacobian = List.map (fun c -> (c,[])) constraints in
   {precision=None;
    solutions=None;
    statistics=None;
@@ -46,6 +48,7 @@ let init abs constraints constants view =
    max_solutions=None},
   {abs=abs;
    constraints=constraints;
+   jacobian=jacobian;
    constants=constants;
    view=view;
    bt_stats=None}

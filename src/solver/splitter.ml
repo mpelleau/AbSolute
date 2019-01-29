@@ -70,6 +70,27 @@ module Make (Abs : AbstractCP) = struct
                       Maybe(abs'', unsat', const')))
     with Bot.Bot_found -> if !Constant.debug > 1 then Format.printf "\t=> bot\n"; Empty
 
+  let consistency' abs (constrs:Csp.ctrs) (const:Csp.csts) : consistency =
+    (* Printf.printf "Consistency %d\n" (List.length constrs); *)
+    try
+      let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
+      if Abs.is_empty abs' then begin
+        (* Printf.printf "Consistency Empty \n"; *)
+        Empty end
+      else
+        let all_assigned = List.length (Abs.vars abs') = List.length (Abs.bound_vars abs') in
+        if all_assigned then
+          let abs' = List.fold_left (fun a (c, _) -> filter a c) abs constrs in
+          Full(abs', const)
+        else begin
+          (* We remove the constraints that are entailed. *)
+          (* let unknown_cons = List.filter (fun (c, _) -> not (sat_cons abs' c)) constrs in *)
+          let unknown_cons = constrs in
+          (* Printf.printf "Maybe (unknown_cons: %d) \n" (List.length unknown_cons); *)
+          Maybe(abs', unknown_cons, const) end
+    with Bot.Bot_found ->
+      Empty
+
   (* using elimination technique *)
   let prune (abs:Abs.t) (constrs:Csp.ctrs) =
     Tools.debug 2 "pruning\n%!";

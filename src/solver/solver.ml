@@ -61,7 +61,7 @@ module Solve(Abs : AbstractCP) = struct
 
   let execute_strategy prob strategy =
     let abs = init prob in
-    let state = State.init abs prob.Csp.jacobian prob.Csp.constants prob.Csp.view in
+    let state = State.init abs prob.Csp.constraints prob.Csp.constants prob.Csp.view in
     let ((module S: Strat.Combi), state) = Strat.make_strategy (strategy, state) in
     let global, _ = S.search state in
     global
