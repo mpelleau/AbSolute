@@ -1,5 +1,5 @@
 {
-  "problem_set" : "benchmark/data/rcpsp/j3.sm/j3_1.sm",
+  "problem_set" : "benchmark/data/rcpsp/j30.sm/j3010_1.sm",
   "problem_kind" : <PSPlib>,
   "domains" :
     [<Box : <Interval : <Integer>>>],
