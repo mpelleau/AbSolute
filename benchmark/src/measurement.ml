@@ -111,3 +111,5 @@ let print_csv_line line =
 
 let print_csv_header config = print_csv_line (csv_header config)
 let print_as_csv config measure = print_csv_line (bench_to_csv config measure)
+
+let print_exception problem_path msg = print_csv_line (Format.sprintf "%s: %s" problem_path msg)

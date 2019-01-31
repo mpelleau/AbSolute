@@ -72,20 +72,24 @@ let absolute_problem_of_path config problem_path =
   match config.problem_kind with
   | `Absolute -> File_parser.parse problem_path
   | `PSPlib -> Rcpsp.Psplib.psp_to_absolute problem_path
+  | `Patterson -> Rcpsp.Psplib.patterson_to_absolute problem_path
 
 let bench config problem_path domain precision =
-  Constant.set_prec precision;
-  let (module Abs) = make_abstract_domain domain in
-  let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
-  let prob = absolute_problem_of_path config problem_path in
-  let stats, timed_out = warm_up config prob (module S) in
-  let measure = Measurement.init stats problem_path domain precision in
-  let measure = if timed_out then
-    measure
-  else
-    let samples = List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
-    Measurement.process_samples measure samples in
-  Measurement.print_as_csv config measure
+  try
+    Constant.set_prec precision;
+    let (module Abs) = make_abstract_domain domain in
+    let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
+    let prob = absolute_problem_of_path config problem_path in
+    let stats, timed_out = warm_up config prob (module S) in
+    let measure = Measurement.init stats problem_path domain precision in
+    let measure = if timed_out then
+      measure
+    else
+      let samples = List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
+      Measurement.process_samples measure samples in
+    Measurement.print_as_csv config measure
+  with e ->
+    Measurement.print_exception problem_path (Printexc.to_string e)
 
 let iter_precision config problem_path domain =
   List.iter (bench config problem_path domain) config.precisions
@@ -97,6 +101,7 @@ let extension_of_problem_kind config =
   match config.problem_kind with
   | `Absolute -> absolute_ext
   | `PSPlib -> psplib_ext
+  | `Patterson -> patterson_ext
 
 let check_problem_file_format config problem_path =
   let ext = extension_of_problem_kind config in

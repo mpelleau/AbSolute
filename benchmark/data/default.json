@@ -1,13 +1,13 @@
 {
-  "problem_set" : "benchmark/data/rcpsp/j30.sm/j3010_1.sm",
-  "problem_kind" : <PSPlib>,
+  "problem_set" : "benchmark/data/rcpsp/patterson.rcp/",
+  "problem_kind" : <Patterson>,
   "domains" :
-    [<Box : <Interval : <Integer>>>],
+    [<Box : <IntervalMixFloatInteger>>],
   "precisions": [1],
   "trials" : 1,
   "timeout" : 60,
   "center_of_trials": <Median>,
-  "print_solutions": true,
+  "print_solutions": false,
   "csv" : {
     "human" : true,
     "fields" : ["ProblemName", "AbstractDomain", <Time : <Sec>>, <Solutions>, <Fails>, <Nodes>]

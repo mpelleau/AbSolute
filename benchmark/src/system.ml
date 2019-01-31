@@ -3,6 +3,7 @@ open Printf
 let json_ext = ".json"
 let absolute_ext = ".abs"
 let psplib_ext = ".sm"
+let patterson_ext = ".rcp"
 let usage = "Usage: absolute_bench <configuration file>\n"
 
 let print_warning msg =

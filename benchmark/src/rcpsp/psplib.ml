@@ -1,4 +1,4 @@
-open Sm_format
+open Rcpsp_data
 open Csp
 
 (* Nomenclature of the variables. *)
@@ -152,5 +152,9 @@ let create_rcpsp rcpsp =
 (* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
 The files from PSPlib are also supposed to be well-formatted. *)
 let psp_to_absolute (problem_path: string) : Csp.prog =
-  let rcpsp = read_sm_file problem_path in
+  let rcpsp = Sm_format.read_sm_file problem_path in
+  create_rcpsp rcpsp
+
+let patterson_to_absolute (problem_path: string) : Csp.prog =
+  let rcpsp = Patterson.read_patterson_file problem_path in
   create_rcpsp rcpsp
