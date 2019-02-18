@@ -48,7 +48,10 @@ module FloatIntervalDBM : IntervalViewDBM
 module RationalIntervalDBM : IntervalViewDBM
 module IntegerIntervalDBM : IntervalViewDBM
 
-module Make(ItvDBM: IntervalViewDBM) : sig
+module Make
+  (IntervalView: IntervalViewDBM)
+  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B)) :
+sig
   type t
   type bound
 
@@ -65,4 +68,7 @@ module Make(ItvDBM: IntervalViewDBM) : sig
 
   (** Same as `lb` but for the upper bound. *)
   val ub : t -> key -> bound
+
+  (** Perform the closure of the DBM. *)
+  val closure : t -> unit
 end

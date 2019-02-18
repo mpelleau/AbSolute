@@ -139,10 +139,12 @@ module IntegerIntervalDBM = struct
   let range_to_itv = I.of_ints
 end
 
-module Make(IntervalView: IntervalViewDBM) = struct
+module Make
+  (IntervalView: IntervalViewDBM)
+  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B)) =
+struct
   include IntervalView
-
-  module DBM = Dbm.Make(B)
+  include Closure
   include DBM
 
   let set_lb o k v = set o (lb_pos k) (lb_to_dbm k v)
