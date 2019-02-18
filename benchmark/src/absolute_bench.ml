@@ -39,7 +39,7 @@ let dfs_search =
 
 let measure_sample prob (module S: Solver_sig) _ =
   let global = S.execute_strategy prob dfs_search in
-  Mtime.Span.to_uint64_ns (State.statistics global).elapsed
+  (State.statistics global).elapsed
 
 (* We warm up the CPU/caches/garbage collector with the current problem.
    In addition, we verify that this problem does not timeout. *)
@@ -74,6 +74,20 @@ let absolute_problem_of_path config problem_path =
   | `PSPlib -> Rcpsp.Psplib.psp_to_absolute problem_path
   | `Patterson -> Rcpsp.Psplib.patterson_to_absolute problem_path
 
+let measure_time config prob (module S: Solver_sig) measure timed_out =
+  let open Measurement in
+  if timed_out then
+    measure
+  else
+    (* If the number of trials is set to 0, we take the time measured during the warm-up phase. *)
+    let samples =
+      if config.trials = 0 then
+        [measure.stats.elapsed]
+      else
+        List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
+    let samples = List.map Mtime.Span.to_uint64_ns samples in
+    Measurement.process_samples measure samples
+
 let bench config problem_path domain precision =
   try
     Constant.set_prec precision;
@@ -82,11 +96,7 @@ let bench config problem_path domain precision =
     let prob = absolute_problem_of_path config problem_path in
     let stats, timed_out = warm_up config prob (module S) in
     let measure = Measurement.init stats problem_path domain precision in
-    let measure = if timed_out then
-      measure
-    else
-      let samples = List.map (measure_sample prob (module S)) (Tools.range 1 config.trials) in
-      Measurement.process_samples measure samples in
+    let measure = measure_time config prob (module S) measure timed_out in
     Measurement.print_as_csv config measure
   with e ->
     Measurement.print_exception problem_path (Printexc.to_string e)
