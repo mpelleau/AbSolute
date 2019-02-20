@@ -7,11 +7,21 @@ sig
   val is_consistent : DBM.t -> unit
 end
 
-module GenericClosure(B: Bound_sig.BOUND)(DBM: DBM_sig with type cell = B.t) = struct
-  module DBM = DBM
-  module B = B
+module GenericClosure(B: Bound_sig.BOUND)(DBM: DBM_sig with type cell = B.t) =
+struct
 
-  let floyd_warshall dbm =
+  (* Check the consistency of the DBM, and update the cells in the diagonal to 0 (Miné, 2004). *)
+  let consistent_Q dbm =
+    let n = DBM.dimension dbm in
+    for i = 0 to (2*n-1) do
+      if B.lt (DBM.get dbm (i,i)) B.zero then
+        raise Bot.Bot_found
+      else
+        DBM.set dbm (i,i) B.zero
+    done
+
+  let shortest_path_closure dbm =
+  begin
     let m i j = DBM.get dbm (i,j) in
     let n = DBM.dimension dbm in
     for k = 0 to (2*n-1) do
@@ -21,7 +31,9 @@ module GenericClosure(B: Bound_sig.BOUND)(DBM: DBM_sig with type cell = B.t) = s
           DBM.set dbm (i,j) v
         done
       done
-    done
+    done;
+    consistent_Q dbm
+  end
 
   (* The part of the modified Floyd-Warshall algorithm for a given 'k' (Mine, 2005). *)
   let strong_closure_k dbm k =
@@ -50,13 +62,14 @@ module GenericClosure(B: Bound_sig.BOUND)(DBM: DBM_sig with type cell = B.t) = s
         DBM.set dbm (i,j) v
       done
     done
-
 end
 
 module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) = struct
   module DBM = DBM
   module B = Bound_int
   module GClosure = GenericClosure(B)(DBM)
+
+  include GClosure
 
   let is_consistent dbm =
     let m i j = DBM.get dbm (i,j) in
@@ -79,54 +92,43 @@ module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) = struct
 
   (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let closure dbm =
-    GClosure.floyd_warshall dbm;
-    is_consistent dbm;
+    shortest_path_closure dbm;
     tightening dbm;
     is_consistent dbm;
-    GClosure.strengthening dbm
-end
-
-module GenericClosureReal(B: Bound_sig.BOUND)(DBM: DBM_sig with type cell = B.t) = struct
-  (* Check the consistency of the DBM, and update the cells in the diagonal to 0 (Miné, 2004). *)
-  let is_consistent dbm =
-    let n = DBM.dimension dbm in
-    for i = 0 to (2*n-1) do
-      if B.lt (DBM.get dbm (i,i)) B.zero then
-        raise Bot.Bot_found
-      else
-        DBM.set dbm (i,i) B.zero
-    done
+    strengthening dbm
 end
 
 module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) = struct
   module DBM = DBM
   module B = Bound_rat
   module GClosure = GenericClosure(B)(DBM)
-  module GClosureReal = GenericClosureReal(B)(DBM)
 
-  include GClosureReal
+  include GClosure
+
+  let is_consistent = consistent_Q
 
   (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let closure dbm =
-    GClosure.floyd_warshall dbm;
+    shortest_path_closure dbm;
     is_consistent dbm;
-    GClosure.strengthening dbm
+    strengthening dbm
 end
 
 module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) = struct
   module DBM = DBM
   module B = Bound_float
   module GClosure = GenericClosure(B)(DBM)
-  module GClosureReal = GenericClosureReal(B)(DBM)
 
-  include GClosureReal
+  include GClosure
+
+  let is_consistent = consistent_Q
 
   (* Strong closure as appearing in (Miné, 2005) using a modified Floyd-Warshall algorithm. *)
   let closure dbm =
     let n = DBM.dimension dbm in
     for k = 0 to n-1 do
-      GClosure.strong_closure_k dbm k;
-      GClosure.strengthening dbm
+      strong_closure_k dbm k;
+      strengthening dbm
     done;
     is_consistent dbm
 end

@@ -141,6 +141,23 @@ module IntegerIntervalDBM = struct
   let range_to_itv = I.of_ints
 end
 
+module type Octagon_sig =
+sig
+  type t
+  type bound
+  val init: Csp.var list -> Csp.bconstraint list -> ((bool * Csp.bconstraint) list * t)
+  val empty: t
+  val extend_one: t -> Csp.var -> t
+  val update: t -> Octagonal_rewriting.octagonal_constraint -> unit
+  val join_constraint: t -> Csp.bconstraint -> bool
+  val set_lb: t -> key -> bound -> unit
+  val set_ub: t -> key -> bound -> unit
+  val lb: t -> key -> bound
+  val ub: t -> key -> bound
+  val closure: t -> unit
+  val dbm_as_list: t -> bound list
+end
+
 module Make
   (IntervalView: IntervalViewDBM)
   (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B))
@@ -190,8 +207,8 @@ struct
     let index_of (sign, v) =
       let (d,_) = Env.find v octagon.env in
       match sign with
-      | Positive -> d*2
-      | Negative -> d*2+1 in
+      | Positive -> d*2+1
+      | Negative -> d*2 in
     DBM.set octagon.dbm (index_of oc.x, index_of oc.y) (B.of_rat_up oc.c)
 
   let join_constraint octagon c =
@@ -208,7 +225,27 @@ struct
     let constraints = List.filter (is_defined_over vars) constraints in
     (List.map (fun c -> (join_constraint octagon c, c)) constraints, octagon)
 
+  let dbm_as_list octagon = DBM.to_list octagon.dbm
+
   (** Reexported functions from the parametrized modules. *)
   let closure octagon = Closure.closure octagon.dbm
   let is_consistent octagon = Closure.is_consistent octagon.dbm
 end
+
+module DBM_Z = Dbm.Make(Bound_int)
+module OctagonZ = Make
+  (IntegerIntervalDBM)
+  (Closure.ClosureZ(DBM_Z))
+  (Octagonal_rewriting.RewriterZ)
+
+module DBM_Q = Dbm.Make(Bound_rat)
+module OctagonQ = Make
+  (RationalIntervalDBM)
+  (Closure.ClosureQ(DBM_Q))
+  (Octagonal_rewriting.RewriterQF)
+
+module DBM_F = Dbm.Make(Bound_float)
+module OctagonF = Make
+  (FloatIntervalDBM)
+  (Closure.ClosureF(DBM_F))
+  (Octagonal_rewriting.RewriterQF)

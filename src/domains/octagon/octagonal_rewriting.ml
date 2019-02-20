@@ -20,16 +20,16 @@ let x_leq_c x c = {x=(Positive, x); y=(Negative,x); c=(Bound_rat.mul_up c Bound_
 let minus_x_leq_c x c = {x=(Negative, x); y=(Positive,x); c=(Bound_rat.mul_up c Bound_rat.two)}
 
 (** `x + y <= c` *)
-let x_plus_y_leq_c x y c = {x=(Positive, x); y=(Negative,x); c=c}
+let x_plus_y_leq_c x y c = {x=(Positive, x); y=(Negative,y); c=c}
 
 (** `x - y <= c` *)
-let x_minus_y_leq_c x y c = {x=(Positive, x); y=(Positive,x); c=c}
+let x_minus_y_leq_c x y c = {x=(Positive, x); y=(Positive,y); c=c}
 
 (** `-x + y <= c` *)
-let minus_x_plus_y_leq_c x y c = {x=(Negative, x); y=(Negative,x); c=c}
+let minus_x_plus_y_leq_c x y c = {x=(Negative, x); y=(Negative,y); c=c}
 
 (** `-x - y <= c` *)
-let minus_x_minus_y_leq_c x y c = {x=(Negative, x); y=(Positive,x); c=c}
+let minus_x_minus_y_leq_c x y c = {x=(Negative, x); y=(Positive,y); c=c}
 
 let create_if_two_vars = function
   | Binary (ADD, Var x, Var y), LEQ, Cst (c, _) ->  Some (x_plus_y_leq_c x y c)

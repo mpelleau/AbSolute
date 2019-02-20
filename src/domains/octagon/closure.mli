@@ -7,6 +7,6 @@ sig
   val is_consistent : DBM.t -> unit
 end
 
-module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) : Closure_sig
-module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) : Closure_sig
-module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) : Closure_sig
+module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) : Closure_sig with module DBM = DBM
+module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) : Closure_sig with module DBM = DBM
+module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) : Closure_sig with module DBM = DBM

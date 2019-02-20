@@ -62,6 +62,9 @@ sig
   (** Extend the DBM with a new unbounded variable (immutable operation).
       The dimension is increased by 1.*)
   val extend_one : t -> t
+
+  (** Low-level representation of the DBM as a list. *)
+  val to_list: t -> cell list
 end
 
 module Make(B:Bound_sig.BOUND) : DBM_sig with type cell = B.t

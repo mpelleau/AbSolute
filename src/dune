@@ -25,8 +25,8 @@
  (libraries libabsolute)
 )
 
-(test
-  (name check)
-  (modules check)
-  (libraries libabsolute)
-)
+;(test
+;  (name check)
+;  (modules check)
+;  (libraries libabsolute)
+;)

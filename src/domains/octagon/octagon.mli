@@ -48,10 +48,7 @@ module FloatIntervalDBM : IntervalViewDBM
 module RationalIntervalDBM : IntervalViewDBM
 module IntegerIntervalDBM : IntervalViewDBM
 
-module Make
-  (IntervalView: IntervalViewDBM)
-  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B))
-  (Rewriter: Octagonal_rewriting.Rewriter_sig) :
+module type Octagon_sig =
 sig
   type t
   type bound
@@ -86,4 +83,16 @@ sig
 
   (** Perform the closure of the DBM. *)
   val closure: t -> unit
+
+  (** Low-level access to the DBM as a list. *)
+  val dbm_as_list: t -> bound list
 end
+
+module OctagonZ : Octagon_sig with type bound = Bound_int.t
+module OctagonQ : Octagon_sig with type bound = Bound_rat.t
+module OctagonF : Octagon_sig with type bound = Bound_float.t
+
+module Make
+  (IntervalView: IntervalViewDBM)
+  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B))
+  (Rewriter: Octagonal_rewriting.Rewriter_sig) : Octagon_sig

@@ -9,23 +9,13 @@ module type DBM_sig =
 sig
   type cell
   type t
-
-  (** Low level access to a cell of the DBM where `get m i j` returns DBM[i][j]. *)
   val get : t -> coord2D -> cell
-
-  (** Monotonic write: we update the cell at (i,j) only if the value passed as argument is smaller than the one in the DBM. *)
   val set : t -> coord2D -> cell -> unit
-
   val empty : t
-
   val copy : t -> t
-
-  (** The dimension of the DBM is its number of variables. *)
   val dimension: t -> int
-
-  (** Extend the DBM with a new unbounded variable (immutable operation).
-      The dimension is increased by 1.*)
   val extend_one : t -> t
+  val to_list: t -> cell list
 end
 
 module Make(B:Bound_sig.BOUND) = struct
@@ -55,4 +45,6 @@ module Make(B:Bound_sig.BOUND) = struct
     let row = Array.make (dim*2*2) top in
     let m = Array.append dbm.m row in
     {dim=dim; m=m}
+
+  let to_list dbm = Array.to_list dbm.m
 end
