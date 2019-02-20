@@ -50,25 +50,40 @@ module IntegerIntervalDBM : IntervalViewDBM
 
 module Make
   (IntervalView: IntervalViewDBM)
-  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B)) :
+  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B))
+  (Rewriter: Octagonal_rewriting.Rewriter_sig) :
 sig
   type t
   type bound
 
+  (** `init vars constraints relaxed`
+      Initialize the octagon with the set of variables `vars`.
+      The octagonal `constraints` defined on `vars` are added into the octagon.
+      The octagonal constraints are annotated by `true`: they are subsumed in the octagon. *)
+  val init: Csp.var list -> Csp.bconstraint list -> ((bool * Csp.bconstraint) list * t)
+
+  val empty: t
+
+  (** Extend the octagon with a new variable. *)
+  val extend_one: t -> Csp.var -> t
+
+  val update: t -> Octagonal_rewriting.octagonal_constraint -> unit
+  val join_constraint: t -> Csp.bconstraint -> bool
+
   (** Set the lower bound of the variable `k` in the DBM.
-      The value `v` is the lower bound of the value at key `k`, and is processed to fit in the DBM. *)
-  val set_lb : t -> key -> bound -> unit
+      The value `v` is the lower bound of the variable at key `k`, and is processed to fit in the DBM. *)
+  val set_lb: t -> key -> bound -> unit
 
   (** Same as `set_lb` but for the upper bound. *)
-  val set_ub : t -> key -> bound -> unit
+  val set_ub: t -> key -> bound -> unit
 
   (** Lower bound of the variable at key `k`.
       The value is computed directly from the DBM with care on rounding. *)
-  val lb : t -> key -> bound
+  val lb: t -> key -> bound
 
   (** Same as `lb` but for the upper bound. *)
-  val ub : t -> key -> bound
+  val ub: t -> key -> bound
 
   (** Perform the closure of the DBM. *)
-  val closure : t -> unit
+  val closure: t -> unit
 end

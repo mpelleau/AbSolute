@@ -59,6 +59,8 @@ type csts = (var * (i*i)) list
 (* the instance type *)
 type instance = i VarMap.t
 
+type bconstraint = (expr * cmpop * expr)
+
 (* we can annotate a problem with information on the resolution,
    to check the soundness of the solver *)
 (* A solution_info is either Some (l), where l is instance list,
@@ -572,6 +574,10 @@ let rec get_vars_bexpr = function
   | Not b -> get_vars_bexpr b
 
 let get_vars_set_bexpr bexpr = Variables.of_list (get_vars_bexpr bexpr)
+
+(* True if the constraint is fully defined over the set of variables `vars`. *)
+let is_defined_over vars (e1,op,e2) =
+  List.for_all (fun v -> List.mem v vars) (get_vars_bexpr (Cmp (op,e1,e2)))
 
 let get_vars_jacob jacob =
   List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob

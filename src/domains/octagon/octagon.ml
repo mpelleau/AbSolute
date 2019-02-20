@@ -1,3 +1,5 @@
+open Csp
+
 type plane = int * int
 type key = int * plane
 
@@ -141,14 +143,72 @@ end
 
 module Make
   (IntervalView: IntervalViewDBM)
-  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B)) =
+  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(IntervalView.B))
+  (Rewriter: Octagonal_rewriting.Rewriter_sig) =
 struct
-  include IntervalView
-  include Closure
-  include DBM
+  module DBM = Closure.DBM
 
-  let set_lb o k v = set o (lb_pos k) (lb_to_dbm k v)
-  let set_ub o k v = set o (ub_pos k) (ub_to_dbm k v)
-  let lb o k = dbm_to_lb k (get o (lb_pos k))
-  let ub o k = dbm_to_ub k (get o (ub_pos k))
+  include IntervalView
+  include Rewriter
+
+  module Env = Tools.VarMap
+  module REnv = Mapext.Make(struct
+    type t=key
+    let compare = compare end)
+
+  (* We keep a bijection between AbSolute variable names (string) and the DBM key.
+     Invariant: For all key, we have: `key = REnv.find (Env.find env key) renv`. *)
+  type t = {
+    dbm: DBM.t;
+    (* maps each variable name to its `key` in the dbm. *)
+    env : key Env.t;
+    (* reversed mapping of `env`. *)
+    renv : string REnv.t;
+  }
+
+  let set_lb o k v = DBM.set o.dbm (lb_pos k) (lb_to_dbm k v)
+  let set_ub o k v = DBM.set o.dbm (ub_pos k) (ub_to_dbm k v)
+  let lb o k = dbm_to_lb k (DBM.get o.dbm (lb_pos k))
+  let ub o k = dbm_to_ub k (DBM.get o.dbm (ub_pos k))
+
+  let empty = {
+    dbm=DBM.empty;
+    env=Env.empty;
+    renv=REnv.empty;
+  }
+
+  let extend_one octagon var =
+    let key = (DBM.dimension octagon.dbm, cplane) in
+    {
+      dbm=DBM.extend_one octagon.dbm;
+      env=Env.add var key octagon.env;
+      renv=REnv.add key var octagon.renv;
+    }
+
+  let update octagon oc =
+    let open Octagonal_rewriting in
+    let index_of (sign, v) =
+      let (d,_) = Env.find v octagon.env in
+      match sign with
+      | Positive -> d*2
+      | Negative -> d*2+1 in
+    DBM.set octagon.dbm (index_of oc.x, index_of oc.y) (B.of_rat_up oc.c)
+
+  let join_constraint octagon c =
+    let iter_oct = List.iter (update octagon) in
+    match rewrite c with
+    | [] ->
+        (match relax c with
+        | [] -> false
+        | cons -> (iter_oct cons; false))
+    | cons -> (iter_oct cons; true)
+
+  let init vars constraints =
+    let octagon = List.fold_left extend_one empty vars in
+    let constraints = List.filter (is_defined_over vars) constraints in
+    (List.map (fun c -> (join_constraint octagon c, c)) constraints, octagon)
+
+  (** Reexported functions from the parametrized modules. *)
+  let closure octagon = Closure.closure octagon.dbm
+  let is_consistent octagon = Closure.is_consistent octagon.dbm
 end

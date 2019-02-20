@@ -115,7 +115,7 @@ let add_shared_cumulative_constraints rcpsp csp =
   {csp with constraints = csp.constraints@overlap_cons}
 
 (* Tasks decomposition of cumulative:
-      forall j1, capacity_ri >= r[j1] + sum (job_j2_runs_when_j1_starts * r[j2]) where j2 <> j1 *)
+      forall j1, capacity_ri >= r[j1] + sum (job_2_runs_when_1_starts * r[j2]) where j2 <> j1 *)
 let add_cumulative_constraint rcpsp csp ri =
   (* We retrieve the jobs that use the resource at index `ri`. *)
   let jobs = List.filter (fun job -> (List.nth job.resources_usage ri) > 0) rcpsp.jobs in

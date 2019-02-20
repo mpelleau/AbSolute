@@ -35,14 +35,14 @@ module Make(B:Bound_sig.BOUND) = struct
     m: cell array;
   }
 
+  let empty = {dim=0; m=[||]}
+
   let get dbm coord = dbm.m.(matpos2 coord)
 
   let set dbm coord v =
     let pos = matpos2 coord in
     if B.gt dbm.m.(pos) v then
       dbm.m.(pos) <- v
-
-  let empty = {dim=0; m=[||]}
 
   let copy dbm = {dim=dbm.dim; m=Array.copy dbm.m}
 

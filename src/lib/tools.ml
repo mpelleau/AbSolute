@@ -71,6 +71,14 @@ let range i j =
     if i > n then acc else aux (n-1) (n :: acc)
   in aux j []
 
+let is_some = function
+| Some _ -> true
+| None -> false
+
+let unwrap = function
+| Some x -> x
+| None -> failwith "unwrap an option containing `None`."
+
 (**********************)
 (** {3} Map instances *)
 (**********************)
