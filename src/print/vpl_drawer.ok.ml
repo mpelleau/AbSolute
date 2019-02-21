@@ -10,9 +10,9 @@ module Binding_VPL_Apron = struct
 
     module Translate = struct
 
-    	let var : Pol.Var.t -> Apron.Var.t
+    	let var : Var.t -> Apron.Var.t
     		= fun v ->
-    		Pol.Var.to_string v
+    		Var.to_string v
     		|> Apron.Var.of_string
 
     	let num : Q.t -> Mpq.t
@@ -72,29 +72,29 @@ module Binding_VPL_Apron = struct
     		let (e,vs) = term' t in
     		(e, Set.elements vs)
 
-    	let relation : E.t -> Cstr.cmpT_extended -> Apron.Tcons1.t
+    	let relation : E.t -> Cstr_type.cmpT_extended -> Apron.Tcons1.t
     		= fun expr -> Apron.Tcons1.(function
-    		| Cstr.LE ->
+    		| Cstr_type.LE ->
     			let expr = E.unop E.Neg expr typ rnd in
     		 	make expr SUPEQ
-    		| Cstr.LT ->
+    		| Cstr_type.LT ->
     			let expr = E.unop E.Neg expr typ rnd in
     		 	make expr SUP
-    		| Cstr.GE -> make expr SUPEQ
-    		| Cstr.GT -> make expr SUP
-    		| Cstr.EQ -> make expr EQ
-    		| Cstr.NEQ -> make expr DISEQ)
+    		| Cstr_type.GE -> make expr SUPEQ
+    		| Cstr_type.GT -> make expr SUP
+    		| Cstr_type.EQ -> make expr EQ
+    		| Cstr_type.NEQ -> make expr DISEQ)
 
-    	let inv_cmp : Cstr.cmpT_extended -> Cstr.cmpT_extended
+    	let inv_cmp : Cstr_type.cmpT_extended -> Cstr_type.cmpT_extended
     		= function
-    		| Cstr.LE -> Cstr.GT
-    		| Cstr.LT -> Cstr.GE
-    		| Cstr.GE -> Cstr.LT
-    		| Cstr.GT -> Cstr.LE
-    		| Cstr.EQ -> Cstr.NEQ
-    		| Cstr.NEQ -> Cstr.EQ
+    		| Cstr_type.LE -> Cstr_type.GT
+    		| Cstr_type.LT -> Cstr_type.GE
+    		| Cstr_type.GE -> Cstr_type.LT
+    		| Cstr_type.GT -> Cstr_type.LE
+    		| Cstr_type.EQ -> Cstr_type.NEQ
+    		| Cstr_type.NEQ -> Cstr_type.EQ
 
-    	let minkowski_hyper : (Q.t * Pol.Var.t* Q.t) -> E.expr * Apron.Var.t
+    	let minkowski_hyper : (Q.t * Var.t* Q.t) -> E.expr * Apron.Var.t
     		= fun (inf, v, sup) ->
     		let itv = Apron.Coeff.i_of_mpq (num inf) (num sup)
     		and v' = var v in
@@ -195,10 +195,10 @@ module Binding_VPL_Apron = struct
     		let state = update_env env state in
     		Abstract1.meet_tcons_array man state a
 
-    	module Cs = Cstr.Rat.Positive
+    	module Cs = Cstr.Rat
 
     	(* TODO: use Term.of_cstr and Cond.of_cstrs of CWrappers *)
-      let cstr_to_term : Cs.t -> (I.Term.t * Cstr.cmpT_extended)
+      let cstr_to_term : Cs.t -> (I.Term.t * Cstr_type.cmpT_extended)
     		= fun cstr ->
     		let l = Cs.get_v cstr
     			|> Cs.Vec.toList
@@ -206,9 +206,9 @@ module Binding_VPL_Apron = struct
     		and c = Cs.get_c cstr |> Cs.Vec.Coeff.neg |> fun c -> I.Term.Cte c
         in
         let cmp = match Cs.get_typ cstr with
-        | Cstr.Le -> Cstr.LE
-        | Cstr.Lt -> Cstr.LT
-        | Cstr.Eq -> Cstr.EQ
+        | Cstr_type.Le -> Cstr_type.LE
+        | Cstr_type.Lt -> Cstr_type.LT
+        | Cstr_type.Eq -> Cstr_type.EQ
         in
         (I.Term.Sum (c::l), cmp)
 
@@ -264,13 +264,13 @@ let to_abs : t * Csp.csts -> t
             (Csp.Cmp (Csp.LEQ, Csp.Var var, Csp.Cst (bs, Csp.Real)),
             Csp.Cmp (Csp.GEQ, Csp.Var var, Csp.Cst (bi, Csp.Real)))
             |> Vpl_domain.VPL.to_cond in
-            Vpl_domain.VplCP.User.assume cond p)
+            Vpl_domain.VplCP.assume cond p)
         p csts
 
 let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
     = fun pol var ->
-    let term = Vpl_domain.Expr.to_term (Csp.Var var) in
-    let itv = Vpl_domain.VplCP.itvize pol term in
+    let term = Csp.Var var in
+    let itv = Vpl_domain.VplCP.itvize term pol in
     let low = match itv.Pol.low with
         | Pol.Infty -> Mpqf.of_float min_float
     	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
@@ -283,9 +283,9 @@ let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
 let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit
     = fun pol (x,y) ->
 
-    let cond = Vpl_domain.VplCP.get_cond pol in
-    let x' = Vpl_domain.Expr.Ident.toVar x |> Pol.Var.to_string
-    and y' = Vpl_domain.Expr.Ident.toVar y |> Pol.Var.to_string
+    let cond = Vpl_domain.VplCP.get_b_expr pol in
+    let x' = Vpl_domain.Ident.toVar x |> Var.to_string
+    and y' = Vpl_domain.Ident.toVar y |> Var.to_string
     in
     let pol_apron = Binding_VPL_Apron.Polka_Strict.assume cond Binding_VPL_Apron.Polka_Strict.top in
     (*Binding_VPL_Apron.Polka_Strict.print pol_apron;*)

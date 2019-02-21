@@ -13,20 +13,20 @@ module Debug = DebugTypes.Debug(struct let name = "AbSolute" end)
 module VPL_CP_Profile = Profile.Profile(struct let name = "VPL_CP" end)
 
 module Coeff = Scalar.Rat
-(*module Domain = CDomain.PedraQWrapper*)
-module Domain = NCDomain.NCVPL_Cstr.Q
-include MakeInterface(Coeff)
+
+module Ident = Lift_Ident (struct
+    type t = string
+    let compare = Pervasives.compare
+    let to_string s = s
+    end)
+
+module Domain = Domains.UnitQ
+
+module Term = Domains.InterfaceQ.Term
 
 module Expr = struct
-    module Ident = UserInterface.Lift_Ident (struct
-        type t = string
-        let compare = Pervasives.compare
-        let to_string s = s
-        end)
 
     type t = Csp.expr
-
-    exception Out_of_Scope
 
     let rec to_term : t -> Term.t
         = function
@@ -66,33 +66,45 @@ module Expr = struct
 
 module VPL = struct
 
-	include Lift(Domain)(Expr)
+	include MakeCustom(Domain)(Ident)(Expr)
 
-	let translate_cmp : Csp.cmpop -> Cstr.cmpT_extended
+	let translate_cmp : Csp.cmpop -> Cstr_type.cmpT_extended
 		= function
-        | Csp.EQ -> Cstr.EQ
-        | Csp.LEQ -> Cstr.LE
-        | Csp.GEQ -> Cstr.GE
-        | Csp.NEQ -> Cstr.NEQ
-        | Csp.GT -> Cstr.GT
-        | Csp.LT -> Cstr.LT
+        | Csp.EQ -> Cstr_type.EQ
+        | Csp.LEQ -> Cstr_type.LE
+        | Csp.GEQ -> Cstr_type.GE
+        | Csp.NEQ -> Cstr_type.NEQ
+        | Csp.GT -> Cstr_type.GT
+        | Csp.LT -> Cstr_type.LT
 
-	let translate_cmp' : Cstr.cmpT_extended -> Csp.cmpop
+	let translate_cmp' : Cstr_type.cmpT_extended -> Csp.cmpop
 		= function
-        | Cstr.EQ -> Csp.EQ
-        | Cstr.LE -> Csp.LEQ
-        | Cstr.GE -> Csp.GEQ
-        | Cstr.NEQ -> Csp.NEQ
-        | Cstr.GT -> Csp.GT
-        | Cstr.LT -> Csp.LT
+        | Cstr_type.EQ -> Csp.EQ
+        | Cstr_type.LE -> Csp.LEQ
+        | Cstr_type.GE -> Csp.GEQ
+        | Cstr_type.NEQ -> Csp.NEQ
+        | Cstr_type.GT -> Csp.GT
+        | Cstr_type.LT -> Csp.LT
 
-    let rec to_cond : Csp.bexpr -> UserCond.t
+    let rec to_cond
         = function
-        | Csp.Cmp (cmp, e1, e2) -> UserCond.Atom (e1, translate_cmp cmp, e2)
-        | Csp.And (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.AND, to_cond e2)
-        | Csp.Or (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.OR, to_cond e2)
-        | Csp.Not e -> UserCond.Not (to_cond e)
+        | Csp.Cmp (cmp, e1, e2) -> Atom (e1, translate_cmp cmp, e2)
+        | Csp.And (e1, e2) -> BinL(to_cond e1, WrapperTraductors.AND, to_cond e2)
+        | Csp.Or (e1, e2) -> BinL(to_cond e1, WrapperTraductors.OR, to_cond e2)
+        | Csp.Not e -> Not (to_cond e)
 
+    let rec of_cond
+        = function
+        | Atom (e1, cmp, e2) -> Csp.Cmp (translate_cmp' cmp, e1, e2)
+        | BinL(e1, WrapperTraductors.AND, e2) -> Csp.And (of_cond e1, of_cond e2)
+        | BinL(e1, WrapperTraductors.OR, e2) -> Csp.Or (of_cond e1, of_cond e2)
+        | Not e -> Csp.Not (of_cond e)
+        | Basic true -> Csp.Cmp (Csp.EQ,
+            Csp.Cst (Mpqf.of_int 0, Csp.Real),
+            Csp.Cst (Mpqf.of_int 0, Csp.Real))
+        | Basic false -> Csp.Cmp (Csp.EQ,
+            Csp.Cst (Mpqf.of_int 1, Csp.Real),
+            Csp.Cst (Mpqf.of_int 0, Csp.Real))
 end
 
 module VplCP (* : Domain_signature.AbstractCP *)= struct
@@ -106,7 +118,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     (* bornage d'une expression *)
     let forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
         = fun p expr ->
-        let itv = User.itvize p expr in
+        let itv = itvize expr p in
         let low = match itv.Pol.low with
             | Pol.Infty -> Mpqf.of_float Pervasives.neg_infinity
         	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
@@ -122,8 +134,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let vars : t -> (Csp.annot * Csp.var) list
         = fun p ->
-        BuiltIn.get_vars p
-        |> List.map (fun v -> (Csp.Real, Expr.Ident.ofVar v))
+        get_vars p
+        |> List.map (fun v -> (Csp.Real, v))
 
     (* returns the bounds of a variable *)
     let var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
@@ -132,10 +144,9 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let bound_vars : t -> Csp.csts
         = fun p ->
-        BuiltIn.get_vars p
+        get_vars p
         |> List.map (fun var ->
-            let varCsp = Expr.Ident.ofVar var in
-            (varCsp, var_bounds p varCsp)
+            (var, var_bounds p var)
             )
         |> List.filter
             (fun (var,(bi,bs)) -> Mpqf.equal bi bs)
@@ -175,8 +186,8 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun state (e1,cmp,e2) ->
         Debug.log DebugTypes.Title (lazy "Filter");
         let cond = to_cond (Csp.Cmp (cmp, e1, e2)) in
-        Debug.log DebugTypes.MInput (lazy (UserCond.to_string cond));
-        User.assume cond state
+        Debug.log DebugTypes.MInput (lazy (b_expr_to_string cond));
+        assume cond state
 
     (* TODO: Should return the variable with the maximal range as well. *)
     let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
@@ -186,26 +197,25 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     (* TODO: use Format *)
     let print : Format.formatter -> t -> unit
         = fun _ p ->
-        print_endline (to_string Expr.Ident.get_string p)
+        print_endline (to_string Ident.to_string p)
 
     let spawn : t -> Csp.instance
         = fun p ->
         spawn p
-        |> Vector.Rat.Positive.toList
+        |> Vector.Rat.toList
         |> List.map
             (fun (var,coeff) ->
-             Expr.Ident.ofVar var, (Q.to_string coeff |> Mpqf.of_string))
+             Ident.ofVar var, (Q.to_string coeff |> Mpqf.of_string))
         |> Tools.VarMap.of_list
 
     let is_abstraction : t -> Csp.instance -> bool
         = fun p varmap ->
-        Tools.VarMap.fold
-                (fun var coeff coeffs ->
-                    (Mpqf.to_string coeff |> Q.of_string, Expr.Ident.toVar var) :: coeffs)
-                varmap
-                []
-            |> Vector.Rat.Positive.mk
-            |> satisfy p
+        let point = Tools.VarMap.fold (fun var coeff coeffs ->
+            (Mpqf.to_string coeff |> Q.of_string, Ident.toVar var) :: coeffs
+        ) varmap []
+        |> Vector.Rat.mk
+        in
+        satisfy point p
 
     let to_bexpr: t -> (Csp.expr * Csp.cmpop * Csp.expr) list
         = let csp_true : Csp.expr * Csp.cmpop * Csp.expr
@@ -213,23 +223,23 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         and csp_false : Csp.expr * Csp.cmpop * Csp.expr
             = Csp.Cst(Mpqf.of_int 0, Csp.Int), Csp.NEQ, Csp.Cst(Mpqf.of_int 0, Csp.Int)
         in
-        let rec of_bexpr: Cond.t -> (Csp.expr * Csp.cmpop * Csp.expr) list
+        let rec of_bexpr : b_expr -> (Csp.expr * Csp.cmpop * Csp.expr) list
             = function
-            | Cond.Basic true -> [csp_true]
-            | Cond.Basic false -> [csp_false]
-        	| Cond.Atom (t1, cmp, t2) -> [Expr.of_term t1, translate_cmp' cmp, Expr.of_term t2]
-        	| Cond.BinL (t1, Vpl.WrapperTraductors.AND, t2) -> of_bexpr t1 @ of_bexpr t2
+            | Basic true -> [csp_true]
+            | Basic false -> [csp_false]
+        	| Atom (t1, cmp, t2) -> [t1, translate_cmp' cmp, t2]
+        	| BinL (t1, Vpl.WrapperTraductors.AND, t2) -> of_bexpr t1 @ of_bexpr t2
             | _ -> Pervasives.invalid_arg "to_bexpr"
         in
         fun p ->
-        BuiltIn.get_cond p
+        get_b_expr p
         |> of_bexpr
 
     let rec is_representable : Csp.bexpr -> Adcp_sig.answer
         = let expr_is_representable : Csp.expr -> Adcp_sig.answer
             = fun t ->
             let poly = Expr.to_term t |> Term.to_poly in
-            if Polynomial.is_affine poly
+            if WrapperTraductors.Polynomial.is_linear poly
             then Adcp_sig.Yes
             else Adcp_sig.Maybe
         in
@@ -269,15 +279,15 @@ let set_lin =
 
 let enable_debug : unit -> unit
     = fun () ->
-    Vpl.Debug.enable();
+    Debugger.enable();
     Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
-    Handelman.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
+    (*Handelman.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);*)
     HOtypes.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
     Pol.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
-    Vpl.Debug.print_enable();
+    Debugger.print_enable();
     Debug.print_enable();
     Debug.set_color(DebugTypes.Cyan);
-    Vpl.Debug.set_colors();
+    Debugger.set_colors();
     PSplx.Debug.disable()
 
 let start_profile () =
