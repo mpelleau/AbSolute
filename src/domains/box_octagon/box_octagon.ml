@@ -45,14 +45,11 @@ struct
     renv: string REnv.t;
   }
 
-  let t1 (x,_) = x
-  let t2 (_,y) = y
-
   let init box_vars octagon_vars constraints reified_octagonal =
     let (constraints, octagon) = Octagon.init octagon_vars constraints in
-    let box_constraints = List.map t2 (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
+    let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
     let (rotated_constraints, rotated_vars) = rotate octagon_vars box_constraints in
-    let box = Box.init (box_vars@List.map t1 rotated_vars) in
+    let box = Box.init (box_vars@List.map fst rotated_vars) in
     let env_add env (name, key) = Env.add name key env in
     let renv_add renv (name, key) = REnv.add key name renv in
     {

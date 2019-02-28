@@ -9,4 +9,6 @@ sig
   val entailment: Store.t -> bconstraint -> kleene
 end
 
-module Make(Store: Var_store_sig) : Box_closure_sig with module Store=Store
+module Make
+  (I: Itv_sig.ITV)
+  (Store: Var_store_sig with type cell=I.t) : Box_closure_sig with module Store=Store

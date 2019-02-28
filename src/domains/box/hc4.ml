@@ -1,6 +1,7 @@
 open Var_store
 open Csp
 open Abstract_domain
+open Bot
 
 module type Box_closure_sig =
 sig
@@ -9,67 +10,75 @@ sig
   val entailment: Store.t -> bconstraint -> kleene
 end
 
-module Make(Store: Var_store_sig) =
+module Make
+  (I: Itv_sig.ITV)
+  (Store: Var_store_sig with type cell=I.t) =
 struct
   module Store = Store
-  let closure box c = box
-  let entailment box c = Unknown
-end
 
-(*
-
-
-  (* trees with nodes annotated with evaluation *)
-  type bexpr =
-    | BFuncall of string * bexpri list
-    | BUnary   of unop * bexpri
-    | BBinary  of binop * bexpri * bexpri
+  (* The type `Csp.expr` is an AST representing the syntax of an expression.
+     In `node`, we annotate each node of this expression with its interval evaluation.
+     Note: the function `eval` below transforms `Csp.expr` into `node`. *)
+  type node_kind =
+    | BFuncall of string * node list
+    | BUnary   of unop * node
+    | BBinary  of binop * node * node
     | BVar     of var
-    | BCst     of i
+    | BCst     of I.t
+  and node = node_kind * I.t
 
-  and bexpri = bexpr * i
+  (* I. Evaluation part
 
-  (* First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
+     First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
      For example: given `x + 3` with `x in [1..3]`, then it annotates `+` with `[4..6]`.
-     It returns this new annotated expression tree, and the interval of the root node.
+     It returns this new valued expression tree (`node`), and the interval of the root node.
 
-     This function is useful for testing transfer functions errors (e.g. division by zero).
+     This function is also useful for testing transfer functions errors (e.g. division by zero).
      - We raise Bot_found in case the expression only evaluates to error values.
      - Otherwise, we return only the non-error values.
    *)
-  let rec eval (a:t) (e:expr) : bexpri =
-    match e with
-    | Funcall(name,args) ->
-       let bargs = List.map (eval a) args in
-       let iargs = List.map snd bargs in
-       let r = debot (I.eval_fun name iargs) in
-       BFuncall(name, bargs),r
-    | Var v ->
-        let r = find v a in
-        BVar v, r
-    | Cst (c,_) ->
-        let r = I.of_rat c in
-        BCst r, r
-    | Unary (o,e1) ->
-        let _,i1 as b1 = eval a e1 in
-        let r = match o with
-          | NEG -> I.neg i1
-        in
-        BUnary (o,b1), r
-    | Binary (o,e1,e2) ->
-       let _,i1 as b1 = eval a e1
-       and _,i2 as b2 = eval a e2 in
-       let r = match o with
-         | ADD -> I.add i1 i2
-         | SUB -> I.sub i1 i2
-         | DIV -> debot (I.div i1 i2)
-         | MUL ->
-            let r = I.mul i1 i2 in
-            if e1=e2 then
-              (* special case: squares are positive *)
-              I.abs r
-            else r
-         | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+  let rec eval box = function
+  | Funcall(name, args) ->
+     let bargs = List.map (eval box) args in
+     let iargs = List.map snd bargs in
+     let r = debot (I.eval_fun name iargs) in
+     BFuncall(name, bargs),r
+  | Var v ->
+      let r = Store.find v box in
+      BVar v, r
+  | Cst (c,_) ->
+      let r = I.of_rat c in
+      BCst r, r
+  | Unary (o,e1) ->
+      let _,i1 as b1 = eval box e1 in
+      let r = match o with
+        | NEG -> I.neg i1
+      in
+      BUnary (o,b1), r
+  | Binary (o,e1,e2) ->
+     let _,i1 as b1 = eval box e1
+     and _,i2 as b2 = eval box e2 in
+     let r = match o with
+       | ADD -> I.add i1 i2
+       | SUB -> I.sub i1 i2
+       | DIV -> debot (I.div i1 i2)
+       | MUL ->
+          let r = I.mul i1 i2 in
+          if e1=e2 then
+            (* special case: squares are positive *)
+            I.abs r
+          else r
+       | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+
+  (* II. Refine part
+
+     Second step of the HC4-revise algorithm.
+     It propagates the intervals from the root of the expression tree `e` to the leaves.
+     For example: Given `y = x + 3`, `x in [1..3]`, `y in [1..5]`.
+                  Then after `eval` we know that the node at `+` has the interval `[4..6]`.
+                  Therefore we can intersect `y` with `[4..6]` due to the equality.
+     Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
+     We raise `Bot_found` in case of unsatisfiability. *)
 
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
@@ -93,51 +102,40 @@ end
   let refine_mul u v r =
     refine_bop I.filter_mul_f I.filter_mul_f u v r true
 
-  u / v = r => u = r * v /\ (v = u/r \/ u=r=0)
+  (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
   let refine_div u v r =
     refine_bop I.filter_div_f I.filter_mul_f u v r false
 
-  (* Second step of the HC4-revise algorithm.
-     It propagates the intervals from the root of the expression tree `e` to the leaves.
-     For example: Given `y = x + 3`, `x in [1..3]`, `y in [1..5]`.
-                  Then after `eval` we know that the node at `+` has the interval `[4..6]`.
-                  Therefore we can intersect `y` with `[4..6]` due to the equality.
-     Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
-     We raise `Bot_found` in case of unsatisfiability. *)
-  let rec refine (a:t) (e:bexpr) (x:i) : t =
-    (*Format.printf "%a\n" print_bexpri (e, x);*)
-    match e with
-    | BFuncall(name,args) ->
-       let bexpr,itv = List.split args in
-       let res = I.filter_fun name itv x in
-       List.fold_left2 (fun acc e1 e2 ->
-           refine acc e2 e1) a (debot res) bexpr
-    | BVar v -> Env.add v (debot (I.meet x (find v a))) a
-    | BCst i -> ignore (debot (I.meet x i)); a
-    | BUnary (o,(e1,i1)) ->
-       let j = match o with
-         | NEG -> I.filter_neg i1 x
-        in refine a e1 (debot j)
-    | BBinary (o,(e1,i1),(e2,i2)) ->
-       let j = match o with
-         | ADD -> refine_add (e1,i1) (e2,i2) x
-         | SUB -> refine_sub (e1,i1) (e2,i2) x
-         | MUL -> refine_mul (e1,i1) (e2,i2) x
-         | DIV -> refine_div (e1,i1) (e2,i2) x
-         | POW -> I.filter_pow i1 i2 x
-       in
-       let j1,j2 = debot j in
-       refine (refine a e1 j1) e2 j2
+  let rec refine box root = function
+  | BFuncall(name,args) ->
+     let nodes_kind, itv = List.split args in
+     let res = I.filter_fun name itv root in
+     List.fold_left2 refine box (debot res) nodes_kind
+  | BVar v -> Store.add v (debot (I.meet root (Store.find v box))) box
+  | BCst i -> ignore (debot (I.meet root i)); box
+  | BUnary (o,(e1,i1)) ->
+     let j = match o with
+       | NEG -> I.filter_neg i1 root
+      in refine box (debot j) e1
+  | BBinary (o,(e1,i1),(e2,i2)) ->
+     let j = match o with
+       | ADD -> refine_add (e1,i1) (e2,i2) root
+       | SUB -> refine_sub (e1,i1) (e2,i2) root
+       | MUL -> refine_mul (e1,i1) (e2,i2) root
+       | DIV -> refine_div (e1,i1) (e2,i2) root
+       | POW -> I.filter_pow i1 i2 root
+     in
+     let j1,j2 = debot j in
+     refine (refine box j1 e1) j2 e2
 
-  (* test transfer function.
+  (* III. HC4-revise algorithm (combining eval and refine).
+
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
-     It prunes the domain of the variables in `a` according to the constraint `e1 o e2`.
+     It prunes the domain of the variables in `box` according to the constraint `e1 o e2`.
   *)
-  let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
-    Tools.debug 2 "HC4 - eval\n%!";
-    let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
-    (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
-    let j1,j2 = match o with
+  let hc4_revise box (e1,op,e2) =
+    let (b1,i1), (b2,i2) = eval box e1, eval box e2 in
+    let j1,j2 = match op with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
       (* a > b <=> b < a*)
@@ -146,13 +144,19 @@ end
       | NEQ -> debot (I.filter_neq i1 i2)
       | EQ  -> debot (I.filter_eq i1 i2)
     in
-    Tools.debug 2 "HC4 - refine\n%!";
-    let refined1 = if I.equal j1 i1 then a else refine a b1 j1 in
-    Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
+    let refined_box = if I.equal j1 i1 then box else refine box j1 b1 in
+    Nb(if j2 = i2 then refined_box else refine refined_box j2 b2)
 
-  let filter (a:t) (e1,binop,e2) : t =
-    match test a e1 binop e2 with
-    | Bot ->
-       Tools.debug 5 "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a;
-       raise Bot_found
-    | Nb e -> e *)
+  let closure box c =
+    match hc4_revise box c with
+    | Bot -> raise Bot_found
+    | Nb box -> box
+
+  let entailment box (e1,op,e2) =
+    match hc4_revise box (e1,op,e2) with
+    | Bot -> False
+    | _ ->
+      match hc4_revise box (e1,neg op,e2) with
+      | Bot -> True
+      | _ -> Unknown
+end

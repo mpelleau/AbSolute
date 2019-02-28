@@ -56,19 +56,19 @@ module BoxZ = Make
   (Bound_int)
   (ItvZ)
   (StoreZ)
-  (Hc4.Make(StoreZ))
+  (Hc4.Make(ItvZ)(StoreZ))
 
 module BoxQ = Make
   (Bound_rat)
   (ItvQ)
   (StoreQ)
-  (Hc4.Make(StoreQ))
+  (Hc4.Make(ItvQ)(StoreQ))
 
 module BoxF = Make
   (Bound_float)
   (ItvF)
   (StoreF)
-  (Hc4.Make(StoreF))
+  (Hc4.Make(ItvF)(StoreF))
 
 (*
 
