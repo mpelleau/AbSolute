@@ -4,6 +4,8 @@ module I = Itv_int
 module R = Newitv.Test
 
 type t = Int of I.t | Real of R.t
+(* Rational can represent both floating point numbers and integers. *)
+type bound = Bound_rat.t
 
 (* useful constructors *)
 let make_real x = Real x
@@ -62,6 +64,8 @@ let of_rats (m1:Bound_rat.t) (m2:Bound_rat.t) : t =
 let of_rat (m1:Bound_rat.t) : t =
   of_rats m1 m1
 
+let of_bounds = of_rats
+
 (* maps empty intervals to explicit bottom *)
 let check_bot (x:t) : t bot =
   match x with
@@ -72,6 +76,10 @@ let check_bot (x:t) : t bot =
 let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
 
 let top_real : t = Real (R.top_real)
+let top : t = Real (R.top_real)
+
+let zero = of_int 0
+let one = of_int 1
 
 (************************************************************************)
 (*                       PRINTING and CONVERSIONS                       *)
@@ -82,6 +90,8 @@ let to_float_range (x:t) : float * float =
 
 let to_rational_range (x:t) : Bound_rat.t * Bound_rat.t =
   dispatch I.to_rational_range R.to_rational_range x
+
+let to_range = to_rational_range
 
 let print (fmt:Format.formatter) (x:t) : unit =
   dispatch (Format.fprintf fmt "%a" I.print) (Format.fprintf fmt "%a" R.print) x

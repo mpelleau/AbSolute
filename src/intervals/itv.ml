@@ -53,6 +53,7 @@ module Itv(B:BOUND) = struct
 
   let top_real : t = B.minus_inf, B.inf
   let top_int : t = B.minus_inf, B.inf
+  let top : t = B.minus_inf, B.inf
 
   let zero_one : t = B.zero, B.one
 
@@ -159,8 +160,8 @@ module Itv(B:BOUND) = struct
 
   let range ((l,h):t) : B.t = (B.sub_up h l)
 
-  let float_size ((l,h):t) : float =
-    B.to_float_up (B.sub_up h l)
+  let float_size (itv:t) : float =
+    B.to_float_up (range itv)
 
   (* split *)
   (* ----- *)
@@ -545,6 +546,8 @@ module Itv(B:BOUND) = struct
 
   let to_rational_range (l, h) =
     (B.to_rat l), (B.to_rat h)
+
+  let to_range x = x
 
   (* returns the type annotation of the represented values *)
   let to_annot _ = Csp.Real

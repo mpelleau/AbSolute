@@ -12,15 +12,18 @@ module type ITV = sig
      intervals are always non-empty: lower <= upper;
      functions that can return an empty interval return it as Bot *)
   type t
+  type bound
 
   (************************************************************************)
   (** {1 CONSTRUCTORS AND CONSTANTS} *)
   (************************************************************************)
 
   (** default value for unconstrained variables *)
-  val top_int : t
-  val top_real : t
+  val top_int: t
+  val top_real: t
+  val top: t
 
+  val of_bounds : bound -> bound -> t
   val of_ints: int -> int -> t
   val of_rats: Bound_rat.t -> Bound_rat.t -> t
   val of_floats: float -> float -> t
@@ -29,12 +32,16 @@ module type ITV = sig
   val of_rat: Bound_rat.t -> t
   val of_float: float -> t
 
+  val zero: t
+  val one: t
+
   (************************************************************************)
   (** {1 PRINTING and CONVERSIONS } *)
   (************************************************************************)
 
   val to_float_range : t -> float * float
   val to_rational_range : t -> Bound_rat.t * Bound_rat.t
+  val to_range : t -> bound * bound
 
   (** returns the type annotation of the represented values *)
   val to_annot : t -> Csp.annot

@@ -37,11 +37,15 @@ let of_float = Bot
 let positive : t = (1,max_int)
 let negative : t = (min_int,-1)
 
+let zero = of_bound 0
+let one = of_bound 1
+
 (************************************************************************)
 (* PRINTING and CONVERSIONS *)
 (************************************************************************)
 
 let to_float_range ((a,b):t) = (float a), (float b)
+let to_range x = x
 
 let float_size ((a,b):t) = float (b - a)
 
