@@ -1,6 +1,9 @@
 open Csp
 
 type sign = Positive | Negative
+let reverse_sign = function
+| Positive -> Negative
+| Negative -> Positive
 
 type octagonal_constraint = {
   x: sign * Csp.var;
@@ -12,6 +15,13 @@ let vars_of oc =
   let (_, v1) = oc.x in
   let (_, v2) = oc.y in
   if String.equal v1 v2 then [v1] else [v1;v2]
+
+let reverse_sign oc =
+  let rev (s, v) = (reverse_sign s, v) in
+  { oc with
+    x=rev oc.x;
+    y=rev oc.y;
+  }
 
 (** `x <= c` ~> `x + x <= 2c` *)
 let x_leq_c x c = {x=(Positive, x); y=(Negative,x); c=(Bound_rat.mul_up c Bound_rat.two)}

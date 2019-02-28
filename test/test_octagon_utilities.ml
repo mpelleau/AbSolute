@@ -1,5 +1,5 @@
 open Dbm
-open Octagon
+open Interval_view_dbm
 open Printer
 open Tools
 

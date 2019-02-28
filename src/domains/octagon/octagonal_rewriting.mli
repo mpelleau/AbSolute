@@ -12,6 +12,10 @@ type octagonal_constraint = {
 
 val vars_of: octagonal_constraint -> Csp.var list
 
+(** Given an octagonal constraint, we reverse the signs to obtain the opposite octagonal constraint.
+    Note that the bound `c` is left unchanged, and thus the reversed constraint describes the opposite plane. *)
+val reverse_sign: octagonal_constraint -> octagonal_constraint
+
 (** Version of `create` only for constraints with two variables of the form `±x - ±y <= c`. *)
 val create_if_two_vars: bconstraint -> octagonal_constraint option
 
