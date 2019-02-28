@@ -144,7 +144,18 @@ struct
     else
       box_oct
 
-  let split box_oct = []
+  (* WARNING: This strategy is only valid for integers. (This should be corrected when we extract the splitting strategy). *)
+  (* Input-order selection of variables with assignment to the lower bound of the variable. *)
+  let split box_oct =
+    let var = List.find (fun v -> not (Box.I.is_singleton (Box.get box_oct.box v))) box_oct.box_vars in
+    let (l,u) = Box.I.to_range (Box.get box_oct.box var) in
+    let left_box = Box.meet_var var (Box.I.of_bounds l l) box_oct.box in
+    let right_box = Box.meet_var var (Box.I.of_bounds (B.add_up l B.one) u) box_oct.box in
+    (* We perform `meet_box_in_dbm` before the octagon closure so the octagon will be automatically updated with this new bound. *)
+    [
+      { box_oct with box=left_box };
+      { box_oct with box=right_box; octagon=(Octagon.copy box_oct.octagon)}
+    ]
 
   let volume box_oct = Box.volume (Box.project (fun x -> List.mem x box_oct.box_vars) box_oct.box)
 

@@ -17,6 +17,8 @@ sig
 
   val empty: t
 
+  val copy: t -> t
+
   (** Extend the octagon with a new variable. *)
   val extend_one: t -> var -> t
 

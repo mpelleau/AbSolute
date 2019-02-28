@@ -9,6 +9,7 @@ sig
   type bound
   val init: Csp.var list -> Csp.bconstraint list -> ((bool * Csp.bconstraint) list * t)
   val empty: t
+  val copy: t -> t
   val extend_one: t -> Csp.var -> t
   val update: t -> Octagonal_rewriting.octagonal_constraint -> unit
   val meet_constraint: t -> Csp.bconstraint -> bool
@@ -59,6 +60,8 @@ struct
     env=Env.empty;
     renv=REnv.empty;
   }
+
+  let copy octagon = { octagon with dbm=DBM.copy octagon.dbm; }
 
   let fold_vars f a octagon = Env.fold f octagon.env a
   let iter_vars f octagon = Env.iter f octagon.env
