@@ -2,6 +2,7 @@ open Bench_desc_j
 open System
 open Factory
 open Strategy
+open Rcpsp
 
 let extract_config_from_json json_data =
   try
@@ -68,11 +69,20 @@ let warm_up config prob (module S: Solver_sig) =
   let elapsed_time = stats.elapsed in
   stats, (Mtime.Span.compare elapsed_time (State.timeout global) >= 0)
 
-let absolute_problem_of_path config problem_path =
+(* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
+The files from PSPlib are also supposed to be well-formatted. *)
+let psp_to_rcpsp (problem_path: string) : Rcpsp_model.rcpsp_model =
+  let rcpsp = Sm_format.read_sm_file problem_path in
+  Rcpsp_model.create_rcpsp rcpsp
+
+let patterson_to_rcpsp (problem_path: string) : Rcpsp_model.rcpsp_model =
+  let rcpsp = Patterson.read_patterson_file problem_path in
+  Rcpsp_model.create_rcpsp rcpsp
+
+let make_rcpsp config problem_path =
   match config.problem_kind with
-  | `Absolute -> File_parser.parse problem_path
-  | `PSPlib -> Rcpsp.Psplib.psp_to_absolute problem_path
-  | `Patterson -> Rcpsp.Psplib.patterson_to_absolute problem_path
+  | `PSPlib -> psp_to_rcpsp problem_path
+  | `Patterson -> patterson_to_rcpsp problem_path
 
 let measure_time config prob (module S: Solver_sig) measure timed_out =
   let open Measurement in
@@ -88,16 +98,27 @@ let measure_time config prob (module S: Solver_sig) measure timed_out =
     let samples = List.map Mtime.Span.to_uint64_ns samples in
     Measurement.process_samples measure samples
 
-let bench config problem_path domain precision =
+let bench_absolute config problem_path domain precision =
+  Constant.set_prec precision;
+  let (module Abs) = make_abstract_domain domain in
+  let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
+  let prob = File_parser.parse problem_path in
+  let stats, timed_out = warm_up config prob (module S) in
+  let measure = Measurement.init stats problem_path domain precision in
+  let measure = measure_time config prob (module S) measure timed_out in
+  measure
+
+module Rcpsp_domain = Box_octagon.Make
+  (Bound_int)
+  (Octagonalisation.NoRotation)
+  (Octagon.OctagonZ)
+  (Box_dom.BoxZ)
+
+let bench config problem_path _domain _precision =
   try
-    Constant.set_prec precision;
-    let (module Abs) = make_abstract_domain domain in
-    let (module S: Solver_sig) = (module Solver.Solve(Abs)) in
-    let prob = absolute_problem_of_path config problem_path in
-    let stats, timed_out = warm_up config prob (module S) in
-    let measure = Measurement.init stats problem_path domain precision in
-    let measure = measure_time config prob (module S) measure timed_out in
-    Measurement.print_as_csv config measure
+    let _rcpsp = make_rcpsp config problem_path in ()
+    (* TODO: measure the solving strategy... *)
+    (* Measurement.print_as_csv config measure *)
   with e ->
     Measurement.print_exception problem_path (Printexc.to_string e)
 
@@ -109,7 +130,6 @@ let iter_domain config problem_path =
 
 let extension_of_problem_kind config =
   match config.problem_kind with
-  | `Absolute -> absolute_ext
   | `PSPlib -> psplib_ext
   | `Patterson -> patterson_ext
 

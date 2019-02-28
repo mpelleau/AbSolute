@@ -43,7 +43,6 @@ type center_of_trials = [
 ]
 
 type problem_kind = [
-  | Absolute
   | PSPlib
   | Patterson
 ]
