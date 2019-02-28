@@ -1,32 +1,76 @@
-open Tools
-open Bot
-open Itv_sig
 open Csp
+open Var_store
+open Abstract_domain
+open Hc4
+open Bot
 
-(*******************)
-(* GENERIC FUNCTOR *)
-(*******************)
+module type Box_sig =
+sig
+  type t
+  type bound
+  module I: Itv_sig.ITV with type bound = bound
+  type itv = I.t
 
-module Box (I:ITV) = struct
+  val init: var list -> t
+  val volume: t -> float
+  val get: t -> var -> itv
+  val project: (var -> bool) -> t -> t
+  val meet_var: var -> itv -> t -> t
+  val closure: t -> bconstraint -> t
+  val entailment: t -> bconstraint -> kleene
+end
 
-
-  (************************************************************************)
-  (* TYPES *)
-  (************************************************************************)
-
-  (* interval and bound inheritance *)
+module Make
+  (B: Bound_sig.BOUND)
+  (I: Itv_sig.ITV with type bound=B.t)
+  (Store: Var_store_sig with type cell=I.t)
+  (Closure: Box_closure_sig with module Store=Store) =
+struct
   module I = I
-  (* module B = I.B *)
+  type itv = I.t
+  type bound = B.t
+  type t = Store.t
 
-  type i = I.t
+  let init vars =
+    List.fold_left (fun box name -> Store.add name I.top box) Store.empty vars
 
-  (* maps from variables *)
-  module Env = Tools.VarMap
+  let get box v = Store.find v box
+  let project f box = Store.filter (fun v _ -> f v) box
+  let volume box = Store.fold (fun _ x v -> (I.float_size x) *. v) box 1.
+  let meet_var var value box = Store.add var (debot (I.meet (Store.find var box) value)) box
 
-  (* maps each variable to a (non-empty) interval *)
-  type t = i Env.t
+  (** Reexported functions from the parametrized modules. *)
+  let closure = Closure.closure
+  let entailment = Closure.entailment
+end
 
-  let find v (a:t) = VarMap.find_fail v a
+module ItvZ = Trigo.Make(Itv.ItvI)
+module ItvQ = Trigo.Make(Itv.ItvQ)
+module ItvF = Trigo.Make(Itv.ItvF)
+
+module StoreZ = Var_store.Make(ItvZ)
+module StoreQ = Var_store.Make(ItvQ)
+module StoreF = Var_store.Make(ItvF)
+
+module BoxZ = Make
+  (Bound_int)
+  (ItvZ)
+  (StoreZ)
+  (Hc4.Make(StoreZ))
+
+module BoxQ = Make
+  (Bound_rat)
+  (ItvQ)
+  (StoreQ)
+  (Hc4.Make(StoreQ))
+
+module BoxF = Make
+  (Bound_float)
+  (ItvF)
+  (StoreF)
+  (Hc4.Make(StoreF))
+
+(*
 
   (* returns true if var is an integer in the given environment *)
   let is_integer abs var = I.to_annot (VarMap.find var abs) = Csp.Int
@@ -79,10 +123,6 @@ module Box (I:ITV) = struct
   let meet_var (a:t) (v:var) (value:i) : t =
     Env.add v (debot (I.meet (Env.find v a) value)) a
 
-  (* Projection of the variables `v` of `a` satisfying `f v`. *)
-  let project (f: var -> bool) (a:t) : t =
-    Env.filter (fun v _ -> f v) a
-
   (* predicates *)
   (* ---------- *)
 
@@ -107,9 +147,6 @@ module Box (I:ITV) = struct
     let (v,i) = max_range a in
     (I.float_size i) <= !Constant.precision
 
-  let volume (a:t) : float =
-    VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
-
   (************************)
   (* splitting strategies *)
   (************************)
@@ -124,14 +161,14 @@ module Box (I:ITV) = struct
            let rec aux a good = function
              | [] -> good
              | (v, i_b)::tl ->
-                let add = fun i -> (Env.add v i a) in
-                let i_a = Env.find v a in
-                let sures = itv_diff i_a i_b in
+	              let add = fun i -> (Env.add v i a) in
+	              let i_a = Env.find v a in
+	              let sures = itv_diff i_a i_b in
                 let rest = I.meet i_a i_b in
                 match rest with
                 | Bot -> assert false
                 | Nb rest ->
-                   aux (add rest) (List.rev_append (List.rev_map add sures) good) tl
+	                 aux (add rest) (List.rev_append (List.rev_map add sures) good) tl
            in aux a [] (Env.bindings b))
 
 
@@ -244,7 +281,7 @@ module Box (I:ITV) = struct
          | SUB -> refine_sub (e1,i1) (e2,i2) x
          | MUL -> refine_mul (e1,i1) (e2,i2) x
          | DIV -> refine_div (e1,i1) (e2,i2) x
-         | POW -> I.filter_pow i1 i2 x
+	       | POW -> I.filter_pow i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
@@ -392,16 +429,4 @@ module Box (I:ITV) = struct
           | Bot.Nb itv' -> (true, Env.add var itv' acc)
     ) a (false,Env.empty)
     |> Pervasives.snd
-
-end
-
-(*************)
-(* INSTANCES *)
-(*************)
-
-module BoxF       = Box(Trigo.Make(Itv.ItvF))
-module BoxStrict  = Box(Trigo.Make(Newitv.Test))
-module BoxQ       = Box(Trigo.Make(Itv.ItvQ))
-module BoxQStrict = Box(Trigo.Make(Newitv.TestQ))
-module BoxMix     = Box(Trigo.Make(Itv_mix))
-module BoxI       = Box(Trigo.Make(Itv.ItvI))
+ *)
