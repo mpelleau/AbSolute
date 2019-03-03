@@ -36,7 +36,13 @@ struct
 
   let get box v = Store.find v box
   let project f box = Store.filter (fun v _ -> f v) box
-  let volume box = Store.fold (fun _ x v -> (I.float_size x) *. v) box 1.
+  let volume box =
+    let vol = Store.fold (fun _ x v -> (I.float_size x) *. v) box 1. in
+    if classify_float vol = FP_infinite || classify_float vol = FP_nan then
+      infinity
+    else
+      vol
+
   let meet_var var value box = Store.add var (debot (I.meet (Store.find var box) value)) box
 
   (** Reexported functions from the parametrized modules. *)

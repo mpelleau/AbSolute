@@ -75,7 +75,6 @@ struct
     }
 
   let index_of octagon (sign, v) =
-    let open Octagonal_rewriting in
     let (d,_) = Env.find v octagon.env in
     match sign with
     | Positive -> d*2+1
@@ -96,23 +95,42 @@ struct
 
   let init vars constraints =
     let octagon = List.fold_left extend_one empty vars in
-    let constraints = List.filter (is_defined_over vars) constraints in
-    (List.map (fun c -> (meet_constraint octagon c, c)) constraints, octagon)
+    let add_cons c =
+      if is_defined_over vars c then
+        (meet_constraint octagon c, c)
+      else
+        (false, c) in
+    (List.map add_cons constraints, octagon)
 
   let dbm_as_list octagon = DBM.to_list octagon.dbm
 
+  let dim_of octagon (s, var) = fst (Env.find var octagon.env)
+
+  let dimension_of octagon oc =
+    let (sx, x) = oc.x in
+    let (sy, y) = oc.y in
+    let (is_lb, var) = match (sx, sy) with
+      | Positive, Positive -> (false, oc.x)
+      | Negative, Negative -> (true, oc.x)
+      | Positive, Negative -> (false, oc.y)
+      | Negative, Positive -> (true, oc.y) in
+    (is_lb, dim_of octagon var)
+
   let entailment octagon oc =
-    let index_of = index_of octagon in
-    let current = DBM.get octagon.dbm (index_of oc.x, index_of oc.y) in
-    if B.leq current (B.of_rat_up oc.c) then
-      True
-    else
-      let rev_oc = reverse_sign oc in
-      let opposite_current = DBM.get octagon.dbm (index_of rev_oc.x, index_of rev_oc.y) in
-      if B.gt opposite_current (B.of_rat_down oc.c) then
-        False
-      else
-        Unknown
+    let index_of v = index_of octagon v in
+    let (is_lb, dim) = dimension_of octagon oc in
+    let bound_1 = DBM.get octagon.dbm (index_of oc.x, index_of oc.y) in
+    let bound_2 = DBM.get octagon.dbm (index_of (rev oc.x), index_of (rev oc.y)) in
+    let (lb, ub) = if is_lb then (B.neg bound_1, bound_2) else (B.neg bound_2, bound_1) in
+    let bound = if is_lb then B.neg (B.of_rat_up oc.c) else B.of_rat_up oc.c in
+
+      (* Format.printf "%a" DBM.print octagon.dbm; *)
+      (* Printf.printf "Disentailed %s [%s,%s] with %s\n" (octagonal_to_string oc) (B.to_string lb) (B.to_string ub) (B.to_string bound); *)
+    if (is_lb && B.leq bound lb) ||
+       (not is_lb && B.geq bound ub) then True
+    else if (is_lb && B.gt bound ub) ||
+            (not is_lb && B.lt bound lb) then False
+    else Unknown
 
   (** Reexported functions from the parametrized modules. *)
   let closure octagon = Closure.closure octagon.dbm

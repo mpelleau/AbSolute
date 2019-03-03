@@ -3,6 +3,7 @@ open System
 open Factory
 open Strategy
 open Rcpsp
+open Rcpsp_model
 
 let extract_config_from_json json_data =
   try
@@ -114,13 +115,81 @@ module Rcpsp_domain = Box_octagon.Make
   (Octagon.OctagonZ)
   (Box_dom.BoxZ)
 
+let print_variables rcpsp domain =
+  let vars = Rcpsp_domain.project domain rcpsp.box_vars in
+  begin
+    List.iter (fun (v, (l, u)) ->
+      let (l, u) = (Rcpsp_domain.B.to_string l, Rcpsp_domain.B.to_string u) in
+      Printf.printf "%s=[%s,%s] \n" v l u;
+    ) vars;
+  end
+
+let print_node rcpsp depth domain =
+begin
+  List.iter (fun _ -> Printf.printf(".")) (Tools.range 0 (depth-1));
+  (match Rcpsp_domain.state_decomposition domain with
+  | False -> Printf.printf "[false]"
+  | True -> Printf.printf "[true]"
+  | Unknown -> Printf.printf "[unknown]");
+  Printf.printf "[%f]" (Rcpsp_domain.volume domain);
+  print_variables rcpsp domain;
+  Printf.printf "\n";
+  flush_all ()
+end
+
+let makespan rcpsp domain = Rcpsp_domain.project_one domain rcpsp.makespan
+
+let constraint_makespan rcpsp best domain =
+  let (_,ub) = makespan rcpsp best in
+  let (lb,_) = makespan rcpsp domain in
+  let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
+  Rcpsp_domain.meet_var domain rcpsp.makespan (lb, ub)
+
+let solve rcpsp =
+begin
+  let rec aux depth best domain = (* if depth = 0 then best else aux (depth-1) best domain in *)
+    (* print_node rcpsp depth domain; *)
+    try
+      let domain = constraint_makespan rcpsp best domain in
+      let domain = Rcpsp_domain.closure domain in
+      match Rcpsp_domain.state_decomposition domain with
+      | False -> best
+      | True when (Rcpsp_domain.volume domain) = 1. ->
+          (* let (lb,ub) = makespan rcpsp domain in *)
+          (* Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub); *)
+          domain
+      | True | Unknown ->
+          let branches = (Rcpsp_domain.split domain) in
+          List.fold_left (aux (depth+1)) best branches
+    with Bot.Bot_found -> best in
+  let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in
+  (* print_node rcpsp 0 domain; *)
+  let domain = Rcpsp_domain.closure domain in
+  (* print_node rcpsp 0 domain; *)
+(*   let open Csp in
+  List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
+  (domain, aux 0 domain domain)
+end
+
 let bench config problem_path _domain _precision =
   try
-    let _rcpsp = make_rcpsp config problem_path in ()
-    (* TODO: measure the solving strategy... *)
+    let rcpsp = make_rcpsp config problem_path in
+    let (domain, best_bound) = solve rcpsp in
+    Printf.printf "%s " problem_path;
+    if domain <> best_bound then begin
+      let (lb, _) = makespan rcpsp best_bound in
+      Printf.printf "%s\n" (Rcpsp_domain.B.to_string lb);
+(*       Printf.printf "Start dates: ";
+      print_variables rcpsp best_bound *)
+    end
+    else
+      Printf.printf "End solving without finding a solution!\n";
+    flush_all ();
     (* Measurement.print_as_csv config measure *)
-  with e ->
+  with e -> begin
+    Printexc.print_backtrace stdout;
     Measurement.print_exception problem_path (Printexc.to_string e)
+  end
 
 let iter_precision config problem_path domain =
   List.iter (bench config problem_path domain) config.precisions
@@ -163,6 +232,7 @@ let start_benchmarking config =
   iter_problem config
 
 let () =
+  Printexc.record_backtrace true;
   let input_desc = get_bench_desc () in
   let config = extract_config_from_json input_desc in
   start_benchmarking config

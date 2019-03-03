@@ -16,6 +16,7 @@ sig
   val dimension: t -> int
   val extend_one : t -> t
   val to_list: t -> cell list
+  val print: Format.formatter -> t -> unit
 end
 
 module Make(B:Bound_sig.BOUND) = struct
@@ -47,4 +48,12 @@ module Make(B:Bound_sig.BOUND) = struct
     {dim=dim; m=m}
 
   let to_list dbm = Array.to_list dbm.m
+
+  let print fmt dbm =
+    for i = 0 to (2*dbm.dim-1) do
+      for j = 0 to (2*dbm.dim-1) do
+        Format.fprintf fmt "%s " (B.to_string (get dbm (i,j)))
+      done;
+      Format.fprintf fmt "\n"
+    done
 end

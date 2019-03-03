@@ -145,18 +145,18 @@ struct
       | EQ  -> debot (I.filter_eq i1 i2)
     in
     let refined_box = if I.equal j1 i1 then box else refine box j1 b1 in
-    Nb(if j2 = i2 then refined_box else refine refined_box j2 b2)
+    if j2 = i2 then refined_box else refine refined_box j2 b2
 
-  let closure box c =
-    match hc4_revise box c with
-    | Bot -> raise Bot_found
-    | Nb box -> box
+  let closure box c = hc4_revise box c
 
   let entailment box (e1,op,e2) =
-    match hc4_revise box (e1,op,e2) with
-    | Bot -> False
-    | _ ->
-      match hc4_revise box (e1,neg op,e2) with
-      | Bot -> True
-      | _ -> Unknown
+    try
+      ignore(hc4_revise box (e1,op,e2));
+      try
+        ignore(hc4_revise box (e1,neg op,e2));
+        Unknown
+      with
+      | Bot_found -> True
+    with
+    | Bot_found -> False
 end

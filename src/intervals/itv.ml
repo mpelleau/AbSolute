@@ -158,7 +158,9 @@ module Itv(B:BOUND) = struct
   let overlap ((l1,h1):t) ((l2,h2):t) : B.t  =
     B.max B.zero (B.sub_up (B.min h1 h2) (B.max l1 l2))
 
-  let range ((l,h):t) : B.t = (B.sub_up h l)
+  let range ((l,h):t) : B.t =
+    if B.equal l h then B.one
+    else (B.sub_up h l)
 
   let float_size (itv:t) : float =
     B.to_float_up (range itv)

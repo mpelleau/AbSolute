@@ -31,6 +31,8 @@ let constant_of i = Cst (Bound_rat.of_int i, Int)
 let duration_of job = constant_of job.duration
 let mduration_of job = constant_of (-job.duration)
 
+let makespan_name = "makespan"
+
 (* These variables are generated for the "task decomposition" of the cumulative constraint.
    We have `job_1_runs_when_2_starts = 1` if the job `1` starts when the job `2` is running.
    Importantly: these variables are shared across all cumulatives. *)
@@ -48,24 +50,39 @@ let overlap_boolean_variables rcpsp = for_all_distinct_pairs rcpsp.jobs job_star
 
 (* III. Constraints of the RCPSP. *)
 
+(* Domain of the variables *)
+
+let var_domain_constraints rcpsp =
+  let dom u v = [
+    (Var v, GEQ, Cst (Bound_rat.zero, Int));
+    (Var v, LEQ, Cst (Bound_rat.of_int u, Int))
+  ] in
+  List.flatten (
+    (List.map (dom rcpsp.horizon) (octagonal_variables rcpsp))@
+    (List.map (dom 1) (overlap_boolean_variables rcpsp))@
+    [(dom rcpsp.horizon makespan_name)])
+
 (* Temporal constraints ensure a precedence between the tasks. *)
 let temporal_constraints rcpsp =
   (* s1 + d1 <= s2 rewritten to s1 - s2 <= -d1 *)
   let precedence_constraint i j =
-    let mduration_i = mduration_of (List.nth rcpsp.jobs i) in
+    let mduration_i = mduration_of (List.nth rcpsp.jobs (i-1)) in
     (Binary (SUB, start_job i, start_job j), LEQ, mduration_i) in
   let all_successors (precedence:precedence) =
     List.map (precedence_constraint precedence.job_index) precedence.job_successors in
   List.flatten (List.map all_successors rcpsp.precedence_relations)
 
-let unwrap = function Some(x) -> x | None -> failwith "unwrap None"
+let rewrite_and_create c =
+  match RewriterZ.rewrite c with
+  | [] -> failwith "impossible to rewrite the constraint into an octagonal version."
+  | x -> x
 
 (* job_1_runs_when_2_starts = 1 <=> s[1] <= s[2] /\ s[2] < s[1] + d[1] *)
 let overlap_reified_constraints rcpsp =
   for_all_distinct_pairs rcpsp.jobs (fun j1 j2 ->
-    let c1 = unwrap (try_create (start_job' j1, LEQ, start_job' j2)) in
-    let c2 = unwrap (try_create (Binary (SUB, start_job' j2, start_job' j1), LT, duration_of j1)) in
-    (job_start_when_name j1 j2, [c1;c2]))
+    let c1 = rewrite_and_create (start_job' j1, LEQ, start_job' j2) in
+    let c2 = rewrite_and_create (Binary (SUB, start_job' j2, start_job' j1), LT, duration_of j1) in
+    (job_start_when_name j1 j2, c1@c2))
 
 (* Tasks decomposition of cumulative:
       forall j1, capacity_ri >= r[j1] + sum (job_2_runs_when_1_starts * r[j2]) where j2 <> j1 *)
@@ -91,9 +108,20 @@ let all_cumulatives rcpsp =
   let resource_indexes = Tools.range 0 ((List.length rcpsp.resources) - 1) in
   List.flatten (List.map (cumulative_constraint rcpsp) resource_indexes)
 
+let makespan_constraint rcpsp =
+  (* let end_dates = List.map (fun j -> Binary (ADD, start_job' j, duration_of j)) rcpsp.jobs in
+  let max_end_date =
+    match end_dates with
+    | [] -> constant_of 0
+    | e::[] -> e
+    | first::dates -> List.fold_left (fun m e -> Funcall("max", [m; e])) first dates in
+  (Var makespan_name, EQ, max_end_date) *)
+  (Var makespan_name, EQ, start_job rcpsp.jobs_number)
+
 (* The octagonal variables are the starting dates.
    The box variables include the octagonal variables, and the boolean overlap variables. *)
 type rcpsp_model = {
+  makespan: var;
   box_vars: var list;
   octagonal_vars: var list;
   constraints: bconstraint list;
@@ -101,8 +129,9 @@ type rcpsp_model = {
 }
 
 let create_rcpsp rcpsp = {
-  box_vars=(octagonal_variables rcpsp)@(overlap_boolean_variables rcpsp);
+  makespan=makespan_name;
+  box_vars=(octagonal_variables rcpsp)@(overlap_boolean_variables rcpsp)@[makespan_name];
   octagonal_vars=octagonal_variables rcpsp;
-  constraints=(all_cumulatives rcpsp)@(temporal_constraints rcpsp);
+  constraints=(var_domain_constraints rcpsp)@(all_cumulatives rcpsp)@(temporal_constraints rcpsp)@[makespan_constraint rcpsp];
   reified_octagonal=(overlap_reified_constraints rcpsp);
 }

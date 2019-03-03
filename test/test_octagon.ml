@@ -96,6 +96,11 @@ let test_closure_Z () =
   OctagonZ.closure octagon;
   OctagonZ_tester.expect_dbm "closure(Z)" octagon (dbmQ_to_dbmZ closed_blue_dbm)
 
+let test_entailment_Z () =
+  let (_, octagon) = OctagonZ.init ["x";"y"] blue_octagon in
+  OctagonZ.closure octagon;
+
+
 let tests = [
   "init(Q)", `Quick, test_init_Q;
   "closure(Q)", `Quick, test_closure_Q;
@@ -103,4 +108,5 @@ let tests = [
   "closure(F)", `Quick, test_closure_F;
   "init(Z)", `Quick, test_init_Z;
   "closure(Z)", `Quick, test_closure_Z;
+  "entailment(Z)", `Quick, test_entailment_Z;
 ]

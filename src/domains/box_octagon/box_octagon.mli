@@ -3,13 +3,15 @@ open Octagonalisation
 open Octagon
 open Octagonal_rewriting
 open Box_dom
+open Abstract_domain
 
 type reified_octagonal = (var * octagonal_constraint list)
 
 module type Box_octagon_sig =
 sig
+  module B: Bound_sig.BOUND
   type t
-  type bound
+  type bound = B.t
 
   (** `init v1 v2 c oc` initializes the reduced product of box and octagon where:
         * `v2` is a subset of `v1`.
@@ -20,6 +22,14 @@ sig
       NOTE: `oc` is very specific for RCPSP, it should not be in this signature, but we want to avoid to either (i) check every time if the reified constraint is octagonal, or (ii) annotate the constraints with their domains.
   *)
   val init: var list -> var list -> bconstraint list -> reified_octagonal list -> t
+
+  val closure: t -> t
+  val split: t -> t list
+  val volume: t -> float
+  val state_decomposition: t -> kleene
+  val project_one: t -> var -> (bound * bound)
+  val project: t -> var list -> (var * (bound * bound)) list
+  val meet_var: t -> var -> (bound * bound) -> t
 end
 
 module Make

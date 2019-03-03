@@ -65,6 +65,8 @@ sig
 
   (** Low-level representation of the DBM as a list. *)
   val to_list: t -> cell list
+
+  val print: Format.formatter -> t -> unit
 end
 
 module Make(B:Bound_sig.BOUND) : DBM_sig with type cell = B.t
