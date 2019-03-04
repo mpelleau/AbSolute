@@ -54,42 +54,6 @@ struct
     renv: string REnv.t;
   }
 
-  let meet_dbm_in_box rotated_vars octagon box =
-    let update_box var_name key box =
-      let l = Octagon.lb octagon key in
-      let u = Octagon.ub octagon key in
-      if B.gt l u then failwith "meet_dbm_in_box: l > u";
-      let i = Box.I.of_bounds l u in
-      Box.meet_var var_name i box in
-    let box = Octagon.fold_vars update_box box octagon in
-    Env.fold update_box rotated_vars box
-
-  let init box_vars octagon_vars initial_constraints reified_octagonal =
-    let (constraints, octagon) = Octagon.init octagon_vars initial_constraints in
-    (* Printf.printf "Initially: %d constraints \n" (List.length constraints);
-    Printf.printf "Initially: %d constraints non-octagonal\n" (List.length (List.filter (fun (octagonal, _) -> not octagonal) constraints));
-    Printf.printf "Initially: %d constraints octagonal \n" (List.length (List.filter (fun (octagonal, _) -> octagonal) constraints)); *)
-    let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
-    let (rotated_constraints, rotated_vars) = rotate octagon_vars box_constraints in
-    let box = Box.init (box_vars@List.map fst rotated_vars) in
-    (* We perform a first closure to fix the bound of the domains. *)
-    let box = List.fold_left Box.closure box initial_constraints in
-    let env_add env (name, key) = Env.add name key env in
-    let renv_add renv (name, key) = REnv.add key name renv in
-    let box_oct = {
-      box_vars=box_vars;
-      box=box;
-      octagon=octagon;
-      constraints=box_constraints@rotated_constraints;
-      reified_octagonal=reified_octagonal;
-      env=List.fold_left env_add Env.empty rotated_vars;
-      renv=List.fold_left renv_add REnv.empty rotated_vars;
-    } in
-(*     Printf.printf "In box_oct: %d constraints \n" (List.length box_oct.constraints);
-    Printf.printf "In box_oct: %d reified constraints \n" (List.length box_oct.reified_octagonal);
-    List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints; *)
-    {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box}
-
   (** We filter the reified octagonal constraint.
       If the octagonal conjunction is entailed, we add `b=1` in the box.
       If it is disentailed, we add `b=0`.
@@ -150,6 +114,16 @@ struct
     Env.iter update_cell_from_box rotated_vars;
     octagon
 
+  let meet_dbm_in_box rotated_vars octagon box =
+    let update_box var_name key box =
+      let l = Octagon.lb octagon key in
+      let u = Octagon.ub octagon key in
+      if B.gt l u then failwith "meet_dbm_in_box: l > u";
+      let i = Box.I.of_bounds l u in
+      Box.meet_var var_name i box in
+    let box = Octagon.fold_vars update_box box octagon in
+    Env.fold update_box rotated_vars box
+
   let rec cheap_closure volume box_oct =
     let box_oct = reified_closure box_oct in
     let (volume', box) = box_closure volume box_oct.box box_oct.constraints in
@@ -169,11 +143,12 @@ struct
       Octagon.closure box_oct.octagon;
       { box_oct with
         box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box; } in
-    (* one_pass (one_pass box_oct) *)
-    (* Printf.printf "Before closure %d %d \n" (List.length box_oct.constraints) (List.length box_oct.reified_octagonal); *)
+    let initial_volume = Box.volume box_oct.box in
     let box_oct = one_pass box_oct in
+    let volume' = Box.volume box_oct.box in
+    if initial_volume <> volume' then one_pass box_oct else box_oct
+    (* Printf.printf "Before closure %d %d \n" (List.length box_oct.constraints) (List.length box_oct.reified_octagonal); *)
     (* Printf.printf "After closure %d %d \n" (List.length box_oct.constraints) (List.length box_oct.reified_octagonal); *)
-    box_oct
 
   let input_order_var box vars =
      try Some(List.find (fun v -> not (Box.I.is_singleton (Box.get box v))) vars)
@@ -211,4 +186,31 @@ struct
     if B.lt u l then raise Bot.Bot_found;
     let itv = Box.I.of_bounds l u in
     { box_oct with box=Box.meet_var var itv box_oct.box }
+
+  let init box_vars octagon_vars initial_constraints reified_octagonal =
+    let (constraints, octagon) = Octagon.init octagon_vars initial_constraints in
+    (* Printf.printf "Initially: %d constraints \n" (List.length constraints);
+    Printf.printf "Initially: %d constraints non-octagonal\n" (List.length (List.filter (fun (octagonal, _) -> not octagonal) constraints));
+    Printf.printf "Initially: %d constraints octagonal \n" (List.length (List.filter (fun (octagonal, _) -> octagonal) constraints)); *)
+    let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
+    let (rotated_constraints, rotated_vars) = rotate octagon_vars box_constraints in
+    let box = Box.init (box_vars@List.map fst rotated_vars) in
+    (* We perform a first closure to fix the bound of the domains. *)
+    let box = List.fold_left Box.closure box initial_constraints in
+    let env_add env (name, key) = Env.add name key env in
+    let renv_add renv (name, key) = REnv.add key name renv in
+    let box_oct = {
+      box_vars=box_vars;
+      box=box;
+      octagon=octagon;
+      constraints=box_constraints@rotated_constraints;
+      reified_octagonal=reified_octagonal;
+      env=List.fold_left env_add Env.empty rotated_vars;
+      renv=List.fold_left renv_add REnv.empty rotated_vars;
+    } in
+    let box_oct = closure {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box} in
+    Printf.printf "In box_oct: %d constraints \n" (List.length box_oct.constraints);
+    Printf.printf "In box_oct: %d reified constraints \n" (List.length box_oct.reified_octagonal);
+    List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints;
+    box_oct
 end

@@ -9,6 +9,16 @@ type global_statistics = {
   depth_max: int;
 }
 
+let init_global_stats () = {
+  start = Mtime_clock.counter ();
+  elapsed = Mtime.Span.zero;
+  nodes=0;
+  fails=0;
+  sols=0;
+  pruned=0;
+  depth_max=0
+}
+
 type backtrackable_statistics = {
   phantom: int;
   depth: int

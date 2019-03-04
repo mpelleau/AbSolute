@@ -145,9 +145,17 @@ let constraint_makespan rcpsp best domain =
   let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
   Rcpsp_domain.meet_var domain rcpsp.makespan (lb, ub)
 
-let solve rcpsp =
+let timeout_of_config config =
+  Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int 1000000000) (Int64.of_int config.timeout))
+
+let solve config stats rcpsp =
 begin
-  let rec aux depth best domain = (* if depth = 0 then best else aux (depth-1) best domain in *)
+  let time_out = timeout_of_config config in
+  let rec aux depth best domain =
+    (* Stop when we exceed the timeout. *)
+    let open State in
+    let elapsed = Mtime_clock.count stats.start in
+    if (Mtime.Span.compare time_out elapsed) <= 0 then best else
     (* print_node rcpsp depth domain; *)
     try
       let domain = constraint_makespan rcpsp best domain in
@@ -164,38 +172,51 @@ begin
     with Bot.Bot_found -> best in
   let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in
   (* print_node rcpsp 0 domain; *)
-  let domain = Rcpsp_domain.closure domain in
+  (* let domain = Rcpsp_domain.closure domain in *)
   (* print_node rcpsp 0 domain; *)
 (*   let open Csp in
   List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
-  (domain, aux 0 domain domain)
+  aux 0 domain domain
 end
 
-let bench config problem_path _domain _precision =
+let update_with_optimum rcpsp best measure =
+  if (Rcpsp_domain.state_decomposition best) = True then
+    let (lb, _) = makespan rcpsp best in
+    let open Measurement in
+    { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
+  else
+    measure
+
+let update_time config stats measure =
+  let time_out = timeout_of_config config in
+  let open State in
+  let samples =
+    if Mtime.Span.compare time_out stats.elapsed <= 0 then []
+    else List.map Mtime.Span.to_uint64_ns [stats.elapsed] in
+  Measurement.process_samples measure samples
+
+let bench config problem_path domain (total, completed) precision =
   try
     let rcpsp = make_rcpsp config problem_path in
-    let (domain, best_bound) = solve rcpsp in
-    Printf.printf "%s " problem_path;
-    if domain <> best_bound then begin
-      let (lb, _) = makespan rcpsp best_bound in
-      Printf.printf "%s\n" (Rcpsp_domain.B.to_string lb);
-(*       Printf.printf "Start dates: ";
-      print_variables rcpsp best_bound *)
-    end
-    else
-      Printf.printf "End solving without finding a solution!\n";
-    flush_all ();
-    (* Measurement.print_as_csv config measure *)
+    let stats = State.init_global_stats () in
+    let best = solve config stats rcpsp in
+    let stats = {stats with elapsed=Mtime_clock.count stats.start} in
+    let measure = Measurement.init stats problem_path domain precision in
+    let measure = update_time config stats measure in
+    let measure = update_with_optimum rcpsp best measure in
+    Measurement.print_as_csv config measure;
+    (total + 1, if (List.length measure.samples) = 0 then completed else completed + 1)
   with e -> begin
-    Printexc.print_backtrace stdout;
-    Measurement.print_exception problem_path (Printexc.to_string e)
+    (* Printexc.print_backtrace stdout; *)
+    Measurement.print_exception problem_path (Printexc.to_string e);
+    (total + 1, completed)
   end
 
-let iter_precision config problem_path domain =
-  List.iter (bench config problem_path domain) config.precisions
+let iter_precision config problem_path global_info domain =
+  List.fold_left (bench config problem_path domain) global_info config.precisions
 
-let iter_domain config problem_path =
-  List.iter (iter_precision config problem_path) config.domains
+let iter_domain config global_info problem_path =
+  List.fold_left (iter_precision config problem_path) global_info config.domains
 
 let extension_of_problem_kind config =
   match config.problem_kind with
@@ -214,25 +235,28 @@ let check_problem_file_format config problem_path =
   else
     true
 
-let iter_problem config =
+let iter_problem config global_info =
   if Sys.is_directory config.problem_set then
     let files = Sys.readdir config.problem_set in
     Array.sort compare files;
     Array.to_list files |>
     List.map (fun x -> config.problem_set ^ x) |>
     List.filter (check_problem_file_format config) |>
-    List.iter (iter_domain config)
+    List.fold_left (iter_domain config) global_info
   else
     if check_problem_file_format config config.problem_set then
-      iter_domain config config.problem_set
+      iter_domain config global_info config.problem_set
+    else
+      global_info
 
 let start_benchmarking config =
   Measurement.print_csv_header config;
   Constant.set_timeout_sec config.timeout;
-  iter_problem config
+  let (total, completed) = iter_problem config (0,0) in
+  Printf.printf "%d / %d problems solved within the timeout.\n" completed total
 
 let () =
-  Printexc.record_backtrace true;
+  (* Printexc.record_backtrace true; *)
   let input_desc = get_bench_desc () in
   let config = extract_config_from_json input_desc in
   start_benchmarking config

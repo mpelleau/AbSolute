@@ -9,7 +9,8 @@ type measure = {
   average: int64;
   median: int64;
   precision: float;
-  stats: State.global_statistics
+  stats: State.global_statistics;
+  optimum: Bound_rat.t option
 }
 
 let init stats problem_path domain precision =
@@ -19,7 +20,8 @@ let init stats problem_path domain precision =
     samples=[];
     average=Int64.zero;
     median=Int64.zero;
-    stats=stats; }
+    stats=stats;
+    optimum=None }
 
 let process_samples this samples =
   let n = List.length samples in
@@ -52,6 +54,7 @@ let csv_field_name config = function
   | `Solutions -> "solutions"
   | `Fails -> "fails"
   | `Nodes -> "nodes"
+  | `Optimum -> "optimum"
 
 let csv_header config =
   let names = List.map (csv_field_name config) config.csv.fields in
@@ -100,6 +103,7 @@ let csv_field_value (config : benchmark) measure = function
   | `Solutions -> (string_of_int measure.stats.sols)
   | `Fails -> (string_of_int measure.stats.fails)
   | `Nodes -> (string_of_int measure.stats.nodes)
+  | `Optimum -> match measure.optimum with Some(o) -> Bound_rat.to_string o | None -> "none"
 
 let bench_to_csv config measure =
   let values = List.map (csv_field_value config measure) config.csv.fields in

@@ -13,16 +13,7 @@ module Combine(Sub: Combinator) = struct
   module Abs = Sub.Abs
 
   let init (global, backtrackable) =
-    let statistics = {
-      start = Mtime_clock.counter ();
-      elapsed = Mtime.Span.zero;
-      nodes=0;
-      fails=0;
-      sols=0;
-      pruned=0;
-      depth_max=0
-    }
-    in
+    let statistics = init_global_stats () in
     {global with statistics=Some(statistics)},
     {backtrackable with bt_stats=Some({depth=0; phantom=0})}
 
