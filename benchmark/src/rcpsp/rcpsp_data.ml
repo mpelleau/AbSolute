@@ -21,7 +21,9 @@ type precedence = {
   job_index: int;
   mode: int;
   successors: int;
-  job_successors: int list
+  job_successors: int list;
+  (* for all successor job_j: job_i + weights_ij <= job_j *)
+  weights: int list;
 }
 
 type job = {
@@ -42,6 +44,8 @@ type rcpsp = {
   resources: int list
 }
 
+(* Parsing/utility functions that are common across formats (Patterson, SM, ProGen/max).  *)
+
 let ignore_lines file n =
   for _=1 to n do
     ignore(bscanf file "%[^\n]\n" (fun _ -> ()))
@@ -50,3 +54,20 @@ let ignore_lines file n =
 let read_trailing_int_list file n =
   let numbers = List.map (fun _ -> bscanf file " %d " (fun x->x)) (Tools.range 1 n) in
   numbers
+
+let make_dumb_project_info jobs_number = {
+  project_idx=0;
+  jobs=jobs_number-2;
+  rel_date=0;
+  due_date=0;
+  tard_cost=0;
+  mpm_time=0;
+}
+
+let number_of_resources rcpsp =
+  let r = rcpsp.resources_info in
+  r.renewable + r.nonrenewable + r.doubly_constrained
+
+let compute_horizon rcpsp =
+  let horizon = List.fold_left (fun a j -> a + j.duration) 0 rcpsp.jobs in
+  {rcpsp with horizon = horizon}

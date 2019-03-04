@@ -46,6 +46,7 @@ type center_of_trials = [
 type problem_kind = [
   | PSPlib
   | Patterson
+  | ProGenMax
 ]
 
 type benchmark = {

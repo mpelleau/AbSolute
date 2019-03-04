@@ -208,9 +208,9 @@ struct
       env=List.fold_left env_add Env.empty rotated_vars;
       renv=List.fold_left renv_add REnv.empty rotated_vars;
     } in
-    let box_oct = closure {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box} in
-    Printf.printf "In box_oct: %d constraints \n" (List.length box_oct.constraints);
+    let box_oct = (* closure *) {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box} in
+(*     Printf.printf "In box_oct: %d constraints \n" (List.length box_oct.constraints);
     Printf.printf "In box_oct: %d reified constraints \n" (List.length box_oct.reified_octagonal);
-    List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints;
+    List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints; *)
     box_oct
 end

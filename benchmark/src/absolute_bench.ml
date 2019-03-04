@@ -72,18 +72,13 @@ let warm_up config prob (module S: Solver_sig) =
 
 (* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
 The files from PSPlib are also supposed to be well-formatted. *)
-let psp_to_rcpsp (problem_path: string) : Rcpsp_model.rcpsp_model =
-  let rcpsp = Sm_format.read_sm_file problem_path in
-  Rcpsp_model.create_rcpsp rcpsp
-
-let patterson_to_rcpsp (problem_path: string) : Rcpsp_model.rcpsp_model =
-  let rcpsp = Patterson.read_patterson_file problem_path in
-  Rcpsp_model.create_rcpsp rcpsp
-
 let make_rcpsp config problem_path =
-  match config.problem_kind with
-  | `PSPlib -> psp_to_rcpsp problem_path
-  | `Patterson -> patterson_to_rcpsp problem_path
+  let rcpsp =
+    match config.problem_kind with
+    | `PSPlib -> Sm_format.read_sm_file problem_path
+    | `Patterson -> Patterson.read_patterson_file problem_path
+    | `ProGenMax -> Pro_gen_max.read_pro_gen_file problem_path in
+  Rcpsp_model.create_rcpsp rcpsp
 
 let measure_time config prob (module S: Solver_sig) measure timed_out =
   let open Measurement in
@@ -170,12 +165,12 @@ begin
           let branches = (Rcpsp_domain.split domain) in
           List.fold_left (aux (depth+1)) best branches
     with Bot.Bot_found -> best in
+  (* let open Csp in
+  List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
   let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in
   (* print_node rcpsp 0 domain; *)
   (* let domain = Rcpsp_domain.closure domain in *)
   (* print_node rcpsp 0 domain; *)
-(*   let open Csp in
-  List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
   aux 0 domain domain
 end
 
@@ -222,13 +217,14 @@ let extension_of_problem_kind config =
   match config.problem_kind with
   | `PSPlib -> psplib_ext
   | `Patterson -> patterson_ext
+  | `ProGenMax -> pro_gen_ext
 
 let check_problem_file_format config problem_path =
   let ext = extension_of_problem_kind config in
   if Sys.is_directory problem_path then begin
     print_warning ("subdirectory " ^ problem_path ^ " ignored.");
     false end
-  else if (Filename.extension problem_path) <> ext then begin
+  else if (String.lowercase_ascii (Filename.extension problem_path)) <> ext then begin
     print_warning ("file \"" ^ problem_path ^
       "\" ignored (expected extension `" ^ ext ^ "`).");
     false end

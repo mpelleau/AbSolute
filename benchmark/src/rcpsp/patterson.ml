@@ -1,15 +1,6 @@
 open Scanf
 open Rcpsp_data
 
-let make_dumb_project_info jobs = {
-  project_idx=0;
-  jobs=jobs-2;
-  rel_date=0;
-  due_date=0;
-  tard_cost=0;
-  mpm_time=0;
-}
-
 let make_resources_info r = {
   renewable=r;
   nonrenewable=0;
@@ -39,7 +30,7 @@ let read_job file rcpsp job_index =
   let duration = bscanf file " %d " (fun a -> a) in
   let resources_usage = read_trailing_int_list file (List.length rcpsp.resources) in
   let successor_number = bscanf file " %d " (fun a -> a) in
-  let successors = read_trailing_int_list file successor_number in
+  let job_successors = read_trailing_int_list file successor_number in
   let job = {
     job_index=job_index;
     mode=1;
@@ -50,7 +41,8 @@ let read_job file rcpsp job_index =
     job_index=job_index;
     mode=1;
     successors=successor_number;
-    job_successors=successors
+    job_successors=job_successors;
+    weights=List.map (fun _ -> duration) job_successors;
   } in
   { rcpsp with
       jobs=rcpsp.jobs@[job];
@@ -58,10 +50,6 @@ let read_job file rcpsp job_index =
 
 let read_jobs file rcpsp =
   List.fold_left (read_job file) rcpsp (Tools.range 1 rcpsp.jobs_number)
-
-let compute_horizon rcpsp =
-  let horizon = List.fold_left (fun a j -> a + j.duration) 0 rcpsp.jobs in
-  {rcpsp with horizon = horizon}
 
 let read_patterson file =
   read_rcpsp_info file |>

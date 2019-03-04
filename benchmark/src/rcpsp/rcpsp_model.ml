@@ -62,14 +62,16 @@ let var_domain_constraints rcpsp =
     (List.map (dom 1) (overlap_boolean_variables rcpsp))@
     [(dom rcpsp.horizon makespan_name)])
 
-(* Temporal constraints ensure a precedence between the tasks. *)
+(* Generalized temporal constraints: ensure a precedence (with a possible timelag) between the tasks. *)
 let temporal_constraints rcpsp =
   (* s1 + d1 <= s2 rewritten to s1 - s2 <= -d1 *)
-  let precedence_constraint i j =
-    let mduration_i = mduration_of (List.nth rcpsp.jobs (i-1)) in
-    (Binary (SUB, start_job i, start_job j), LEQ, mduration_i) in
+  let precedence_constraint (prec:precedence) (j,w) =
+    let i = prec.job_index in
+    let m_weight_i = constant_of (-w) in
+    (Binary (SUB, start_job i, start_job j), LEQ, m_weight_i) in
   let all_successors (precedence:precedence) =
-    List.map (precedence_constraint precedence.job_index) precedence.job_successors in
+    List.map (precedence_constraint precedence)
+      (List.map2 (fun x y -> (x,y)) precedence.job_successors precedence.weights) in
   List.flatten (List.map all_successors rcpsp.precedence_relations)
 
 let rewrite_and_create c =
