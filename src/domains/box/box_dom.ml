@@ -119,19 +119,48 @@ struct
       None
     with Found_var (v,d) -> Some (v,d)
 
-  let assign box v itv =
+  let select_domain box width_cmp =
+    let size (l,h) = B.sub_up h l in
+    let var = Store.fold (fun v d a ->
+      if I.is_singleton d then a
+      else
+        let width = size (I.to_range d) in
+        match a with
+        | Some (best,v',d') when width_cmp width best -> Some (width,v,d)
+        | Some _ -> a
+        | None -> Some (width,v,d)) box.store None in
+    match var with
+    | Some (_, v,d) -> Some (v,d)
+    | None -> None
+
+  let smallest_domain box = select_domain box B.lt
+  let largest_domain box = select_domain box B.gt
+
+  let assign box var value =
     let open Csp in
-    let (l,_) = I.to_range itv in
-    let lb = Cst (B.to_rat l, Int) in
-    let lb_plus_one = Cst (B.to_rat (B.add_up l B.one), Int) in
-    let left_box = weak_incremental_closure box (Var v, EQ, lb) in
-    let right_box = weak_incremental_closure box (Var v, NEQ, lb_plus_one) in
+    let left_box = weak_incremental_closure box (Var var, EQ, value) in
+    let right_box = weak_incremental_closure box (Var var, NEQ, value) in
     [left_box ; right_box]
 
+  let bisect box var value =
+    let open Csp in
+    let left_box = weak_incremental_closure box (Var var, LEQ, value) in
+    let right_box = weak_incremental_closure box (Var var, GT, value) in
+    [left_box ; right_box]
+
+  let middle itv =
+    let open Csp in
+    let (l,u) = I.to_range itv in
+    Cst (B.to_rat (B.div_down (B.add_up l u) B.two), Int)
+
+  let on_bound itv select = Csp.(Cst (B.to_rat (select (I.to_range itv)), Int))
+  let on_lb itv = on_bound itv fst
+  let on_ub itv = on_bound itv snd
+
   let split box =
-    match input_order_var box with
+    match largest_domain box with
     | None -> []
-    | Some (v, itv) -> assign box v itv
+    | Some (v, itv) -> assign box v (on_ub itv)
 end
 
 module ItvZ = Trigo.Make(Itv.ItvI)

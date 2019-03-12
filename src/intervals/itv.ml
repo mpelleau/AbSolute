@@ -383,20 +383,32 @@ module Itv(B:BOUND) = struct
   (* tests *)
   (* ----- *)
 
+  (* Useful to be as precise as possible on integers when approximating comparison, e.g. < to <=. *)
+  let succ (l,h) = (B.succ l, B.succ h)
+  let prec (l,h) = (B.prec l, B.prec h)
+
   let filter_leq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     merge_bot2 (check_bot (l1, B.min h1 h2)) (check_bot (B.max l1 l2, h2))
 
   let filter_lt ((l1,_) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
     else if B.leq h2 l1 then Bot
-    else filter_leq i1 i2
+    else lift_bot (fun (i1, i2) -> (prec i1, i2)) (filter_leq (succ i1) i2)
 
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     (*Format.printf "%a = %a\n" print i1 print i2;*)
     lift_bot (fun x -> x,x) (meet i1 i2)
 
-  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
+  (* Filter the edge of the intervals (only useful on integers). *)
+  let edge_complement edge (l,h) =
+    if B.equal edge l then (B.succ l, h) else
+    if B.equal edge h then (l, B.prec h) else
+    (l,h)
+
+  let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
+    else if is_singleton i1 then Nb (i1, edge_complement l1 i2)
+    else if is_singleton i2 then Nb (edge_complement l2 i1, i2)
     else Nb (i1,i2)
 
   (* arithmetic *)
@@ -435,8 +447,6 @@ module Itv(B:BOUND) = struct
   (* r = nroot i => i = r ** n *)
   let filter_root_f i r n =
     meet i (pow r n)
-
-
 
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
   let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
@@ -536,7 +546,6 @@ module Itv(B:BOUND) = struct
     | "max"  -> arity_2 filter_max
     | "min"  -> arity_2 filter_min
     | s -> failwith (Format.sprintf "unknown filter function : %s" s)
-
 
   let filter_bounds (l,h) =
     let inf = B.ceil l

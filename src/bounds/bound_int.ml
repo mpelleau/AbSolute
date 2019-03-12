@@ -25,9 +25,6 @@ let sign (x:t) : int =
   if x > 0 then 1 else
   if x < 0 then -1 else 0
 
-let succ x = x + 1
-let prec x = x - 1
-
 (* useful constants *)
 
 let zero : t = 0
@@ -100,6 +97,9 @@ let classify (x:t) : kind =
   else FINITE
 
 (* exact operators *)
+
+let succ x = if x = inf || x = minus_inf then x else x + 1
+let prec x = if x = inf || x = minus_inf then x else x - 1
 
 let neg x =
   if x = inf then minus_inf

@@ -149,7 +149,6 @@ let constraint_makespan rcpsp best domain =
   | None -> domain
   | Some best ->
       let (_,ub) = makespan rcpsp best in
-      let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
       let ub = Cst (Rcpsp_domain.B.to_rat ub, Int) in
       Rcpsp_domain.weak_incremental_closure domain (Var rcpsp.makespan, LT, ub)
 
@@ -178,7 +177,7 @@ begin
       | x ->
           let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in
           print_node status rcpsp depth domain;
-          let branches = (Rcpsp_domain.split domain) in
+          let branches = Rcpsp_domain.split domain in
           (* Printf.printf "[branches (%d)]\n" (List.length branches); *)
           (* List.iter (print_node "branch" rcpsp (depth+1)) branches; *)
           List.fold_left (aux (depth+1)) best branches

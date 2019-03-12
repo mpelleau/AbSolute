@@ -46,18 +46,42 @@ let test_Z () =
     let box = Box.closure box in
     let box_expected = [("x",-1,3); ("y",0,4)] in
     expect_domain_eq box box_expected;
+    Printf.printf "first closure succeeded.\n";
     let box = Box.weak_incremental_closure box x_eq_one in
     expect_domain_eq box box_expected;
+    Printf.printf "weak incremental closure succeeded.\n";
     let box = Box.closure box in
     expect_domain_eq box [("x",1,1); ("y",0,2)];
-    let boxes = Box.split box in
-    Alcotest.(check int) "input-order/assign branches number" 2 (List.length boxes);
-    List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
-    let boxes = List.map Box.closure boxes in
-    expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,0)];
-    expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",1,2)];
+    Printf.printf "second closure succeeded.\n";
   end
+
+(* let test_split_Z () =
+begin
+  let box = Box.closure (Box.init ["x"; "y"] (x_eq_one::constraints_Z)) in
+  let boxes = Box.split box in
+  Alcotest.(check int) "input-order/assign branches number" 2 (List.length boxes);
+  List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
+  let boxes = List.map Box.closure boxes in
+  expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,0)];
+  Printf.printf "first branch succeeded.\n";
+  expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",1,2)];
+  Printf.printf "second branch succeeded.\n";
+end *)
+
+let test_split_Z () =
+begin
+  let box = Box.closure (Box.init ["x"; "y"] (x_eq_one::constraints_Z)) in
+  let boxes = Box.split box in
+  Alcotest.(check int) "input-order/bissect branches number" 2 (List.length boxes);
+  List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
+  let boxes = List.map Box.closure boxes in
+  expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,1)];
+  Printf.printf "first branch succeeded.\n";
+  expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",2,2)];
+  Printf.printf "second branch succeeded.\n";
+end
 
 let tests = [
   "init-closure(Z)", `Quick, test_Z;
+  "test_split(Z)", `Quick, test_split_Z;
 ]
