@@ -11,6 +11,20 @@ let rec and_kleene x y =
   | Unknown, Unknown -> Unknown
   | _ -> and_kleene y x
 
+(* `conjunction` is the result of the entailment of a conjunction in a reified context.
+   It returns the entailment status of the conjunction, with an optional index representing the only `unknown` value, if any.
+   See `box_reified` for an example. *)
+let and_reified conjunction =
+  let (n, t, f, u) =
+    List.fold_left (fun (n, t, f, u) -> function
+      | True -> (n+1, t+1, f, u)
+      | False -> (n+1, t, f+1, u)
+      | Unknown -> (n+1, t, f, n::u)) (0,0,0,[]) conjunction in
+  if f > 0 then (False, None)
+  else if t = n then (True, None)
+  else if (List.length u) = 1 then (Unknown, Some(List.hd u))
+  else (Unknown, None)
+
 module type Abstract_domain =
 sig
   (** The type of the abstract domain. *)

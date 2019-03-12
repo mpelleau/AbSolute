@@ -63,7 +63,6 @@ struct
   (* We propagate all the constraints in box.
      The volume is used to detect when the store changed. *)
   let rec propagate vol box =
-    let _ = (Printf.printf "[propagate] constraints = %d\n" (List.length box.constraints); flush_all ();) in
     let store = List.fold_left Closure.incremental_closure box.store box.constraints in
     let box = { box with store=store } in
     let vol' = volume box in
@@ -100,15 +99,11 @@ struct
     else
       Unknown
 
-  let print_constraint fmt (e1,op,e2) =
-    let open Csp in
-    Format.fprintf fmt "%a\n" print_bexpr (Cmp (op,e1,e2))
-
   let print fmt box =
   begin
     Store.print fmt box.store;
     Format.fprintf fmt "\n";
-    List.iter (print_constraint fmt) box.constraints;
+    List.iter (Format.fprintf fmt "%a\n" Csp.print_bconstraint) box.constraints;
   end
 end
 

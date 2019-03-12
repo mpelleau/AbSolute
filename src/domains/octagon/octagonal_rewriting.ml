@@ -81,7 +81,6 @@ let octagonal_to_string octagonal =
   let var (s, v) = (match s with Positive -> "" | Negative -> "-") ^ v in
   (var octagonal.x) ^ " - " ^ (var octagonal.y) ^ " <= " ^ (Bound_rat.to_string octagonal.c)
 
-
 module type Rewriter_sig =
 sig
   val rewrite: bconstraint -> octagonal_constraint list
