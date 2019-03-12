@@ -5,7 +5,7 @@ open Abstract_domain
 module type Box_closure_sig =
 sig
   module Store : Var_store_sig
-  val closure: Store.t -> bconstraint -> Store.t
+  val incremental_closure: Store.t -> bconstraint -> Store.t
   val entailment: Store.t -> bconstraint -> kleene
 end
 

@@ -81,6 +81,11 @@ type prog = {
     solutions   : solution_info (* extra information about the solutions of te problem *)
   }
 
+(* Constants *)
+
+let constant_one = Cst (Bound_rat.one, Int)
+let constant_zero = Cst (Bound_rat.zero, Int)
+
 (*************************************************************)
 (*                    PRINTING UTILITIES                     *)
 (*************************************************************)

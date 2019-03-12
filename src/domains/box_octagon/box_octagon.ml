@@ -1,4 +1,4 @@
-open Box_dom
+(* open Box_dom
 open Octagon
 open Octagonal_rewriting
 open Interval_view_dbm
@@ -64,13 +64,13 @@ struct
       (* Printf.printf "Entailed reified: %s <=> " b;
       List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
       Printf.printf "\n"; *)
-      let box = Box.meet_var b Box.I.one box_oct.box in
+      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_one) in
       { box_oct with box=box} end
     else if List.exists (fun e -> e = False) entailments then begin
       (* Printf.printf "Disentailed reified: %s <=> " b;
       List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
       Printf.printf "\n"; *)
-      let box = Box.meet_var b Box.I.zero box_oct.box in
+      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_zero) in
       { box_oct with box=box} end
     else
       { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
@@ -86,7 +86,7 @@ struct
       A fix point is reached when no constraint can be propagated anymore. *)
   let box_closure volume box constraints =
     let rec aux volume box =
-      let box = List.fold_left Box.closure box constraints in
+      let box = List.fold_left Box.incremental_closure box constraints in
       let volume' = Box.volume box in
       if volume' <> volume then
         aux volume' box
@@ -218,3 +218,4 @@ struct
     List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints; *)
     box_oct
 end
+ *)

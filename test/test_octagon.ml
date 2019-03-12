@@ -8,7 +8,7 @@ let y = Csp.Var "y"
 
 let make_octagon constants =
   let open Csp in
-  let constraints =           (* NOTE: the constants on the right depends on "constants". *)
+  let constraints = (* NOTE: the constants on the right depends on "constants". *)
     [(Unary (NEG, x), LEQ);         (* -x <= -1 *)
      (x, LEQ);                      (* x <= 5 *)
      (Unary (NEG, y), LEQ);         (* -y <= -1 *)
@@ -69,7 +69,7 @@ module OctagonZ_tester = Octagon_tester(Bound_int)(OctagonZ)
 module OctagonQ_tester = Octagon_tester(Bound_rat)(OctagonQ)
 module OctagonF_tester = Octagon_tester(Bound_float)(OctagonF)
 
-let test_init_F () =
+(* let test_init_F () =
   let (_, octagon) = OctagonF.init ["x";"y"] blue_octagon in
   OctagonF_tester.expect_dbm "init(F)" octagon (dbmQ_to_dbmF blue_dbm)
 
@@ -77,11 +77,11 @@ let test_closure_F () =
   let (_, octagon) = OctagonF.init ["x";"y"] blue_octagon in
   OctagonF.closure octagon;
   OctagonF_tester.expect_dbm "closure(F)" octagon (dbmQ_to_dbmF closed_blue_dbm)
-
+ *)
 let test_init_Q () =
   let (_, octagon) = OctagonQ.init ["x";"y"] blue_octagon in
   OctagonQ_tester.expect_dbm "init(Q)" octagon blue_dbm
-
+(*
 let test_closure_Q () =
   let (_, octagon) = OctagonQ.init ["x";"y"] blue_octagon in
   OctagonQ.closure octagon;
@@ -98,15 +98,14 @@ let test_closure_Z () =
 
 let test_entailment_Z () =
   let (_, octagon) = OctagonZ.init ["x";"y"] blue_octagon in
-  OctagonZ.closure octagon;
-
+  OctagonZ.closure octagon; *)
 
 let tests = [
   "init(Q)", `Quick, test_init_Q;
-  "closure(Q)", `Quick, test_closure_Q;
+(*   "closure(Q)", `Quick, test_closure_Q;
   "init(F)", `Quick, test_init_F;
   "closure(F)", `Quick, test_closure_F;
   "init(Z)", `Quick, test_init_Z;
   "closure(Z)", `Quick, test_closure_Z;
-  "entailment(Z)", `Quick, test_entailment_Z;
+  "entailment(Z)", `Quick, test_entailment_Z; *)
 ]

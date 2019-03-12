@@ -23,6 +23,8 @@ sig
   *)
   val init: var list -> var list -> bconstraint list -> reified_octagonal list -> t
 
+  (* This closure filters the box and octagon with regards to the (reified) constraints in `box_oct`.
+     Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
   val split: t -> t list
   val volume: t -> float

@@ -3,9 +3,10 @@
 *)
 
 let test_suites: unit Alcotest.test list = [
-  "BoxedOctagon", Test_boxed_octagon.tests;
-  "Octagon", Test_octagon.tests;
+  (* "BoxedOctagon", Test_boxed_octagon.tests; *)
+  (* "Octagon", Test_octagon.tests; *)
   "Octagon_utilities", Test_octagon_utilities.tests;
+  "Box", Test_box.tests;
 ]
 
 let () = Alcotest.run "AbSolute" test_suites

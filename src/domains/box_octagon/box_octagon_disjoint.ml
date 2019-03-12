@@ -35,22 +35,27 @@ struct
     box_vars: var list;
     box : Box.t;
     octagon: Octagon.t;
-    box_constraints: bconstraint list;
     reified_octagonal: reified_octagonal list;
   }
 
   let init box_vars octagon_vars initial_constraints reified_octagonal =
     let (constraints, octagon) = Octagon.init octagon_vars initial_constraints in
     let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
-    let box = Box.init box_vars in
+    let box = Box.init box_vars box_constraints in
     Octagon.closure octagon;
     {
       box_vars=box_vars;
       box=box;
       octagon=octagon;
-      box_constraints=box_constraints;
       reified_octagonal=reified_octagonal;
     }
+
+  let volume box_oct =
+    let box_vol = (Box.volume box_oct.box) in
+    let oct_vol = (Octagon.volume box_oct.octagon) in
+    if box_vol = 1. && oct_vol = 1. then 1.
+    else if box_vol = 0. || oct_vol = 0. then 0.
+    else box_vol +. oct_vol
 
   (** We filter the reified octagonal constraint.
       If the octagonal conjunction is entailed, we add `b=1` in the box.
@@ -97,7 +102,7 @@ struct
     let entailments = List.map (Octagon.entailment box_oct.octagon) conjunction in
     if List.for_all (fun e -> e = True) entailments then begin
       (* Printf.printf "c=true\n"; flush_all (); *)
-      let box = Box.meet_var b Box.I.one box_oct.box in
+      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_one) in
 (*       Printf.printf "Entailed reified: %s <=> " b;
       List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
       Printf.printf "\n"; *)
@@ -107,7 +112,7 @@ struct
 (*       Printf.printf "Disentailed reified: %s <=> " b;
       List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
       Printf.printf "\n"; *)
-      let box = Box.meet_var b Box.I.zero box_oct.box in
+      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_zero) in
       { box_oct with box=box} end
     else
       { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
@@ -119,39 +124,16 @@ struct
       {box_oct with reified_octagonal=[]}
       box_oct.reified_octagonal
 
-  (** Closure of the box with regards to the box constraints.
-      A fixed point is reached when no constraint can be propagated anymore. *)
-  let box_closure volume box constraints =
-    let rec aux volume box =
-      let box = List.fold_left Box.closure box constraints in
-      let volume' = Box.volume box in
-      if volume' <> volume then
-        aux volume' box
-      else
-        (volume, box) in
-    aux volume box
-
-  let remove_entailed_constraints box_oct =
-    let is_unknown c =
-      match Box.entailment box_oct.box c with
-      | Unknown -> true
-      | True -> false
-      | False -> failwith "Found a constraint that is disentailed and Bot_found has not been raised." in
-    { box_oct with box_constraints=List.filter is_unknown box_oct.box_constraints }
-
-  (** This closure filters the box and octagon with regards to the (reified) constraints in `box_oct`.
-      Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
-  let closure (box_oct:t) = begin
-    (* Printf.printf "Start Closure\n"; flush_all (); *)
-    (* I. Connection between box and octagon by filtering the reified constraints. *)
+  let rec propagate vol box_oct =
     let box_oct = reified_closure box_oct in
-    (* Printf.printf "Reified Closure Succeeded\n"; flush_all (); *)
-    (* II. Performing the closure on the box. *)
-    let (_,box) = box_closure (Box.volume box_oct.box) box_oct.box box_oct.box_constraints in
-    (* Printf.printf "Box Closure Succeeded\n"; flush_all (); *)
-    (* III. Removing the constraints that are entailed. *)
-    remove_entailed_constraints { box_oct with box=box }
-  end
+    let box_oct = { box_oct with box=Box.closure box_oct.box } in
+    let vol' = volume box_oct in
+    if vol <> vol' then
+      propagate vol' box_oct
+    else
+      box_oct
+
+  let closure (box_oct:t) = propagate (volume box_oct) box_oct
 
   let split box_oct = begin
     let branches = List.map (fun octagon -> { box_oct with octagon=octagon }) (Octagon.split box_oct.octagon) in
@@ -159,18 +141,14 @@ struct
     branches
   end
 
-  let volume box_oct =
-    let box_vol = (Box.volume box_oct.box) in
-    let oct_vol = (Octagon.volume box_oct.octagon) in
-    if box_vol = 1. && oct_vol = 1. then 1.
-    else if box_vol = 0. || oct_vol = 0. then 0.
-    else box_vol +. oct_vol
-
   let state_decomposition box_oct =
-    match Octagon.state_decomposition box_oct.octagon with
-    | True -> if (List.length box_oct.reified_octagonal) = 0 && (List.length box_oct.box_constraints) = 0 then True else Unknown
-    | False -> False
-    | Unknown -> Unknown
+    match Octagon.state_decomposition box_oct.octagon, Box.state_decomposition box_oct.box with
+    | True, True ->
+        if (List.length box_oct.reified_octagonal) = 0 then
+          failwith "box_octagon_disjoint.state_decomposition: Found a reified constraint that is not entailed but both the box and octagon are entailed."
+        else True
+    | False, _ | _, False -> False
+    | _ -> Unknown
 
   let project_one box_oct var =
     if List.mem var box_oct.box_vars then
@@ -180,15 +158,29 @@ struct
 
   let project box_oct vars = List.map (fun v -> (v, project_one box_oct v)) vars
 
+(* NOTE: we need weak_incremental_closure. *)
+(*   let incremental_closure_octagon box_oct c =
+    let oct_constraints = Rewriter.rewrite c in
+    if (List.length oct_constraints) = 0 then
+      failwith "incremental_closure_octagon: the constraint `c` can not be rewritten as octagonal constraints."
+    else
+      List.iter (Octagon.incremental_closure box_oct octagon)
+
+  let incremental_closure_box box_oct c =
+    { box_oct with box=Box.incremental_closure box_oct.box c } *)
+
+
   let meet_var box_oct var (l,u) =
     if B.lt u l then raise Bot.Bot_found;
+    let lb_cons = (Var var, LEQ, Cst (B.to_rat u, Int)) in
+    let ub_cons = (Var var, GEQ, Cst (B.to_rat l, Int)) in
     if List.mem var box_oct.box_vars then
-      let itv = Box.I.of_bounds l u in
-      { box_oct with box=Box.meet_var var itv box_oct.box }
+      let box = List.fold_left Box.weak_incremental_closure box_oct.box [lb_cons; ub_cons] in
+      { box_oct with box=Box.closure box }
     else
     begin
-      let left = Rewriter.rewrite (Var var, LEQ, Cst (B.to_rat u, Int)) in
-      let right = Rewriter.rewrite (Var var, GEQ, Cst (B.to_rat l, Int)) in
+      let left = Rewriter.rewrite lb_cons in
+      let right = Rewriter.rewrite ub_cons in
       List.iter (Octagon.incremental_closure box_oct.octagon) (left@right);
       box_oct
     end

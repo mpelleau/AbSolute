@@ -6,7 +6,7 @@ open Bot
 module type Box_closure_sig =
 sig
   module Store : Var_store_sig
-  val closure: Store.t -> bconstraint -> Store.t
+  val incremental_closure: Store.t -> bconstraint -> Store.t
   val entailment: Store.t -> bconstraint -> kleene
 end
 
@@ -37,27 +37,27 @@ struct
      - We raise Bot_found in case the expression only evaluates to error values.
      - Otherwise, we return only the non-error values.
    *)
-  let rec eval box = function
+  let rec eval store = function
   | Funcall(name, args) ->
-     let bargs = List.map (eval box) args in
+     let bargs = List.map (eval store) args in
      let iargs = List.map snd bargs in
      let r = debot (I.eval_fun name iargs) in
      BFuncall(name, bargs),r
   | Var v ->
-      let r = Store.find v box in
+      let r = Store.find v store in
       BVar v, r
   | Cst (c,_) ->
       let r = I.of_rat c in
       BCst r, r
   | Unary (o,e1) ->
-      let _,i1 as b1 = eval box e1 in
+      let _,i1 as b1 = eval store e1 in
       let r = match o with
         | NEG -> I.neg i1
       in
       BUnary (o,b1), r
   | Binary (o,e1,e2) ->
-     let _,i1 as b1 = eval box e1
-     and _,i2 as b2 = eval box e2 in
+     let _,i1 as b1 = eval store e1
+     and _,i2 as b2 = eval store e2 in
      let r = match o with
        | ADD -> I.add i1 i2
        | SUB -> I.sub i1 i2
@@ -106,17 +106,17 @@ struct
   let refine_div u v r =
     refine_bop I.filter_div_f I.filter_mul_f u v r false
 
-  let rec refine box root = function
+  let rec refine store root = function
   | BFuncall(name,args) ->
      let nodes_kind, itv = List.split args in
      let res = I.filter_fun name itv root in
-     List.fold_left2 refine box (debot res) nodes_kind
-  | BVar v -> Store.add v (debot (I.meet root (Store.find v box))) box
-  | BCst i -> ignore (debot (I.meet root i)); box
+     List.fold_left2 refine store (debot res) nodes_kind
+  | BVar v -> Store.add v (debot (I.meet root (Store.find v store))) store
+  | BCst i -> ignore (debot (I.meet root i)); store
   | BUnary (o,(e1,i1)) ->
      let j = match o with
        | NEG -> I.filter_neg i1 root
-      in refine box (debot j) e1
+      in refine store (debot j) e1
   | BBinary (o,(e1,i1),(e2,i2)) ->
      let j = match o with
        | ADD -> refine_add (e1,i1) (e2,i2) root
@@ -126,15 +126,15 @@ struct
        | POW -> I.filter_pow i1 i2 root
      in
      let j1,j2 = debot j in
-     refine (refine box j1 e1) j2 e2
+     refine (refine store j1 e1) j2 e2
 
   (* III. HC4-revise algorithm (combining eval and refine).
 
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
-     It prunes the domain of the variables in `box` according to the constraint `e1 o e2`.
+     It prunes the domain of the variables in `store` according to the constraint `e1 o e2`.
   *)
-  let hc4_revise box (e1,op,e2) =
-    let (b1,i1), (b2,i2) = eval box e1, eval box e2 in
+  let hc4_revise store (e1,op,e2) =
+    let (b1,i1), (b2,i2) = eval store e1, eval store e2 in
     let j1,j2 = match op with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
@@ -144,16 +144,16 @@ struct
       | NEQ -> debot (I.filter_neq i1 i2)
       | EQ  -> debot (I.filter_eq i1 i2)
     in
-    let refined_box = if I.equal j1 i1 then box else refine box j1 b1 in
-    if j2 = i2 then refined_box else refine refined_box j2 b2
+    let refined_store = if I.equal j1 i1 then store else refine store j1 b1 in
+    if j2 = i2 then refined_store else refine refined_store j2 b2
 
-  let closure box c = hc4_revise box c
+  let incremental_closure store c = hc4_revise store c
 
-  let entailment box (e1,op,e2) =
+  let entailment store (e1,op,e2) =
     try
-      ignore(hc4_revise box (e1,op,e2));
+      ignore(hc4_revise store (e1,op,e2));
       try
-        ignore(hc4_revise box (e1,neg op,e2));
+        ignore(hc4_revise store (e1,neg op,e2));
         Unknown
       with
       | Bot_found -> True

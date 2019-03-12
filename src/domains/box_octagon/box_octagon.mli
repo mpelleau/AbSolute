@@ -1,3 +1,4 @@
+(*
 open Csp
 open Octagonalisation
 open Octagon
@@ -37,3 +38,4 @@ module Make
   (RotationStrategy: Octagonalisation)
   (Octagon: Octagon_sig with type bound=B.t)
   (Box: Box_sig with type bound=B.t and type I.bound=B.t) : Box_octagon_sig
+*)

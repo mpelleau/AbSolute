@@ -2,7 +2,7 @@
 open Rcpsp_data
 open Csp
 open Octagonal_rewriting
-open Box_octagon
+open Box_octagon_disjoint
 
 (* I. Utility functions to create the model of the RCPSP. *)
 

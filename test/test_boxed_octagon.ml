@@ -1,4 +1,4 @@
-(*
+(* (*
    Tests for domains/boxed_octagon.ml
 *)
 
@@ -478,3 +478,4 @@ let tests = [
   "to_bexpr", `Quick, test_to_bexpr;
   "shape2d", `Quick, test_shape2d;
 ]
+ *)

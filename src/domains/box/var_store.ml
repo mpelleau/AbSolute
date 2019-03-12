@@ -9,6 +9,7 @@ sig
   val empty: t
   val filter: (string -> cell -> bool) -> t -> t
   val fold: (string -> cell -> 'b -> 'b) -> t -> 'b -> 'b
+  val print: Format.formatter -> t -> unit
 end
 
 module Make(I: Itv_sig.ITV) =
@@ -21,4 +22,6 @@ struct
   let empty = Env.empty
   let filter = Env.filter
   let fold = Env.fold
+  let print fmt store =
+    Env.iter (fun v i -> Format.fprintf fmt "%s=%a \n" v I.print i) store
 end
