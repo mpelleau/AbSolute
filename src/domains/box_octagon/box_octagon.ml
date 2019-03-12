@@ -150,11 +150,11 @@ struct
     (* Printf.printf "Before closure %d %d \n" (List.length box_oct.constraints) (List.length box_oct.reified_octagonal); *)
     (* Printf.printf "After closure %d %d \n" (List.length box_oct.constraints) (List.length box_oct.reified_octagonal); *)
 
-  let input_order_var box vars =
+   let input_order_var box vars =
      try Some(List.find (fun v -> not (Box.I.is_singleton (Box.get box v))) vars)
      with Not_found -> None
 
-  (* WARNING: This strategy is only valid for integers. (This should be corrected when we extract the splitting strategy). *)
+  (* (* WARNING: This strategy is only valid for integers. (This should be corrected when we extract the splitting strategy). *)
   (* Input-order selection of variables with assignment to the lower bound of the variable. *)
   let split box_oct =
     match input_order_var box_oct.box box_oct.box_vars with
@@ -167,7 +167,11 @@ struct
         [
           { box_oct with box=left_box };
           { box_oct with box=right_box; octagon=(Octagon.copy box_oct.octagon) }
-        ]
+        ] *)
+
+  let split box_oct =
+    List.map (fun octagon -> {box_oct with octagon=octagon; box=meet_dbm_in_box box_oct.env octagon box_oct.box; })
+      (Octagon.split box_oct.octagon)
 
   let volume box_oct = Box.volume (Box.project (fun x -> List.mem x box_oct.box_vars) box_oct.box)
 
@@ -194,13 +198,13 @@ struct
     Printf.printf "Initially: %d constraints octagonal \n" (List.length (List.filter (fun (octagonal, _) -> octagonal) constraints)); *)
     let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
     let (rotated_constraints, rotated_vars) = rotate octagon_vars box_constraints in
-    let box = Box.init (box_vars@List.map fst rotated_vars) in
+    let box = Box.init (octagon_vars@box_vars@List.map fst rotated_vars) in
     (* We perform a first closure to fix the bound of the domains. *)
     let box = List.fold_left Box.closure box initial_constraints in
     let env_add env (name, key) = Env.add name key env in
     let renv_add renv (name, key) = REnv.add key name renv in
     let box_oct = {
-      box_vars=box_vars;
+      box_vars=octagon_vars@box_vars;
       box=box;
       octagon=octagon;
       constraints=box_constraints@rotated_constraints;
@@ -208,7 +212,7 @@ struct
       env=List.fold_left env_add Env.empty rotated_vars;
       renv=List.fold_left renv_add REnv.empty rotated_vars;
     } in
-    let box_oct = (* closure *) {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box} in
+    let box_oct = {box_oct with box=meet_dbm_in_box box_oct.env box_oct.octagon box_oct.box} in
 (*     Printf.printf "In box_oct: %d constraints \n" (List.length box_oct.constraints);
     Printf.printf "In box_oct: %d reified constraints \n" (List.length box_oct.reified_octagonal);
     List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) box_oct.constraints; *)

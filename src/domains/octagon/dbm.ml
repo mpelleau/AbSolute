@@ -9,7 +9,9 @@ module type DBM_sig =
 sig
   type cell
   type t
+  type dbm_constraint = coord2D * cell
   val get : t -> coord2D -> cell
+  val get' : t -> coord2D -> cell
   val set : t -> coord2D -> cell -> unit
   val empty : t
   val copy : t -> t
@@ -25,10 +27,12 @@ module Make(B:Bound_sig.BOUND) = struct
     dim: int;
     m: cell array;
   }
+  type dbm_constraint = coord2D * cell
 
   let empty = {dim=0; m=[||]}
 
   let get dbm coord = dbm.m.(matpos2 coord)
+  let get' dbm coord = dbm.m.(matpos coord)
 
   let set dbm coord v =
     let pos = matpos2 coord in

@@ -7,12 +7,12 @@ module type Octagon_sig =
 sig
   type t
   type bound
-  val init: Csp.var list -> Csp.bconstraint list -> ((bool * Csp.bconstraint) list * t)
+  module Rewriter: Octagonal_rewriting.Rewriter_sig
+  val init: var list -> bconstraint list -> ((bool * bconstraint) list * t)
   val empty: t
   val copy: t -> t
-  val extend_one: t -> Csp.var -> t
-  val update: t -> Octagonal_rewriting.octagonal_constraint -> unit
-  val meet_constraint: t -> Csp.bconstraint -> bool
+  val extend_one: t -> var -> t
+  val meet_constraint: t -> bconstraint -> bool
   val fold_vars: (var -> dbm_key -> 'a -> 'a) -> 'a -> t -> 'a
   val iter_vars: (var -> dbm_key -> unit) -> t -> unit
   val set_lb: t -> dbm_key -> bound -> unit
@@ -20,8 +20,13 @@ sig
   val lb: t -> dbm_key -> bound
   val ub: t -> dbm_key -> bound
   val closure: t -> unit
+  val incremental_closure: t -> octagonal_constraint -> unit
   val dbm_as_list: t -> bound list
   val entailment: t -> octagonal_constraint -> kleene
+  val split: t -> t list
+  val state_decomposition: t -> kleene
+  val project_one: t -> var -> (bound * bound)
+  val volume: t -> float
 end
 
 module Make
@@ -31,7 +36,7 @@ module Make
   (Rewriter: Octagonal_rewriting.Rewriter_sig) =
 struct
   module DBM = Closure.DBM
-
+  module Rewriter = Rewriter
   include IntervalView
   include Rewriter
 
@@ -49,6 +54,28 @@ struct
     (* reversed mapping of `env`. *)
     renv : string REnv.t;
   }
+
+  let index_of octagon (sign, v) =
+    let (d,_) = Env.find v octagon.env in
+    match sign with
+    | Positive -> d*2+1
+    | Negative -> d*2
+
+  let update octagon oc =
+    let index_of = index_of octagon in
+    DBM.set octagon.dbm (index_of oc.x, index_of oc.y) (B.of_rat_up oc.c)
+
+  (** Reexported functions from the parametrized modules. *)
+  let closure octagon = Closure.closure octagon.dbm
+    (* I. We empty the set of octagonal constraints by performing incremental closure.
+          Normally, only the constraint from the splitting strategy is in this set. *)
+    (* List.iter (incremental_closure octagon) octagon.octagonal_constraints; *)
+
+  let incremental_closure octagon oc =
+(*     begin update octagon oc; closure octagon end *)
+    Closure.incremental_closure octagon.dbm ((index_of octagon oc.x, index_of octagon oc.y), (B.of_rat_up oc.c))
+
+  let is_consistent octagon = Closure.is_consistent octagon.dbm
 
   let set_lb o k v = DBM.set o.dbm (lb_pos k) (lb_to_dbm k v)
   let set_ub o k v = DBM.set o.dbm (ub_pos k) (ub_to_dbm k v)
@@ -74,18 +101,8 @@ struct
       renv=REnv.add key var octagon.renv;
     }
 
-  let index_of octagon (sign, v) =
-    let (d,_) = Env.find v octagon.env in
-    match sign with
-    | Positive -> d*2+1
-    | Negative -> d*2
-
-  let update octagon oc =
-    let index_of = index_of octagon in
-    DBM.set octagon.dbm (index_of oc.x, index_of oc.y) (B.of_rat_up oc.c)
-
   let meet_constraint octagon c =
-    let iter_oct = List.iter (update octagon) in
+    let iter_oct = List.iter (incremental_closure octagon) in
     match rewrite c with
     | [] ->
         (match relax c with
@@ -132,9 +149,88 @@ struct
             (not is_lb && B.lt bound lb) then False
     else Unknown
 
-  (** Reexported functions from the parametrized modules. *)
-  let closure octagon = Closure.closure octagon.dbm
-  let is_consistent octagon = Closure.is_consistent octagon.dbm
+
+  let fold_intervals f accu octagon =
+    List.fold_left (fun accu l ->
+      List.fold_left (fun accu c ->
+        let l = l*2 in
+        let c = c*2 in
+        let accu = f accu ((l,c+1),(l+1,c)) in
+        if l <> c then (* if rotated there are two intervals. *)
+          f accu ((l,c),(l+1,c+1))
+        else
+          accu
+      ) accu (Tools.range 0 l)
+    ) accu (Tools.range 0 ((DBM.dimension octagon.dbm)-1))
+
+(*     let (width, coords) = fold_intervals (fun (smallest,coord) (lb_coord,ub_coord) ->
+      let lb = DBM.get' octagon.dbm lb_coord in
+      let ub = DBM.get' octagon.dbm ub_coord in
+      let width = B.sub_up ub lb in
+      if B.gt width B.one && B.lt width smallest then
+        (width, (lb_coord, ub_coord))
+      else
+        (smallest, coord)
+    ) (B.inf, ((0,1),(1,0))) octagon *)
+
+  let fold_intervals_canonical f accu octagon =
+    List.fold_left (fun accu k ->
+      let k = k*2 in
+      f accu ((k,k+1),(k+1,k)))
+    accu (Tools.range 0 ((DBM.dimension octagon.dbm)-1))
+
+  exception FoundVar of B.t * B.t * Dbm.coord2D * Dbm.coord2D
+
+  (* Get the value of the lower bound and the volume between the lower and upper bound. *)
+  let volume_of octagon (lb_coord, ub_coord) =
+    let lb = B.neg (DBM.get' octagon.dbm lb_coord) in
+    let ub = DBM.get' octagon.dbm ub_coord in
+    let width = B.add_up B.one (B.sub_up ub lb) in
+    (lb, width)
+
+  let input_order octagon =
+    (* I. select the first non-instantiated variable. *)
+    try
+      let _ = fold_intervals_canonical (fun a (lb_coord,ub_coord) ->
+        let (lb, width) = volume_of octagon (lb_coord, ub_coord) in
+        if B.gt width B.one then
+          raise (FoundVar(width, lb, lb_coord, ub_coord))
+        else
+          a
+      ) B.inf octagon in
+      None
+    (* II. assign to the smallest value. *)
+    with FoundVar (width, lb, lb_coord, ub_coord) ->
+      Some (width, lb, lb_coord, ub_coord)
+
+  let create_branch octagon dbm_constraint =
+    try
+      Closure.incremental_closure octagon.dbm dbm_constraint;
+      [octagon]
+    with Bot.Bot_found -> []
+
+  let split octagon =
+    match input_order octagon with
+    | None -> []
+    | Some (width, lb, lb_coord, ub_coord) -> begin
+        let left = octagon in
+        let right = copy octagon in
+        let mid = B.add_up lb (B.div_down width B.two) in
+        (create_branch left (ub_coord, mid))@
+        (create_branch right (lb_coord, B.neg (B.add_down mid B.one)))
+      end
+
+  let state_decomposition octagon =
+    match input_order octagon with
+    | None -> True
+    | Some _ -> Unknown
+
+  let project_one octagon var =
+    let key = Env.find var octagon.env in
+    (lb octagon key, ub octagon key)
+
+  let volume octagon = B.to_float_up (fold_intervals_canonical (fun a coords ->
+    B.mul_up a (snd (volume_of octagon coords))) B.one octagon)
 end
 
 module DBM_Z = Dbm.Make(Bound_int)

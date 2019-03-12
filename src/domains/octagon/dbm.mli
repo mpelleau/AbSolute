@@ -45,9 +45,13 @@ module type DBM_sig =
 sig
   type cell
   type t
+  type dbm_constraint = coord2D * cell
 
   (** Low level access to a cell of the DBM where `get m i j` returns DBM[i][j]. *)
   val get : t -> coord2D -> cell
+
+  (** Same as get' with the additional condition that `j/2 <= i/2`. *)
+  val get' : t -> coord2D -> cell
 
   (** Monotonic write: we update the cell at (i,j) only if the value passed as argument is smaller than the one in the DBM. *)
   val set : t -> coord2D -> cell -> unit

@@ -86,6 +86,7 @@ module type Rewriter_sig =
 sig
   val rewrite: bconstraint -> octagonal_constraint list
   val relax: bconstraint -> octagonal_constraint list
+  val negate: octagonal_constraint -> octagonal_constraint
 end
 
 module RewriterZ =
@@ -103,6 +104,12 @@ struct
     unwrap_all
 
   let relax c = []
+
+  let negate oc = {
+    x=rev oc.x;
+    y=rev oc.y;
+    c=Bound_rat.sub_up oc.c Bound_rat.one
+  }
 end
 
 module RewriterQF =
@@ -114,5 +121,11 @@ struct
   let relax = function
   | e1, LT, e2 -> rewrite (e1, LEQ, e2)
   | c -> []
+
+  let negate oc = {
+    x=rev oc.x;
+    y=rev oc.y;
+    c=oc.c
+  }
 end
 

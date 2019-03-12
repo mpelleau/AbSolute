@@ -31,7 +31,7 @@ let constant_of i = Cst (Bound_rat.of_int i, Int)
 let duration_of job = constant_of job.duration
 let mduration_of job = constant_of (-job.duration)
 
-let makespan_name = "makespan"
+let makespan_name rcpsp = start_job_name rcpsp.jobs_number
 
 (* These variables are generated for the "task decomposition" of the cumulative constraint.
    We have `job_1_runs_when_2_starts = 1` if the job `1` starts when the job `2` is running.
@@ -57,10 +57,12 @@ let var_domain_constraints rcpsp =
     (Var v, GEQ, Cst (Bound_rat.zero, Int));
     (Var v, LEQ, Cst (Bound_rat.of_int u, Int))
   ] in
+  let ov = octagonal_variables rcpsp in
   List.flatten (
-    (List.map (dom rcpsp.horizon) (octagonal_variables rcpsp))@
+    [(dom 0 (List.hd ov))]@
+    (List.map (dom rcpsp.horizon) (List.tl ov))@
     (List.map (dom 1) (overlap_boolean_variables rcpsp))@
-    [(dom rcpsp.horizon makespan_name)])
+    [(dom rcpsp.horizon (makespan_name rcpsp))])
 
 (* Generalized temporal constraints: ensure a precedence (with a possible timelag) between the tasks. *)
 let temporal_constraints rcpsp =
@@ -110,16 +112,6 @@ let all_cumulatives rcpsp =
   let resource_indexes = Tools.range 0 ((List.length rcpsp.resources) - 1) in
   List.flatten (List.map (cumulative_constraint rcpsp) resource_indexes)
 
-let makespan_constraint rcpsp =
-  (* let end_dates = List.map (fun j -> Binary (ADD, start_job' j, duration_of j)) rcpsp.jobs in
-  let max_end_date =
-    match end_dates with
-    | [] -> constant_of 0
-    | e::[] -> e
-    | first::dates -> List.fold_left (fun m e -> Funcall("max", [m; e])) first dates in
-  (Var makespan_name, EQ, max_end_date) *)
-  (Var makespan_name, EQ, start_job rcpsp.jobs_number)
-
 (* The octagonal variables are the starting dates.
    The box variables include the octagonal variables, and the boolean overlap variables. *)
 type rcpsp_model = {
@@ -131,9 +123,9 @@ type rcpsp_model = {
 }
 
 let create_rcpsp rcpsp = {
-  makespan=makespan_name;
-  box_vars=(octagonal_variables rcpsp)@(overlap_boolean_variables rcpsp)@[makespan_name];
+  makespan=(makespan_name rcpsp);
+  box_vars=overlap_boolean_variables rcpsp;
   octagonal_vars=octagonal_variables rcpsp;
-  constraints=(var_domain_constraints rcpsp)@(all_cumulatives rcpsp)@(temporal_constraints rcpsp)@[makespan_constraint rcpsp];
+  constraints=(var_domain_constraints rcpsp)@(all_cumulatives rcpsp)@(temporal_constraints rcpsp);
   reified_octagonal=(overlap_reified_constraints rcpsp);
 }

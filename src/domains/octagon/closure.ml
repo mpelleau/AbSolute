@@ -4,6 +4,7 @@ module type Closure_sig =
 sig
   module DBM : DBM_sig
   val closure: DBM.t -> unit
+  val incremental_closure: DBM.t -> DBM.dbm_constraint -> unit
   val is_consistent : DBM.t -> unit
 end
 
@@ -74,8 +75,7 @@ module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) = struct
   let is_consistent dbm =
     let m i j = DBM.get dbm (i,j) in
     let n = DBM.dimension dbm in
-    for i = 0 to (2*n-2)/2 do
-      let i = i * 2 in
+    for i = 0 to (2*n-1) do
       let i' = i lxor 1 in
       if B.lt (B.add_up (m i i') (m i' i)) B.zero then
         raise Bot.Bot_found
@@ -96,6 +96,45 @@ module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) = struct
     tightening dbm;
     is_consistent dbm;
     strengthening dbm
+
+  (* Incremental tight closure from (Chawdhary and al., 2018). *)
+  let incremental_closure dbm ((a,b), d) =
+  let m i j = DBM.get dbm (i,j) in
+  if B.leq (m a b) d then () else
+  begin
+    let n = DBM.dimension dbm in
+    let a' = a lxor 1 in
+    let b' = b lxor 1 in
+    let d2 = B.mul_up d B.two in
+    for i = 0 to (2*n-1) do
+      let i' = i lxor 1 in
+      let v = List.fold_left B.min (m i i') [
+        B.add_up (B.add_up (m i a) d) (m b i');
+        B.add_up (B.add_up (m i b') d) (m a' i');
+        B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b i');
+        B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' i');
+      ] in
+      DBM.set dbm (i,i') (B.mul_up (B.div_down v B.two) B.two)
+    done;
+    is_consistent dbm;
+    for i = 0 to (2*n-1) do
+      for j = 0 to (2*n-1) do
+        let i' = i lxor 1 in
+        let j' = j lxor 1 in
+        if j <> i' then
+          let v = List.fold_left B.min (m i j) [
+            B.add_up (B.add_up (m i a) d) (m b j);
+            B.add_up (B.add_up (m i b') d) (m a' j);
+            B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b j);
+            B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' j);
+            B.div_up (B.add_up (m i i') (m j' j)) B.two
+          ] in
+          DBM.set dbm (i,j) v
+      done;
+      if B.lt (m i i) B.zero then
+        raise Bot.Bot_found
+    done
+  end
 end
 
 module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) = struct
@@ -112,6 +151,8 @@ module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) = struct
     shortest_path_closure dbm;
     is_consistent dbm;
     strengthening dbm
+
+  let incremental_closure dbm oc = ()
 end
 
 module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) = struct
@@ -131,4 +172,6 @@ module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) = struct
       strengthening dbm
     done;
     is_consistent dbm
+
+  let incremental_closure dbm oc = ()
 end

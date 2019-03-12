@@ -37,7 +37,11 @@ struct
   let get box v = Store.find v box
   let project f box = Store.filter (fun v _ -> f v) box
   let volume box =
-    let vol = Store.fold (fun _ x v -> (I.float_size x) *. v) box 1. in
+    let range (l,h) =
+      if B.equal l h then B.one
+      else B.add_up (B.sub_up h l) B.one in
+    let size itv = range (I.to_range itv) in
+    let vol = B.to_float_up (Store.fold (fun _ x v -> B.mul_up (size x) v) box B.one) in
     if classify_float vol = FP_infinite || classify_float vol = FP_nan then
       infinity
     else

@@ -104,14 +104,19 @@ let bench_absolute config problem_path domain precision =
   let measure = measure_time config prob (module S) measure timed_out in
   measure
 
-module Rcpsp_domain = Box_octagon.Make
+(* module Rcpsp_domain = Box_octagon.Make
   (Bound_int)
   (Octagonalisation.NoRotation)
   (Octagon.OctagonZ)
   (Box_dom.BoxZ)
+ *)
+module Rcpsp_domain = Box_octagon_disjoint.Make
+  (Bound_int)
+  (Octagon.OctagonZ)
+  (Box_dom.BoxZ)
 
-let print_variables rcpsp domain =
-  let vars = Rcpsp_domain.project domain rcpsp.box_vars in
+let print_variables domain vars =
+  let vars = Rcpsp_domain.project domain vars in
   begin
     List.iter (fun (v, (l, u)) ->
       let (l, u) = (Rcpsp_domain.B.to_string l, Rcpsp_domain.B.to_string u) in
@@ -119,26 +124,29 @@ let print_variables rcpsp domain =
     ) vars;
   end
 
-let print_node rcpsp depth domain =
+let print_depth depth = List.iter (fun _ -> Printf.printf(".")) (Tools.range 0 (depth-1))
+
+let print_node _status _rcpsp _depth _domain = ()
+(* let print_node status _rcpsp depth domain =
 begin
-  List.iter (fun _ -> Printf.printf(".")) (Tools.range 0 (depth-1));
-  (match Rcpsp_domain.state_decomposition domain with
-  | False -> Printf.printf "[false]"
-  | True -> Printf.printf "[true]"
-  | Unknown -> Printf.printf "[unknown]");
-  Printf.printf "[%f]" (Rcpsp_domain.volume domain);
-  print_variables rcpsp domain;
+  print_depth depth;
+  Printf.printf "[%s][%f]" status (Rcpsp_domain.volume domain);
+  (* print_variables domain rcpsp.octagonal_vars; *)
+  (* print_variables domain rcpsp.box_vars; *)
   Printf.printf "\n";
   flush_all ()
-end
+end *)
 
 let makespan rcpsp domain = Rcpsp_domain.project_one domain rcpsp.makespan
 
 let constraint_makespan rcpsp best domain =
-  let (_,ub) = makespan rcpsp best in
-  let (lb,_) = makespan rcpsp domain in
-  let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
-  Rcpsp_domain.meet_var domain rcpsp.makespan (lb, ub)
+  match best with
+  | None -> domain
+  | Some best ->
+      let (_,ub) = makespan rcpsp best in
+      let (lb,_) = makespan rcpsp domain in
+      let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
+      Rcpsp_domain.meet_var domain rcpsp.makespan (lb, ub)
 
 let timeout_of_config config =
   Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int 1000000000) (Int64.of_int config.timeout))
@@ -146,41 +154,47 @@ let timeout_of_config config =
 let solve config stats rcpsp =
 begin
   let time_out = timeout_of_config config in
-  let rec aux depth best domain =
+  let rec aux depth best domain = begin
+    (* print_depth depth; *)
+    (* Printf.printf "[Enter node]\n"; flush_all (); *)
     (* Stop when we exceed the timeout. *)
     let open State in
     let elapsed = Mtime_clock.count stats.start in
     if (Mtime.Span.compare time_out elapsed) <= 0 then best else
-    (* print_node rcpsp depth domain; *)
     try
-      let domain = constraint_makespan rcpsp best domain in
-      let domain = Rcpsp_domain.closure domain in
+      let domain = constraint_makespan rcpsp best domain(*  with Bot.Bot_found -> (Printf.printf "Makespan unsat\n"; flush_all (); raise Bot.Bot_found)  *)in
+      let domain = Rcpsp_domain.closure domain(*  with Bot.Bot_found -> (Printf.printf "Closure unsat\n"; flush_all (); raise Bot.Bot_found)  *)in
       match Rcpsp_domain.state_decomposition domain with
-      | False -> best
+      | False -> (print_node "false'" rcpsp depth domain; best)
       | True when (Rcpsp_domain.volume domain) = 1. ->
-          (* let (lb,ub) = makespan rcpsp domain in *)
-          (* Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub); *)
-          domain
-      | True | Unknown ->
+          (*let (lb,ub) = makespan rcpsp domain in
+            Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub); *)
+          (print_node "true" rcpsp depth domain; Some domain)
+      | x ->
+          let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in
+          print_node status rcpsp depth domain;
           let branches = (Rcpsp_domain.split domain) in
+          (* Printf.printf "[branches (%d)]\n" (List.length branches); *)
+          (* List.iter (print_node "branch" rcpsp (depth+1)) branches; *)
           List.fold_left (aux (depth+1)) best branches
-    with Bot.Bot_found -> best in
+    with Bot.Bot_found -> (print_node "false" rcpsp depth domain; best)
+  end in
   (* let open Csp in
   List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
   let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in
-  (* print_node rcpsp 0 domain; *)
-  (* let domain = Rcpsp_domain.closure domain in *)
-  (* print_node rcpsp 0 domain; *)
-  aux 0 domain domain
+  (* print_node "unknown" rcpsp 0 domain; *)
+  let domain = Rcpsp_domain.closure domain in
+  (* print_node "unknown" rcpsp 0 domain; *)
+  aux 0 None domain
 end
 
 let update_with_optimum rcpsp best measure =
-  if (Rcpsp_domain.state_decomposition best) = True then
-    let (lb, _) = makespan rcpsp best in
-    let open Measurement in
-    { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
-  else
-    measure
+  match best with
+  | Some best ->
+      let (lb, _) = makespan rcpsp best in
+      let open Measurement in
+      { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
+  | None -> measure
 
 let update_time config stats measure =
   let time_out = timeout_of_config config in
@@ -247,7 +261,6 @@ let iter_problem config global_info =
 
 let start_benchmarking config =
   Measurement.print_csv_header config;
-  Constant.set_timeout_sec config.timeout;
   let (total, completed) = iter_problem config (0,0) in
   Printf.printf "%d / %d problems solved within the timeout.\n" completed total
 

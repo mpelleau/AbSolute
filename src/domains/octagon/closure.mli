@@ -4,6 +4,7 @@ module type Closure_sig =
 sig
   module DBM : DBM_sig
   val closure: DBM.t -> unit
+  val incremental_closure: DBM.t -> DBM.dbm_constraint -> unit
   val is_consistent : DBM.t -> unit
 end
 

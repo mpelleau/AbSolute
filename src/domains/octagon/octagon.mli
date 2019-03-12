@@ -7,6 +7,7 @@ module type Octagon_sig =
 sig
   type t
   type bound
+  module Rewriter: Octagonal_rewriting.Rewriter_sig
 
   (** `init vars constraints`
       Create an octagon with the set of variables `vars`.
@@ -22,7 +23,6 @@ sig
   (** Extend the octagon with a new variable. *)
   val extend_one: t -> var -> t
 
-  val update: t -> octagonal_constraint -> unit
   val meet_constraint: t -> bconstraint -> bool
 
   (* Fold over the canonical variables of the octagon.
@@ -49,11 +49,25 @@ sig
   (** Perform the closure of the DBM. *)
   val closure: t -> unit
 
+  (** Perform the incremental closure of the DBM with the constraint. *)
+  val incremental_closure: t -> octagonal_constraint -> unit
+
   (** Low-level access to the DBM as a list. *)
   val dbm_as_list: t -> bound list
 
   (** Given an octagonal constraint, return `True` if it is entailed by the octagon, `False` if it is disentailed, and `Unknown` if it be entailed or disentailed in the future. *)
   val entailment: t -> octagonal_constraint -> kleene
+
+  (** Split the octagon.
+      TODO: extract the splitting strategy outside the module.
+      WARNING: only work for integer domain. *)
+  val split: t -> t list
+
+  val state_decomposition: t -> kleene
+
+  val project_one: t -> var -> (bound * bound)
+
+  val volume: t -> float
 end
 
 module OctagonZ : Octagon_sig with type bound = Bound_int.t

@@ -51,6 +51,9 @@ sig
   (** Relax the constraint into an octagonal version, if possible.
       The list returned is empty if the constraint cannot be relaxed. *)
   val relax: bconstraint -> octagonal_constraint list
+
+  (** Logically negate the constraint "c" to "not c". *)
+  val negate: octagonal_constraint -> octagonal_constraint
 end
 
 module RewriterZ : Rewriter_sig
