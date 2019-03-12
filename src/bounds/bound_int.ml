@@ -25,6 +25,9 @@ let sign (x:t) : int =
   if x > 0 then 1 else
   if x < 0 then -1 else 0
 
+let succ x = x + 1
+let prec x = x - 1
+
 (* useful constants *)
 
 let zero : t = 0

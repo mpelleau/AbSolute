@@ -16,8 +16,9 @@ sig
   (* Get the interval of the variable `v`. *)
   val get: t -> var -> itv
 
-  (* Projection of the variables `v` in the `box` satisfying `f v`. *)
-  val project: (var -> bool) -> t -> t
+  (* Projection of the variables according to their names. *)
+  val project_one: t -> var -> (bound * bound)
+  val project: t -> var list -> (var * (bound * bound)) list
 
   (** Add the constraint `c` into the box.
       Precondition: The variables in `c` must range over the current store.
@@ -47,6 +48,9 @@ sig
 
   (** Print the variables store and the remaining constraints (those not yet entailed). *)
   val print: Format.formatter -> t -> unit
+
+  (** See `Abstract_domain`. *)
+  val split: t -> t list
 end
 
 module Make

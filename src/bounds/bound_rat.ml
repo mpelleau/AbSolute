@@ -4,6 +4,8 @@ type t = Mpqf.t
 (* ordering *)
 
 let name = "rational"
+let succ x = x
+let prec x = x
 
 (* useful constants *)
 let zero : t = Mpqf.of_int 0

@@ -110,9 +110,13 @@ let bench_absolute config problem_path domain precision =
   (Octagon.OctagonZ)
   (Box_dom.BoxZ)
  *)
-module Rcpsp_domain = Box_octagon_disjoint.Make
+(* module Rcpsp_domain = Box_octagon_disjoint.Make
   (Bound_int)
   (Octagon.OctagonZ)
+  (Box_dom.BoxZ) *)
+
+module Rcpsp_domain = Box_reified.Make
+  (Bound_int)
   (Box_dom.BoxZ)
 
 let print_variables domain vars =
@@ -140,13 +144,14 @@ end *)
 let makespan rcpsp domain = Rcpsp_domain.project_one domain rcpsp.makespan
 
 let constraint_makespan rcpsp best domain =
+  let open Csp in
   match best with
   | None -> domain
   | Some best ->
       let (_,ub) = makespan rcpsp best in
-      let (lb,_) = makespan rcpsp domain in
       let ub = Rcpsp_domain.B.sub_up ub Rcpsp_domain.B.one in
-      Rcpsp_domain.meet_var domain rcpsp.makespan (lb, ub)
+      let ub = Cst (Rcpsp_domain.B.to_rat ub, Int) in
+      Rcpsp_domain.weak_incremental_closure domain (Var rcpsp.makespan, LT, ub)
 
 let timeout_of_config config =
   Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int 1000000000) (Int64.of_int config.timeout))
@@ -181,10 +186,9 @@ begin
   end in
   (* let open Csp in
   List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
-  let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in
-  (* print_node "unknown" rcpsp 0 domain; *)
-  let domain = Rcpsp_domain.closure domain in
-  (* print_node "unknown" rcpsp 0 domain; *)
+(*   let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in *)
+  let vars = (rcpsp.box_vars)@(rcpsp.octagonal_vars) in
+  let domain = Rcpsp_domain.init vars rcpsp.constraints rcpsp.reified_bconstraints in
   aux 0 None domain
 end
 

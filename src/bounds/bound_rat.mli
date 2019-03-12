@@ -1,5 +1,7 @@
 type t
 val name : string
+val succ: t -> t
+val prec: t -> t
 val zero : t
 val one : t
 val two : t

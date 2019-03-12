@@ -9,6 +9,7 @@ sig
   val empty: t
   val filter: (string -> cell -> bool) -> t -> t
   val fold: (string -> cell -> 'b -> 'b) -> t -> 'b -> 'b
+  val iter: (string -> cell -> unit) -> t -> unit
   val print: Format.formatter -> t -> unit
 end
 
@@ -22,6 +23,7 @@ struct
   let empty = Env.empty
   let filter = Env.filter
   let fold = Env.fold
+  let iter = Env.iter
   let print fmt store =
     Env.iter (fun v i -> Format.fprintf fmt "%s=%a \n" v I.print i) store
 end

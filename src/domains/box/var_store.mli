@@ -9,6 +9,7 @@ sig
   val empty: t
   val filter: (string -> cell -> bool) -> t -> t
   val fold: (string -> cell -> 'b -> 'b) -> t -> 'b -> 'b
+  val iter: (string -> cell -> unit) -> t -> unit
   val print: Format.formatter -> t -> unit
 end
 

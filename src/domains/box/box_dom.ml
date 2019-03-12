@@ -11,7 +11,8 @@ sig
 
   val init: Csp.var list -> Csp.bconstraint list -> t
   val get: t -> Csp.var -> itv
-  val project: (Csp.var -> bool) -> t -> t
+  val project_one: t -> Csp.var -> (bound * bound)
+  val project: t -> Csp.var list -> (Csp.var * (bound * bound)) list
   val weak_incremental_closure: t -> Csp.bconstraint -> t
   val closure: t -> t
   val incremental_closure: t -> Csp.bconstraint -> t
@@ -19,6 +20,7 @@ sig
   val volume: t -> float
   val state_decomposition: t -> kleene
   val print: Format.formatter -> t -> unit
+  val split: t -> t list
 end
 
 module Make
@@ -27,6 +29,7 @@ module Make
   (Store: Var_store_sig with type cell=I.t)
   (Closure: Box_closure_sig with module Store=Store) =
 struct
+  module B = B
   module I = I
   type itv = I.t
   type bound = B.t
@@ -47,7 +50,9 @@ struct
     { store = store; constraints = constraints }
 
   let get box v = Store.find v box.store
-  let project f box = { box with store=Store.filter (fun v _ -> f v) box.store }
+
+  let project_one box v = I.to_range (get box v)
+  let project box vars = Store.fold (fun v d l -> (v, I.to_range d)::l) box.store []
 
   let volume box =
     let range (l,h) =
@@ -105,6 +110,28 @@ struct
     Format.fprintf fmt "\n";
     List.iter (Format.fprintf fmt "%a\n" Csp.print_bconstraint) box.constraints;
   end
+
+  exception Found_var of Csp.var * itv
+
+  let input_order_var box =
+    try
+      Store.iter (fun v d -> if not (I.is_singleton d) then raise (Found_var (v,d))) box.store;
+      None
+    with Found_var (v,d) -> Some (v,d)
+
+  let assign box v itv =
+    let open Csp in
+    let (l,_) = I.to_range itv in
+    let lb = Cst (B.to_rat l, Int) in
+    let lb_plus_one = Cst (B.to_rat (B.add_up l B.one), Int) in
+    let left_box = weak_incremental_closure box (Var v, EQ, lb) in
+    let right_box = weak_incremental_closure box (Var v, NEQ, lb_plus_one) in
+    [left_box ; right_box]
+
+  let split box =
+    match input_order_var box with
+    | None -> []
+    | Some (v, itv) -> assign box v itv
 end
 
 module ItvZ = Trigo.Make(Itv.ItvI)

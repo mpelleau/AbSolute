@@ -31,6 +31,12 @@ module type BOUND = sig
 
   val sign: t -> int
 
+  (** `succ` and `prec` returns the number right after the current one, if it exists.
+      Otherwise, it acts as the identity function.
+      For example, it exists for integers, but not for float and rational. *)
+  val succ: t -> t
+  val prec: t -> t
+
   (* construction *)
   (* ************ *)
 

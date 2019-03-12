@@ -6,14 +6,16 @@ type box_reified_constraint = var * bconstraint list
 
 module type Box_reified_sig =
 sig
+  module B: Bound_sig.BOUND
   type t
-  type bound
+  type bound = B.t
   module I: Itv_sig.ITV with type bound = bound
   type itv = I.t
 
   val init: var list -> bconstraint list -> box_reified_constraint list -> t
   val get: t -> Csp.var -> itv
-  val project: (Csp.var -> bool) -> t -> t
+  val project_one: t -> var -> (bound * bound)
+  val project: t -> var list -> (var * (bound * bound)) list
   val weak_incremental_closure: t -> Csp.bconstraint -> t
   val closure: t -> t
   val incremental_closure: t -> Csp.bconstraint -> t
@@ -21,12 +23,14 @@ sig
   val volume: t -> float
   val state_decomposition: t -> kleene
   val print: Format.formatter -> t -> unit
+  val split: t -> t list
 end
 
 module Make
   (B: Bound_sig.BOUND)
   (Box: Box_sig with type bound=B.t) =
 struct
+  module B = B
   module I = Box.I
   type itv = I.t
   type bound = B.t
@@ -41,7 +45,8 @@ struct
   (* The following functions just forward the call to `Box`. *)
   let entailment box = Box.entailment box.inner
   let get box v = Box.get box.inner v
-  let project f box = { box with inner=Box.project f box.inner }
+  let project_one box v = Box.project_one box.inner v
+  let project box vars = Box.project box.inner vars
   let volume box = Box.volume box.inner
   let weak_incremental_closure box c = { box with inner=Box.weak_incremental_closure box.inner c}
 
@@ -106,6 +111,8 @@ struct
     Format.fprintf fmt "\n";
     List.iter (print_reified_constraint fmt) box.reified_constraints;
   end
+
+  let split box = List.map (fun branch -> { box with inner=branch}) (Box.split box.inner)
 end
 
 module BoxReifiedZ = Make(Bound_int)(BoxZ)

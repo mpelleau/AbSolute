@@ -25,6 +25,9 @@ let sign (x:t) : int =
   if x > 0. then 1 else
   if x < 0. then -1 else 0
 
+let succ x = x
+let prec x = x
+
 (* conversion, printing *)
 
 let of_int_up a = float_of_int a

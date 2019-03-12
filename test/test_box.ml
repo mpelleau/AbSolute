@@ -50,6 +50,12 @@ let test_Z () =
     expect_domain_eq box box_expected;
     let box = Box.closure box in
     expect_domain_eq box [("x",1,1); ("y",0,2)];
+    let boxes = Box.split box in
+    Alcotest.(check int) "input-order/assign branches number" 2 (List.length boxes);
+    List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
+    let boxes = List.map Box.closure boxes in
+    expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,0)];
+    expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",1,2)];
   end
 
 let tests = [
