@@ -50,6 +50,8 @@ let to_string x = string_of_float (x+.0.)
 let to_float_up x : float = x
 let to_float_down x : float = x
 let to_rat x = Bound_rat.of_float x
+let to_int_up x = (int_of_float (ceil x))
+let to_int_down x = (int_of_float (floor x))
 
 (* printing *)
 let output chan x = output_string chan (to_string x)

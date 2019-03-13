@@ -80,6 +80,8 @@ let iwrap (a:t) op =
 let to_float_up x : float = iwrap x Bound_float.of_int_up
 let to_float_down x : float = iwrap x Bound_float.of_int_down
 let to_rat x = Bound_rat.of_int x
+let to_int_up x = x
+let to_int_down x = x
 
 (* printing *)
 let output chan x = output_string chan (to_string x)

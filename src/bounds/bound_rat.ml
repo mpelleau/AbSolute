@@ -116,6 +116,9 @@ let to_float_down x : float =
 
 let to_rat x = x
 
+let to_int_up x = (int_of_float (ceil (to_float_up x)))
+let to_int_down x = (int_of_float (floor (to_float_down x)))
+
 (* printing *)
 let output chan x = output_string chan (to_string x)
 let sprint () x = to_string x

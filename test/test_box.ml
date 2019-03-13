@@ -23,65 +23,80 @@ let x_eq_one = Csp.(x, EQ, Cst (Bound_rat.one, Int))
 (* II. Tests utilities *)
 
 module B = Bound_int
-module Box = BoxZ
+module BoxFFB = BoxZ(Box_split.First_fail_bisect)
 
-let expect_bound_eq name var expected obtained =
-  let name = name ^ " bound of `" ^ var ^ "`" in
-  Alcotest.(check int) name expected obtained
+module type Bound_tester_sig =
+sig
+  module Box: Box_sig
+  val expect_bound_eq: string -> string -> int -> int -> unit
+  val expect_domain_eq: Box.t -> (string * int * int) list -> unit
+end
 
-let expect_domain_eq box expected =
-  List.iter (fun (var, lb, ub) ->
-    let (lb', ub') = Box.I.to_range (Box.get box var) in
-    begin
-      expect_bound_eq "lower" var lb lb';
-      expect_bound_eq "upper" var ub ub' end)
-  expected
+module Bound_tester(Box: Box_sig) =
+struct
+  module Box = Box
+  let expect_bound_eq name var expected obtained =
+    let name = name ^ " bound of `" ^ var ^ "`" in
+    Alcotest.(check int) name expected obtained
+
+  let expect_domain_eq box expected =
+    List.iter (fun (var, lb, ub) ->
+      let (lb', ub') = Box.I.to_range (Box.get box var) in
+      begin
+        expect_bound_eq "lower" var lb (Box.I.B.to_int_down lb');
+        expect_bound_eq "upper" var ub (Box.I.B.to_int_up ub') end)
+    expected
+end
 
 (* III. Tests *)
 
 let test_Z () =
-  let box = Box.init ["x"; "y"] constraints_Z in
+  let (module BT : Bound_tester_sig) = (module Bound_tester(BoxFFB)) in
+  let box = BT.Box.init ["x"; "y"] constraints_Z in
   begin
-    expect_domain_eq box [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
-    let box = Box.closure box in
+    BT.expect_domain_eq box [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
+    let box = BT.Box.closure box in
     let box_expected = [("x",-1,3); ("y",0,4)] in
-    expect_domain_eq box box_expected;
+    BT.expect_domain_eq box box_expected;
     Printf.printf "first closure succeeded.\n";
-    let box = Box.weak_incremental_closure box x_eq_one in
-    expect_domain_eq box box_expected;
+    let box = BT.Box.weak_incremental_closure box x_eq_one in
+    BT.expect_domain_eq box box_expected;
     Printf.printf "weak incremental closure succeeded.\n";
-    let box = Box.closure box in
-    expect_domain_eq box [("x",1,1); ("y",0,2)];
+    let box = BT.Box.closure box in
+    BT.expect_domain_eq box [("x",1,1); ("y",0,2)];
     Printf.printf "second closure succeeded.\n";
   end
 
-(* let test_split_Z () =
-begin
-  let box = Box.closure (Box.init ["x"; "y"] (x_eq_one::constraints_Z)) in
-  let boxes = Box.split box in
-  Alcotest.(check int) "input-order/assign branches number" 2 (List.length boxes);
-  List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
-  let boxes = List.map Box.closure boxes in
-  expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,0)];
-  Printf.printf "first branch succeeded.\n";
-  expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",1,2)];
-  Printf.printf "second branch succeeded.\n";
-end *)
+open Box_split
+module Input_order_bisect = Make(Input_order)(Middle)(Bisect)
+module Input_order_assign_lb = Make(Input_order)(Lower_bound)(Assign)
 
-let test_split_Z () =
+let test_split name (module Box: Box_sig) left_branch right_branch =
 begin
-  let box = Box.closure (Box.init ["x"; "y"] (x_eq_one::constraints_Z)) in
-  let boxes = Box.split box in
-  Alcotest.(check int) "input-order/bissect branches number" 2 (List.length boxes);
-  List.iter (fun box -> expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
-  let boxes = List.map Box.closure boxes in
-  expect_domain_eq (List.nth boxes 0) [("x",1,1); ("y",0,1)];
-  Printf.printf "first branch succeeded.\n";
-  expect_domain_eq (List.nth boxes 1) [("x",1,1); ("y",2,2)];
-  Printf.printf "second branch succeeded.\n";
+  let (module BT: Bound_tester_sig) = (module Bound_tester(Box)) in
+  let box = BT.Box.closure (BT.Box.init ["x"; "y"] (x_eq_one::constraints_Z)) in
+  let boxes = BT.Box.split box in
+  Alcotest.(check int) name 2 (List.length boxes);
+  List.iter (fun box -> BT.expect_domain_eq box [("x",1,1); ("y",0,2)]) boxes;
+  let boxes = List.map BT.Box.closure boxes in
+  BT.expect_domain_eq (List.nth boxes 0) left_branch;
+  Printf.printf "left branch succeeded.\n";
+  BT.expect_domain_eq (List.nth boxes 1) right_branch;
+  Printf.printf "right branch succeeded.\n";
 end
+
+let test_split_input_order_bisect () =
+  test_split "input order bisect" (module BoxZ(Input_order_bisect))
+    [("x",1,1); ("y",0,1)]
+    [("x",1,1); ("y",2,2)]
+
+let test_split_input_order_assign_lb () =
+  test_split "input order assign LB" (module BoxZ(Input_order_assign_lb))
+    [("x",1,1); ("y",0,0)]
+    [("x",1,1); ("y",1,2)]
 
 let tests = [
   "init-closure(Z)", `Quick, test_Z;
-  "test_split(Z)", `Quick, test_split_Z;
+  "split-input-order-bisect(Z)", `Quick, test_split_input_order_bisect;
+  "split-input-order-assign-lb(Z)", `Quick, test_split_input_order_assign_lb;
 ]

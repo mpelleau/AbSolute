@@ -45,6 +45,8 @@ val to_mpqf: t -> Mpqf.t
 val of_mpqf: Mpqf.t -> t
 val to_float_up : t -> float
 val to_float_down : t -> float
+val to_int_up: t -> int
+val to_int_down: t -> int
 val to_rat : 'a -> 'a
 val output : out_channel -> t -> unit
 val sprint : unit -> t -> string

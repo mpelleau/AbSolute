@@ -71,6 +71,8 @@ module type BOUND = sig
   val to_float_up: t -> float
   val to_float_down: t -> float
   val to_rat: t -> Bound_rat.t
+  val to_int_up: t -> int
+  val to_int_down: t -> int
 
   (* classification *)
   (* ************** *)
