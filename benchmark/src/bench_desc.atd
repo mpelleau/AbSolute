@@ -49,6 +49,29 @@ type problem_kind = [
   | ProGenMax
 ]
 
+type var_order = [
+  | InputOrder
+  | FirstFail
+  | AntiFirstFail
+]
+
+type val_order = [
+  | Middle
+  | LowerBound
+  | UpperBound
+]
+
+type distributor = [
+  | Assign
+  | Bisect
+]
+
+type strategy = {
+  var_order: var_order;
+  val_order: val_order;
+  distributor: distributor;
+}
+
 type benchmark = {
   problem_set: string;
   problem_kind: problem_kind;
@@ -59,4 +82,5 @@ type benchmark = {
   print_solutions: bool;
   center_of_trials: center_of_trials;
   csv: csv_desc;
+  strategies: strategy list
 }

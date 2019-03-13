@@ -3,18 +3,17 @@ open Csp
 open Abstract_domain
 open Bot
 
-module type Box_closure_sig =
+module type Box_closure_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
   val incremental_closure: Store.t -> bconstraint -> Store.t
   val entailment: Store.t -> bconstraint -> kleene
-end
+end with module Store=S
 
-module Make
-  (I: Itv_sig.ITV)
-  (Store: Var_store_sig with type cell=I.t) =
+module Make(Store: Var_store_sig) =
 struct
   module Store = Store
+  module I = Store.I
 
   (* The type `Csp.expr` is an AST representing the syntax of an expression.
      In `node`, we annotate each node of this expression with its interval evaluation.

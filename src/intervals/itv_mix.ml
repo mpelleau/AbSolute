@@ -5,7 +5,8 @@ module R = Newitv.Test
 
 type t = Int of I.t | Real of R.t
 (* Rational can represent both floating point numbers and integers. *)
-type bound = Bound_rat.t
+module B = Bound_rat
+type bound = B.t
 
 (* useful constructors *)
 let make_real x = Real x

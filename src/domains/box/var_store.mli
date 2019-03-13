@@ -2,7 +2,8 @@
 module type Var_store_sig =
 sig
   type t
-  type cell
+  module I: Itv_sig.ITV
+  type cell=I.t
 
   val add: string -> cell -> t -> t
   val find: string -> t -> cell
@@ -13,4 +14,4 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module Make(I: Itv_sig.ITV) : Var_store_sig with type cell=I.t
+module Make(I: Itv_sig.ITV) : Var_store_sig

@@ -4,7 +4,6 @@ open Bound_sig
 module Make(B:BOUND) = struct
 
   module B = B
-
   type bound = B.t
 
   type kind = Strict | Large

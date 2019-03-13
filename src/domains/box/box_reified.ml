@@ -6,10 +6,10 @@ type box_reified_constraint = var * bconstraint list
 
 module type Box_reified_sig =
 sig
-  module B: Bound_sig.BOUND
   type t
+  module I: Itv_sig.ITV
+  module B = I.B
   type bound = B.t
-  module I: Itv_sig.ITV with type bound = bound
   type itv = I.t
 
   val init: var list -> bconstraint list -> box_reified_constraint list -> t
@@ -26,14 +26,12 @@ sig
   val split: t -> t list
 end
 
-module Make
-  (B: Bound_sig.BOUND)
-  (Box: Box_sig with type bound=B.t) =
+module Make(Box: Box_sig) =
 struct
-  module B = B
   module I = Box.I
-  type itv = I.t
+  module B = I.B
   type bound = B.t
+  type itv = I.t
   type t = {
     inner: Box.t;
     reified_constraints: box_reified_constraint list;
@@ -115,6 +113,6 @@ struct
   let split box = List.map (fun branch -> { box with inner=branch}) (Box.split box.inner)
 end
 
-module BoxReifiedZ = Make(Bound_int)(BoxZ)
-module BoxReifiedQ = Make(Bound_rat)(BoxQ)
-module BoxReifiedF = Make(Bound_float)(BoxF)
+module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) = Make(BoxZ(SPLIT))
+module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) = Make(BoxQ(SPLIT))
+module BoxReifiedF(SPLIT: Box_split.Box_split_sig) = Make(BoxF(SPLIT))

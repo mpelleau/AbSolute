@@ -5,9 +5,9 @@ open Hc4
 module type Box_sig =
 sig
   type t
-  type bound
-  module I: Itv_sig.ITV with type bound = bound
+  module I: Itv_sig.ITV
   type itv = I.t
+  type bound = I.B.t
 
   val init: Csp.var list -> Csp.bconstraint list -> t
   val get: t -> Csp.var -> itv
@@ -24,15 +24,16 @@ sig
 end
 
 module Make
-  (B: Bound_sig.BOUND)
-  (I: Itv_sig.ITV with type bound=B.t)
-  (Store: Var_store_sig with type cell=I.t)
-  (Closure: Box_closure_sig with module Store=Store) =
+  (Store: Var_store_sig)
+  (CLOSURE: Box_closure_sig)
+  (SPLIT: Box_split.Box_split_sig) =
 struct
-  module B = B
-  module I = I
+  module Closure = CLOSURE(Store)
+  module Split = SPLIT(Store)
+  module I = Store.I
+  module B = I.B
   type itv = I.t
-  type bound = B.t
+  type bound = I.B.t
   type t = {
     store: Store.t;
     constraints: Csp.bconstraint list;
@@ -111,56 +112,7 @@ struct
     List.iter (Format.fprintf fmt "%a\n" Csp.print_bconstraint) box.constraints;
   end
 
-  exception Found_var of Csp.var * itv
-
-  let input_order_var box =
-    try
-      Store.iter (fun v d -> if not (I.is_singleton d) then raise (Found_var (v,d))) box.store;
-      None
-    with Found_var (v,d) -> Some (v,d)
-
-  let select_domain box width_cmp =
-    let size (l,h) = B.sub_up h l in
-    let var = Store.fold (fun v d a ->
-      if I.is_singleton d then a
-      else
-        let width = size (I.to_range d) in
-        match a with
-        | Some (best,v',d') when width_cmp width best -> Some (width,v,d)
-        | Some _ -> a
-        | None -> Some (width,v,d)) box.store None in
-    match var with
-    | Some (_, v,d) -> Some (v,d)
-    | None -> None
-
-  let smallest_domain box = select_domain box B.lt
-  let largest_domain box = select_domain box B.gt
-
-  let assign box var value =
-    let open Csp in
-    let left_box = weak_incremental_closure box (Var var, EQ, value) in
-    let right_box = weak_incremental_closure box (Var var, NEQ, value) in
-    [left_box ; right_box]
-
-  let bisect box var value =
-    let open Csp in
-    let left_box = weak_incremental_closure box (Var var, LEQ, value) in
-    let right_box = weak_incremental_closure box (Var var, GT, value) in
-    [left_box ; right_box]
-
-  let middle itv =
-    let open Csp in
-    let (l,u) = I.to_range itv in
-    Cst (B.to_rat (B.div_down (B.add_up l u) B.two), Int)
-
-  let on_bound itv select = Csp.(Cst (B.to_rat (select (I.to_range itv)), Int))
-  let on_lb itv = on_bound itv fst
-  let on_ub itv = on_bound itv snd
-
-  let split box =
-    match largest_domain box with
-    | None -> []
-    | Some (v, itv) -> assign box v (on_ub itv)
+  let split box = List.map (weak_incremental_closure box) (Split.split box.store)
 end
 
 module ItvZ = Trigo.Make(Itv.ItvI)
@@ -171,20 +123,6 @@ module StoreZ = Var_store.Make(ItvZ)
 module StoreQ = Var_store.Make(ItvQ)
 module StoreF = Var_store.Make(ItvF)
 
-module BoxZ = Make
-  (Bound_int)
-  (ItvZ)
-  (StoreZ)
-  (Hc4.Make(ItvZ)(StoreZ))
-
-module BoxQ = Make
-  (Bound_rat)
-  (ItvQ)
-  (StoreQ)
-  (Hc4.Make(ItvQ)(StoreQ))
-
-module BoxF = Make
-  (Bound_float)
-  (ItvF)
-  (StoreF)
-  (Hc4.Make(ItvF)(StoreF))
+module BoxZ(SPLIT: Box_split.Box_split_sig) = Make(StoreZ)(Hc4.Make)(SPLIT)
+module BoxQ(SPLIT: Box_split.Box_split_sig) = Make(StoreQ)(Hc4.Make)(SPLIT)
+module BoxF(SPLIT: Box_split.Box_split_sig) = Make(StoreF)(Hc4.Make)(SPLIT)

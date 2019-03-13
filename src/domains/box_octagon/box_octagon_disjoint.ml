@@ -1,10 +1,12 @@
-open Box_dom
-open Octagon
+(* open Box_dom
+open Octagon *)
 open Octagonal_rewriting
 open Csp
-open Abstract_domain
+(* open Abstract_domain *)
 
 type reified_octagonal = (var * octagonal_constraint list)
+
+(*
 
 module type Box_octagon_disjoint_sig =
 sig
@@ -185,3 +187,4 @@ struct
       box_oct
     end
 end
+ *)

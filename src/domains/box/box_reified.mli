@@ -8,10 +8,10 @@ type box_reified_constraint = var * bconstraint list
 
 module type Box_reified_sig =
 sig
-  module B: Bound_sig.BOUND
   type t
+  module I: Itv_sig.ITV
+  module B = I.B
   type bound = B.t
-  module I: Itv_sig.ITV with type bound = bound
   type itv = I.t
 
   val init: var list -> bconstraint list -> box_reified_constraint list -> t
@@ -28,10 +28,8 @@ sig
   val split: t -> t list
 end
 
-module Make
-  (B: Bound_sig.BOUND)
-  (Box: Box_sig with type bound=B.t) : Box_reified_sig
+module Make(Box: Box_sig) : Box_reified_sig
 
-module BoxReifiedZ : Box_reified_sig (* with type bound = Bound_int.t *)
-module BoxReifiedQ : Box_reified_sig (* with type bound = Bound_rat.t *)
-module BoxReifiedF : Box_reified_sig (* with type bound = Bound_float.t *)
+module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) : Box_reified_sig
+module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) : Box_reified_sig
+module BoxReifiedF(SPLIT: Box_split.Box_split_sig) : Box_reified_sig

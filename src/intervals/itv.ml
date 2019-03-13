@@ -16,7 +16,6 @@ module Itv(B:BOUND) = struct
   (* TYPES *)
   (************************************************************************)
 
-
   (* interval bound (possibly -oo or +oo *)
   module B = B
   type bound = B.t

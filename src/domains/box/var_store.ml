@@ -2,7 +2,8 @@
 module type Var_store_sig =
 sig
   type t
-  type cell
+  module I: Itv_sig.ITV
+  type cell=I.t
 
   val add: string -> cell -> t -> t
   val find: string -> t -> cell
@@ -15,6 +16,7 @@ end
 
 module Make(I: Itv_sig.ITV) =
 struct
+  module I = I
   type cell = I.t
   module Env = Tools.VarMap
   type t = cell Env.t

@@ -5,9 +5,9 @@ open Abstract_domain
 module type Box_sig =
 sig
   type t
-  type bound
-  module I: Itv_sig.ITV with type bound = bound
+  module I: Itv_sig.ITV
   type itv = I.t
+  type bound = I.B.t
 
   (** Initialize the box with variables and constraints.
       The box returned is not closed, therefore you should apply `closure` to this box right after initialization. *)
@@ -54,11 +54,18 @@ sig
 end
 
 module Make
-  (B: Bound_sig.BOUND)
-  (I: Itv_sig.ITV with type bound=B.t)
-  (Store: Var_store_sig with type cell=I.t)
-  (Closure: Hc4.Box_closure_sig with module Store=Store) : Box_sig
+  (Store: Var_store_sig)
+  (CLOSURE: Hc4.Box_closure_sig)
+  (SPLIT: Box_split.Box_split_sig) : Box_sig
 
-module BoxZ : Box_sig with type bound = Bound_int.t
-module BoxQ : Box_sig with type bound = Bound_rat.t
-module BoxF : Box_sig with type bound = Bound_float.t
+module ItvZ : Itv_sig.ITV
+module ItvQ : Itv_sig.ITV
+module ItvF : Itv_sig.ITV
+
+module StoreZ : Var_store_sig
+module StoreQ : Var_store_sig
+module StoreF : Var_store_sig
+
+module BoxZ(SPLIT: Box_split.Box_split_sig) : Box_sig
+module BoxQ(SPLIT: Box_split.Box_split_sig) : Box_sig
+module BoxF(SPLIT: Box_split.Box_split_sig) : Box_sig

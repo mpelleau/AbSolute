@@ -12,7 +12,8 @@ module type ITV = sig
      intervals are always non-empty: lower <= upper;
      functions that can return an empty interval return it as Bot *)
   type t
-  type bound
+  module B: Bound_sig.BOUND
+  type bound = B.t
 
   (************************************************************************)
   (** {1 CONSTRUCTORS AND CONSTANTS} *)
