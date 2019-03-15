@@ -1,52 +1,5 @@
 open Csp
-
-type sign = Positive | Negative
-let reverse_sign = function
-| Positive -> Negative
-| Negative -> Positive
-
-type octagonal_constraint = {
-  x: sign * Csp.var;
-  y: sign * Csp.var;
-  c: Bound_rat.t;
-}
-
-let rev (s, v) = (reverse_sign s, v)
-
-let vars_of oc =
-  let (_, v1) = oc.x in
-  let (_, v2) = oc.y in
-  if String.equal v1 v2 then [v1] else [v1;v2]
-
-(** `x <= c` ~> `x + x <= 2c` *)
-let x_leq_c x c = {x=(Positive, x); y=(Negative,x); c=(Bound_rat.mul_up c Bound_rat.two)}
-
-(** `-x <= c` ~> `-x - x <= 2c` *)
-let minus_x_leq_c x c = {x=(Negative, x); y=(Positive,x); c=(Bound_rat.mul_up c Bound_rat.two)}
-
-(** `x + y <= c` *)
-let x_plus_y_leq_c x y c = {x=(Positive, x); y=(Negative,y); c=c}
-
-(** `x - y <= c` *)
-let x_minus_y_leq_c x y c = {x=(Positive, x); y=(Positive,y); c=c}
-
-(** `-x + y <= c` *)
-let minus_x_plus_y_leq_c x y c = {x=(Negative, x); y=(Negative,y); c=c}
-
-(** `-x - y <= c` *)
-let minus_x_minus_y_leq_c x y c = {x=(Negative, x); y=(Positive,y); c=c}
-
-let create_if_two_vars = function
-  | Binary (ADD, Var x, Var y), LEQ, Cst (c, _) ->  Some (x_plus_y_leq_c x y c)
-  | Binary (SUB, Var x, Var y), LEQ, Cst (c, _) ->  Some (x_minus_y_leq_c x y c)
-  | Binary (ADD, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (minus_x_plus_y_leq_c x y c)
-  | Binary (SUB, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (minus_x_minus_y_leq_c x y c)
-  | _ -> None
-
-let try_create = function
-  | Var x, LEQ, Cst (c, _) -> Some (x_leq_c x c)
-  | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (minus_x_leq_c x c)
-  | c -> create_if_two_vars c
+open Dbm
 
 let rec normalize_expr e =
   let neg e = Unary (NEG, e) in
@@ -71,60 +24,106 @@ let rec generic_rewrite c =
   | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
   | c -> [c]
 
-let unwrap_all constraints =
-  if List.for_all Tools.is_some constraints then
-    List.map Tools.unwrap constraints
-  else
-    []
-
-let octagonal_to_string octagonal =
-  let var (s, v) = (match s with Positive -> "" | Negative -> "-") ^ v in
-  (var octagonal.x) ^ " - " ^ (var octagonal.y) ^ " <= " ^ (Bound_rat.to_string octagonal.c)
-
-module type Rewriter_sig =
+module type Rewriter_sig = functor (B: Bound_sig.BOUND) ->
 sig
-  val rewrite: bconstraint -> octagonal_constraint list
-  val relax: bconstraint -> octagonal_constraint list
-  val negate: octagonal_constraint -> octagonal_constraint
-end
+  module B: Bound_sig.BOUND
+  type t
 
-module RewriterZ =
+  val init: (var * dbm_interval) list -> t
+  val var_dbm_to_box: t -> dbm_interval -> var
+  val var_box_to_dbm: t -> var -> dbm_interval
+  val rewrite: t -> bconstraint -> (B.t dbm_constraint) list
+  val relax: t -> bconstraint -> (B.t dbm_constraint) list
+end with module B=B
+
+module Rewriter(B: Bound_sig.BOUND) =
 struct
-(** It reformulates strict inequalities `<` into the inequality `<=` (dual `>` is handled by `rewrite`).
-    Contrarily to `relax`, the rewritten constraint is logically equivalent to the initial constraint.
-    For example, it rewrites `x - y < c` into `x - y <= c - 1`. *)
-  let reformulate = function
-  | e1, LT, Cst (c, a) -> normalize (e1, LEQ, Cst (Bound_rat.sub_up c Bound_rat.one, a))
-  | c -> c
+  module B = B
+  module Env = Tools.VarMap
+  module REnv = Mapext.Make(struct
+    type t=dbm_interval
+    let compare = compare end)
 
-  let rewrite c =
+  type t = {
+    (* maps each variable name to its DBM interval. *)
+    env: dbm_interval Env.t;
+    (* reversed mapping of `env`. *)
+    renv: var REnv.t;
+  }
+
+  let empty = {env=Env.empty; renv=REnv.empty}
+  let add_var rewriter (v,itv) = {
+    env=(Env.add v itv rewriter.env);
+    renv=(REnv.add itv v rewriter.renv);
+  }
+
+  let init vars = List.fold_left add_var empty vars
+
+  let var_dbm_to_box rewriter itv = REnv.find itv rewriter.renv
+  let var_box_to_dbm rewriter v = Env.find v rewriter.env
+
+  let dim_of_var rewriter v =
+    let itv = var_box_to_dbm rewriter v in
+    let k1, k2 = (itv.lb.x / 2), (itv.lb.y / 2) in
+    if k1 <> k2 then failwith "Rewriter.dim_of_var: only variable with a canonical plane are defined on a single dimension."
+    else k1
+
+  (** If the bound is discrete, it reformulates strict inequalities `<` into the inequality `<=` (dual `>` is handled by `rewrite`).
+      Contrarily to `relax`, the rewritten constraint is logically equivalent to the initial constraint.
+      For example, it rewrites `x - y < c` into `x - y <= c - 1`. *)
+  let reformulate c =
+    if B.is_continuous then c
+    else
+      match c with
+      | e1, LT, Cst (c, a) -> normalize (e1, LEQ, Cst (Bound_rat.sub_up c Bound_rat.one, a))
+      | c -> c
+
+  (** `x <= c` ~> `x + x <= 2c` *)
+  let x_leq_c x c = {v={x=x;y=x+1}; c=(B.mul_up c B.two)}
+
+  (** `-x <= c` ~> `-x - x <= 2c` *)
+  let minus_x_leq_c x c = {v={x=x+1;y=x}; c=(B.mul_up c B.two)}
+
+  (** `x + y <= c` *)
+  let x_plus_y_leq_c x y c = {v={x=x;y=y+1}; c=c}
+
+  (** `x - y <= c` *)
+  let x_minus_y_leq_c x y c = {v={x=x;y=y}; c=c}
+
+  (** `-x + y <= c` *)
+  let minus_x_plus_y_leq_c x y c = {v={x=x+1; y=y+1}; c=c}
+
+  (** `-x - y <= c` *)
+  let minus_x_minus_y_leq_c x y c = {v={x=x+1; y=y}; c=c}
+
+  let map_to_dim r f x c = f ((dim_of_var r x)*2) (B.of_rat_up c)
+  let map2_to_dim r f x y c = f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up c)
+
+  let try_create r = function
+    | Var x, LEQ, Cst (c, _) -> Some (map_to_dim r x_leq_c x c)
+    | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (map_to_dim r minus_x_leq_c x c)
+    | Binary (ADD, Var x, Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r x_plus_y_leq_c x y c)
+    | Binary (SUB, Var x, Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r x_minus_y_leq_c x y c)
+    | Binary (ADD, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_c x y c)
+    | Binary (SUB, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_c x y c)
+    | _ -> None
+
+  let unwrap_all constraints =
+    if List.for_all Tools.is_some constraints then
+      List.map Tools.unwrap constraints
+    else
+      []
+
+  let rewrite r c =
     generic_rewrite c |>
-    List.map (fun c -> try_create (reformulate c)) |>
+    List.map (fun c -> try_create r (reformulate c)) |>
     unwrap_all
 
-  let relax c = []
-
-  let negate oc = {
-    x=rev oc.x;
-    y=rev oc.y;
-    c=Bound_rat.sub_up oc.c Bound_rat.one
-  }
-end
-
-module RewriterQF =
-struct
-  let rewrite c = generic_rewrite c |> List.map try_create |> unwrap_all
-
-  (** Relax a constraint to turn it into an octagonal constraint.
-      It rewrites strict inequalities `<` into the inequality `<=` (dual `>` must be handled by `rewrite`). *)
-  let relax = function
-  | e1, LT, e2 -> rewrite (e1, LEQ, e2)
-  | c -> []
-
-  let negate oc = {
-    x=rev oc.x;
-    y=rev oc.y;
-    c=oc.c
-  }
+  let relax r c =
+    List.flatten (List.map (fun c ->
+      match c with
+      | e1, LT, e2 -> rewrite r (e1, LEQ, e2)
+      | c -> []
+    ) (generic_rewrite c))
 end
 

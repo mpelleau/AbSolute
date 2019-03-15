@@ -4,6 +4,7 @@ type t = Mpqf.t
 (* ordering *)
 
 let name = "rational"
+let is_continuous = true
 let succ x = x
 let prec x = x
 

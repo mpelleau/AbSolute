@@ -1,10 +1,8 @@
-(* open Box_dom
+open Box_dom
 open Octagon
-open Octagonal_rewriting
 open Csp
 open Abstract_domain
-
-type reified_octagonal = (var * octagonal_constraint list)
+open Dbm
 
 module type Box_octagon_disjoint_sig =
 sig
@@ -12,14 +10,14 @@ sig
   type t
   type bound = B.t
 
-  val init: var list -> var list -> bconstraint list -> reified_octagonal list -> t
+  val init: var list -> var list -> bconstraint list -> Box_reified.box_reified_constraint list -> t
   val closure: t -> t
+  val weak_incremental_closure: t -> bconstraint -> t
   val split: t -> t list
   val volume: t -> float
   val state_decomposition: t -> kleene
   val project_one: t -> var -> (bound * bound)
   val project: t -> var list -> (var * (bound * bound)) list
-  val meet_var: t -> var -> (bound * bound) -> t
 end
 
 module Make
@@ -28,26 +26,40 @@ module Make
 struct
   module B = Box.I.B
   type bound = B.t
-  module Rewriter = Octagon.Rewriter
+  module Rewriter = Octagonal_rewriter.Rewriter(B)
+
+  type reified_octagonal = var * (bound dbm_constraint) list
 
   type t = {
-    box_vars: var list;
     box : Box.t;
     octagon: Octagon.t;
+    rewriter: Rewriter.t;
     reified_octagonal: reified_octagonal list;
   }
 
-  let init box_vars octagon_vars initial_constraints reified_octagonal =
-    let (constraints, octagon) = Octagon.init octagon_vars initial_constraints in
-    let box_constraints = List.map snd (List.filter (fun (octagonal, _) -> not octagonal) constraints) in
-    let box = Box.init box_vars box_constraints in
-    Octagon.closure octagon;
+  let init_octagon rewriter vars (octagon, constraints) c =
+    if not (is_defined_over vars c) then octagon, c::constraints
+    else
+      match rewrite c with
+      | [] -> (List.fold_left Octagon.weak_incremental_closure octagon (relax c)), c::constraints
+      | cons -> (List.fold_left Octagon.weak_incremental_closure octagon cons), constraints
+
+  let init box_vars octagon_vars constraints reified_octagonal =
+    let dim = List.length octagon_vars in
+    let rewriter = Rewriter.init (List.combine
+      octagon_vars
+      (Fold_intervals_canonical.fold (fun a itv -> itv::a) [] dim)) in
+    let (octagon, constraints) =
+      List.fold_left (init_octagon rewriter octagon_vars) (Octagon.init dim, []) constraints in
+    let box = Box.init box_vars constraints in
     {
-      box_vars=box_vars;
       box=box;
       octagon=octagon;
+      rewriter=rewriter;
       reified_octagonal=reified_octagonal;
     }
+
+TODO: continue here with the others functions...
 
   let volume box_oct =
     let box_vol = (Box.volume box_oct.box) in
@@ -154,4 +166,3 @@ struct
       box_oct
     end
 end
- *)

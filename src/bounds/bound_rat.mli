@@ -1,5 +1,6 @@
 type t
 val name : string
+val is_continuous: bool
 val succ: t -> t
 val prec: t -> t
 val zero : t

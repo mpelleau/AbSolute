@@ -99,7 +99,7 @@ let classify (x:t) : kind =
   else FINITE
 
 (* exact operators *)
-
+let is_continuous = false
 let succ x = if x = inf || x = minus_inf then x else x + 1
 let prec x = if x = inf || x = minus_inf then x else x - 1
 

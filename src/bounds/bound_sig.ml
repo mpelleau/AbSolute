@@ -31,6 +31,9 @@ module type BOUND = sig
 
   val sign: t -> int
 
+  (** True if the bound elements do not have machine-representable successors or predecessors. *)
+  val is_continuous: bool
+
   (** `succ` and `prec` returns the number right after the current one, if it exists.
       Otherwise, it acts as the identity function.
       For example, it exists for integers, but not for float and rational. *)

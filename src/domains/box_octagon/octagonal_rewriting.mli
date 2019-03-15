@@ -1,60 +1,28 @@
 (** This module provides functions to detect and rewrite arbitrary constraint into an equivalent and relaxed octagonal constraints, if possible. *)
 open Csp
+open Dbm
 
-type sign = Positive | Negative
-
-(** Constraint of the form `±x - ±y <= c`. *)
-type octagonal_constraint = {
-  x: sign * Csp.var;
-  y: sign * Csp.var;
-  c: Bound_rat.t;
-}
-
-val vars_of: octagonal_constraint -> Csp.var list
-
-(** Given a signed variable, we reverse its sign. *)
-val rev: (sign * Csp.var) -> (sign * Csp.var)
-
-(** Version of `create` only for constraints with two variables of the form `±x - ±y <= c`. *)
-val create_if_two_vars: bconstraint -> octagonal_constraint option
-
-(** Create an octagonal constraint if the syntax of the constraint is of the form `±x - ±y <= c` or `±x <= c`.
-    This function also serves to check if a constraint is in octagonal form.
-    See also the functions `normalize` and `rewrite` to turn a constraint into its octagonal form. *)
-val try_create: bconstraint -> octagonal_constraint option
-
-(** Simplify negations inside the expression:
-      1. Remove double negation: --x ~> x | x - -y ~> x + y.
-      2. Propagate negation on constants.
-      3. Push negation inside expressions: -(x + y) ~> -x - y.
-    The goal is to obtain an expression such that it is in a normal form. *)
-val normalize_expr: expr -> expr
-val normalize: bconstraint -> bconstraint
-
-(** Rewrite a constraint into an octagonal form, or into a form closer to an octagonal constraint, if possible.
-    It rewrites a constraint defined with `>=` and `>` into a constraint using `<=` and `<`.
-    Equality `=` is rewritten into constraints with `<=` and `>=`.
-    This function is generic with regards to the bound type (Q,F,Z). *)
-val generic_rewrite: bconstraint -> bconstraint list
-
-val unwrap_all: (octagonal_constraint option) list -> octagonal_constraint list
-
-val octagonal_to_string: octagonal_constraint -> string
-
-module type Rewriter_sig =
+module type Rewriter_sig = functor (B: Bound_sig.BOUND) ->
 sig
+  module B: Bound_sig.BOUND
+  type t
+
+  (** Initialize the rewriter with the map between variable's name and DBM interval. *)
+  val init: (var * dbm_interval) list -> t
+
+  val var_dbm_to_box: t -> dbm_interval -> var
+  val var_box_to_dbm: t -> var -> dbm_interval
+
   (** Create octagonal constraints from an initial constraint.
-      If the list is empty, it is not possible to rewrite the constraint.
-      Multiple elements mean the constraint has been decomposed into octagonal constraint. *)
-  val rewrite: bconstraint -> octagonal_constraint list
+    If the list is empty, it is not possible to rewrite the constraint.
+    Multiple elements mean the constraint has been decomposed into several octagonal constraints. *)
+  val rewrite: t -> bconstraint -> (B.t dbm_constraint) list
 
   (** Relax the constraint into an octagonal version, if possible.
-      The list returned is empty if the constraint cannot be relaxed. *)
-  val relax: bconstraint -> octagonal_constraint list
+      The list returned is empty if the constraint cannot be relaxed or is already octagonal.
+      For continuous bound, it rewrites strict inequalities `<`,`>` into the inequality `<=`,`>=`.
+      For discrete bound, it always returns the empty list. *)
+  val relax: t -> bconstraint -> (B.t dbm_constraint) list
+end with module B=B
 
-  (** Logically negate the constraint "c" to "not c". *)
-  val negate: octagonal_constraint -> octagonal_constraint
-end
-
-module RewriterZ : Rewriter_sig
-module RewriterQF : Rewriter_sig
+module Rewriter: Rewriter_sig
