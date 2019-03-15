@@ -113,7 +113,7 @@ let bench_absolute config problem_path domain precision =
 (* module Rcpsp_domain = Box_octagon_disjoint.Make
   (Bound_int)
   (Octagon.OctagonZ)
-  (Box_dom.BoxZ) *)
+  (Box_dom.BoxZ(Box_split.First_fail_bisect)) *)
 
 module Rcpsp_domain = Box_reified.BoxReifiedZ(Box_split.First_fail_bisect)
 

@@ -3,11 +3,17 @@ open Dbm
 module type Closure_sig =
 sig
   module DBM : DBM_sig
+
   val closure: DBM.t -> unit
-  val incremental_closure: DBM.t -> DBM.dbm_constraint -> unit
+
+  (** Perform the incremental closure of the DBM from a constraint.
+      The complexity is O(n^2) where `n` is the dimension of the DBM.
+      It does not check for entailment before running (this is done in `Octagon`). *)
+  val incremental_closure: DBM.t -> DBM.bound dbm_constraint -> unit
+
   val is_consistent : DBM.t -> unit
 end
 
-module ClosureZ(DBM: DBM_sig with type cell = Bound_int.t) : Closure_sig with module DBM = DBM
-module ClosureQ(DBM: DBM_sig with type cell = Bound_rat.t) : Closure_sig with module DBM = DBM
-module ClosureF(DBM: DBM_sig with type cell = Bound_float.t) : Closure_sig with module DBM = DBM
+module ClosureZ : Closure_sig
+module ClosureQ : Closure_sig
+module ClosureF : Closure_sig

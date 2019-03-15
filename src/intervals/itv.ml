@@ -558,6 +558,8 @@ module Itv(B:BOUND) = struct
     (B.to_rat l), (B.to_rat h)
 
   let to_range x = x
+  let lb (l,_) = l
+  let ub (_,h) = h
 
   (* returns the type annotation of the represented values *)
   let to_annot _ = Csp.Real

@@ -49,7 +49,7 @@ struct
         else
           let width = size (I.to_range d) in
           match a with
-          | Some (best,v',d') when width_cmp width best -> Some (width,v,d)
+          | Some (best,_,_) when width_cmp width best -> Some (width,v,d)
           | Some _ -> a
           | None -> Some (width,v,d))
       store None in

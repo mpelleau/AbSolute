@@ -1,8 +1,6 @@
 (* Constraint model of the RCPSP. *)
 open Rcpsp_data
 open Csp
-open Octagonal_rewriting
-open Box_octagon_disjoint
 open Box_reified
 
 (* I. Utility functions to create the model of the RCPSP. *)
@@ -77,10 +75,10 @@ let temporal_constraints rcpsp =
       (List.map2 (fun x y -> (x,y)) precedence.job_successors precedence.weights) in
   List.flatten (List.map all_successors rcpsp.precedence_relations)
 
-let rewrite_and_create c =
+(* let rewrite_and_create c =
   match RewriterZ.rewrite c with
   | [] -> failwith "impossible to rewrite the constraint into an octagonal version."
-  | x -> x
+  | x -> x *)
 
 (* job_1_runs_when_2_starts = 1 <=> s[1] <= s[2] /\ s[2] < s[1] + d[1] *)
 let overlap_reified_constraints rcpsp =
@@ -89,9 +87,10 @@ let overlap_reified_constraints rcpsp =
     let c2 = (Binary (SUB, start_job' j2, start_job' j1), LT, duration_of j1) in
     (job_start_when_name j1 j2, [c1; c2]))
 
-let overlap_reified_octagonal rcpsp =
+(* let overlap_reified_octagonal rcpsp =
   let overlap_constraints = overlap_reified_constraints rcpsp in
   List.map (fun (b, conjunction) -> (b, List.flatten (List.map rewrite_and_create conjunction))) overlap_constraints
+ *)
 
 (* Tasks decomposition of cumulative:
       forall j1, capacity_ri >= r[j1] + sum (job_2_runs_when_1_starts * r[j2]) where j2 <> j1 *)
@@ -124,7 +123,7 @@ type rcpsp_model = {
   box_vars: var list;
   octagonal_vars: var list;
   constraints: bconstraint list;
-  reified_octagonal: reified_octagonal list;
+  (* reified_octagonal: reified_octagonal list; *)
   reified_bconstraints: box_reified_constraint list;
 }
 
@@ -133,6 +132,6 @@ let create_rcpsp rcpsp = {
   box_vars=overlap_boolean_variables rcpsp;
   octagonal_vars=octagonal_variables rcpsp;
   constraints=(var_domain_constraints rcpsp)@(all_cumulatives rcpsp)@(temporal_constraints rcpsp);
-  reified_octagonal=(overlap_reified_octagonal rcpsp);
+  (* reified_octagonal=(overlap_reified_octagonal rcpsp); *)
   reified_bconstraints=(overlap_reified_constraints rcpsp);
 }

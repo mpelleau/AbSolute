@@ -1,4 +1,4 @@
-(** The octagonalisation consists in explictly representing the variables modelling rotated planes in the octagon.
+(* (** The octagonalisation consists in explictly representing the variables modelling rotated planes in the octagon.
   Consider the octagonal constraint `X - Y <= 10`, the variables `X` and `Y` can be depicted as a box in the canonical plane of the octagon.
   The idea of octagonalisation is to associate two new variables by considering the plane (X,Y) rotated at 45°.
   The different strategies consist in selecting which variables we want to represent explicitly.
@@ -32,3 +32,4 @@ module StrongestLink: Octagonalisation
 (** A single plane (i,j) is generated, such that it maximizes the number of "promising schema" in the constraint.
     A promising schema is an expression in the rotated constraint that can be easily simplified. *)
 module Promising: Octagonalisation
+ *)

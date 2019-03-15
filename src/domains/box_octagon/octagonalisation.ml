@@ -1,4 +1,4 @@
-open Csp
+(* open Csp
 open Interval_view_dbm
 
 module type Octagonalisation =
@@ -37,3 +37,4 @@ module Promising =
 struct
   let rotate vars constraints = [], []
 end
+ *)

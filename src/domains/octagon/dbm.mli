@@ -32,45 +32,73 @@
    Elements such that j/2 > i/2 are retreived by coherence: (i,j) = (j^1,i^1)
 *)
 
-(** 2D coordinate of an element in the DBM *)
-type coord2D = int * int
+type dbm_var = {
+  x: int;
+  y: int;
+}
 
-(** position of (i,j) element, assuming j/2 <= i/2 *)
-val matpos : coord2D -> int
+(** Constraint of the form `±x - ±y <= c`. *)
+type 'b dbm_constraint = {
+  v: dbm_var;
+  c: 'b;
+}
 
-(** position of (i,j) element, no assumption *)
-val matpos2 : coord2D -> int
+(** An interval view of a variable in the DBM with its lower and upper bounds. *)
+type dbm_interval = {
+  lb: dbm_var;
+  ub: dbm_var;
+}
+
+(** If `v` is the position of a lower bound, it returns the position of its associated upper bound, and conversly.
+    For example given `x - y`, it returns the variable representing `-x + y` which is represented by the element in its diagonal on the same plane. *)
+val inv: dbm_var -> dbm_var
+val is_lower_bound: dbm_var -> bool
+val is_upper_bound: dbm_var -> bool
+val as_interval: dbm_var -> dbm_interval
+
+module type Fold_interval_sig =
+sig
+  val fold: ('a -> dbm_interval -> 'a) -> 'a -> int -> 'a
+end
+
+module Fold_intervals : Fold_interval_sig
+module Fold_intervals_canonical : Fold_interval_sig
+module Fold_intervals_rotated : Fold_interval_sig
 
 module type DBM_sig =
 sig
-  type cell
+  module B: Bound_sig.BOUND
+  type bound = B.t
   type t
-  type dbm_constraint = coord2D * cell
+
+  (** Initialize a DBM of dimension `n`. *)
+  val init: int -> t
 
   (** Low level access to a cell of the DBM where `get m i j` returns DBM[i][j]. *)
-  val get : t -> coord2D -> cell
+  val get : t -> dbm_var -> bound
 
-  (** Same as get' with the additional condition that `j/2 <= i/2`. *)
-  val get' : t -> coord2D -> cell
+  (** Same as get with the additional condition that `j/2 <= i/2`. *)
+  val get_coherent : t -> dbm_var -> bound
 
   (** Monotonic write: we update the cell at (i,j) only if the value passed as argument is smaller than the one in the DBM. *)
-  val set : t -> coord2D -> cell -> unit
+  val set : t -> bound dbm_constraint -> unit
 
-  val empty : t
+  (** Same as `set` with the additional condition that `j/2 <= i/2`.*)
+  val set_coherent : t -> bound dbm_constraint -> unit
+
+  (** Returns the interval value of a pair of DBM variables.
+      Precisely, it returns (-dbm[lb], dbm[ub]). *)
+  val project: t -> dbm_interval -> (bound * bound)
 
   val copy : t -> t
 
   (** The dimension of the DBM is its number of variables. *)
   val dimension: t -> int
 
-  (** Extend the DBM with a new unbounded variable (immutable operation).
-      The dimension is increased by 1.*)
-  val extend_one : t -> t
-
   (** Low-level representation of the DBM as a list. *)
-  val to_list: t -> cell list
+  val to_list: t -> bound list
 
   val print: Format.formatter -> t -> unit
 end
 
-module Make(B:Bound_sig.BOUND) : DBM_sig with type cell = B.t
+module Make(B:Bound_sig.BOUND) : DBM_sig

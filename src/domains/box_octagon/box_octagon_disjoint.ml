@@ -1,12 +1,10 @@
 (* open Box_dom
-open Octagon *)
+open Octagon
 open Octagonal_rewriting
 open Csp
-(* open Abstract_domain *)
+open Abstract_domain
 
 type reified_octagonal = (var * octagonal_constraint list)
-
-(*
 
 module type Box_octagon_disjoint_sig =
 sig
@@ -25,11 +23,10 @@ sig
 end
 
 module Make
-  (B: Bound_sig.BOUND)
-  (Octagon: Octagon_sig with type bound=B.t)
-  (Box: Box_sig with type bound=B.t and type I.bound=B.t) =
+  (Box: Box_sig)
+  (Octagon: Octagon_sig with module B=Box.I.B) =
 struct
-  module B = B
+  module B = Box.I.B
   type bound = B.t
   module Rewriter = Octagon.Rewriter
 
@@ -59,70 +56,41 @@ struct
     else if box_vol = 0. || oct_vol = 0. then 0.
     else box_vol +. oct_vol
 
-  (** We filter the reified octagonal constraint.
-      If the octagonal conjunction is entailed, we add `b=1` in the box.
-      If it is disentailed, we add `b=0`.
-      Otherwise, we re-insert this reified constraint in the box-octagon domain. *)
-  let filter_reified_octagonal box_oct (b, conjunction) =
-    (* I. b implies C *)
+  let entailment_of_reified box_oct conjunction =
+    let entailed = List.map (Octagon.entailment box_oct.octagon) conjunction in
+    and_reified entailed
+
+  let propagate_negation_conjunction box_oct (b, conjunction) =
+    match entailment_of_reified box_oct conjunction with
+    | False, _ -> box_oct
+    | True, _ -> raise Bot.Bot_found
+    | Unknown, Some(u) ->
+        let neg_unknown = Rewriter.negate (List.nth conjunction u) in
+        (Octagon.incremental_closure box_oct.octagon neg_unknown; box_oct)
+    | Unknown, None ->
+        {box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal}
+
+  (* Propagate the reified constraints.
+     Entailed reified constraints are removed from `box_oct`. *)
+  let propagate_reified_octagonal box_oct (b, conjunction) =
     let itv = Box.get box_oct.box b in
     if Box.I.is_singleton itv then
       let (value,_) = Box.I.to_range itv in
-      (* When b=true, then we just add all the constraints in the closure. *)
-      if B.equal B.one value then begin
-        (* Printf.printf "b=true\n"; flush_all (); *)
-        List.iter (Octagon.incremental_closure box_oct.octagon) conjunction;
-        box_oct end
-      (* When b=false, we look at the formula (not c_1 \/ ... \/ not c_n).
-         We can only add "not c_i" if all other constraints "not c_j" are disentailed.
-         Note that below we check "c_i" instead of "not c_i", this is why we consider it unsatisfiable if the constraint is entailed. *)
+      if B.equal B.one value then
+        (List.iter (Octagon.incremental_closure box_oct.octagon) conjunction; box_oct)
       else if B.equal B.zero value then
-      begin
-        let entailed = List.map (Octagon.entailment box_oct.octagon) conjunction in
-        (* If one constraint is already false, then we cannot do anything, the reified constraint is already satisfiable. *)
-        if List.exists (fun e -> e = False) entailed then
-          (* (Printf.printf "All disentailed\n"; flush_all (); *)
-          box_oct
-        (* If all constraints are true, then the reified constraint is unsatisfiable. *)
-        else if List.for_all (fun e -> e = True) entailed then
-          (* (Printf.printf "All entailed\n"; flush_all (); *)
-          raise Bot.Bot_found
-        (* Otherwise, we can only negate the remaining "unknown" constraint, if it is single. *)
-        else
-          let count_unknown = List.fold_left (fun n e -> n + (if e = Unknown then 1 else 0)) 0 entailed in
-          if count_unknown = 1 then
-            let (_,unknown) = List.find (fun (e,c) -> e = Unknown) (List.combine entailed conjunction) in (
-            (* Printf.printf "Rewriting %s into %s\n" (octagonal_to_string unknown) (octagonal_to_string (Rewriter.negate unknown));
-            flush_all (); *)
-            Octagon.incremental_closure box_oct.octagon (Rewriter.negate unknown); box_oct)
-          else
-            {box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal}
-      end
+        propagate_negation_conjunction box_oct (b, conjunction)
       else failwith "Reified boolean should be equal to 0 or 1."
     else
-    (* II. C implies b  *)
-    let entailments = List.map (Octagon.entailment box_oct.octagon) conjunction in
-    if List.for_all (fun e -> e = True) entailments then begin
-      (* Printf.printf "c=true\n"; flush_all (); *)
-      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_one) in
-(*       Printf.printf "Entailed reified: %s <=> " b;
-      List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
-      Printf.printf "\n"; *)
-      { box_oct with box=box} end
-    else if List.exists (fun e -> e = False) entailments then begin
-      (* Printf.printf "c=false\n"; flush_all (); *)
-(*       Printf.printf "Disentailed reified: %s <=> " b;
-      List.iter (fun e -> Printf.printf "%s \\/ " (octagonal_to_string e)) conjunction;
-      Printf.printf "\n"; *)
-      let box = Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_zero) in
-      { box_oct with box=box} end
-    else
-      { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
+      match fst (entailment_of_reified box_oct conjunction) with
+      | False -> { box_oct with box=(Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_zero)) }
+      | True -> { box_oct with box=(Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_one)) }
+      | Unknown -> { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
 
   (** Filter all the reified octagonal constraints.
-      See also `filter_reified_octagonal`. *)
+      See also `propagate_reified_octagonal`. *)
   let reified_closure box_oct =
-    List.fold_left filter_reified_octagonal
+    List.fold_left propagate_reified_octagonal
       {box_oct with reified_octagonal=[]}
       box_oct.reified_octagonal
 
@@ -170,7 +138,6 @@ struct
 
   let incremental_closure_box box_oct c =
     { box_oct with box=Box.incremental_closure box_oct.box c } *)
-
 
   let meet_var box_oct var (l,u) =
     if B.lt u l then raise Bot.Bot_found;

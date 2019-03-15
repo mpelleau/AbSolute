@@ -1,12 +1,10 @@
-open Csp
-(* open Octagon *)
+(*open Csp
+open Octagon
 open Octagonal_rewriting
-(* open Box_dom
-open Abstract_domain *)
+open Box_dom
+open Abstract_domain
 
 type reified_octagonal = (var * octagonal_constraint list)
-
-(*
 
 module type Box_octagon_disjoint_sig =
 sig
@@ -26,7 +24,7 @@ sig
   val init: var list -> var list -> bconstraint list -> reified_octagonal list -> t
 
   (* This closure filters the box and octagon with regards to the (reified) constraints in `box_oct`.
-    Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
+     Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
   val split: t -> t list
   val volume: t -> float
@@ -37,7 +35,6 @@ sig
 end
 
 module Make
-  (B: Bound_sig.BOUND)
-  (Octagon: Octagon_sig with type bound=B.t)
-  (Box: Box_sig with type bound=B.t and type I.bound=B.t) : Box_octagon_disjoint_sig
+  (Box: Box_sig)
+  (Octagon: Octagon_sig with module B=Box.I.B) : Box_octagon_disjoint_sig
 *)

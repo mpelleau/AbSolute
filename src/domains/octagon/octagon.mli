@@ -1,81 +1,48 @@
-open Interval_view_dbm
-open Octagonal_rewriting
-open Csp
 open Abstract_domain
+open Dbm
 
 module type Octagon_sig =
 sig
+  module DBM : DBM_sig
+  module B = DBM.B
+  type bound = B.t
   type t
-  type bound
-  module Rewriter: Octagonal_rewriting.Rewriter_sig
 
-  (** `init vars constraints`
-      Create an octagon with the set of variables `vars`.
-      The dimension of the returned octagon is `length vars`.
-      The octagonal `constraints` defined on `vars` are added into the octagon.
-      The octagonal constraints are annotated by `true`: they are subsumed in the octagon.*)
-  val init: var list -> bconstraint list -> ((bool * bconstraint) list * t)
-
-  val empty: t
+  (** Create an octagon of `n` number of variables. *)
+  val init: int -> t
 
   val copy: t -> t
 
-  (** Extend the octagon with a new variable. *)
-  val extend_one: t -> var -> t
-
-  val meet_constraint: t -> bconstraint -> bool
-
-  (* Fold over the canonical variables of the octagon.
-     Note that rotated variable's names do not belong to this module. *)
-  val fold_vars: (var -> dbm_key -> 'a -> 'a) -> 'a -> t -> 'a
-
-  (* Iterate over the canonical variable of the octagon. *)
-  val iter_vars: (var -> dbm_key -> unit) -> t -> unit
-
-  (** Set the lower bound of the variable `k` in the DBM.
-      The value `v` is the lower bound of the variable at dbm_key `k`, and is processed to fit in the DBM. *)
-  val set_lb: t -> dbm_key -> bound -> unit
-
-  (** Same as `set_lb` but for the upper bound. *)
-  val set_ub: t -> dbm_key -> bound -> unit
-
-  (** Lower bound of the variable at dbm_key `k`.
-      The value is computed directly from the DBM with care on rounding. *)
-  val lb: t -> dbm_key -> bound
-
-  (** Same as `lb` but for the upper bound. *)
-  val ub: t -> dbm_key -> bound
+  (** Given an octagonal constraint, return `True` if it is entailed by the octagon, `False` if it is disentailed, and `Unknown` if it be entailed or disentailed in the future. *)
+  val entailment: t -> bound dbm_constraint -> kleene
 
   (** Perform the closure of the DBM. *)
-  val closure: t -> unit
+  val closure: t -> t
 
   (** Perform the incremental closure of the DBM with the constraint. *)
-  val incremental_closure: t -> octagonal_constraint -> unit
+  val incremental_closure: t -> bound dbm_constraint -> t
+
+  (** Add the octagonal constraint in the octagon, if it is not entailed and without closing the DBM.
+      It throws `Bot_found` if the constraint is disentailed (see `entailment`). *)
+  val weak_incremental_closure: t -> bound dbm_constraint -> t
 
   (** Low-level access to the DBM as a list. *)
   val dbm_as_list: t -> bound list
 
-  (** Given an octagonal constraint, return `True` if it is entailed by the octagon, `False` if it is disentailed, and `Unknown` if it be entailed or disentailed in the future. *)
-  val entailment: t -> octagonal_constraint -> kleene
-
-  (** Split the octagon.
-      TODO: extract the splitting strategy outside the module.
-      WARNING: only work for integer domain. *)
   val split: t -> t list
 
   val state_decomposition: t -> kleene
 
-  val project_one: t -> var -> (bound * bound)
+  (** See `DBM.project` *)
+  val project: t -> dbm_interval -> (bound * bound)
 
   val volume: t -> float
 end
 
-module OctagonZ : Octagon_sig with type bound = Bound_int.t
-module OctagonQ : Octagon_sig with type bound = Bound_rat.t
-module OctagonF : Octagon_sig with type bound = Bound_float.t
+module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) : Octagon_sig
+module OctagonQ(SPLIT: Octagon_split.Octagon_split_sig) : Octagon_sig
+module OctagonF(SPLIT: Octagon_split.Octagon_split_sig) : Octagon_sig
 
 module Make
-  (B: Bound_sig.BOUND)
-  (IntervalView: IntervalViewDBM with type bound=B.t)
-  (Closure: Closure.Closure_sig with module DBM = Dbm.Make(B))
-  (Rewriter: Octagonal_rewriting.Rewriter_sig) : Octagon_sig
+  (Closure: Closure.Closure_sig)
+  (SPLIT: Octagon_split.Octagon_split_sig) : Octagon_sig

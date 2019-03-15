@@ -93,6 +93,8 @@ let to_rational_range (x:t) : Bound_rat.t * Bound_rat.t =
   dispatch I.to_rational_range R.to_rational_range x
 
 let to_range = to_rational_range
+let lb x = fst (to_range x)
+let ub x = snd (to_range x)
 
 let print (fmt:Format.formatter) (x:t) : unit =
   dispatch (Format.fprintf fmt "%a" I.print) (Format.fprintf fmt "%a" R.print) x
