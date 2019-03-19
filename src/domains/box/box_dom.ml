@@ -1,6 +1,5 @@
 open Var_store
 open Abstract_domain
-open Hc4
 
 module type Box_sig =
 sig
@@ -23,11 +22,17 @@ sig
   val split: t -> t list
 end
 
+module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+
 module Make
-  (Store: Var_store_sig)
-  (CLOSURE: Box_closure_sig)
+  (B: Bound_sig.BOUND)
+  (INTERVAL: Itv_sig.Itv_functor)
+  (STORE: Var_store_functor)
+  (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) =
 struct
+  module Interval = INTERVAL(B)
+  module Store = STORE(Interval)
   module Closure = CLOSURE(Store)
   module Split = SPLIT(Store)
   module I = Store.I
@@ -115,14 +120,5 @@ struct
   let split box = List.map (weak_incremental_closure box) (Split.split box.store)
 end
 
-module ItvZ = Trigo.Make(Itv.ItvI)
-module ItvQ = Trigo.Make(Itv.ItvQ)
-module ItvF = Trigo.Make(Itv.ItvF)
-
-module StoreZ = Var_store.Make(ItvZ)
-module StoreQ = Var_store.Make(ItvQ)
-module StoreF = Var_store.Make(ItvF)
-
-module BoxZ(SPLIT: Box_split.Box_split_sig) = Make(StoreZ)(Hc4.Make)(SPLIT)
-module BoxQ(SPLIT: Box_split.Box_split_sig) = Make(StoreQ)(Hc4.Make)(SPLIT)
-module BoxF(SPLIT: Box_split.Box_split_sig) = Make(StoreF)(Hc4.Make)(SPLIT)
+module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->
+  Make(B)(Itv.Itv)(Var_store.Make)(Hc4.Make)(SPLIT)

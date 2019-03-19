@@ -1,6 +1,5 @@
 open Csp
 open Octagon
-open Octagonal_rewriting
 open Box_dom
 open Abstract_domain
 
@@ -35,5 +34,5 @@ sig
 end
 
 module Make
-  (Box: Box_sig)
-  (Octagon: Octagon_sig with module B=Box.I.B) : Box_octagon_disjoint_sig
+  (BOX: Box_functor)
+  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig

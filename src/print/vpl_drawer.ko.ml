@@ -6,7 +6,7 @@ let is_empty _ = fail ()
 
 let to_abs _ = fail ()
 
-let bound : t -> Csp.var -> Mpqf.t * Mpqf.t
+let bound : t -> Csp.var -> Bound_rat.t * Bound_rat.t
     = fun _ _ -> fail ()
 
 let draw2d : t -> (Csp.var * Csp.var) -> Graphics.color -> unit

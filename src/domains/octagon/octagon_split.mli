@@ -39,3 +39,5 @@ module Make
   (VARIABLE: Variable_order)
   (VALUE: Value_order)
   (DISTRIBUTOR: Distributor) : Octagon_split_sig
+
+module First_fail_bisect : Octagon_split_sig

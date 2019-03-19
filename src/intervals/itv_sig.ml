@@ -157,3 +157,5 @@ module type ITV = sig
   (** shrinks each bound of the interval by the given value *)
   val shrink : t -> Bound_rat.t -> t bot
 end
+
+module type Itv_functor = functor (B: Bound_sig.BOUND) -> ITV with module B=B

@@ -23,7 +23,7 @@ let x_eq_one = Csp.(x, EQ, Cst (Bound_rat.one, Int))
 (* II. Tests utilities *)
 
 module B = Bound_int
-module BoxFFB = BoxZ(Box_split.First_fail_bisect)
+module BoxFFB = Box_base(Box_split.First_fail_bisect)(B)
 
 module type Bound_tester_sig =
 sig
@@ -86,12 +86,12 @@ begin
 end
 
 let test_split_input_order_bisect () =
-  test_split "input order bisect" (module BoxZ(Input_order_bisect))
+  test_split "input order bisect" (module Box_base(Input_order_bisect)(Bound_int))
     [("x",1,1); ("y",0,1)]
     [("x",1,1); ("y",2,2)]
 
 let test_split_input_order_assign_lb () =
-  test_split "input order assign LB" (module BoxZ(Input_order_assign_lb))
+  test_split "input order assign LB" (module Box_base(Input_order_assign_lb)(Bound_int))
     [("x",1,1); ("y",0,0)]
     [("x",1,1); ("y",1,2)]
 

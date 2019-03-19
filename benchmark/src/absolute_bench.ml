@@ -110,12 +110,14 @@ let bench_absolute config problem_path domain precision =
   (Octagon.OctagonZ)
   (Box_dom.BoxZ)
  *)
-(* module Rcpsp_domain = Box_octagon_disjoint.Make
-  (Bound_int)
-  (Octagon.OctagonZ)
-  (Box_dom.BoxZ(Box_split.First_fail_bisect)) *)
 
-module Rcpsp_domain = Box_reified.BoxReifiedZ(Box_split.First_fail_bisect)
+open Octagon_split
+module OctagonSplit = Make(First_fail(Dbm.Fold_intervals))(Middle)(Bisect)
+module Rcpsp_domain = Box_octagon_disjoint.Make
+  (Box_dom.Box_base(Box_split.First_fail_bisect))
+  (Octagon.OctagonZ(OctagonSplit))
+
+(* module Rcpsp_domain = Box_reified.BoxReifiedZ(Box_split.First_fail_bisect) *)
 
 let print_variables domain vars =
   let vars = Rcpsp_domain.project domain vars in
@@ -133,8 +135,8 @@ let print_node _status _rcpsp _depth _domain = ()
 begin
   print_depth depth;
   Printf.printf "[%s][%f]" status (Rcpsp_domain.volume domain);
-  (* print_variables domain rcpsp.octagonal_vars; *)
-  (* print_variables domain rcpsp.box_vars; *)
+(*   print_variables domain rcpsp.octagonal_vars;
+  print_variables domain rcpsp.box_vars; *)
   Printf.printf "\n";
   flush_all ()
 end *)
@@ -169,8 +171,10 @@ begin
       match Rcpsp_domain.state_decomposition domain with
       | False -> (print_node "false'" rcpsp depth domain; best)
       | True when (Rcpsp_domain.volume domain) = 1. ->
-          (*let (lb,ub) = makespan rcpsp domain in
+          (* let (lb,ub) = makespan rcpsp domain in
             Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub); *)
+            (* print_variables domain rcpsp.octagonal_vars;
+            print_variables domain rcpsp.box_vars; *)
           (print_node "true" rcpsp depth domain; Some domain)
       | x ->
           let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in
@@ -181,11 +185,11 @@ begin
           List.fold_left (aux (depth+1)) best branches
     with Bot.Bot_found -> (print_node "false" rcpsp depth domain; best)
   end in
-  (* let open Csp in
+(*   let open Csp in
   List.iter (fun (e1,op,e2) -> Format.printf "%a\n" print_bexpr (Cmp (op,e1,e2))) rcpsp.constraints; *)
-(*   let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_octagonal) in *)
-  let vars = (rcpsp.box_vars)@(rcpsp.octagonal_vars) in
-  let domain = Rcpsp_domain.init vars rcpsp.constraints rcpsp.reified_bconstraints in
+  let domain = (Rcpsp_domain.init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_bconstraints) in
+  (* let vars = (rcpsp.box_vars)@(rcpsp.octagonal_vars) in
+  let domain = Rcpsp_domain.init vars rcpsp.constraints rcpsp.reified_bconstraints in *)
   aux 0 None domain
 end
 

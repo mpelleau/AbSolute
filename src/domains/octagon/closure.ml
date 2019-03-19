@@ -17,22 +17,22 @@ struct
   let consistent_Q dbm =
     let n = DBM.dimension dbm in
     for i = 0 to (2*n-1) do
-      let e = {x=i;y=i} in
+      let e = {l=i;c=i} in
       if B.lt (DBM.get dbm e) B.zero then
         raise Bot.Bot_found
       else
-        DBM.set dbm {v=e; c=B.zero}
+        DBM.set dbm {v=e; d=B.zero}
     done
 
   let shortest_path_closure dbm =
   begin
-    let m i j = DBM.get dbm {x=i;y=j} in
+    let m i j = DBM.get dbm (make_var i j) in
     let n = DBM.dimension dbm in
     for k = 0 to (2*n-1) do
       for i = 0 to (2*n-1) do
         for j = 0 to (2*n-1) do
-          let c = B.min (m i j) (B.add_up (m i k) (m k j)) in
-          DBM.set dbm {v={x=i;y=j};c=c}
+          let d = B.min (m i j) (B.add_up (m i k) (m k j)) in
+          DBM.set dbm {v=(make_var i j);d=d}
         done
       done
     done;
@@ -41,29 +41,29 @@ struct
 
   (* The part of the modified Floyd-Warshall algorithm for a given 'k' (Mine, 2005). *)
   let strong_closure_k dbm k =
-    let m i j = DBM.get dbm {x=i;y=j} in
+    let m i j = DBM.get dbm (make_var i j) in
     let n = DBM.dimension dbm in
     for i = 0 to (2*n-1) do
       for j = 0 to (2*n-1) do
-        let c = List.fold_left B.min (m i j) [
+        let d = List.fold_left B.min (m i j) [
           B.add_up (m i (2*k+1)) (m (2*k+1) j) ;
           B.add_up (m i (2*k)) (m (2*k) j) ;
           B.add_up (B.add_up (m i (2*k)) (m (2*k) (2*k+1))) (m (2*k+1) j) ;
           B.add_up (B.add_up (m i (2*k+1)) (m (2*k+1) (2*k))) (m (2*k) j) ] in
-        DBM.set dbm {v={x=i;y=j};c=c}
+        DBM.set dbm {v=(make_var i j);d=d}
       done
     done
 
   (* Strengthening propagates the octagonal constraints in the DBM. *)
   let strengthening dbm =
-    let m i j = DBM.get dbm {x=i;y=j} in
+    let m i j = DBM.get dbm (make_var i j) in
     let n = DBM.dimension dbm in
     for i = 0 to (2*n-1) do
       for j = 0 to (2*n-1) do
         let i' = i lxor 1 in
         let j' = j lxor 1 in
-        let c = B.div_up (B.add_up (m i i') (m j' j)) B.two in
-        DBM.set dbm {v={x=i;y=j};c=c}
+        let d = B.div_up (B.add_up (m i i') (m j' j)) B.two in
+        DBM.set dbm {v=(make_var i j);d=d}
       done
     done
 end
@@ -75,7 +75,7 @@ module ClosureZ = struct
   include GClosure
 
   let is_consistent dbm =
-    let m i j = DBM.get dbm {x=i;y=j} in
+    let m i j = DBM.get dbm (make_var i j) in
     let n = DBM.dimension dbm in
     for i = 0 to (2*n-1) do
       let i' = i lxor 1 in
@@ -84,15 +84,15 @@ module ClosureZ = struct
     done
 
   let tightening dbm =
-    let m i j = DBM.get dbm {x=i;y=j} in
+    let m i j = DBM.get dbm (make_var i j) in
     let n = DBM.dimension dbm in
     for i = 0 to (2*n-1) do
       let i' = i lxor 1 in
-      let c = B.mul_up (B.div_down (m i i') B.two) B.two in
-      DBM.set dbm {v={x=i;y=i'};c=c}
+      let d = B.mul_up (B.div_down (m i i') B.two) B.two in
+      DBM.set dbm {v=(make_var i i');d=d}
     done
 
-  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  (* Strong closure as appearing in (Bagnara and al., 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let closure dbm =
     shortest_path_closure dbm;
     tightening dbm;
@@ -100,23 +100,24 @@ module ClosureZ = struct
     strengthening dbm
 
   (* Incremental tight closure from (Chawdhary and al., 2018). *)
-  let incremental_closure dbm {v=v;c=d} =
-    let m i j = DBM.get dbm {x=i;y=j} in
+  let incremental_closure dbm {v=v;d=d} =
+    let m i j = DBM.get dbm (make_var i j) in
     begin
+      DBM.set dbm {v=v;d=d};
       let n = DBM.dimension dbm in
       let v' = inv v in
-      let (a, b) = v.x, v.y in
-      let (a', b') = v'.x, v'.y in
+      let (a, b) = v.l, v.c in
+      let (a', b') = v'.l, v'.c in
       let d2 = B.mul_up d B.two in
       for i = 0 to (2*n-1) do
         let i' = i lxor 1 in
-        let c = List.fold_left B.min (m i i') [
+        let d = List.fold_left B.min (m i i') [
           B.add_up (B.add_up (m i a) d) (m b i');
           B.add_up (B.add_up (m i b') d) (m a' i');
           B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b i');
           B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' i');
         ] in
-        DBM.set dbm {v={x=i; y=i'}; c=(B.mul_up (B.div_down c B.two) B.two)}
+        DBM.set dbm {v=(make_var i i'); d=(B.mul_up (B.div_down d B.two) B.two)}
       done;
       is_consistent dbm;
       for i = 0 to (2*n-1) do
@@ -124,14 +125,14 @@ module ClosureZ = struct
           let i' = i lxor 1 in
           let j' = j lxor 1 in
           if j <> i' then
-            let c = List.fold_left B.min (m i j) [
+            let d = List.fold_left B.min (m i j) [
               B.add_up (B.add_up (m i a) d) (m b j);
               B.add_up (B.add_up (m i b') d) (m a' j);
               B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b j);
               B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' j);
               B.div_up (B.add_up (m i i') (m j' j)) B.two
             ] in
-            DBM.set dbm {v={x=i; y=j}; c=c}
+            DBM.set dbm {v=(make_var i j); d=d}
         done;
         if B.lt (m i i) B.zero then
           raise Bot.Bot_found
@@ -147,7 +148,7 @@ module ClosureQ = struct
 
   let is_consistent = consistent_Q
 
-  (* Strong closure as appearing in (Bagnara, 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  (* Strong closure as appearing in (Bagnara and al., 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let closure dbm =
     shortest_path_closure dbm;
     is_consistent dbm;

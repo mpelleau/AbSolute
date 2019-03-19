@@ -91,11 +91,11 @@ struct
 
   let select_max (max1, max2, max3) current =
     let max_of v v' = if B.geq (fst v) (fst v') then v else v' in
-    let dim_x v = (snd current).lb.x / 2 in
+    let dim_x v = (snd current).lb.l / 2 in
     (* Note that the lower and upper bounds have the same dimension (they are in the same "sub-square" of the matrix.
        max1, max2 and max3 are canonical variables, thus they operate on a single variable and have only one dimension. *)
     let k_x = dim_x current in
-    let k_y = (snd current).lb.y / 2 in
+    let k_y = (snd current).lb.c / 2 in
     if dim_x max1 <> k_x && dim_x max1 <> k_y then
       max_of max1 current
     else if dim_x max2 <> k_x && dim_x max2 <> k_y then
@@ -104,7 +104,7 @@ struct
       max_of max3 current
 
   let select dbm =
-    let null_itv = {lb={x=0;y=0}; ub={x=0;y=0}} in
+    let null_itv = {lb={l=0;c=0}; ub={l=0;c=0}} in
     let no_max = (B.zero, null_itv) in
     let (max1, max2, max3) =
       Fold_intervals_canonical.fold (fun (max1,max2,max3) v ->
@@ -149,8 +149,8 @@ struct
   module DBM=DBM
   module B=DBM.B
   let distribute itv value =
-    [{v=itv.lb; c=B.neg value};
-     {v=itv.ub; c=B.prec value}]
+    [{v=itv.lb; d=B.neg value};
+     {v=itv.ub; d=B.prec value}]
 end
 
 module Make
@@ -169,3 +169,5 @@ struct
     | None -> []
     | Some itv -> Distributor.distribute itv (Value.select dbm itv)
 end
+
+module First_fail_bisect = Make(First_fail(Fold_intervals))(Middle)(Bisect)

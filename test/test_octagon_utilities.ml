@@ -1,4 +1,4 @@
-open Dbm
+(* open Dbm
 open Interval_view_dbm
 open Printer
 open Tools
@@ -50,4 +50,4 @@ let tests = [
   "lb_pos", `Quick, test_lb_pos;
   "ub_pos", `Quick, test_ub_pos;
   "if_rotated_else", `Quick, test_if_rotated_else;
-]
+] *)

@@ -10,7 +10,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     type t = unit
 
     (* bornage d'une expression *)
-    let forward_eval : t -> expr -> (Mpqf.t * Mpqf.t)
+    let forward_eval : t -> expr -> (Bound_rat.t * Bound_rat.t)
         = fun _ _ -> fail ()
 
     (* removes an unconstrained variable to the environnement *)
@@ -21,7 +21,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ -> fail ()
 
     (* returns the bounds of a variable *)
-    let var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
+    let var_bounds : t -> var -> (Bound_rat.t * Bound_rat.t)
         = fun _ _ -> fail ()
 
     let empty = ()

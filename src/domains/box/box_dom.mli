@@ -53,19 +53,13 @@ sig
   val split: t -> t list
 end
 
+module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+
 module Make
-  (Store: Var_store_sig)
+  (B: Bound_sig.BOUND)
+  (INTERVAL: Itv_sig.Itv_functor)
+  (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig
 
-module ItvZ : Itv_sig.ITV
-module ItvQ : Itv_sig.ITV
-module ItvF : Itv_sig.ITV
-
-module StoreZ : Var_store_sig
-module StoreQ : Var_store_sig
-module StoreF : Var_store_sig
-
-module BoxZ(SPLIT: Box_split.Box_split_sig) : Box_sig
-module BoxQ(SPLIT: Box_split.Box_split_sig) : Box_sig
-module BoxF(SPLIT: Box_split.Box_split_sig) : Box_sig
+module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor

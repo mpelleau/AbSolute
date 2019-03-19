@@ -14,4 +14,6 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module Make(I: Itv_sig.ITV) : Var_store_sig
+module type Var_store_functor = functor (I: Itv_sig.ITV) -> Var_store_sig with module I=I
+
+module Make : Var_store_functor

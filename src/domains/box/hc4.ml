@@ -146,7 +146,9 @@ struct
     let refined_store = if I.equal j1 i1 then store else refine store j1 b1 in
     if j2 = i2 then refined_store else refine refined_store j2 b2
 
-  let incremental_closure store c = hc4_revise store c
+  let incremental_closure store c =
+    (* let _ = (Printf.printf "HC4 with %s\n" (string_of_bconstraint c); flush_all ()) in *)
+    hc4_revise store c
 
   let entailment store (e1,op,e2) =
     try

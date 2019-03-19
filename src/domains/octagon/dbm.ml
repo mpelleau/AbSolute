@@ -1,20 +1,27 @@
 type dbm_var = {
-  x: int;
-  y: int;
+  l: int;
+  c: int;
 }
 type 'b dbm_constraint = {
   v: dbm_var;
-  c: 'b;
+  d: 'b;
 }
 type dbm_interval = {
   lb: dbm_var;
   ub: dbm_var;
 }
 
-let inv v = { x=v.x lxor 1; y=v.y lxor 1 }
-let is_lower_bound v = (v.x mod 2) = 0
-let is_upper_bound v = (v.x mod 2) = 1
+(* The test might be `c/2 >= l/2`, however we can avoid two divisions in the regular case by considering `c > l`.
+   For example, in the valid case where c=3 and l=2, we still have the same result: c=2^1, l=3^1 . *)
+let make_var l c = if c > l then {l=c lxor 1; c=l lxor 1} else {l=l; c=c}
+
+let check_coherence v = if v.c/2 > v.l/2 then raise (Failure "variable must be initialized with `make_var` to be coherent.")
+
+let inv v = (check_coherence v; { l=v.l lxor 1; c=v.c lxor 1 })
+let is_lower_bound v = (check_coherence v; (v.l mod 2) = 0)
+let is_upper_bound v = (check_coherence v; (v.l mod 2) = 1)
 let as_interval v = if is_lower_bound v then {lb=v; ub=inv v} else {lb=inv v; ub=v}
+let is_rotated v = (v.l / 2) <> (v.c / 2)
 
 module type Fold_interval_sig =
 sig
@@ -24,14 +31,14 @@ end
 module Fold_intervals =
 struct
   let fold f accu dimension =
-    List.fold_left (fun accu x ->
-      List.fold_left (fun accu y ->
-        let accu = f accu (as_interval {x=x*2; y=y*2+1}) in
-        if x <> y then (* if rotated there are two intervals. *)
-          f accu (as_interval {x=x*2; y=y*2})
+    List.fold_left (fun accu l ->
+      List.fold_left (fun accu c ->
+        let accu = if l <> c then (* if rotated there are two intervals. *)
+          f accu (as_interval {l=l*2; c=c*2})
         else
-          accu
-      ) accu (Tools.range 0 x)
+          accu in
+        f accu (as_interval {l=l*2; c=c*2+1})
+      ) accu (Tools.range 0 l)
     ) accu (Tools.range 0 (dimension-1))
 end
 
@@ -39,18 +46,18 @@ module Fold_intervals_canonical =
 struct
   let fold f accu dimension =
     List.fold_left (fun accu k ->
-      f accu (as_interval {x=k*2; y=k*2+1})
+      f accu (as_interval {l=k*2; c=k*2+1})
     ) accu (Tools.range 0 (dimension-1))
 end
 
 module Fold_intervals_rotated =
 struct
   let fold f accu dimension =
-    List.fold_left (fun accu x ->
-      List.fold_left (fun accu y ->
-        let accu = f accu (as_interval {x=x*2; y=y*2+1}) in
-        f accu (as_interval {x=x*2; y=y*2})
-      ) accu (Tools.range 0 (x-1))
+    List.fold_left (fun accu l ->
+      List.fold_left (fun accu c ->
+        let accu = f accu (as_interval {l=l*2; c=c*2}) in
+        f accu (as_interval {l=l*2; c=c*2+1})
+      ) accu (Tools.range 0 (l-1))
     ) accu (Tools.range 1 (dimension-1))
 end
 
@@ -61,9 +68,7 @@ sig
   type t
   val init: int -> t
   val get : t -> dbm_var -> bound
-  val get_coherent : t -> dbm_var -> bound
   val set : t -> bound dbm_constraint -> unit
-  val set_coherent : t -> bound dbm_constraint -> unit
   val project: t -> dbm_interval -> (bound * bound)
   val copy : t -> t
   val dimension: t -> int
@@ -84,17 +89,15 @@ module Make(B:Bound_sig.BOUND) = struct
     {dim=n; m=Array.make (size n) B.inf}
 
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
-  let matpos v = v.y + ((v.x+1)*(v.x+1))/2
-  let matpos2 v =
-    if v.y > v.x then matpos {x=(v.y lxor 1); y=(v.x lxor 1)}
-    else matpos v
+  let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
 
-  let get dbm v = dbm.m.(matpos2 v)
-  let get_coherent dbm v = dbm.m.(matpos v)
-  let set_pos dbm pos c = if B.gt dbm.m.(pos) c then dbm.m.(pos) <- c
-  let set dbm dbm_cons = set_pos dbm (matpos2 dbm_cons.v) dbm_cons.c
-  let set_coherent dbm dbm_cons = set_pos dbm (matpos dbm_cons.v) dbm_cons.c
-  let project dbm itv = (B.neg (get_coherent dbm itv.lb)), get_coherent dbm itv.ub
+  let get dbm v = dbm.m.(matpos v)
+
+  let set dbm dbm_cons =
+    let pos = matpos dbm_cons.v in
+    if B.gt dbm.m.(pos) dbm_cons.d then dbm.m.(pos) <- dbm_cons.d
+
+  let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
   let copy dbm = {dim=dbm.dim; m=Array.copy dbm.m}
 
   let dimension dbm = dbm.dim
@@ -102,9 +105,9 @@ module Make(B:Bound_sig.BOUND) = struct
   let to_list dbm = Array.to_list dbm.m
 
   let print fmt dbm =
-    for i = 0 to (2*dbm.dim-1) do
-      for j = 0 to (2*dbm.dim-1) do
-        Format.fprintf fmt "%s " (B.to_string (get dbm {x=i;y=j}))
+    for l = 0 to (2*dbm.dim-1) do
+      for c = 0 to (2*dbm.dim-1) do
+        Format.fprintf fmt "%s " (B.to_string (get dbm (make_var l c)))
       done;
       Format.fprintf fmt "\n"
     done

@@ -14,6 +14,8 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
+module type Var_store_functor = functor (I: Itv_sig.ITV) -> Var_store_sig with module I=I
+
 module Make(I: Itv_sig.ITV) =
 struct
   module I = I
@@ -21,7 +23,7 @@ struct
   module Env = Tools.VarMap
   type t = cell Env.t
   let add = Env.add
-  let find = Env.find_fail
+  let find = Env.find
   let empty = Env.empty
   let filter = Env.filter
   let fold = Env.fold

@@ -18,6 +18,7 @@ sig
   val state_decomposition: t -> kleene
   val project: t -> dbm_interval -> (bound * bound)
   val volume: t -> float
+  val print: Format.formatter -> t -> unit
 end
 
 module Make
@@ -29,6 +30,8 @@ struct
   module B = DBM.B
   type bound = B.t
 
+  module Itv_view = Interval_view_dbm.Interval_view(B)
+
   type t = {
     dbm: DBM.t;
     (* These constraints must be coherent (see `Dbm.ml`). *)
@@ -37,13 +40,14 @@ struct
 
   let init dimension = {dbm=DBM.init dimension; constraints=[]}
   let copy octagon = { octagon with dbm=DBM.copy octagon.dbm; }
+  let print fmt octagon = DBM.print fmt octagon.dbm
 
   let entailment octagon oc =
     (* I. Retrieve the current lower and upper bound of `oc`. *)
     let itv = as_interval oc.v in
     let (lb, ub) = DBM.project octagon.dbm itv in
     let is_lb = is_lower_bound oc.v in
-    let bound = if is_lb then B.neg oc.c else oc.c in
+    let bound = if is_lb then B.neg oc.d else oc.d in
     (* II. We decide entailment by comparing the current bounds and `oc.c`. *)
     if (is_lb && B.leq bound lb) ||
        (not is_lb && B.geq bound ub) then True
@@ -52,12 +56,12 @@ struct
     else Unknown
 
   let closure octagon =
-    if (List.length octagon.constraints) >= (DBM.dimension octagon.dbm) then
-      (List.iter (DBM.set_coherent octagon.dbm) octagon.constraints;
-      {octagon with constraints=[]})
+    (if (List.length octagon.constraints) >= (DBM.dimension octagon.dbm) then
+      (List.iter (DBM.set octagon.dbm) octagon.constraints;
+      Closure.closure octagon.dbm)
     else
-      (List.iter (Closure.incremental_closure octagon.dbm) octagon.constraints;
-      {octagon with constraints=[]})
+      List.iter (Closure.incremental_closure octagon.dbm) octagon.constraints;
+    {octagon with constraints=[]})
 
   let weak_incremental_closure octagon oc =
     match entailment octagon oc with
@@ -81,7 +85,7 @@ struct
     else
       Unknown
 
-  let project octagon itv = DBM.project octagon.dbm itv
+  let project octagon itv = Itv_view.dbm_to_itv itv (DBM.project octagon.dbm itv)
 
   (* Get the value of the lower bound and the volume between the lower and upper bound. *)
   let volume_of octagon itv =

@@ -19,7 +19,7 @@ run-test: [
 ]
 depends: [
   "dune" {build}
-  "ocaml" {>= "4.03"}
+  "ocaml" {>= "4.07.1"}
   "atdgen" {build}
   "atd"
   "extlib"

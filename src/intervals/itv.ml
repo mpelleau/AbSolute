@@ -85,10 +85,13 @@ module Itv(B:BOUND) = struct
   (************************************************************************)
 
   let pp_print_bound fmt (b:B.t) =
-    if B.ceil b = b then
-      Format.fprintf fmt "%0F" (B.to_float_down b)
+    if B.is_continuous then
+      if B.ceil b = b then
+        Format.fprintf fmt "%0F" (B.to_float_down b)
+      else
+        Format.fprintf fmt "%a" Format.pp_print_float (B.to_float_down b)
     else
-      Format.fprintf fmt "%a" Format.pp_print_float (B.to_float_down b)
+      Format.fprintf fmt "%s" (B.to_string b)
 
   (* printer *)
   let print fmt ((l,h):t) =

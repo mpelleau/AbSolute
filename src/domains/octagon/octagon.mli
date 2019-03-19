@@ -33,10 +33,12 @@ sig
 
   val state_decomposition: t -> kleene
 
-  (** See `DBM.project` *)
+  (** Give an interval view of two DBM variables. *)
   val project: t -> dbm_interval -> (bound * bound)
 
   val volume: t -> float
+
+  val print: Format.formatter -> t -> unit
 end
 
 module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) : Octagon_sig

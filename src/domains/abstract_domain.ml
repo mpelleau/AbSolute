@@ -25,6 +25,8 @@ let and_reified conjunction =
   else if (List.length u) = 1 then (Unknown, Some(List.hd u))
   else (Unknown, None)
 
+exception Wrong_modelling of string
+
 module type Abstract_domain =
 sig
   (** The type of the abstract domain. *)

@@ -32,15 +32,16 @@
    Elements such that j/2 > i/2 are retreived by coherence: (i,j) = (j^1,i^1)
 *)
 
+(** A variable is represented by its position in the DBM (line, column). *)
 type dbm_var = {
-  x: int;
-  y: int;
+  l: int;
+  c: int;
 }
 
-(** Constraint of the form `±x - ±y <= c`. *)
+(** Constraint of the form `±x - ±y <= d`. *)
 type 'b dbm_constraint = {
   v: dbm_var;
-  c: 'b;
+  d: 'b;
 }
 
 (** An interval view of a variable in the DBM with its lower and upper bounds. *)
@@ -49,12 +50,18 @@ type dbm_interval = {
   ub: dbm_var;
 }
 
+(** Create a variable position in the DBM by taking into account the coherence. *)
+val make_var: int -> int -> dbm_var
+
 (** If `v` is the position of a lower bound, it returns the position of its associated upper bound, and conversly.
     For example given `x - y`, it returns the variable representing `-x + y` which is represented by the element in its diagonal on the same plane. *)
 val inv: dbm_var -> dbm_var
 val is_lower_bound: dbm_var -> bool
 val is_upper_bound: dbm_var -> bool
 val as_interval: dbm_var -> dbm_interval
+
+(** `true` if the variable is in a rotated plane. *)
+val is_rotated: dbm_var -> bool
 
 module type Fold_interval_sig =
 sig
@@ -74,20 +81,17 @@ sig
   (** Initialize a DBM of dimension `n`. *)
   val init: int -> t
 
-  (** Low level access to a cell of the DBM where `get m i j` returns DBM[i][j]. *)
+  (** Low level access to a cell of the DBM where `get m l c` returns DBM[l][c].
+      Precondition: `c/2 <= l/2` (always ensured if `dbm_var` is built with `make_var`). *)
   val get : t -> dbm_var -> bound
 
-  (** Same as get with the additional condition that `j/2 <= i/2`. *)
-  val get_coherent : t -> dbm_var -> bound
-
-  (** Monotonic write: we update the cell at (i,j) only if the value passed as argument is smaller than the one in the DBM. *)
+  (** Monotonic write: we update the cell at (l,c) only if the value passed as argument is smaller than the one in the DBM.
+      Precondition on the variable: same as `get`. *)
   val set : t -> bound dbm_constraint -> unit
 
-  (** Same as `set` with the additional condition that `j/2 <= i/2`.*)
-  val set_coherent : t -> bound dbm_constraint -> unit
-
   (** Returns the interval value of a pair of DBM variables.
-      Precisely, it returns (-dbm[lb], dbm[ub]). *)
+      Precisely, it returns (-dbm[lb], dbm[ub]).
+      See also `Interval_view_dbm` and `Octagon.project` to recover an "interval" interpretation of these bounds. *)
   val project: t -> dbm_interval -> (bound * bound)
 
   val copy : t -> t
@@ -98,6 +102,7 @@ sig
   (** Low-level representation of the DBM as a list. *)
   val to_list: t -> bound list
 
+  (** See `DBM.print`. *)
   val print: Format.formatter -> t -> unit
 end
 

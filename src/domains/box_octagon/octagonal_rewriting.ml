@@ -64,48 +64,51 @@ struct
 
   let dim_of_var rewriter v =
     let itv = var_box_to_dbm rewriter v in
-    let k1, k2 = (itv.lb.x / 2), (itv.lb.y / 2) in
+    let k1, k2 = (itv.lb.l / 2), (itv.lb.c / 2) in
     if k1 <> k2 then failwith "Rewriter.dim_of_var: only variable with a canonical plane are defined on a single dimension."
     else k1
 
-  (** If the bound is discrete, it reformulates strict inequalities `<` into the inequality `<=` (dual `>` is handled by `rewrite`).
+  (** If the bound is discrete, it reformulates strict inequalities `<` into the inequality `<=` (dual `>` is handled by `generic_rewrite`).
       Contrarily to `relax`, the rewritten constraint is logically equivalent to the initial constraint.
-      For example, it rewrites `x - y < c` into `x - y <= c - 1`. *)
+      For example, it rewrites `x - y < d` into `x - y <= d - 1`. *)
   let reformulate c =
     if B.is_continuous then c
     else
       match c with
-      | e1, LT, Cst (c, a) -> normalize (e1, LEQ, Cst (Bound_rat.sub_up c Bound_rat.one, a))
+      | e1, LT, Cst (d, a) -> normalize (e1, LEQ, Cst (Bound_rat.sub_up d Bound_rat.one, a))
       | c -> c
 
-  (** `x <= c` ~> `x + x <= 2c` *)
-  let x_leq_c x c = {v={x=x;y=x+1}; c=(B.mul_up c B.two)}
+  (** `x <= d` ~> `x + x <= 2d` *)
+  let x_leq_d x c = {v=make_var (x+1) x; d=(B.mul_up c B.two)}
 
-  (** `-x <= c` ~> `-x - x <= 2c` *)
-  let minus_x_leq_c x c = {v={x=x+1;y=x}; c=(B.mul_up c B.two)}
+  (** `-x <= d` ~> `-x - x <= 2d` *)
+  let minus_x_leq_d x c = {v=make_var x (x+1); d=(B.mul_up c B.two)}
 
-  (** `x + y <= c` *)
-  let x_plus_y_leq_c x y c = {v={x=x;y=y+1}; c=c}
+  (* NOTE: we invert `x` and `y` because dbm_var is defined as {x; y} where `x` is the line and `y` the column.
+     In an expression such as `X - Y <= 10`, `X` is the column and `Y` the line. *)
 
-  (** `x - y <= c` *)
-  let x_minus_y_leq_c x y c = {v={x=x;y=y}; c=c}
+  (** `x + y <= d` *)
+  let x_plus_y_leq_d x y d = {v=make_var (y+1) x; d=d}
 
-  (** `-x + y <= c` *)
-  let minus_x_plus_y_leq_c x y c = {v={x=x+1; y=y+1}; c=c}
+  (** `x - y <= d` *)
+  let x_minus_y_leq_d x y d = {v=make_var y x; d=d}
 
-  (** `-x - y <= c` *)
-  let minus_x_minus_y_leq_c x y c = {v={x=x+1; y=y}; c=c}
+  (** `-x + y <= d` *)
+  let minus_x_plus_y_leq_d x y d = {v=make_var (y+1) (x+1); d=d}
 
-  let map_to_dim r f x c = f ((dim_of_var r x)*2) (B.of_rat_up c)
-  let map2_to_dim r f x y c = f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up c)
+  (** `-x - y <= d` *)
+  let minus_x_minus_y_leq_d x y d = {v=make_var y (x+1); d=d}
+
+  let map_to_dim r f x d = f ((dim_of_var r x)*2) (B.of_rat_up d)
+  let map2_to_dim r f x y d = f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up d)
 
   let try_create r = function
-    | Var x, LEQ, Cst (c, _) -> Some (map_to_dim r x_leq_c x c)
-    | Unary (NEG, Var x), LEQ, Cst (c, _) -> Some (map_to_dim r minus_x_leq_c x c)
-    | Binary (ADD, Var x, Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r x_plus_y_leq_c x y c)
-    | Binary (SUB, Var x, Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r x_minus_y_leq_c x y c)
-    | Binary (ADD, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_c x y c)
-    | Binary (SUB, Unary (NEG, Var x), Var y), LEQ, Cst (c, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_c x y c)
+    | Var x, LEQ, Cst (d, _) -> Some (map_to_dim r x_leq_d x d)
+    | Unary (NEG, Var x), LEQ, Cst (d, _) -> Some (map_to_dim r minus_x_leq_d x d)
+    | Binary (ADD, Var x, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_plus_y_leq_d x y d)
+    | Binary (SUB, Var x, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_minus_y_leq_d x y d)
+    | Binary (ADD, Unary (NEG, Var x), Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_d x y d)
+    | Binary (SUB, Unary (NEG, Var x), Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
     | _ -> None
 
   let unwrap_all constraints =
@@ -126,4 +129,3 @@ struct
       | c -> []
     ) (generic_rewrite c))
 end
-

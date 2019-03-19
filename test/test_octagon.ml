@@ -1,111 +1,157 @@
-open Octagon
+(* open Octagon *)
+open Dbm
+open Abstract_domain
 
-(* I. Data *)
+(* I. Data and utilities *)
 
-(* These octagons are presented in (The octagon abstract domain for continuous constraints, Pelleau et al., 2014). *)
-let x = Csp.Var "x"
-let y = Csp.Var "y"
+let x = { l=0; c=1 }
+let y = { l=2; c=3 }
+let xy = { l=2; c=0 }
+let xy' = { l=2; c=1 }
 
-let make_octagon constants =
-  let open Csp in
-  let constraints = (* NOTE: the constants on the right depends on "constants". *)
-    [(Unary (NEG, x), LEQ);         (* -x <= -1 *)
-     (x, LEQ);                      (* x <= 5 *)
-     (Unary (NEG, y), LEQ);         (* -y <= -1 *)
-     (y, LEQ);                      (* y <= 5 *)
-     (Binary (SUB, Unary (NEG, x), y), LEQ); (* -x - y <= -3 *)
-     (Binary (SUB, y, x), LEQ);     (* y - x <= 2 *)
-     (Binary (SUB, x, y), LEQ)] in  (* x - y <= 2.5 *)
-  List.map2 (fun (l,op) r -> (l, op, Csp.Cst (r, Real))) constraints constants
-
-module Q = Bound_rat
-
-let blue_octagon =
-  make_octagon [
-    Q.of_int (-1); Q.of_int 5;
-    Q.of_int (-1); Q.of_int 5;
-    Q.of_int (-3); Q.of_int 2;
-    Q.of_frac 5 2]
-
-let blue_dbm =
-  [Q.inf; Q.of_int (-2);
-   Q.of_int 10; Q.inf;
-   Q.of_frac 5 2; Q.of_int (-3); Q.inf; Q.of_int (-2);
-   Q.inf; Q.of_int 2; Q.of_int 10; Q.inf]
-
-let closed_blue_dbm =
-  [Q.zero; Q.of_int (-2);
-   Q.of_int 10; Q.zero;
-   Q.of_frac 5 2; Q.of_int (-3); Q.zero; Q.of_int (-2);
-   Q.of_int 10; Q.of_int 2; Q.of_int 10; Q.zero]
-
-let dbmQ_to_dbmF dbm = List.map Bound_float.of_rat_up dbm
-let dbmQ_to_dbmZ dbm = List.map Bound_int.of_rat_up dbm
-
-(* II. Test utilities *)
-
-module Octagon_tester
-  (B:Bound_sig.BOUND)
-  (Octagon: sig
-    type t
-    type bound
-    val dbm_as_list: t -> bound list end with type bound=B.t) =
+module Octagon_tester (B:Bound_sig.BOUND) =
 struct
   module BTester = Bound_tester.Make(B)
   include BTester
 
-  let expect_dbm name octagon dbm_expected =
+  (* this value is to distinguish the diagonal element in the tests (we do not want to check it is equal to 0 because the incremental closure does not set it to 0, but the closure does). *)
+  let special = B.of_int_up 123456789
+
+  let expect_dbm name dbm_list dbm_expected =
     List.iter2
-      (fun num (expected, obtained) -> expect_le (name ^ ".dbm[" ^ (string_of_int num) ^ "]") expected obtained)
+      (fun num (expected, obtained) ->
+         if B.neq expected special then
+           expect_le (name ^ ".dbm[" ^ (string_of_int num) ^ "]") expected obtained)
       (Tools.range 0 ((List.length dbm_expected)-1))
-      (List.combine dbm_expected (Octagon.dbm_as_list octagon))
+      (List.combine dbm_expected dbm_list)
 end
 
-(* III. Tests *)
+module OctagonZ = Octagon.OctagonZ(Octagon_split.First_fail_bisect)
+module OctagonTesterZ = Octagon_tester(OctagonZ.B)
+module Z = OctagonZ.B
 
-(* III.a Initialization of the DBM. *)
+let string_of_interval itv = Printf.sprintf "{lb=(%d,%d); ub=(%d,%d)}" itv.lb.l itv.lb.c itv.ub.l itv.ub.c
+let string_of_constraint c f = Printf.sprintf "(%d,%d) <= %s" c.v.l c.v.c (f c.d)
+let string_of_kleene = function
+ | True -> "True"
+ | False -> "False"
+ | Unknown -> "Unknown"
 
-module OctagonZ_tester = Octagon_tester(Bound_int)(OctagonZ)
-module OctagonQ_tester = Octagon_tester(Bound_rat)(OctagonQ)
-module OctagonF_tester = Octagon_tester(Bound_float)(OctagonF)
+let make_octagon dim values =
+  let vars = List.rev (Fold_intervals.fold (fun a x -> x::a) [] dim) in
+  let vars = List.flatten (List.map (fun x -> x.lb::[x.ub]) vars) in
+  let constraints = List.map2 (fun v d -> {v=v; d=d}) vars values in
+  constraints
 
-(* let test_init_F () =
-  let (_, octagon) = OctagonF.init ["x";"y"] blue_octagon in
-  OctagonF_tester.expect_dbm "init(F)" octagon (dbmQ_to_dbmF blue_dbm)
+let octagon_2D = make_octagon 2
+  [Z.of_int_up (-2); Z.of_int_up 10; (* bound of X *)
+   Z.of_int_up 3; Z.of_int_up 2;     (* bound of X - Y, -X + Y *)
+   Z.of_int_up (-3); Z.inf;          (* bound of -X - Y, X + Y*)
+   Z.of_int_up (-2); Z.of_int_up 10; (* bound of Y *)]
 
-let test_closure_F () =
-  let (_, octagon) = OctagonF.init ["x";"y"] blue_octagon in
-  OctagonF.closure octagon;
-  OctagonF_tester.expect_dbm "closure(F)" octagon (dbmQ_to_dbmF closed_blue_dbm)
- *)
-let test_init_Q () =
-  let (_, octagon) = OctagonQ.init ["x";"y"] blue_octagon in
-  OctagonQ_tester.expect_dbm "init(Q)" octagon blue_dbm
-(*
-let test_closure_Q () =
-  let (_, octagon) = OctagonQ.init ["x";"y"] blue_octagon in
-  OctagonQ.closure octagon;
-  OctagonQ_tester.expect_dbm "closure(Q)" octagon closed_blue_dbm
+let inf_dbm =
+  [Z.inf; Z.inf;
+   Z.inf; Z.inf;
+   Z.inf; Z.inf; Z.inf; Z.inf;
+   Z.inf; Z.inf; Z.inf; Z.inf]
 
-let test_init_Z () =
-  let (_, octagon) = OctagonZ.init ["x";"y"] blue_octagon in
-  OctagonZ_tester.expect_dbm "init(Z)" octagon (dbmQ_to_dbmZ blue_dbm)
+let closed_dbm =
+  [OctagonTesterZ.special; Z.of_int_up (-2);
+   Z.of_int_up 10; OctagonTesterZ.special;
+   Z.of_int_up 3; Z.of_int_up (-3); OctagonTesterZ.special; Z.of_int_up (-2);
+   Z.of_int_up 10; Z.of_int_up 2; Z.of_int_up 10; OctagonTesterZ.special]
 
-let test_closure_Z () =
-  let (_, octagon) = OctagonZ.init ["x";"y"] blue_octagon in
-  OctagonZ.closure octagon;
-  OctagonZ_tester.expect_dbm "closure(Z)" octagon (dbmQ_to_dbmZ closed_blue_dbm)
+(* II. Tests *)
 
-let test_entailment_Z () =
-  let (_, octagon) = OctagonZ.init ["x";"y"] blue_octagon in
-  OctagonZ.closure octagon; *)
+let test_dbm_var () =
+begin
+  Alcotest.(check bool) "inv(x)" true ((compare (inv x) { l=1; c=0 }) = 0);
+  Alcotest.(check bool) "as_interval(x).lb" true ((compare (as_interval x).lb x) = 0);
+  Alcotest.(check bool) "as_interval(x).ub" true ((compare (as_interval x).ub (inv x)) = 0);
+  Alcotest.(check bool) "inv(xy)" true ((compare (inv xy) { l=3; c=1 }) = 0);
+  Alcotest.(check bool) "as_interval(xy).lb" true ((compare (as_interval xy).lb xy) = 0);
+  Alcotest.(check bool) "as_interval(xy).ub" true ((compare (as_interval xy).ub (inv xy)) = 0);
+  Alcotest.(check bool) "inv(xy')" true ((compare (inv xy') { l=3; c=0 }) = 0);
+  Alcotest.(check bool) "as_interval(xy').lb" true ((compare (as_interval xy').lb xy') = 0);
+  Alcotest.(check bool) "as_interval(xy').ub" true ((compare (as_interval xy').ub (inv xy')) = 0);
+  Alcotest.(check bool) "is_lower_bound(x)" true (is_lower_bound x);
+  Alcotest.(check bool) "is_upper_bound(y)" true (is_upper_bound (inv x));
+  Alcotest.(check bool) "is_lower_bound(xy)" true (is_lower_bound xy);
+  Alcotest.(check bool) "is_upper_bound(xy')" true (is_upper_bound (inv xy));
+end
+
+let test_folder name f dim expected =
+  let intervals = List.rev (f (fun a x -> x::a) [] dim) in
+  List.iter2 (fun obtained expected ->
+    Printf.printf "obtained=%s -- expected=%s\n" (string_of_interval obtained) (string_of_interval expected);
+    Alcotest.(check bool) name true ((compare obtained expected) = 0);
+  )
+  intervals
+  expected
+
+let test_fold_intervals () =
+  test_folder "Fold_intervals.fold" Fold_intervals.fold 2
+    [{lb=x; ub=inv x}; {lb=xy;ub=inv xy}; {lb=xy';ub=inv xy'}; {lb=y;ub=inv y}]
+
+let test_fold_intervals_canonical () =
+  test_folder "Fold_intervals_canonical.fold" Fold_intervals_canonical.fold 2
+    [{lb=x; ub=inv x}; {lb=y;ub=inv y}]
+
+let test_fold_intervals_rotated () =
+  test_folder "Fold_intervals_rotated.fold" Fold_intervals_rotated.fold 2
+    [{lb=xy;ub=inv xy}; {lb=xy';ub=inv xy'}]
+
+let test_octagon_Z () =
+  let octagon = OctagonZ.init 2 in
+  let constraints = octagon_2D in
+  let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
+  begin
+    OctagonTesterZ.expect_dbm "init(Z)" (OctagonZ.dbm_as_list octagon) inf_dbm;
+    let octagon = OctagonZ.closure octagon in
+    OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.dbm_as_list octagon) closed_dbm;
+  end
+
+let test_octagon_incremental_Z () =
+  let octagon = OctagonZ.init 2 in
+  let constraints = octagon_2D in
+  let octagon = List.fold_left OctagonZ.incremental_closure octagon constraints in
+  (OctagonZ.print Format.std_formatter octagon;
+  OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.dbm_as_list octagon) closed_dbm)
+
+let test_octagon_entailment_inf_Z () =
+  let octagon = OctagonZ.init 2 in
+  let constraints = octagon_2D in
+  List.iter (fun c ->
+    let obtained = OctagonZ.entailment octagon c in
+    let expected = if c.d = Z.inf then True else Unknown in
+    Printf.printf "Entailment of %s\n" (string_of_constraint c Z.to_string);
+    Alcotest.(check bool) "entailment_inf(Z)" true (obtained = expected)) constraints
+
+let test_octagon_entailment_Z () =
+  let octagon = OctagonZ.init 2 in
+  let constraints = octagon_2D in
+  let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
+  let octagon = OctagonZ.closure octagon in
+  let entailment_constraints = [
+    {v=x; d=Z.of_int_up (-1)};
+    {v=x; d=Z.of_int_up (-2)};
+    {v=x; d=Z.of_int_up (-3)};
+    {v=x; d=Z.of_int_up (-10)};
+    {v=x; d=Z.of_int_up (-11)};
+  ] in
+  let entailment_result = [True; True; Unknown; Unknown; False] in
+  List.iter2 (fun c expected ->
+    let obtained = OctagonZ.entailment octagon c in
+    Printf.printf "Entailment of %s (obtained %s/expect %s)\n" (string_of_constraint c Z.to_string) (string_of_kleene obtained) (string_of_kleene expected);
+    Alcotest.(check bool) "entailment(Z)" true (obtained = expected)) entailment_constraints entailment_result
 
 let tests = [
-  "init(Q)", `Quick, test_init_Q;
-(*   "closure(Q)", `Quick, test_closure_Q;
-  "init(F)", `Quick, test_init_F;
-  "closure(F)", `Quick, test_closure_F;
-  "init(Z)", `Quick, test_init_Z;
-  "closure(Z)", `Quick, test_closure_Z;
-  "entailment(Z)", `Quick, test_entailment_Z; *)
+  "dbm_var", `Quick, test_dbm_var;
+  "fold_intervals", `Quick, test_fold_intervals;
+  "fold_intervals_canonical", `Quick, test_fold_intervals_canonical;
+  "fold_intervals_rotated", `Quick, test_fold_intervals_rotated;
+  "init-closure(Z)", `Quick, test_octagon_Z;
+  "incremental-closure(Z)", `Quick, test_octagon_incremental_Z;
+  "entailment-inf(Z)", `Quick, test_octagon_entailment_inf_Z;
+  "entailment(Z)", `Quick, test_octagon_entailment_Z;
 ]

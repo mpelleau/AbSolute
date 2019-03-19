@@ -192,10 +192,13 @@ let print fmt prog =
   Format.fprintf fmt "%a\n" print_assign prog.init;
   Format.fprintf fmt "%a\n" print_constraints prog.constraints
 
-
 let print_bconstraint fmt (e1,op,e2) =
   Format.fprintf fmt "%a" print_bexpr (Cmp (op,e1,e2))
 
+let string_of_bconstraint c = begin
+  print_bconstraint Format.str_formatter c;
+  Format.flush_str_formatter ()
+end
 
 (*************************************************************)
 (*                         PREDICATES                        *)
