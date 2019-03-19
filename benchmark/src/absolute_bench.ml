@@ -112,7 +112,7 @@ let bench_absolute config problem_path domain precision =
  *)
 
 open Octagon_split
-module OctagonSplit = Make(First_fail(Dbm.Fold_intervals))(Middle)(Bisect)
+module OctagonSplit = Make(Anti_first_fail(Dbm.Fold_intervals))(Upper_bound)(Bisect)
 module Rcpsp_domain = Box_octagon_disjoint.Make
   (Box_dom.Box_base(Box_split.First_fail_bisect))
   (Octagon.OctagonZ(OctagonSplit))
@@ -209,7 +209,14 @@ let update_time config stats measure =
     else List.map Mtime.Span.to_uint64_ns [stats.elapsed] in
   Measurement.process_samples measure samples
 
-let bench config problem_path domain (total, completed) precision =
+type global_info = {
+  total: int;
+  solved: int;
+  found_bound: int;
+  total_solving_time: int64;
+}
+
+let bench config problem_path domain info precision =
   try
     let rcpsp = make_rcpsp config problem_path in
     let stats = State.init_global_stats () in
@@ -219,11 +226,15 @@ let bench config problem_path domain (total, completed) precision =
     let measure = update_time config stats measure in
     let measure = update_with_optimum rcpsp best measure in
     Measurement.print_as_csv config measure;
-    (total + 1, if (List.length measure.samples) = 0 then completed else completed + 1)
+    { total=info.total+1;
+      solved=info.solved + (if (List.length measure.samples) = 0 then 0 else 1);
+      found_bound=info.found_bound + (match measure.optimum with Some _ -> 1 | None -> 0);
+      total_solving_time=Int64.add info.total_solving_time (if (List.length measure.samples) = 0 then Int64.zero else measure.average)
+    }
   with e -> begin
     (* Printexc.print_backtrace stdout; *)
     Measurement.print_exception problem_path (Printexc.to_string e);
-    (total + 1, completed)
+    { info with total=info.total +1 }
   end
 
 let iter_precision config problem_path global_info domain =
@@ -265,9 +276,13 @@ let iter_problem config global_info =
       global_info
 
 let start_benchmarking config =
+begin
   Measurement.print_csv_header config;
-  let (total, completed) = iter_problem config (0,0) in
-  Printf.printf "%d / %d problems solved within the timeout.\n" completed total
+  let info = iter_problem config { total=0; solved=0; found_bound=0; total_solving_time=Int64.zero } in
+  Printf.printf "%d / %d problems solved within the timeout.\n" info.solved info.total;
+  Printf.printf "%d / %d problems bounded within the timeout.\n" info.found_bound info.total;
+  Printf.printf "Cumulative running time: %.2fs.\n" (Mtime.Span.to_s (Mtime.Span.of_uint64_ns info.total_solving_time));
+end
 
 let () =
   (* Printexc.record_backtrace true; *)

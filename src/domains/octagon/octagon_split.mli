@@ -34,6 +34,7 @@ module Lower_bound : Value_order
 module Upper_bound : Value_order
 
 module Bisect : Distributor
+module Bisect_reverse : Distributor
 
 module Make
   (VARIABLE: Variable_order)

@@ -149,6 +149,15 @@ struct
   module DBM=DBM
   module B=DBM.B
   let distribute itv value =
+    [{v=itv.ub; d=B.prec value};
+     {v=itv.lb; d=B.neg value}]
+end
+
+module Bisect_reverse (DBM: DBM_sig) =
+struct
+  module DBM=DBM
+  module B=DBM.B
+  let distribute itv value =
     [{v=itv.lb; d=B.neg value};
      {v=itv.ub; d=B.prec value}]
 end
