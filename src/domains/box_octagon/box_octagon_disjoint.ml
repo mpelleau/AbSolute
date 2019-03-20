@@ -43,7 +43,7 @@ struct
     else
       match Rewriter.rewrite rewriter c with
       (* If we cannot rewrite the constraint, we add a relaxed version, if any.
-         Note that the constraint is add to `constraints` nevertheless, so it is fully processed by the box domain. *)
+         Note that the constraint is added to `constraints` anyway, so it can be fully processed by the box domain. *)
       | [] -> (List.fold_left Octagon.weak_incremental_closure octagon (Rewriter.relax rewriter c)), c::constraints
       | cons -> (List.fold_left Octagon.weak_incremental_closure octagon cons), constraints
 
@@ -90,7 +90,7 @@ struct
     | True, _ -> raise Bot.Bot_found
     | Unknown, Some(u) ->
         let unknown = List.nth conjunction u in
-        let neg_unknown = { v=(Dbm.inv unknown.v); d=B.neg (B.succ unknown.d) } in
+        let neg_unknown = Rewriter.negate unknown in
         { box_oct with octagon=Octagon.weak_incremental_closure box_oct.octagon neg_unknown }
     | Unknown, None ->
         { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }

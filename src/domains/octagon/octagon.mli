@@ -26,8 +26,8 @@ sig
       It throws `Bot_found` if the constraint is disentailed (see `entailment`). *)
   val weak_incremental_closure: t -> bound dbm_constraint -> t
 
-  (** Low-level access to the DBM as a list. *)
-  val dbm_as_list: t -> bound list
+  (** Low-level access to the DBM. *)
+  val unwrap: t -> DBM.t
 
   val split: t -> t list
 

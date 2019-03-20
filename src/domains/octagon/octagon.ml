@@ -13,7 +13,7 @@ sig
   val closure: t -> t
   val incremental_closure: t -> bound dbm_constraint -> t
   val weak_incremental_closure: t -> bound dbm_constraint -> t
-  val dbm_as_list: t -> bound list
+  val unwrap: t -> DBM.t
   val split: t -> t list
   val state_decomposition: t -> kleene
   val project: t -> dbm_interval -> (bound * bound)
@@ -73,7 +73,7 @@ struct
     let octagon' = (weak_incremental_closure octagon oc) in
     if octagon <> octagon' then closure octagon' else octagon
 
-  let dbm_as_list octagon = DBM.to_list octagon.dbm
+  let unwrap octagon = octagon.dbm
 
   let split octagon = List.mapi (fun i branch ->
     weak_incremental_closure (if i > 0 then copy octagon else octagon) branch

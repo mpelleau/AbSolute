@@ -34,6 +34,7 @@ sig
   val var_box_to_dbm: t -> var -> dbm_interval
   val rewrite: t -> bconstraint -> (B.t dbm_constraint) list
   val relax: t -> bconstraint -> (B.t dbm_constraint) list
+  val negate: B.t dbm_constraint -> B.t dbm_constraint
 end with module B=B
 
 module Rewriter(B: Bound_sig.BOUND) =
@@ -128,4 +129,10 @@ struct
       | e1, LT, e2 -> rewrite r (e1, LEQ, e2)
       | c -> []
     ) (generic_rewrite c))
+
+  let negate c =
+    if is_rotated c.v then
+      { v=(Dbm.inv c.v); d=B.neg (B.succ c.d) }
+    else
+      { v=(Dbm.inv c.v); d=B.mul_up (B.neg (B.succ (B.div_down c.d B.two))) B.two }
 end

@@ -112,7 +112,7 @@ let bench_absolute config problem_path domain precision =
  *)
 
 open Octagon_split
-module OctagonSplit = Make(Anti_first_fail(Dbm.Fold_intervals))(Upper_bound)(Bisect)
+module OctagonSplit = Make(Input_order(Dbm.Fold_intervals_canonical))(Bisect_middle)
 module Rcpsp_domain = Box_octagon_disjoint.Make
   (Box_dom.Box_base(Box_split.First_fail_bisect))
   (Octagon.OctagonZ(OctagonSplit))
@@ -171,10 +171,10 @@ begin
       match Rcpsp_domain.state_decomposition domain with
       | False -> (print_node "false'" rcpsp depth domain; best)
       | True when (Rcpsp_domain.volume domain) = 1. ->
-          (* let (lb,ub) = makespan rcpsp domain in
-            Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub); *)
-            (* print_variables domain rcpsp.octagonal_vars;
-            print_variables domain rcpsp.box_vars; *)
+(*           let (lb,ub) = makespan rcpsp domain in
+            Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub);
+            print_variables domain rcpsp.octagonal_vars; *)
+            (*print_variables domain rcpsp.box_vars; *)
           (print_node "true" rcpsp depth domain; Some domain)
       | x ->
           let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in

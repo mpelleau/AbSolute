@@ -18,6 +18,12 @@ sig
   val distribute: dbm_interval -> DBM.bound -> (DBM.bound dbm_constraint) list
 end with module DBM=DBM
 
+module type ValueDistributor = functor (DBM: DBM_sig) ->
+sig
+  module DBM : DBM_sig
+  val distribute: DBM.t -> dbm_interval -> (DBM.bound dbm_constraint) list
+end with module DBM=DBM
+
 module type Octagon_split_sig = functor (DBM : DBM_sig) ->
 sig
   module DBM : DBM_sig
@@ -123,28 +129,42 @@ struct
       ) (B.inf, null_itv) (DBM.dimension dbm)))
 end
 
+(** Should be combined with `BisectLB` *)
 module Middle (DBM: DBM_sig) =
 struct
   module DBM = DBM
   module B = DBM.B
   let select dbm v =
     let (lb, ub) = DBM.project dbm v in
-    B.div_down (B.add_up lb ub) B.two
+    B.add_up lb (B.div_down (B.sub_up ub lb) B.two)
 end
 
+(** Should be combined with `BisectLB` *)
 module Lower_bound (DBM: DBM_sig) =
 struct
   module DBM = DBM
-  let select dbm v = fst (DBM.project dbm v)
+  let select dbm itv = fst (DBM.project dbm itv)
 end
 
+(** Should be combined with `BisectUB` *)
 module Upper_bound (DBM: DBM_sig) =
 struct
   module DBM = DBM
-  let select dbm v = snd (DBM.project dbm v)
+  let select dbm itv = snd (DBM.project dbm itv)
 end
 
-module Bisect (DBM: DBM_sig) =
+(** x <= v \/ x > v *)
+module BisectLB (DBM: DBM_sig) =
+struct
+  module DBM=DBM
+  module B=DBM.B
+  let distribute itv value =
+    [{v=itv.ub; d=value};
+     {v=itv.lb; d=B.neg (B.succ value)}]
+end
+
+(** x < v \/ x >= v *)
+module BisectUB (DBM: DBM_sig) =
 struct
   module DBM=DBM
   module B=DBM.B
@@ -153,30 +173,38 @@ struct
      {v=itv.lb; d=B.neg value}]
 end
 
-module Bisect_reverse (DBM: DBM_sig) =
+module Distribute_value(VALUE: Value_order)(DISTRIBUTOR: Distributor)(DBM: DBM_sig) =
 struct
   module DBM=DBM
-  module B=DBM.B
-  let distribute itv value =
-    [{v=itv.lb; d=B.neg value};
-     {v=itv.ub; d=B.prec value}]
+  module Value = VALUE(DBM)
+  module Distributor = DISTRIBUTOR(DBM)
+  let distribute dbm itv = Distributor.distribute itv (Value.select dbm itv)
+end
+
+module Bisect_middle = Distribute_value(Middle)(BisectLB)
+module Assign_LB = Distribute_value(Lower_bound)(BisectLB)
+module Assign_UB = Distribute_value(Upper_bound)(BisectUB)
+
+module Right_to_left(DISTRIBUTOR: ValueDistributor)(DBM: DBM_sig) =
+struct
+  module DBM=DBM
+  module D=DISTRIBUTOR(DBM)
+  let distribute itv value = List.rev (D.distribute itv value)
 end
 
 module Make
   (VARIABLE: Variable_order)
-  (VALUE: Value_order)
-  (DISTRIBUTOR: Distributor)
+  (VALUE_DISTRIBUTOR: ValueDistributor)
   (DBM: DBM_sig) =
 struct
   module DBM=DBM
   module Variable = VARIABLE(DBM)
-  module Value = VALUE(DBM)
-  module Distributor = DISTRIBUTOR(DBM)
+  module Value_distributor = VALUE_DISTRIBUTOR(DBM)
 
   let split dbm =
     match Variable.select dbm with
     | None -> []
-    | Some itv -> Distributor.distribute itv (Value.select dbm itv)
+    | Some itv -> Value_distributor.distribute dbm itv
 end
 
-module First_fail_bisect = Make(First_fail(Fold_intervals))(Middle)(Bisect)
+module First_fail_bisect = Make(First_fail(Fold_intervals))(Bisect_middle)

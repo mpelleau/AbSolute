@@ -551,6 +551,8 @@ let rec neg_bexpr = function
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
 
+let neg_bconstraint (e1,op,e2) = (e1,neg op,e2)
+
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
 (*****************************************)

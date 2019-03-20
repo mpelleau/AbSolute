@@ -23,6 +23,10 @@ sig
       For continuous bound, it rewrites strict inequalities `<`,`>` into the inequality `<=`,`>=`.
       For discrete bound, it always returns the empty list. *)
   val relax: t -> bconstraint -> (B.t dbm_constraint) list
+
+  (** Negate the constraint.
+      It might be a relaxation approximation of the negation for continuous domain. *)
+  val negate: B.t dbm_constraint -> B.t dbm_constraint
 end with module B=B
 
 module Rewriter: Rewriter_sig

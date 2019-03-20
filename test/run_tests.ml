@@ -7,7 +7,8 @@ let test_suites: unit Alcotest.test list = [
   "Octagon", Test_octagon.tests;
   (* "Octagon_utilities", Test_octagon_utilities.tests; *)
   "Box", Test_box.tests;
-  "Rewriter", Test_rewritter.tests;
+  "Rewriter", Test_rewriter.tests;
+  "Split strategies", Test_split_strategies.tests;
 ]
 
 let () = Alcotest.run "AbSolute" test_suites
