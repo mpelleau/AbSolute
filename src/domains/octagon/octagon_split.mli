@@ -38,6 +38,7 @@ module Middle : Value_order
 module Input_order(Fold_interval: Fold_interval_sig) : Variable_order
 module First_fail(Fold_interval: Fold_interval_sig) : Variable_order
 module Anti_first_fail(Fold_interval: Fold_interval_sig) : Variable_order
+module Max_min : Variable_order
 module Min_max : Variable_order
 
 module Bisect_middle : ValueDistributor
@@ -51,3 +52,11 @@ module Make
   (VALUE_DISTRIBUTOR: ValueDistributor) : Octagon_split_sig
 
 module First_fail_bisect : Octagon_split_sig
+module Min_max_LB : Octagon_split_sig
+module Max_min_LB : Octagon_split_sig
+module Max_min_UB : Octagon_split_sig
+module Max_min_Bisect : Octagon_split_sig
+module Anti_first_fail_LB_canonical : Octagon_split_sig
+module Anti_first_fail_UB_canonical : Octagon_split_sig
+module Anti_first_fail_LB : Octagon_split_sig
+module Anti_first_fail_UB : Octagon_split_sig

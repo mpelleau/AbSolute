@@ -172,7 +172,6 @@ let rec print_bexpr fmt = function
   | Not b -> Format.fprintf fmt "not %a" print_bexpr b
 
 let print_constraints fmt constraints =
-  Format.fprintf fmt "Constraints:\n";
   List.iter
     (fun c ->
       Format.fprintf fmt "%a\n" print_bexpr c
@@ -194,6 +193,9 @@ let print fmt prog =
 
 let print_bconstraint fmt (e1,op,e2) =
   Format.fprintf fmt "%a" print_bexpr (Cmp (op,e1,e2))
+
+let print_bconstraints fmt constraints =
+  List.iter (Format.printf "%a\n" print_bconstraint) constraints
 
 let string_of_bconstraint c = begin
   print_bconstraint Format.str_formatter c;

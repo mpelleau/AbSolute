@@ -25,15 +25,30 @@ let and_reified conjunction =
   else if (List.length u) = 1 then (Unknown, Some(List.hd u))
   else (Unknown, None)
 
+(* This exception is sent when a constraint is passed to an abstract domain that cannot represent this constraint. *)
 exception Wrong_modelling of string
 
 module type Abstract_domain =
 sig
+  (** The module of the bound handled by this abstract domain. *)
+  module B: Bound_sig.BOUND
+
   (** The type of the abstract domain. *)
   type t
 
+  (** Project the lower and upper bounds of a single variable. *)
+  val project_one: t -> Csp.var -> (B.t * B.t)
+
+  (** Project the lower and upper bounds of all the variables in `vars`. *)
+  val project: t -> Csp.var list -> (Csp.var * (B.t * B.t)) list
+
   (** Closure of the abstract domain: it tries to remove as much inconsistent values as possible from the abstract element according to the constraints encapsulated. *)
   val closure: t -> t
+
+  (** Weak incremental closure add the constraint into the abstract domain.
+      This operation is in constant time and must not perform any closure algorithm.
+      It can however raise `Bot_found` if the constraint is detected disentailed in constant time. *)
+  val weak_incremental_closure: t -> Csp.bconstraint -> t
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split t` should be equal to `t`. *)

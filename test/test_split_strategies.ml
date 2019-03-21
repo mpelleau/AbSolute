@@ -1,8 +1,8 @@
 open Test_octagon
 
 module Rewriter = Octagonal_rewriting.Rewriter(Z)
-
 module Middle = Octagon_split.Middle(OctagonZ.DBM)
+module MinMax = Octagon_split.Min_max(OctagonZ.DBM)
 
 let test_middle () =
   let octagon = OctagonZ.init 2 in
@@ -22,6 +22,15 @@ let test_middle () =
     Alcotest.(check bool) ("middle of [2..2] is " ^ (Z.to_string middle)) true (Z.equal middle (Z.of_int_up 2));
   end
 
+module R = Bound_rat
+let test_rat () =
+  let r1 = R.inf in
+  let r2 = R.of_int 0 in
+  begin
+    Alcotest.(check bool) "Rat.lt" true (R.lt r2 r1);
+  end
+
 let tests = [
   "middle", `Quick, test_middle;
+  "rat", `Quick, test_rat;
 ]

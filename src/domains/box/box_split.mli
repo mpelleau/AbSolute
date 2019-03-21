@@ -40,3 +40,5 @@ module Make
   (Distrib: Distributor) : Box_split_sig
 
 module First_fail_bisect : Box_split_sig
+module Anti_first_fail_LB : Box_split_sig
+module Anti_first_fail_UB : Box_split_sig

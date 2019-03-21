@@ -1,6 +1,12 @@
 open Bench_desc_t
 open Bound_sig
 open Itv_sig
+open System
+
+let extension_of_problem_kind = function
+  | `PSPlib -> psplib_ext
+  | `Patterson -> patterson_ext
+  | `ProGenMax -> pro_gen_ext
 
 let make_bound : bound -> (module BOUND) = function
 | `Rational -> (module Bound_rat)

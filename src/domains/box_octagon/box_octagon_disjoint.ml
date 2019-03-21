@@ -134,7 +134,6 @@ struct
   let closure (box_oct:t) =
     (* Apply all the possible constraints from the splitting strategy. *)
     let box_oct = { box_oct with octagon=Octagon.closure box_oct.octagon } in
-    let box_oct = { box_oct with box=Box.closure box_oct.box } in
     propagate (volume box_oct) box_oct
 
   let weak_incremental_closure box_oct c =
