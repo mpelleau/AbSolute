@@ -38,6 +38,10 @@ module Middle : Value_order
 module Input_order(Fold_interval: Fold_interval_sig) : Variable_order
 module First_fail(Fold_interval: Fold_interval_sig) : Variable_order
 module Anti_first_fail(Fold_interval: Fold_interval_sig) : Variable_order
+module Min_LB(Fold_interval: Fold_interval_sig) : Variable_order
+module Min_UB(Fold_interval: Fold_interval_sig) : Variable_order
+module Max_LB(Fold_interval: Fold_interval_sig) : Variable_order
+module Max_UB(Fold_interval: Fold_interval_sig) : Variable_order
 module Max_min : Variable_order
 module Min_max : Variable_order
 
@@ -60,3 +64,6 @@ module Anti_first_fail_LB_canonical : Octagon_split_sig
 module Anti_first_fail_UB_canonical : Octagon_split_sig
 module Anti_first_fail_LB : Octagon_split_sig
 module Anti_first_fail_UB : Octagon_split_sig
+module MSLF : Octagon_split_sig
+module MSLF_rotated : Octagon_split_sig
+module MSLF_all : Octagon_split_sig

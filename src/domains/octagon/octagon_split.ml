@@ -46,28 +46,38 @@ struct
     with Found_var v -> Some v
 end
 
-(* This module factorizes `First_fail` and `Anti_first_fail`. *)
-module Width_order(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+(* This module factorizes `Width_order` and `Max/Min_LB/UB`. *)
+module Dom_order(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
 struct
   module DBM=DBM
   module B=DBM.B
 
-  let select dbm width_cmp =
-    let size (lb,ub) = B.sub_up ub lb in
+  let select dbm measure cmp =
     let var =
       Fold_interval.fold (fun a v ->
         let (lb, ub) = DBM.project dbm v in
         if B.equal lb ub then a
         else
-          let width = size (lb, ub) in
+          let m = measure (lb, ub) in
           match a with
-          | Some (best, _) when width_cmp width best -> Some (width, v)
+          | Some (best, _) when cmp m best -> Some (m, v)
           | Some _ -> a
-          | None -> Some (width, v)
+          | None -> Some (m, v)
       ) None (DBM.dimension dbm) in
     match var with
     | Some (_, v) -> Some v
     | None -> None
+end
+
+
+(* This module factorizes `First_fail` and `Anti_first_fail`. *)
+module Width_order(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module D = Dom_order(Fold_interval)(DBM)
+  let select dbm width_cmp =
+    let size (lb,ub) = DBM.B.sub_up ub lb in
+    D.select dbm size width_cmp
 end
 
 module First_fail(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
@@ -82,6 +92,34 @@ struct
   module DBM = DBM
   module W = Width_order(Fold_interval)(DBM)
   let select dbm = W.select dbm DBM.B.gt
+end
+
+module Min_LB(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module D = Dom_order(Fold_interval)(DBM)
+  let select dbm = D.select dbm fst DBM.B.lt
+end
+
+module Min_UB(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module D = Dom_order(Fold_interval)(DBM)
+  let select dbm = D.select dbm snd DBM.B.lt
+end
+
+module Max_LB(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module D = Dom_order(Fold_interval)(DBM)
+  let select dbm = D.select dbm fst DBM.B.gt
+end
+
+module Max_UB(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module D = Dom_order(Fold_interval)(DBM)
+  let select dbm = D.select dbm snd DBM.B.gt
 end
 
 (* An octagon is an intersection of boxes.
@@ -334,3 +372,11 @@ module Anti_first_fail_LB_canonical = Make(Anti_first_fail(Fold_intervals_canoni
 module Anti_first_fail_UB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_UB)
 module Anti_first_fail_LB = Make(Anti_first_fail(Fold_intervals))(Assign_LB)
 module Anti_first_fail_UB = Make(Anti_first_fail(Fold_intervals))(Assign_UB)
+(* module MSLF = Make(Min_LB(Fold_intervals_canonical))(Bisect_middle)
+module MSLF_rotated = Make(Min_LB(Fold_intervals_rotated))(Bisect_middle)
+module MSLF_all = Make(Min_LB(Fold_intervals))(Bisect_middle)
+ *)
+module MSLF = Make(Max_UB(Fold_intervals_canonical))(Right_to_left(Bisect_middle))
+module MSLF_rotated = Make(Max_UB(Fold_intervals_rotated))(Right_to_left(Bisect_middle))
+module MSLF_all = Make(Max_UB(Fold_intervals))(Right_to_left(Bisect_middle))
+

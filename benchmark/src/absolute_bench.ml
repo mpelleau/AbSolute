@@ -249,7 +249,7 @@ sig
   val start_benchmarking: benchmark -> string -> unit
 end
 
-let bench_box (module S: Box_split.Box_split_sig) config name =
+(* let bench_box (module S: Box_split.Box_split_sig) config name =
   let (module M: RCPSP_sig) = (module RCPSP_Box(S)) in
   let (module B: Bencher_sig) = (module Bencher(M)) in
   B.start_benchmarking config name
@@ -259,7 +259,7 @@ begin
   bench_box (module Box_split.Anti_first_fail_LB) config "Box(Anti_first_fail, LB)";
   bench_box (module Box_split.Anti_first_fail_UB) config "Box(Anti_first_fail, UB)";
 end
-
+ *)
 let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
   let (module M: RCPSP_sig) = (module RCPSP_Octagon(S)) in
   let (module B: Bencher_sig) = (module Bencher(M)) in
@@ -267,20 +267,23 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
-  bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
+  bench_octagon (module Octagon_split.MSLF_rotated) config "Octagon(MSLF, rotated)";
+  bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)";
+  bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
+(*   bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB_canonical) config "Octagon(Anti_first_fail, UB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_LB) config "Octagon(Anti_first_fail, LB, All)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB) config "Octagon(Anti_first_fail, UB, All)";
   bench_octagon (module Octagon_split.Min_max_LB) config "Octagon(Min_max, LB)";
   bench_octagon (module Octagon_split.Max_min_LB) config "Octagon(Max_min, LB)";
   bench_octagon (module Octagon_split.Max_min_UB) config "Octagon(Max_min, UB)";
-  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max_min, Bisect)";
+  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max_min, Bisect)"; *)
 end
 
 let benchmark_suite config =
 begin
   Printf.printf "\n  <<<< Benchmark suite for \"%s\" >>>>\n\n\n" config.problem_set;
-  benchmark_suite_box config;
+  (* benchmark_suite_box config; *)
   benchmark_suite_octagon config;
 end
 
