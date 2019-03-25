@@ -56,12 +56,13 @@ struct
     else Unknown
 
   let closure octagon =
-    (if (List.length octagon.constraints) >= (DBM.dimension octagon.dbm) then
-      (List.iter (DBM.set octagon.dbm) octagon.constraints;
-      Closure.closure octagon.dbm)
-    else
-      List.iter (Closure.incremental_closure octagon.dbm) octagon.constraints;
-    {octagon with constraints=[]})
+    let dbm =
+      if (List.length octagon.constraints) >= (DBM.dimension octagon.dbm) then
+        List.fold_left DBM.set octagon.dbm octagon.constraints
+        |> Closure.closure
+      else
+        List.fold_left Closure.incremental_closure octagon.dbm octagon.constraints in
+    {dbm=dbm; constraints=[]}
 
   let weak_incremental_closure octagon oc =
     match entailment octagon oc with
@@ -71,7 +72,10 @@ struct
 
   let incremental_closure octagon oc =
     let octagon' = (weak_incremental_closure octagon oc) in
-    if octagon <> octagon' then closure octagon' else octagon
+    if (List.length octagon.constraints) <> (List.length octagon'.constraints) then
+      closure octagon'
+    else
+      octagon
 
   let unwrap octagon = octagon.dbm
 

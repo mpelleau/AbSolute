@@ -68,7 +68,7 @@ sig
   type t
   val init: int -> t
   val get : t -> dbm_var -> bound
-  val set : t -> bound dbm_constraint -> unit
+  val set : t -> bound dbm_constraint -> t
   val project: t -> dbm_interval -> (bound * bound)
   val copy : t -> t
   val dimension: t -> int
@@ -95,7 +95,8 @@ module Make(B:Bound_sig.BOUND) = struct
 
   let set dbm dbm_cons =
     let pos = matpos dbm_cons.v in
-    if B.gt dbm.m.(pos) dbm_cons.d then dbm.m.(pos) <- dbm_cons.d
+    (if B.gt dbm.m.(pos) dbm_cons.d then dbm.m.(pos) <- dbm_cons.d;
+    dbm)
 
   let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
   let copy dbm = {dim=dbm.dim; m=Array.copy dbm.m}

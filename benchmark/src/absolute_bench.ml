@@ -267,7 +267,7 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
-  bench_octagon (module Octagon_split.MSLF_rotated) config "Octagon(MSLF, rotated)";
+  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
   bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)";
   bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
 (*   bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
