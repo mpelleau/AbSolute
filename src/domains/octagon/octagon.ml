@@ -43,16 +43,10 @@ struct
   let print fmt octagon = DBM.print fmt octagon.dbm
 
   let entailment octagon oc =
-    (* I. Retrieve the current lower and upper bound of `oc`. *)
-    let itv = as_interval oc.v in
-    let (lb, ub) = DBM.project octagon.dbm itv in
-    let is_lb = is_lower_bound oc.v in
-    let bound = if is_lb then B.neg oc.d else oc.d in
-    (* II. We decide entailment by comparing the current bounds and `oc.c`. *)
-    if (is_lb && B.leq bound lb) ||
-       (not is_lb && B.geq bound ub) then True
-    else if (is_lb && B.gt bound ub) ||
-            (not is_lb && B.lt bound lb) then False
+    let current = DBM.get octagon.dbm oc.v in
+    if B.geq oc.d current then True
+    (* If the addition of the bounds is equal to zero then the two sides of the octagon are reversed. *)
+    else if B.lt (B.add_up oc.d (DBM.get octagon.dbm (inv oc.v))) B.zero then False
     else Unknown
 
   let closure octagon =
