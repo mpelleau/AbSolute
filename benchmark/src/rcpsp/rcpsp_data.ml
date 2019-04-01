@@ -69,5 +69,10 @@ let number_of_resources rcpsp =
   r.renewable + r.nonrenewable + r.doubly_constrained
 
 let compute_horizon rcpsp =
-  let horizon = List.fold_left (fun a j -> a + j.duration) 0 rcpsp.jobs in
+  let horizon = List.fold_left (fun a j ->
+    let weights = List.flatten (List.map (fun (p:precedence) ->
+      if p.job_index = j.job_index then p.weights else []) rcpsp.precedence_relations) in
+    let max_dur = List.fold_left max j.duration weights in
+    a + max_dur
+    ) 0 rcpsp.jobs in
   {rcpsp with horizon = horizon}

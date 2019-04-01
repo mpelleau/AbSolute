@@ -34,6 +34,11 @@ let process_samples this samples =
 
 let csv_line items = String.concat ", " items
 
+let name_of_solver = function
+  | `AbSolute -> "AbSolute"
+  | `MiniZinc(model) -> "MiniZinc(" ^ model ^ ")"
+  | `FlatMiniZinc -> "FlatMiniZinc"
+
 let string_of_time_unit = function
   | `NSec -> "ns"
   | `MSec -> "ms"

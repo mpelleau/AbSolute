@@ -1,8 +1,8 @@
 open Bench_desc_j
 open System
-open Factory
 open Rcpsp
 open Rcpsp_model
+open Factory
 
 let extract_config_from_json json_data =
   try
@@ -15,16 +15,6 @@ let extract_config_from_json json_data =
          %s\n\n\
         [help] Be careful to the case: \"int\" is not the same as \"Int\".\n\
         [help] You can find a full example of the JSON format in benchmark/data/example.json." msg)
-
-(* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
-The files from PSPlib are also supposed to be well-formatted. *)
-let make_rcpsp config problem_path =
-  let rcpsp =
-    match config.problem_kind with
-    | `PSPlib -> Sm_format.read_sm_file problem_path
-    | `Patterson -> Patterson.read_patterson_file problem_path
-    | `ProGenMax -> Pro_gen_max.read_pro_gen_file problem_path in
-  Rcpsp_model.create_rcpsp rcpsp
 
 module type RCPSP_sig =
 sig
@@ -154,7 +144,7 @@ struct
     let domain_kind = `BoxedOctagon `Integer in
     let config = bench.config in
     try
-      let rcpsp = make_rcpsp config problem_path in
+      let rcpsp = Rcpsp_model.create_rcpsp (make_rcpsp config problem_path) in
       let stats = State.init_global_stats () in
       let best = solve bench stats no_print no_print_makespan rcpsp in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
@@ -178,32 +168,9 @@ struct
       {bench with info={ bench.info with total=bench.info.total +1 }}
     end
 
-  let check_problem_file_format bench problem_path =
-    let ext = extension_of_problem_kind bench.config.problem_kind in
-    if Sys.is_directory problem_path then begin
-      print_warning ("subdirectory " ^ problem_path ^ " ignored.");
-      false end
-    else if (String.lowercase_ascii (Filename.extension problem_path)) <> ext then begin
-      print_warning ("file \"" ^ problem_path ^
-        "\" ignored (expected extension `" ^ ext ^ "`).");
-      false end
-    else
-      true
-
   let iter_problem bench =
-    let config = bench.config in
-    if Sys.is_directory config.problem_set then
-      let files = Sys.readdir config.problem_set in
-      Array.sort compare files;
-      Array.to_list files |>
-      List.map (fun x -> config.problem_set ^ x) |>
-      List.filter (check_problem_file_format bench) |>
-      List.fold_left bench_problem bench
-    else
-      if check_problem_file_format bench config.problem_set then
-        bench_problem bench config.problem_set
-      else
-        bench
+    let problems = list_of_problems bench.config in
+    List.fold_left bench_problem bench problems
 
   let print_bench_results bench =
     let info = bench.info in
@@ -267,8 +234,8 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
-  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
-  bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)";
+(*   bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
+  bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)"; *)
   bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
 (*   bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB_canonical) config "Octagon(Anti_first_fail, UB, Canonical)";
@@ -280,11 +247,21 @@ begin
   bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max_min, Bisect)"; *)
 end
 
+let benchmark_solver config solver =
+begin
+  Printf.printf "\n  <<<< Benchmark suite for \"%s\" >>>>\n" config.problem_set;
+  Printf.printf   "  <<<< Solver %s >>>>\n\n" (Measurement.name_of_solver solver);
+  match solver with
+  | `AbSolute ->
+      (* benchmark_suite_box config; *)
+      benchmark_suite_octagon config
+  | `MiniZinc(model) -> Minizinc.benchmark_suite_minizinc config model
+  | `FlatMiniZinc -> Minizinc.bench_flat_rcpsp config
+end
+
 let benchmark_suite config =
 begin
-  Printf.printf "\n  <<<< Benchmark suite for \"%s\" >>>>\n\n\n" config.problem_set;
-  benchmark_suite_box config;
-  benchmark_suite_octagon config;
+  List.iter (benchmark_solver config) config.solvers
 end
 
 let () =

@@ -1,12 +1,7 @@
 open Bench_desc_t
 open Bound_sig
 open Itv_sig
-open System
-
-let extension_of_problem_kind = function
-  | `PSPlib -> psplib_ext
-  | `Patterson -> patterson_ext
-  | `ProGenMax -> pro_gen_ext
+open Rcpsp
 
 let make_bound : bound -> (module BOUND) = function
 | `Rational -> (module Bound_rat)
@@ -31,3 +26,13 @@ let make_abstract_domain : abstract_domain -> (module Adcp_sig.AbstractCP) = fun
     | `Rational -> (module BoxedOctagonQ)
     | `Integer -> (module BoxedOctagonZ)
     | `Float -> (module BoxedOctagonF))
+
+(* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
+The files from PSPlib are also supposed to be well-formatted. *)
+let make_rcpsp config problem_path =
+  let rcpsp =
+    match config.problem_kind with
+    | `PSPlib -> Sm_format.read_sm_file problem_path
+    | `Patterson -> Patterson.read_patterson_file problem_path
+    | `ProGenMax -> Pro_gen_max.read_pro_gen_file problem_path in
+  rcpsp

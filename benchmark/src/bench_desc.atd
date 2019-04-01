@@ -49,6 +49,12 @@ type problem_kind = [
   | ProGenMax
 ]
 
+type solver = [
+  | AbSolute
+  | MiniZinc of string
+  | FlatMiniZinc
+]
+
 type var_order = [
   | InputOrder
   | FirstFail
@@ -76,6 +82,7 @@ type benchmark = {
   problem_set: string;
   problem_kind: problem_kind;
   domains: abstract_domain list;
+  solvers: solver list;
   precisions: float list;
   trials: int;
   timeout: int;
