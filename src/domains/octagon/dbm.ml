@@ -76,7 +76,7 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module Make(B:Bound_sig.BOUND) = struct
+(* module Make(B:Bound_sig.BOUND) = struct
   module B=B
   type bound = B.t
   type t = {
@@ -104,6 +104,46 @@ module Make(B:Bound_sig.BOUND) = struct
   let dimension dbm = dbm.dim
 
   let to_list dbm = Array.to_list dbm.m
+
+  let print fmt dbm =
+    for l = 0 to (2*dbm.dim-1) do
+      for c = 0 to (2*dbm.dim-1) do
+        Format.fprintf fmt "%s " (B.to_string (get dbm (make_var l c)))
+      done;
+      Format.fprintf fmt "\n"
+    done
+end
+ *)
+module Make(B:Bound_sig.BOUND) = struct
+  module B=B
+  type bound = B.t
+  type t = {
+    dim: int;
+    m: bound Parray.t;
+  }
+
+  let init n =
+    let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
+    {dim=n; m=Parray.make (size n) B.inf}
+
+  (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
+  let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
+
+  let get dbm v = Parray.get dbm.m (matpos v)
+
+  let set dbm dbm_cons =
+    let pos = matpos dbm_cons.v in
+    if B.gt (Parray.get dbm.m pos) dbm_cons.d then
+      {dbm with m=Parray.set dbm.m pos dbm_cons.d}
+    else
+      dbm
+
+  let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
+  let copy dbm = dbm
+
+  let dimension dbm = dbm.dim
+
+  let to_list dbm = Parray.to_list dbm.m
 
   let print fmt dbm =
     for l = 0 to (2*dbm.dim-1) do

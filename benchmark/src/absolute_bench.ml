@@ -249,7 +249,7 @@ sig
   val start_benchmarking: benchmark -> string -> unit
 end
 
-(* let bench_box (module S: Box_split.Box_split_sig) config name =
+let bench_box (module S: Box_split.Box_split_sig) config name =
   let (module M: RCPSP_sig) = (module RCPSP_Box(S)) in
   let (module B: Bencher_sig) = (module Bencher(M)) in
   B.start_benchmarking config name
@@ -259,7 +259,7 @@ begin
   bench_box (module Box_split.Anti_first_fail_LB) config "Box(Anti_first_fail, LB)";
   bench_box (module Box_split.Anti_first_fail_UB) config "Box(Anti_first_fail, UB)";
 end
- *)
+
 let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
   let (module M: RCPSP_sig) = (module RCPSP_Octagon(S)) in
   let (module B: Bencher_sig) = (module Bencher(M)) in
@@ -283,7 +283,7 @@ end
 let benchmark_suite config =
 begin
   Printf.printf "\n  <<<< Benchmark suite for \"%s\" >>>>\n\n\n" config.problem_set;
-  (* benchmark_suite_box config; *)
+  benchmark_suite_box config;
   benchmark_suite_octagon config;
 end
 

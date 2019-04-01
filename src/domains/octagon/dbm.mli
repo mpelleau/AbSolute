@@ -107,3 +107,4 @@ sig
 end
 
 module Make(B:Bound_sig.BOUND) : DBM_sig
+(* module MakeP(B:Bound_sig.BOUND) : DBM_sig *)
