@@ -87,3 +87,11 @@ let call_command command =
   flush_all ();
   let status = Sys.command command in
   status
+
+let time_of coeff time =
+  Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int coeff) (Int64.of_int time))
+
+let time_of_ms = time_of 1000000
+let time_of_sec = time_of 1000000000
+
+let timeout_of_config config = time_of_sec config.timeout

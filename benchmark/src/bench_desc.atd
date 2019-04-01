@@ -52,7 +52,7 @@ type problem_kind = [
 type solver = [
   | AbSolute
   | MiniZinc of string
-  | FlatMiniZinc
+  | FlatMiniZinc of string
 ]
 
 type var_order = [

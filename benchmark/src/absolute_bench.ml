@@ -25,28 +25,17 @@ end
 (* This module benches a repository of files with the parametrized abstract domain. *)
 module Bencher(Rcpsp_domain: RCPSP_sig) =
 struct
-  type global_info = {
-    total: int;
-    solved: int;
-    found_bound: int;
-    proven_unsat: int;
-    total_solving_time: int64;
-  }
-
   type t = {
     domain_name: string;
     config: benchmark;
-    info: global_info;
+    info: Measurement.global_info;
   }
 
   let init config domain_name = {
     config=config;
     domain_name=domain_name;
-    info={ total=0; solved=0; found_bound=0; proven_unsat=0; total_solving_time=Int64.zero }
+    info=Measurement.empty_info
   }
-
-  let timeout_of_config bench =
-    Mtime.Span.of_uint64_ns (Int64.mul (Int64.of_int 1000000000) (Int64.of_int bench.config.timeout))
 
   let makespan rcpsp domain = Rcpsp_domain.project_one domain rcpsp.makespan
 
@@ -95,7 +84,7 @@ struct
 
   let solve bench stats print_node print_makespan rcpsp =
   begin
-    let time_out = timeout_of_config bench in
+    let time_out = timeout_of_config bench.config in
     let rec aux depth best domain = begin
       (* Stop when we exceed the timeout. *)
       let open State in
@@ -130,14 +119,6 @@ struct
         { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
     | None -> measure
 
-  let update_time bench stats measure =
-    let time_out = timeout_of_config bench in
-    let open State in
-    let samples =
-      if Mtime.Span.compare time_out stats.elapsed <= 0 then []
-      else List.map Mtime.Span.to_uint64_ns [stats.elapsed] in
-    Measurement.process_samples measure samples
-
   let bench_problem bench problem_path =
     (* Dumb parameters for future improvements. *)
     let precision = 1. in
@@ -149,39 +130,19 @@ struct
       let best = solve bench stats no_print no_print_makespan rcpsp in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
       let measure = Measurement.init stats problem_path domain_kind precision in
-      let measure = update_time bench stats measure in
+      let measure = Measurement.update_time bench.config stats measure in
       let measure = update_with_optimum rcpsp best measure in
       Measurement.print_as_csv config measure;
-      let has_bound = match measure.optimum with Some _ -> true | None -> false in
-      let finished_in_time = (List.length measure.samples) > 0 in
-      let info = bench.info in
-      {bench with info=
-        { total=info.total+1;
-          solved=info.solved + (if finished_in_time then 1 else 0);
-          found_bound=info.found_bound + (if has_bound then 1 else 0);
-          proven_unsat=info.proven_unsat + (if finished_in_time && (not has_bound) then 1 else 0);
-          total_solving_time=Int64.add info.total_solving_time (if finished_in_time then measure.average else Int64.zero)
-        }}
+      {bench with info=(Measurement.add_measure bench.info measure)}
     with e -> begin
       (* Printexc.print_backtrace stdout; *)
       Measurement.print_exception problem_path (Printexc.to_string e);
-      {bench with info={ bench.info with total=bench.info.total +1 }}
+      {bench with info=(Measurement.add_erroneous_measure bench.info)}
     end
 
   let iter_problem bench =
     let problems = list_of_problems bench.config in
     List.fold_left bench_problem bench problems
-
-  let print_bench_results bench =
-    let info = bench.info in
-    begin
-      let time = (Mtime.Span.to_s (Mtime.Span.of_uint64_ns info.total_solving_time)) in
-      Printf.printf "%d / %d problems solved within the timeout.\n" info.solved info.total;
-      Printf.printf "%d / %d problems bounded within the timeout.\n" info.found_bound (info.total - info.proven_unsat);
-      Printf.printf "%d problems proven unsatisfiable within the timeout.\n" info.proven_unsat;
-      Printf.printf "Cumulative running time: %.2fs.\n" time;
-      Printf.printf "(%s, %d, %d, %d, %.2fs)\n\n" bench.domain_name info.solved info.found_bound info.proven_unsat time;
-    end
 
   let start_benchmarking config domain_name =
   let bench = init config domain_name in
@@ -189,7 +150,7 @@ struct
     Printf.printf "      << %s >>\n\n" domain_name;
     Measurement.print_csv_header bench.config;
     let bench = iter_problem bench in
-    print_bench_results bench
+    Measurement.print_bench_results bench.domain_name bench.info
   end
 end
 
@@ -255,8 +216,12 @@ begin
   | `AbSolute ->
       (* benchmark_suite_box config; *)
       benchmark_suite_octagon config
-  | `MiniZinc(model) -> Minizinc.benchmark_suite_minizinc config model
-  | `FlatMiniZinc -> Minizinc.bench_flat_rcpsp config
+  | `MiniZinc desc ->
+      let desc = String.split_on_char '#' desc in
+      Minizinc.benchmark_suite_minizinc config (List.nth desc 0) (List.nth desc 1)
+  | `FlatMiniZinc desc ->
+      let desc = String.split_on_char '#' desc in
+      Minizinc.bench_flat_rcpsp config (List.nth desc 0) (List.nth desc 1)
 end
 
 let benchmark_suite config =
