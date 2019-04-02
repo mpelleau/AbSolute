@@ -32,7 +32,20 @@ let process_samples this samples =
   else
     this
 
+let update_time config stats measure =
+  let time_out = System.timeout_of_config config in
+  let open State in
+  let samples =
+    if Mtime.Span.compare time_out stats.elapsed <= 0 then []
+    else List.map Mtime.Span.to_uint64_ns [stats.elapsed] in
+  process_samples measure samples
+
 let csv_line items = String.concat ", " items
+
+let name_of_solver = function
+  | `AbSolute -> "AbSolute"
+  | `MiniZinc(model) -> "MiniZinc(" ^ model ^ ")"
+  | `FlatMiniZinc(search) -> "FlatMiniZinc(" ^ search ^ ")"
 
 let string_of_time_unit = function
   | `NSec -> "ns"
@@ -103,7 +116,10 @@ let csv_field_value (config : benchmark) measure = function
   | `Solutions -> (string_of_int measure.stats.sols)
   | `Fails -> (string_of_int measure.stats.fails)
   | `Nodes -> (string_of_int measure.stats.nodes)
-  | `Optimum -> match measure.optimum with Some(o) -> Bound_rat.to_string o | None -> "none"
+  | `Optimum -> match measure.optimum with
+      | Some(o) -> Bound_rat.to_string o
+      | None when (List.length measure.samples) > 0 -> "unsat"
+      | None -> "none"
 
 let bench_to_csv config measure =
   let values = List.map (csv_field_value config measure) config.csv.fields in
@@ -117,3 +133,35 @@ let print_csv_header config = print_csv_line (csv_header config)
 let print_as_csv config measure = print_csv_line (bench_to_csv config measure)
 
 let print_exception problem_path msg = print_csv_line (Format.sprintf "%s: %s" problem_path msg)
+
+type global_info = {
+  total: int;
+  solved: int;
+  found_bound: int;
+  proven_unsat: int;
+  total_solving_time: int64;
+}
+
+let empty_info = { total=0; solved=0; found_bound=0; proven_unsat=0; total_solving_time=Int64.zero }
+
+let add_measure info measure =
+  let has_bound = match measure.optimum with Some _ -> true | None -> false in
+  let finished_in_time = (List.length measure.samples) > 0 in
+  { total=info.total+1;
+    solved=info.solved + (if finished_in_time then 1 else 0);
+    found_bound=info.found_bound + (if has_bound then 1 else 0);
+    proven_unsat=info.proven_unsat + (if finished_in_time && (not has_bound) then 1 else 0);
+    total_solving_time=Int64.add info.total_solving_time (if finished_in_time then measure.average else Int64.zero)
+  }
+
+let add_erroneous_measure info = { info with total=info.total +1 }
+
+let print_bench_results name info =
+begin
+  let time = (Mtime.Span.to_s (Mtime.Span.of_uint64_ns info.total_solving_time)) in
+  Printf.printf "%d / %d problems solved within the timeout.\n" info.solved info.total;
+  Printf.printf "%d / %d problems bounded within the timeout.\n" info.found_bound (info.total - info.proven_unsat);
+  Printf.printf "%d problems proven unsatisfiable within the timeout.\n" info.proven_unsat;
+  Printf.printf "Cumulative running time: %.2fs.\n" time;
+  Printf.printf "(%s, %d, %d, %d, %.2fs)\n\n" name info.solved info.found_bound info.proven_unsat time;
+end

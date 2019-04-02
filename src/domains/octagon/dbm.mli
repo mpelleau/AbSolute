@@ -87,7 +87,7 @@ sig
 
   (** Monotonic write: we update the cell at (l,c) only if the value passed as argument is smaller than the one in the DBM.
       Precondition on the variable: same as `get`. *)
-  val set : t -> bound dbm_constraint -> unit
+  val set : t -> bound dbm_constraint -> t
 
   (** Returns the interval value of a pair of DBM variables.
       Precisely, it returns (-dbm[lb], dbm[ub]).
@@ -107,3 +107,4 @@ sig
 end
 
 module Make(B:Bound_sig.BOUND) : DBM_sig
+(* module MakeP(B:Bound_sig.BOUND) : DBM_sig *)

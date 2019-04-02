@@ -364,10 +364,12 @@ struct
 end
 
 module First_fail_bisect = Make(First_fail(Fold_intervals))(Bisect_middle)
+module First_fail_LB_canonical = Make(First_fail(Fold_intervals_canonical))(Assign_LB)
 module Min_max_LB = Make(Min_max)(Assign_LB)
 module Max_min_LB = Make(Max_min)(Assign_LB)
 module Max_min_UB = Make(Max_min)(Assign_UB)
 module Max_min_Bisect = Make(Max_min)(Bisect_middle)
+module Max_min_Bisect_reverse = Make(Max_min)(Right_to_left(Bisect_middle))
 module Anti_first_fail_LB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_LB)
 module Anti_first_fail_UB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_UB)
 module Anti_first_fail_LB = Make(Anti_first_fail(Fold_intervals))(Assign_LB)
