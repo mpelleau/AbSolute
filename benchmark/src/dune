@@ -3,6 +3,7 @@
  (public_name absolute-bench)
  (package absolute-bench)
  (modules :standard)
+ (ocamlopt_flags (:standard -O3))
  (libraries rcpsp libabsolute atdgen extlib mtime mtime.clock.os)
 )
 

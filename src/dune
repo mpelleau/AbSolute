@@ -11,6 +11,7 @@
       (vpl zarith -> print/vpl_drawer.ok.ml)
       (!vpl       -> print/vpl_drawer.ko.ml)))
   (flags (:standard -w "+a-4-32-27-42" -warn-error "+a-4-32-27-42"))
+  (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))
   (c_names ml_float)
   (modules (:standard \ absolute check))
