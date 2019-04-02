@@ -1,6 +1,6 @@
 {
   "problem_set" : "benchmark/data/rcpsp/patterson.rcp/",
-  "problem_kind" : <ProGenMax>,
+  "problem_kind" : <Patterson>,
   "domains" : [<BoxedOctagon : <Integer>>],
   "solvers": [
     <AbSolute>,

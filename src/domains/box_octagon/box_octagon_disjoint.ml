@@ -146,9 +146,9 @@ struct
   let split box_oct =
     let branches = List.map (fun octagon -> { box_oct with octagon=octagon }) (Octagon.split box_oct.octagon) in
     if (List.length branches) = 0 then
-      List.mapi (fun i box ->
-        { box_oct with box=box; octagon=(if i > 0 then Octagon.copy box_oct.octagon else box_oct.octagon) }
-      ) (Box.split box_oct.box)
+      let branches = Box.split box_oct.box in
+      let octagons = Octagon.copy box_oct.octagon (List.length branches) in
+      List.map2 (fun box octagon -> { box_oct with box=box; octagon=octagon }) branches octagons
     else
       branches
 

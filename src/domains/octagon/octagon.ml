@@ -8,7 +8,7 @@ sig
   type bound = B.t
   type t
   val init: int -> t
-  val copy: t -> t
+  val copy: t -> int -> t list
   val entailment: t -> bound dbm_constraint -> kleene
   val closure: t -> t
   val incremental_closure: t -> bound dbm_constraint -> t
@@ -39,7 +39,7 @@ struct
   }
 
   let init dimension = {dbm=DBM.init dimension; constraints=[]}
-  let copy octagon = { octagon with dbm=DBM.copy octagon.dbm; }
+  let copy octagon n = List.map (fun dbm -> { octagon with dbm=dbm; }) (DBM.copy octagon.dbm n)
   let print fmt octagon = DBM.print fmt octagon.dbm
 
   let entailment octagon oc =
@@ -73,9 +73,10 @@ struct
 
   let unwrap octagon = octagon.dbm
 
-  let split octagon = List.mapi (fun i branch ->
-    weak_incremental_closure (if i > 0 then copy octagon else octagon) branch
-  ) (Split.split octagon.dbm)
+  let split octagon =
+    let branches = Split.split octagon.dbm in
+    let octagons = copy octagon (List.length branches) in
+    List.map2 weak_incremental_closure octagons branches
 
   let state_decomposition octagon =
     if (List.length octagon.constraints) = 0 then
