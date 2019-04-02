@@ -116,7 +116,10 @@ let csv_field_value (config : benchmark) measure = function
   | `Solutions -> (string_of_int measure.stats.sols)
   | `Fails -> (string_of_int measure.stats.fails)
   | `Nodes -> (string_of_int measure.stats.nodes)
-  | `Optimum -> match measure.optimum with Some(o) -> Bound_rat.to_string o | None -> "none"
+  | `Optimum -> match measure.optimum with
+      | Some(o) -> Bound_rat.to_string o
+      | None when (List.length measure.samples) > 0 -> "unsat"
+      | None -> "none"
 
 let bench_to_csv config measure =
   let values = List.map (csv_field_value config measure) config.csv.fields in

@@ -20,7 +20,7 @@ let minizinc_options config solver =
   "--unknown-msg \"unknown\" " ^
   "--error-msg \"error\" " ^
   "--search-complete-msg \"complete\" " ^
-  (* "--no-output-comments " ^ *)
+  "--no-output-comments " ^
   "--output-to-file " ^ output_file ^ " " ^
   "--solver " ^ solver
 
@@ -38,34 +38,45 @@ let update_with_optimum measure numbers =
     Measurement.{ measure with optimum = Some (Bound_rat.of_int latest_bound) }
   else measure
 
-let update_time config measure line_with_time status =
-  let elapsed_time = Scanf.sscanf line_with_time "%% time elapsed: %d.%d s "
-    (fun a b -> time_of_ms (a*1000 + b*10)) in
-  let stats = Measurement.{measure.stats with elapsed=elapsed_time} in
-  if String.equal status "complete" then
-    Measurement.update_time config stats measure
+let update_time config measure text =
+  (* Remove empty lines. *)
+  let text = List.flatten (List.map (fun t -> if (String.length t) = 0 then [] else [t]) text) in
+  (* The last line is the status. *)
+  let status = (List.nth text ((List.length text) - 1)) in
+  (* Unfortunately, MiniZinc does not print the elapsed time for unsatisfiable instance.
+     In this case, we fall back on the time measured here (less precise). *)
+  let measure =
+    if (List.length text) > 1 then
+      let line_with_time = List.hd text in
+      let elapsed_time = Scanf.sscanf line_with_time "%% time elapsed: %d.%d s "
+        (fun a b -> time_of_ms (a*1000 + b*10)) in
+      Measurement.{measure with stats={measure.stats with elapsed=elapsed_time}}
+    else measure in
+  if String.equal status "unknown" then
+    measure, status
   else
-    measure
+    Measurement.update_time config measure.stats measure, status
 
-let create_minizinc_measure config problem_path result =
-  let stats = State.init_global_stats () in
+let create_minizinc_measure stats config problem_path result =
   let measure = Measurement.init stats problem_path (`BoxedOctagon `Integer) 1. in
   let lines = String.split_on_char '\n' result in
   let (numbers, text) = List.partition
     (fun l -> try ignore(int_of_string l); true with Failure _ -> false) lines in
   let numbers = List.map int_of_string numbers in
-  let time = (List.hd text) in
-  let status = (List.nth text 1) in
   let measure = update_with_optimum measure numbers in
-  let measure = update_time config measure time status in
+  let (measure, status) = update_time config measure text in
   (measure, status)
 
 let bench_minizinc info config problem_path solver model dzn_file =
-  let mzn_command = "minizinc " ^ (minizinc_options config solver) ^ " " ^ model ^ " " ^ dzn_file in
+  let mzn_command = "minizinc " ^ (minizinc_options config solver) ^ " " ^ model ^ " "
+    ^ dzn_file ^ " >> " ^ output_file ^ " 2> /dev/null" in
   (* Printf.printf "%s\n" mzn_command; *)
+  let _ = call_command ("rm " ^ output_file ^ " 2> /dev/null; touch " ^ output_file) in
+  let stats = State.init_global_stats () in
   let _ = call_command mzn_command in
+  let stats = {stats with elapsed=Mtime_clock.count stats.start} in
   let result = file_to_string output_file in
-  let (measure, status) = create_minizinc_measure config problem_path result in
+  let (measure, status) = create_minizinc_measure stats config problem_path result in
   if String.equal status "error" then begin
     Measurement.print_exception problem_path "MiniZinc error";
     Measurement.add_erroneous_measure info end
