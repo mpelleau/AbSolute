@@ -184,8 +184,9 @@ let bench_box (module S: Box_split.Box_split_sig) config name =
 
 let benchmark_suite_box config =
 begin
-  bench_box (module Box_split.Anti_first_fail_LB) config "Box(Anti_first_fail, LB)";
-  bench_box (module Box_split.Anti_first_fail_UB) config "Box(Anti_first_fail, UB)";
+  bench_box (module Box_split.First_fail_LB) config "Box(First_fail, LB)";
+  (* bench_box (module Box_split.Anti_first_fail_LB) config "Box(Anti_first_fail, LB)";
+  bench_box (module Box_split.Anti_first_fail_UB) config "Box(Anti_first_fail, UB)"; *)
 end
 
 let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
@@ -195,9 +196,10 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
+  bench_octagon (module Octagon_split.First_fail_LB_canonical) config "Octagon(First_fail, LB, Canonical)";
 (*   bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
   bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)"; *)
-  bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
+  (* bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)"; *)
 (*   bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB_canonical) config "Octagon(Anti_first_fail, UB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_LB) config "Octagon(Anti_first_fail, LB, All)";
