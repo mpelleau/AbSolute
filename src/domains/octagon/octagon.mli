@@ -11,7 +11,8 @@ sig
   (** Create an octagon of `n` number of variables. *)
   val init: int -> t
 
-  val copy: t -> t
+  (** See DBM.copy *)
+  val copy: t -> int -> t list
 
   (** Given an octagonal constraint, return `True` if it is entailed by the octagon, `False` if it is disentailed, and `Unknown` if it be entailed or disentailed in the future. *)
   val entailment: t -> bound dbm_constraint -> kleene

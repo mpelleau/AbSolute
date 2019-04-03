@@ -94,7 +94,9 @@ sig
       See also `Interval_view_dbm` and `Octagon.project` to recover an "interval" interpretation of these bounds. *)
   val project: t -> dbm_interval -> (bound * bound)
 
-  val copy : t -> t
+  (** Return `n` copies of the current DBM with the assumption that this one will not be used anymore.
+      Internally, some informations can be shared by the different copies (until they are modified). *)
+  val copy : t -> int -> t list
 
   (** The dimension of the DBM is its number of variables. *)
   val dimension: t -> int
@@ -107,4 +109,5 @@ sig
 end
 
 module Make(B:Bound_sig.BOUND) : DBM_sig
-(* module MakeP(B:Bound_sig.BOUND) : DBM_sig *)
+module MakeCopy(B:Bound_sig.BOUND) : DBM_sig
+module MakeTrailing(B:Bound_sig.BOUND) : DBM_sig

@@ -61,6 +61,33 @@ struct
     ) accu (Tools.range 1 (dimension-1))
 end
 
+(* We parametrize the DBM with a value store which is mutable (with Array) or immutable (with Parray).
+   This signature unifies these two interfaces. *)
+module type Array_store_sig =
+sig
+  type 'a t
+  val make : int -> 'a -> 'a t
+  val get : 'a t -> int -> 'a
+  val set' : 'a t -> int -> 'a -> 'a t
+  val to_list : 'a t -> 'a list
+  val copy_n: 'a t -> int -> ('a t) list
+end
+
+module Array_store =
+struct
+  include Array
+  type 'a t = 'a array
+  let set' m i e = (set m i e; m)
+  let copy_n m n = m::(List.init (n-1) (fun _ -> Array.copy m))
+end
+
+module Parray_store =
+struct
+  include Parray
+  let set' = Parray.set
+  let copy_n m n = List.init n (fun _ -> m)
+end
+
 module type DBM_sig =
 sig
   module B: Bound_sig.BOUND
@@ -70,40 +97,42 @@ sig
   val get : t -> dbm_var -> bound
   val set : t -> bound dbm_constraint -> t
   val project: t -> dbm_interval -> (bound * bound)
-  val copy : t -> t
+  val copy : t -> int -> t list
   val dimension: t -> int
   val to_list: t -> bound list
   val print: Format.formatter -> t -> unit
 end
 
-module Make(B:Bound_sig.BOUND) = struct
+module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
   module B=B
   type bound = B.t
   type t = {
     dim: int;
-    m: bound array;
+    m: bound A.t;
   }
 
   let init n =
     let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
-    {dim=n; m=Array.make (size n) B.inf}
+    {dim=n; m=A.make (size n) B.inf}
 
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
   let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
 
-  let get dbm v = dbm.m.(matpos v)
+  let get dbm v = A.get dbm.m (matpos v)
 
   let set dbm dbm_cons =
     let pos = matpos dbm_cons.v in
-    (if B.gt dbm.m.(pos) dbm_cons.d then dbm.m.(pos) <- dbm_cons.d;
-    dbm)
+    if B.gt (A.get dbm.m pos) dbm_cons.d then
+      {dbm with m=A.set' dbm.m pos dbm_cons.d}
+    else
+      dbm
 
   let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
-  let copy dbm = {dim=dbm.dim; m=Array.copy dbm.m}
+  let copy dbm n = List.map (fun m -> {dim=dbm.dim; m=m}) (A.copy_n dbm.m n)
 
   let dimension dbm = dbm.dim
 
-  let to_list dbm = Array.to_list dbm.m
+  let to_list dbm = A.to_list dbm.m
 
   let print fmt dbm =
     for l = 0 to (2*dbm.dim-1) do
@@ -113,18 +142,28 @@ module Make(B:Bound_sig.BOUND) = struct
       Format.fprintf fmt "\n"
     done
 end
-(*
-module Make(B:Bound_sig.BOUND) = struct
+
+module MakeCopy = MakeDBM(Array_store)
+module MakeTrailing = MakeDBM(Parray_store)
+module Make = MakeTrailing
+
+(* module Make(B:Bound_sig.BOUND) = struct
   module B=B
   type bound = B.t
   type t = {
     dim: int;
     m: bound Parray.t;
+    depth: int;
+    num_set_global: int ref;
+    num_true_set_global: int ref;
+    num_set: int;
+    true_set: (int, unit) Hashtbl.t;
   }
 
   let init n =
     let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
-    {dim=n; m=Parray.make (size n) B.inf}
+    {dim=n; m=Parray.make (size n) B.inf; depth=0; num_set = 0; true_set = Hashtbl.create (size n)
+     ; num_set_global = ref 0; num_true_set_global = ref 0; }
 
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
   let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
@@ -134,12 +173,20 @@ module Make(B:Bound_sig.BOUND) = struct
   let set dbm dbm_cons =
     let pos = matpos dbm_cons.v in
     if B.gt (Parray.get dbm.m pos) dbm_cons.d then
-      {dbm with m=Parray.set dbm.m pos dbm_cons.d}
+      (if Hashtbl.mem dbm.true_set pos then () else (Hashtbl.add dbm.true_set pos (); dbm.num_true_set_global := !(dbm.num_true_set_global) + 1);
+       dbm.num_set_global := !(dbm.num_set_global) + 1;
+      {dbm with m=Parray.set dbm.m pos dbm_cons.d; num_set = dbm.num_set + 1})
     else
       dbm
 
   let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
-  let copy dbm = dbm
+
+  let copy_one dbm = { dbm with depth=dbm.depth+1; num_set=0; true_set=Hashtbl.create (Parray.length dbm.m)}
+  let copy dbm n =
+    let _ = List.iter (fun _ -> Printf.printf ".") (Tools.range 1 dbm.depth) in
+    let _ = Printf.printf "%d : %d / %d (parray = %d) / %d - %d - %f%%\n" dbm.depth dbm.num_set (Hashtbl.length dbm.true_set) (Parray.length dbm.m) !(dbm.num_set_global) !(dbm.num_true_set_global) ((float_of_int !(dbm.num_true_set_global)) /. (float_of_int !(dbm.num_set_global)) *. 100.) in
+    let _ = flush_all () in
+    List.map (fun _ -> copy_one dbm) (Tools.range 1 n)
 
   let dimension dbm = dbm.dim
 
@@ -153,4 +200,4 @@ module Make(B:Bound_sig.BOUND) = struct
       Format.fprintf fmt "\n"
     done
 end
- *)
+*)
