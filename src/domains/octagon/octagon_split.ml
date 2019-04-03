@@ -122,6 +122,21 @@ struct
   let select dbm = D.select dbm snd DBM.B.gt
 end
 
+module Min_LB_AFF_IO(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
+struct
+  module DBM=DBM
+  module B=DBM.B
+  module D = Dom_order(Fold_interval)(DBM)
+  let size (lb,ub) = B.sub_up ub lb
+  let select dbm = D.select dbm
+    (fun dom -> (fst dom), size dom)
+    (fun (current_lb, current_width) (best_lb, best_width) ->
+      match B.compare current_lb best_lb with
+      | x when x < 0 -> true (* current_lb < best_lb *)
+      | x when x > 0 -> false (* current_lb > best_lb *)
+      | _ -> B.compare current_width best_width > 0) (* current_width > best_width, last tie broken on input-order (so we keep best). *)
+end
+
 (* An octagon is an intersection of boxes.
    We take the set of the smallest (resp. largest) variables of each box.
    From this set, we take the maximum (resp. minimum) variable.
@@ -374,11 +389,8 @@ module Anti_first_fail_LB_canonical = Make(Anti_first_fail(Fold_intervals_canoni
 module Anti_first_fail_UB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_UB)
 module Anti_first_fail_LB = Make(Anti_first_fail(Fold_intervals))(Assign_LB)
 module Anti_first_fail_UB = Make(Anti_first_fail(Fold_intervals))(Assign_UB)
-(* module MSLF = Make(Min_LB(Fold_intervals_canonical))(Bisect_middle)
-module MSLF_rotated = Make(Min_LB(Fold_intervals_rotated))(Bisect_middle)
-module MSLF_all = Make(Min_LB(Fold_intervals))(Bisect_middle)
- *)
-module MSLF = Make(Max_UB(Fold_intervals_canonical))(Right_to_left(Bisect_middle))
-module MSLF_rotated = Make(Max_UB(Fold_intervals_rotated))(Right_to_left(Bisect_middle))
-module MSLF_all = Make(Max_UB(Fold_intervals))(Right_to_left(Bisect_middle))
-
+module MSLF_simple = Make(Min_LB(Fold_intervals_canonical))(Assign_LB)
+module MSLF = Make(Min_LB_AFF_IO(Fold_intervals_canonical))(Assign_LB)
+module MSLF_all = Make(Min_LB_AFF_IO(Fold_intervals))(Assign_LB)
+module MSLF_UB = Make(Min_LB_AFF_IO(Fold_intervals_canonical))(Assign_UB)
+module MSLF_UB_all = Make(Min_LB_AFF_IO(Fold_intervals))(Assign_UB)

@@ -196,16 +196,16 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
-  bench_octagon (module Octagon_split.First_fail_LB_canonical) config "Octagon(First_fail, LB, Canonical)";
-(*   bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
-  bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)"; *)
-  (* bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)"; *)
-(*   bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
+  bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
+  bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)";
+  bench_octagon (module Octagon_split.MSLF_simple) config "Octagon(MSLF without tie breaking)";
+  bench_octagon (module Octagon_split.Min_max_LB) config "Octagon(Min_max, LB)";
+  bench_octagon (module Octagon_split.Max_min_LB) config "Octagon(Max_min, LB)";
+  (* bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
+  bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB_canonical) config "Octagon(Anti_first_fail, UB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_LB) config "Octagon(Anti_first_fail, LB, All)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB) config "Octagon(Anti_first_fail, UB, All)";
-  bench_octagon (module Octagon_split.Min_max_LB) config "Octagon(Min_max, LB)";
-  bench_octagon (module Octagon_split.Max_min_LB) config "Octagon(Max_min, LB)";
   bench_octagon (module Octagon_split.Max_min_UB) config "Octagon(Max_min, UB)";
   bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max_min, Bisect)"; *)
 end
@@ -216,8 +216,8 @@ begin
   Printf.printf   "  <<<< Solver %s >>>>\n\n" (Measurement.name_of_solver solver);
   match solver with
   | `AbSolute ->
-      benchmark_suite_box config;
-      (* benchmark_suite_octagon config *)
+      (* benchmark_suite_box config; *)
+      benchmark_suite_octagon config
   | `MiniZinc desc ->
       let desc = String.split_on_char '#' desc in
       Minizinc.benchmark_suite_minizinc config (List.nth desc 0) (List.nth desc 1)
