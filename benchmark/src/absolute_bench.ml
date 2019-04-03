@@ -216,8 +216,8 @@ begin
   Printf.printf   "  <<<< Solver %s >>>>\n\n" (Measurement.name_of_solver solver);
   match solver with
   | `AbSolute ->
-      (* benchmark_suite_box config; *)
-      benchmark_suite_octagon config
+      benchmark_suite_box config;
+      (* benchmark_suite_octagon config *)
   | `MiniZinc desc ->
       let desc = String.split_on_char '#' desc in
       Minizinc.benchmark_suite_minizinc config (List.nth desc 0) (List.nth desc 1)

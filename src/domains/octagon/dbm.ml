@@ -76,7 +76,7 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-(* module Make(B:Bound_sig.BOUND) = struct
+module Make(B:Bound_sig.BOUND) = struct
   module B=B
   type bound = B.t
   type t = {
@@ -113,7 +113,7 @@ end
       Format.fprintf fmt "\n"
     done
 end
- *)
+(*
 module Make(B:Bound_sig.BOUND) = struct
   module B=B
   type bound = B.t
@@ -153,3 +153,4 @@ module Make(B:Bound_sig.BOUND) = struct
       Format.fprintf fmt "\n"
     done
 end
+ *)
