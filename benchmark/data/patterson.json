@@ -4,9 +4,6 @@
   "domains" : [<BoxedOctagon : <Integer>>],
   "solvers": [
     <AbSolute>,
-    <MiniZinc: "gecode#benchmark/data/minizinc/rcpsp-cumulative.mzn">,
-    <FlatMiniZinc : "gecode#first_fail, indomain_min, complete">,
-    <FlatMiniZinc : "chuffed#first_fail, indomain_min, complete">,
     <MiniZinc: "gecode#benchmark/data/minizinc/rcpsp-cumulative-LB.mzn">,
     <FlatMiniZinc : "gecode#smallest, indomain_min, complete">,
     <FlatMiniZinc : "chuffed#smallest, indomain_min, complete">],
