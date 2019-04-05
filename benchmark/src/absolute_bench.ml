@@ -196,18 +196,17 @@ let bench_octagon (module S: Octagon_split.Octagon_split_sig) config name =
 
 let benchmark_suite_octagon config =
 begin
-  bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)";
+  (* bench_octagon (module Octagon_split.MSLF) config "Octagon(MSLF)"; *)
   (* bench_octagon (module Octagon_split.MSLF_all) config "Octagon(MSLF, all)"; *)
-  (* bench_octagon (module Octagon_split.MSLF_simple) config "Octagon(MSLF without tie breaking)"; *)
-  bench_octagon (module Octagon_split.Min_max_LB) config "Octagon(Min_max, LB)";
-  bench_octagon (module Octagon_split.Max_min_LB) config "Octagon(Max_min, LB)";
-  (* bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
-  bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
+  bench_octagon (module Octagon_split.MSLF_simple) config "Octagon(MSLF without tie breaking)";
+  (* bench_octagon (module Octagon_split.Min_max_LB) config "Octagon(Min_max, LB)";
+  bench_octagon (module Octagon_split.Max_min_LB) config "Octagon(Max_min, LB)"; *)
+  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max min, bisect)";
+  (*bench_octagon (module Octagon_split.Anti_first_fail_LB_canonical) config "Octagon(Anti_first_fail, LB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB_canonical) config "Octagon(Anti_first_fail, UB, Canonical)";
   bench_octagon (module Octagon_split.Anti_first_fail_LB) config "Octagon(Anti_first_fail, LB, All)";
   bench_octagon (module Octagon_split.Anti_first_fail_UB) config "Octagon(Anti_first_fail, UB, All)";
-  bench_octagon (module Octagon_split.Max_min_UB) config "Octagon(Max_min, UB)";
-  bench_octagon (module Octagon_split.Max_min_Bisect) config "Octagon(Max_min, Bisect)"; *)
+  bench_octagon (module Octagon_split.Max_min_UB) config "Octagon(Max_min, UB)";*)
 end
 
 let benchmark_solver config solver =
