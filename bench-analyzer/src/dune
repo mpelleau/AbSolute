@@ -1,0 +1,6 @@
+(executable
+ (name absolute_analyzer)
+ (public_name absolute-analyzer)
+ (package absolute-analyzer)
+ (modules :standard)
+)
