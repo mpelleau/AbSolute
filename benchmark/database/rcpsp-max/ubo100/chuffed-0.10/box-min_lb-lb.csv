@@ -1,98 +1,93 @@
-      << FlatMiniZinc(chuffed(smallest, indomain_min, complete) )>>
+chuffed(Box(smallest,indomain_min,complete))
 
-problem, time(s; median of 0 trials; timeout=60s), optimum
-psp1.sch, timeout, none
-psp10.sch, timeout, 517
-psp11.sch, timeout, 266
-psp12.sch, 14.72s, 216
-psp13.sch, timeout, 161
-psp14.sch, timeout, 194
-psp15.sch, 2.17s, 275
-psp16.sch, timeout, 137
-psp17.sch, 2.20s, 287
-psp18.sch, 2.39s, 306
-psp19.sch, timeout, 183
-psp2.sch, timeout, none
-psp20.sch, 5.02s, 201
-psp21.sch, 2.05s, 262
-psp22.sch, 2.32s, 492
-psp23.sch, 2.47s, 269
-psp24.sch, 2.31s, 192
-psp25.sch, 2.36s, 194
-psp26.sch, 2.06s, 178
-psp27.sch, 5.87s, 204
-psp28.sch, 2.22s, 240
-psp29.sch, 2.05s, 284
-psp3.sch, 33.36s, unsat
-psp30.sch, 1.91s, 196
-psp31.sch, 1.93s, unsat
-psp32.sch, timeout, 494
-psp33.sch, timeout, 441
-psp34.sch, timeout, 457
-psp35.sch, 9.82s, unsat
-psp36.sch, timeout, 440
-psp37.sch, timeout, 444
-psp38.sch, 12.90s, 477
-psp39.sch, 39.76s, 457
-psp4.sch, timeout, 426
-psp40.sch, timeout, none
-psp41.sch, 4.41s, 363
-psp42.sch, 3.77s, 358
-psp43.sch, 5.35s, 359
-psp44.sch, 2.46s, 483
-psp45.sch, 3.21s, 407
-psp46.sch, 9.81s, 278
-psp47.sch, 3.95s, 301
-psp48.sch, 3.29s, 433
-psp49.sch, 3.25s, 203
-psp5.sch, timeout, none
-psp50.sch, 5.04s, 260
-psp51.sch, 2.96s, 267
-psp52.sch, 1.86s, 304
-psp53.sch, 1.97s, 177
-psp54.sch, 2.26s, 352
-psp55.sch, 1.86s, 247
-psp56.sch, 2.12s, 288
-psp57.sch, 2.27s, 356
-psp58.sch, 1.70s, 317
-psp59.sch, 2.23s, 256
-psp6.sch, 5.19s, unsat
-psp60.sch, 2.19s, 188
-psp61.sch, 6.94s, 680
-psp62.sch, timeout, 530
-psp63.sch, 51.55s, unsat
-psp64.sch, 19.97s, 533
-psp65.sch, timeout, 449
-psp66.sch, 55.98s, unsat
-psp67.sch, timeout, 414
-psp68.sch, 7.15s, 538
-psp69.sch, 25.01s, unsat
-psp7.sch, timeout, 429
-psp70.sch, timeout, 421
-psp71.sch, 3.82s, 514
-psp72.sch, 2.03s, unsat
-psp73.sch, 2.76s, 398
-psp74.sch, 13.81s, 228
-psp75.sch, 4.79s, 534
-psp76.sch, 3.60s, 411
-psp77.sch, 10.99s, 345
-psp78.sch, 3.94s, 410
-psp79.sch, 4.06s, 483
-psp8.sch, timeout, 421
-psp80.sch, 3.94s, 503
-psp81.sch, 3.06s, 452
-psp82.sch, 2.06s, 568
-psp83.sch, 2.72s, 243
-psp84.sch, 2.01s, 237
-psp85.sch, 2.40s, 497
-psp86.sch, 1.97s, 531
-psp87.sch, 2.06s, 363
-psp88.sch, 2.14s, 402
-psp89.sch, 2.27s, 374
-psp9.sch, timeout, none
-psp90.sch, 2.02s, 476
-67 / 90 problems solved within the timeout.
-77 / 82 problems bounded within the timeout.
-8 problems proven unsatisfiable within the timeout.
-Cumulative running time: 463.47s.
-(chuffed(smallest, indomain_min, complete), 67, 77, 8, 463.47s)
+problem,time(s; median of 0 trials; timeout=60s),optimum
+psp1.sch,timeout,none
+psp10.sch,timeout,517
+psp11.sch,timeout,266
+psp12.sch,14.72s,216
+psp13.sch,timeout,161
+psp14.sch,timeout,194
+psp15.sch,2.17s,275
+psp16.sch,timeout,137
+psp17.sch,2.20s,287
+psp18.sch,2.39s,306
+psp19.sch,timeout,183
+psp2.sch,timeout,none
+psp20.sch,5.02s,201
+psp21.sch,2.05s,262
+psp22.sch,2.32s,492
+psp23.sch,2.47s,269
+psp24.sch,2.31s,192
+psp25.sch,2.36s,194
+psp26.sch,2.06s,178
+psp27.sch,5.87s,204
+psp28.sch,2.22s,240
+psp29.sch,2.05s,284
+psp3.sch,33.36s,unsat
+psp30.sch,1.91s,196
+psp31.sch,1.93s,unsat
+psp32.sch,timeout,494
+psp33.sch,timeout,441
+psp34.sch,timeout,457
+psp35.sch,9.82s,unsat
+psp36.sch,timeout,440
+psp37.sch,timeout,444
+psp38.sch,12.90s,477
+psp39.sch,39.76s,457
+psp4.sch,timeout,426
+psp40.sch,timeout,none
+psp41.sch,4.41s,363
+psp42.sch,3.77s,358
+psp43.sch,5.35s,359
+psp44.sch,2.46s,483
+psp45.sch,3.21s,407
+psp46.sch,9.81s,278
+psp47.sch,3.95s,301
+psp48.sch,3.29s,433
+psp49.sch,3.25s,203
+psp5.sch,timeout,none
+psp50.sch,5.04s,260
+psp51.sch,2.96s,267
+psp52.sch,1.86s,304
+psp53.sch,1.97s,177
+psp54.sch,2.26s,352
+psp55.sch,1.86s,247
+psp56.sch,2.12s,288
+psp57.sch,2.27s,356
+psp58.sch,1.70s,317
+psp59.sch,2.23s,256
+psp6.sch,5.19s,unsat
+psp60.sch,2.19s,188
+psp61.sch,6.94s,680
+psp62.sch,timeout,530
+psp63.sch,51.55s,unsat
+psp64.sch,19.97s,533
+psp65.sch,timeout,449
+psp66.sch,55.98s,unsat
+psp67.sch,timeout,414
+psp68.sch,7.15s,538
+psp69.sch,25.01s,unsat
+psp7.sch,timeout,429
+psp70.sch,timeout,421
+psp71.sch,3.82s,514
+psp72.sch,2.03s,unsat
+psp73.sch,2.76s,398
+psp74.sch,13.81s,228
+psp75.sch,4.79s,534
+psp76.sch,3.60s,411
+psp77.sch,10.99s,345
+psp78.sch,3.94s,410
+psp79.sch,4.06s,483
+psp8.sch,timeout,421
+psp80.sch,3.94s,503
+psp81.sch,3.06s,452
+psp82.sch,2.06s,568
+psp83.sch,2.72s,243
+psp84.sch,2.01s,237
+psp85.sch,2.40s,497
+psp86.sch,1.97s,531
+psp87.sch,2.06s,363
+psp88.sch,2.14s,402
+psp89.sch,2.27s,374
+psp9.sch,timeout,none
+psp90.sch,2.02s,476

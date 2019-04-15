@@ -1,98 +1,93 @@
-     << gecode(benchmark/data/minizinc/rcpsp-cumulative-LB.mzn) >>
+gecode(rcpsp-cumulative-LB.mzn)
 
-problem, time(s; median of 0 trials; timeout=60s), optimum
-psp1.sch, 1.68s, unsat
-psp10.sch, timeout, none
-psp11.sch, timeout, 290
-psp12.sch, timeout, 231
-psp13.sch, timeout, none
-psp14.sch, timeout, 208
-psp15.sch, 0.92s, 275
-psp16.sch, timeout, 147
-psp17.sch, 0.17s, 287
-psp18.sch, timeout, 322
-psp19.sch, timeout, 224
-psp2.sch, 1.74s, unsat
-psp20.sch, timeout, 238
-psp21.sch, 0.15s, 262
-psp22.sch, timeout, 496
-psp23.sch, 0.21s, 269
-psp24.sch, timeout, 200
-psp25.sch, 0.14s, 194
-psp26.sch, 0.14s, 178
-psp27.sch, timeout, 231
-psp28.sch, 0.19s, 240
-psp29.sch, timeout, 297
-psp3.sch, 1.63s, unsat
-psp30.sch, 0.39s, 196
-psp31.sch, 2.23s, unsat
-psp32.sch, timeout, none
-psp33.sch, timeout, 466
-psp34.sch, timeout, none
-psp35.sch, 2.38s, unsat
-psp36.sch, timeout, 492
-psp37.sch, timeout, 485
-psp38.sch, timeout, none
-psp39.sch, timeout, 577
-psp4.sch, timeout, 457
-psp40.sch, timeout, none
-psp41.sch, timeout, 375
-psp42.sch, timeout, none
-psp43.sch, timeout, 382
-psp44.sch, timeout, none
-psp45.sch, timeout, 421
-psp46.sch, timeout, 317
-psp47.sch, 52.72s, 301
-psp48.sch, timeout, none
-psp49.sch, timeout, 221
-psp5.sch, 1.39s, unsat
-psp50.sch, timeout, none
-psp51.sch, timeout, none
-psp52.sch, 0.14s, 304
-psp53.sch, 0.15s, 177
-psp54.sch, 0.21s, 352
-psp55.sch, 0.12s, 247
-psp56.sch, timeout, none
-psp57.sch, timeout, 361
-psp58.sch, 0.11s, 317
-psp59.sch, timeout, 260
-psp6.sch, 1.30s, unsat
-psp60.sch, timeout, 196
-psp61.sch, timeout, none
-psp62.sch, timeout, 566
-psp63.sch, 2.84s, unsat
-psp64.sch, timeout, 592
-psp65.sch, timeout, 509
-psp66.sch, 2.96s, unsat
-psp67.sch, timeout, none
-psp68.sch, timeout, 578
-psp69.sch, 2.98s, unsat
-psp7.sch, timeout, none
-psp70.sch, timeout, 455
-psp71.sch, timeout, none
-psp72.sch, 1.31s, unsat
-psp73.sch, timeout, 398
-psp74.sch, timeout, 251
-psp75.sch, 1.78s, 534
-psp76.sch, 2.39s, 411
-psp77.sch, timeout, none
-psp78.sch, timeout, none
-psp79.sch, timeout, 502
-psp8.sch, timeout, 479
-psp80.sch, timeout, 527
-psp81.sch, timeout, 474
-psp82.sch, timeout, 571
-psp83.sch, 0.22s, 243
-psp84.sch, timeout, 242
-psp85.sch, timeout, 501
-psp86.sch, timeout, none
-psp87.sch, timeout, none
-psp88.sch, timeout, 409
-psp89.sch, timeout, 374
-psp9.sch, timeout, none
-psp90.sch, 0.30s, 476
-29 / 90 problems solved within the timeout.
-58 / 79 problems bounded within the timeout.
-11 problems proven unsatisfiable within the timeout.
-Cumulative running time: 82.68s.
-(benchmark/data/minizinc/rcpsp-cumulative-LB.mzn, 29, 58, 11, 82.68s)
+problem,time(s; median of 0 trials; timeout=60s),optimum
+psp1.sch,1.68s,unsat
+psp10.sch,timeout,none
+psp11.sch,timeout,290
+psp12.sch,timeout,231
+psp13.sch,timeout,none
+psp14.sch,timeout,208
+psp15.sch,0.92s,275
+psp16.sch,timeout,147
+psp17.sch,0.17s,287
+psp18.sch,timeout,322
+psp19.sch,timeout,224
+psp2.sch,1.74s,unsat
+psp20.sch,timeout,238
+psp21.sch,0.15s,262
+psp22.sch,timeout,496
+psp23.sch,0.21s,269
+psp24.sch,timeout,200
+psp25.sch,0.14s,194
+psp26.sch,0.14s,178
+psp27.sch,timeout,231
+psp28.sch,0.19s,240
+psp29.sch,timeout,297
+psp3.sch,1.63s,unsat
+psp30.sch,0.39s,196
+psp31.sch,2.23s,unsat
+psp32.sch,timeout,none
+psp33.sch,timeout,466
+psp34.sch,timeout,none
+psp35.sch,2.38s,unsat
+psp36.sch,timeout,492
+psp37.sch,timeout,485
+psp38.sch,timeout,none
+psp39.sch,timeout,577
+psp4.sch,timeout,457
+psp40.sch,timeout,none
+psp41.sch,timeout,375
+psp42.sch,timeout,none
+psp43.sch,timeout,382
+psp44.sch,timeout,none
+psp45.sch,timeout,421
+psp46.sch,timeout,317
+psp47.sch,52.72s,301
+psp48.sch,timeout,none
+psp49.sch,timeout,221
+psp5.sch,1.39s,unsat
+psp50.sch,timeout,none
+psp51.sch,timeout,none
+psp52.sch,0.14s,304
+psp53.sch,0.15s,177
+psp54.sch,0.21s,352
+psp55.sch,0.12s,247
+psp56.sch,timeout,none
+psp57.sch,timeout,361
+psp58.sch,0.11s,317
+psp59.sch,timeout,260
+psp6.sch,1.30s,unsat
+psp60.sch,timeout,196
+psp61.sch,timeout,none
+psp62.sch,timeout,566
+psp63.sch,2.84s,unsat
+psp64.sch,timeout,592
+psp65.sch,timeout,509
+psp66.sch,2.96s,unsat
+psp67.sch,timeout,none
+psp68.sch,timeout,578
+psp69.sch,2.98s,unsat
+psp7.sch,timeout,none
+psp70.sch,timeout,455
+psp71.sch,timeout,none
+psp72.sch,1.31s,unsat
+psp73.sch,timeout,398
+psp74.sch,timeout,251
+psp75.sch,1.78s,534
+psp76.sch,2.39s,411
+psp77.sch,timeout,none
+psp78.sch,timeout,none
+psp79.sch,timeout,502
+psp8.sch,timeout,479
+psp80.sch,timeout,527
+psp81.sch,timeout,474
+psp82.sch,timeout,571
+psp83.sch,0.22s,243
+psp84.sch,timeout,242
+psp85.sch,timeout,501
+psp86.sch,timeout,none
+psp87.sch,timeout,none
+psp88.sch,timeout,409
+psp89.sch,timeout,374
+psp9.sch,timeout,none
+psp90.sch,0.30s,476

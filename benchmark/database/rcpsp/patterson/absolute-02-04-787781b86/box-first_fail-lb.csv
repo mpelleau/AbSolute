@@ -1,118 +1,113 @@
-     << Box(First_fail, LB) >>
+Box(First_fail,LB)
 
-problem, time(s; median of 0 trials; timeout=60s), optimum
-pat1.rcp, timeout, none
-pat10.rcp, 0.07s, 14
-pat100.rcp, timeout, none
-pat101.rcp, timeout, none
-pat102.rcp, timeout, none
-pat103.rcp, timeout, none
-pat104.rcp, timeout, none
-pat105.rcp, timeout, none
-pat106.rcp, timeout, none
-pat107.rcp, timeout, none
-pat108.rcp, timeout, none
-pat109.rcp, timeout, none
-pat11.rcp, 0.09s, 18
-pat110.rcp, timeout, none
-pat12.rcp, timeout, none
-pat13.rcp, timeout, none
-pat14.rcp, timeout, none
-pat15.rcp, timeout, none
-pat16.rcp, timeout, none
-pat17.rcp, timeout, none
-pat18.rcp, timeout, none
-pat19.rcp, timeout, none
-pat2.rcp, 0.03s, 7
-pat20.rcp, timeout, none
-pat21.rcp, timeout, none
-pat22.rcp, timeout, none
-pat23.rcp, timeout, none
-pat24.rcp, timeout, none
-pat25.rcp, timeout, none
-pat26.rcp, timeout, none
-pat27.rcp, timeout, none
-pat28.rcp, timeout, none
-pat29.rcp, timeout, none
-pat3.rcp, timeout, 35
-pat30.rcp, timeout, none
-pat31.rcp, timeout, none
-pat32.rcp, timeout, none
-pat33.rcp, timeout, none
-pat34.rcp, timeout, none
-pat35.rcp, timeout, none
-pat36.rcp, timeout, none
-pat37.rcp, timeout, none
-pat38.rcp, timeout, none
-pat39.rcp, timeout, none
-pat4.rcp, timeout, none
-pat40.rcp, timeout, none
-pat41.rcp, timeout, none
-pat42.rcp, timeout, none
-pat43.rcp, timeout, none
-pat44.rcp, timeout, none
-pat45.rcp, timeout, none
-pat46.rcp, timeout, none
-pat47.rcp, timeout, none
-pat48.rcp, timeout, none
-pat49.rcp, timeout, none
-pat5.rcp, timeout, none
-pat50.rcp, timeout, none
-pat51.rcp, timeout, none
-pat52.rcp, timeout, none
-pat53.rcp, timeout, none
-pat54.rcp, timeout, none
-pat55.rcp, timeout, none
-pat56.rcp, timeout, none
-pat57.rcp, timeout, none
-pat58.rcp, timeout, none
-pat59.rcp, timeout, none
-pat6.rcp, timeout, none
-pat60.rcp, timeout, none
-pat61.rcp, timeout, none
-pat62.rcp, timeout, none
-pat63.rcp, timeout, none
-pat64.rcp, timeout, none
-pat65.rcp, timeout, none
-pat66.rcp, timeout, none
-pat67.rcp, timeout, none
-pat68.rcp, timeout, none
-pat69.rcp, timeout, none
-pat7.rcp, 3.21s, 8
-pat70.rcp, timeout, none
-pat71.rcp, timeout, none
-pat72.rcp, timeout, none
-pat73.rcp, timeout, none
-pat74.rcp, timeout, none
-pat75.rcp, timeout, none
-pat76.rcp, timeout, none
-pat77.rcp, timeout, none
-pat78.rcp, timeout, none
-pat79.rcp, timeout, none
-pat8.rcp, 1.40s, 11
-pat80.rcp, timeout, none
-pat81.rcp, timeout, none
-pat82.rcp, timeout, none
-pat83.rcp, timeout, none
-pat84.rcp, timeout, none
-pat85.rcp, timeout, none
-pat86.rcp, timeout, none
-pat87.rcp, timeout, none
-pat88.rcp, timeout, none
-pat89.rcp, timeout, none
-pat9.rcp, timeout, none
-pat90.rcp, timeout, none
-pat91.rcp, timeout, none
-pat92.rcp, timeout, none
-pat93.rcp, timeout, none
-pat94.rcp, timeout, none
-pat95.rcp, timeout, none
-pat96.rcp, timeout, none
-pat97.rcp, timeout, none
-pat98.rcp, timeout, none
-pat99.rcp, timeout, none
-5 / 110 problems solved within the timeout.
-6 / 110 problems bounded within the timeout.
-0 problems proven unsatisfiable within the timeout.
-Cumulative running time: 4.77s.
-(Box(First_fail, LB), 5, 6, 0, 4.77s)
+problem,time(s; median of 0 trials; timeout=60s),optimum
+pat1.rcp,timeout,none
+pat10.rcp,0.07s,14
+pat100.rcp,timeout,none
+pat101.rcp,timeout,none
+pat102.rcp,timeout,none
+pat103.rcp,timeout,none
+pat104.rcp,timeout,none
+pat105.rcp,timeout,none
+pat106.rcp,timeout,none
+pat107.rcp,timeout,none
+pat108.rcp,timeout,none
+pat109.rcp,timeout,none
+pat11.rcp,0.09s,18
+pat110.rcp,timeout,none
+pat12.rcp,timeout,none
+pat13.rcp,timeout,none
+pat14.rcp,timeout,none
+pat15.rcp,timeout,none
+pat16.rcp,timeout,none
+pat17.rcp,timeout,none
+pat18.rcp,timeout,none
+pat19.rcp,timeout,none
+pat2.rcp,0.03s,7
+pat20.rcp,timeout,none
+pat21.rcp,timeout,none
+pat22.rcp,timeout,none
+pat23.rcp,timeout,none
+pat24.rcp,timeout,none
+pat25.rcp,timeout,none
+pat26.rcp,timeout,none
+pat27.rcp,timeout,none
+pat28.rcp,timeout,none
+pat29.rcp,timeout,none
+pat3.rcp,timeout,35
+pat30.rcp,timeout,none
+pat31.rcp,timeout,none
+pat32.rcp,timeout,none
+pat33.rcp,timeout,none
+pat34.rcp,timeout,none
+pat35.rcp,timeout,none
+pat36.rcp,timeout,none
+pat37.rcp,timeout,none
+pat38.rcp,timeout,none
+pat39.rcp,timeout,none
+pat4.rcp,timeout,none
+pat40.rcp,timeout,none
+pat41.rcp,timeout,none
+pat42.rcp,timeout,none
+pat43.rcp,timeout,none
+pat44.rcp,timeout,none
+pat45.rcp,timeout,none
+pat46.rcp,timeout,none
+pat47.rcp,timeout,none
+pat48.rcp,timeout,none
+pat49.rcp,timeout,none
+pat5.rcp,timeout,none
+pat50.rcp,timeout,none
+pat51.rcp,timeout,none
+pat52.rcp,timeout,none
+pat53.rcp,timeout,none
+pat54.rcp,timeout,none
+pat55.rcp,timeout,none
+pat56.rcp,timeout,none
+pat57.rcp,timeout,none
+pat58.rcp,timeout,none
+pat59.rcp,timeout,none
+pat6.rcp,timeout,none
+pat60.rcp,timeout,none
+pat61.rcp,timeout,none
+pat62.rcp,timeout,none
+pat63.rcp,timeout,none
+pat64.rcp,timeout,none
+pat65.rcp,timeout,none
+pat66.rcp,timeout,none
+pat67.rcp,timeout,none
+pat68.rcp,timeout,none
+pat69.rcp,timeout,none
+pat7.rcp,3.21s,8
+pat70.rcp,timeout,none
+pat71.rcp,timeout,none
+pat72.rcp,timeout,none
+pat73.rcp,timeout,none
+pat74.rcp,timeout,none
+pat75.rcp,timeout,none
+pat76.rcp,timeout,none
+pat77.rcp,timeout,none
+pat78.rcp,timeout,none
+pat79.rcp,timeout,none
+pat8.rcp,1.40s,11
+pat80.rcp,timeout,none
+pat81.rcp,timeout,none
+pat82.rcp,timeout,none
+pat83.rcp,timeout,none
+pat84.rcp,timeout,none
+pat85.rcp,timeout,none
+pat86.rcp,timeout,none
+pat87.rcp,timeout,none
+pat88.rcp,timeout,none
+pat89.rcp,timeout,none
+pat9.rcp,timeout,none
+pat90.rcp,timeout,none
+pat91.rcp,timeout,none
+pat92.rcp,timeout,none
+pat93.rcp,timeout,none
+pat94.rcp,timeout,none
+pat95.rcp,timeout,none
+pat96.rcp,timeout,none
+pat97.rcp,timeout,none
+pat98.rcp,timeout,none
+pat99.rcp,timeout,none
