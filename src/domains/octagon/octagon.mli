@@ -17,6 +17,9 @@ sig
   (** Given an octagonal constraint, return `True` if it is entailed by the octagon, `False` if it is disentailed, and `Unknown` if it be entailed or disentailed in the future. *)
   val entailment: t -> bound dbm_constraint -> kleene
 
+  (** Same as `entailment` but in addition: add the constraint in the octagon, propagate and returns `False` if it is inconsistent. *)
+  val strong_entailment: t -> bound dbm_constraint -> kleene
+
   (** Perform the closure of the DBM. *)
   val closure: t -> t
 

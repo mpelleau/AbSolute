@@ -15,5 +15,6 @@ sig
 end
 
 module ClosureZ : Closure_sig
+module ClosureHoistZ : Closure_sig
 module ClosureQ : Closure_sig
 module ClosureF : Closure_sig

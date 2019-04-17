@@ -96,7 +96,8 @@ sig
 
   (** Return `n` copies of the current DBM with the assumption that this one will not be used anymore.
       Internally, some informations can be shared by the different copies (until they are modified). *)
-  val copy : t -> int -> t list
+  val copy_n : t -> int -> t list
+  val copy : t -> t
 
   (** The dimension of the DBM is its number of variables. *)
   val dimension: t -> int

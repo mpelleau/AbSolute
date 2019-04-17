@@ -133,28 +133,92 @@ module ClosureZ = struct
     let d2 = B.mul_up d B.two in
     for i = 0 to (2*n-1) do
       let i' = i lxor 1 in
-      let d = List.fold_left B.min (m i i') [
+      let d' = List.fold_left B.min (m i i') [
         B.add_up (B.add_up (m i a) d) (m b i');
         B.add_up (B.add_up (m i b') d) (m a' i');
         B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b i');
         B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' i');
       ] in
-      dbm := DBM.set !dbm {v=(make_var i i'); d=(B.mul_up (B.div_down d B.two) B.two)}
+      dbm := DBM.set !dbm {v=(make_var i i'); d=(B.mul_up (B.div_down d' B.two) B.two)}
     done;
     dbm := is_consistent !dbm;
     for i = 0 to (2*n-1) do
+      let i' = i lxor 1 in
       for j = 0 to (2*n-1) do
-        let i' = i lxor 1 in
         let j' = j lxor 1 in
         if j <> i' then
-          let d = List.fold_left B.min (m i j) [
+          let d' = List.fold_left B.min (m i j) [
             B.add_up (B.add_up (m i a) d) (m b j);
             B.add_up (B.add_up (m i b') d) (m a' j);
             B.add_up (B.add_up (B.add_up (m i b') d2) (m a' a)) (m b j);
             B.add_up (B.add_up (B.add_up (m i a) d2) (m b b')) (m a' j);
             B.div_up (B.add_up (m i i') (m j' j)) B.two
           ] in
-          dbm := DBM.set !dbm {v=(make_var i j); d=d}
+          dbm := DBM.set !dbm {v=(make_var i j); d=d'}
+      done;
+      if B.lt (m i i) B.zero then
+        raise Bot.Bot_found
+    done;
+    !dbm
+  end
+end
+
+module ClosureHoistZ = struct
+  module DBM = Dbm.Make(Bound_int)
+  module GClosure = GenericClosure(DBM)
+
+  include GClosure
+
+  let is_consistent = ClosureZ.is_consistent
+
+  let tightening = ClosureZ.tightening
+
+  (* Strong closure as appearing in (Bagnara and al., 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
+  let closure = ClosureZ.closure
+
+  (* Incremental tight closure from (Chawdhary and al., 2018) with code hoist (it extracts some operations outside of the loops when possible). *)
+  let incremental_closure dbm {v=v;d=d} =
+  begin
+    let dbm = ref dbm in
+    let m i j = DBM.get !dbm (make_var i j) in
+    dbm := DBM.set !dbm {v=v;d=d};
+    let n = DBM.dimension !dbm in
+    let v' = inv v in
+    let (a, b) = v.l, v.c in
+    let (a', b') = v'.l, v'.c in
+    let d2 = B.mul_up d B.two in
+    let h7 = B.add_up d2 (m a' a) in
+    let h8 = B.add_up d2 (m b b') in
+    for i = 0 to (2*n-1) do
+      let i' = i lxor 1 in
+      let d' = List.fold_left B.min (m i i') [
+        B.add_up (B.add_up (m i a) d) (m b i');
+        B.add_up (B.add_up (m i b') d) (m a' i');
+        B.add_up (B.add_up (m i b') h7) (m b i');
+        B.add_up (B.add_up (m i a) h8) (m a' i');
+      ] in
+      dbm := DBM.set !dbm {v=(make_var i i'); d=(B.mul_up (B.div_down d' B.two) B.two)}
+    done;
+    dbm := is_consistent !dbm;
+    let h5 = B.add_up d2 (m a' a) in
+    let h6 = B.add_up d2 (m b b') in
+    for i = 0 to (2*n-1) do
+      let i' = i lxor 1 in
+      let h1 = B.add_up (m i a) d in
+      let h2 = B.add_up (m i b') d in
+      let h3 = B.add_up h5 (m i b') in
+      let h4 = B.add_up h6 (m i a) in
+      for j = 0 to (2*n-1) do
+        let j' = j lxor 1 in
+        if j <> i' then
+          let d' = List.fold_left B.min (m i j) [
+            B.add_up h1 (m b j);
+            B.add_up h2 (m a' j);
+            B.add_up h3 (m b j);
+            B.add_up h4 (m a' j);
+            B.div_up (B.add_up (m i i') (m j' j)) B.two
+          ] in
+          dbm := DBM.set !dbm {v=(make_var i j); d=d'}
       done;
       if B.lt (m i i) B.zero then
         raise Bot.Bot_found

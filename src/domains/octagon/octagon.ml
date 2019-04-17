@@ -10,6 +10,7 @@ sig
   val init: int -> t
   val copy: t -> int -> t list
   val entailment: t -> bound dbm_constraint -> kleene
+  val strong_entailment: t -> bound dbm_constraint -> kleene
   val closure: t -> t
   val incremental_closure: t -> bound dbm_constraint -> t
   val weak_incremental_closure: t -> bound dbm_constraint -> t
@@ -39,15 +40,27 @@ struct
   }
 
   let init dimension = {dbm=DBM.init dimension; constraints=[]}
-  let copy octagon n = List.map (fun dbm -> { octagon with dbm=dbm; }) (DBM.copy octagon.dbm n)
+  let copy octagon n = List.map (fun dbm -> { octagon with dbm=dbm; }) (DBM.copy_n octagon.dbm n)
   let print fmt octagon = DBM.print fmt octagon.dbm
 
   let entailment octagon oc =
     let current = DBM.get octagon.dbm oc.v in
     if B.geq oc.d current then True
-    (* If the addition of the bounds is equal to zero then the two sides of the octagon are reversed. *)
+    (* If the addition of the bounds is less than zero then the two sides of the octagon are reversed. *)
     else if B.lt (B.add_up oc.d (DBM.get octagon.dbm (inv oc.v))) B.zero then False
     else Unknown
+
+  let strong_entailment octagon oc =
+    match entailment octagon oc with
+    | Unknown ->
+      begin
+        let dbm' = DBM.copy octagon.dbm in
+        try
+          let _ = Closure.incremental_closure dbm' oc in
+          Unknown
+        with Bot.Bot_found -> False
+      end
+    | r -> r
 
   let closure octagon =
     let dbm =
@@ -96,6 +109,6 @@ struct
     ) B.one (DBM.dimension octagon.dbm))
 end
 
-module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureZ)(SPLIT)
+module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureHoistZ)(SPLIT)
 module OctagonQ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureQ)(SPLIT)
 module OctagonF(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureF)(SPLIT)

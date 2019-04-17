@@ -70,6 +70,7 @@ sig
   val get : 'a t -> int -> 'a
   val set' : 'a t -> int -> 'a -> 'a t
   val to_list : 'a t -> 'a list
+  val copy: 'a t -> 'a t
   val copy_n: 'a t -> int -> ('a t) list
 end
 
@@ -78,13 +79,14 @@ struct
   include Array
   type 'a t = 'a array
   let set' m i e = (set m i e; m)
-  let copy_n m n = m::(List.init (n-1) (fun _ -> Array.copy m))
+  let copy_n m n = m::(List.init (n-1) (fun _ -> copy m))
 end
 
 module Parray_store =
 struct
   include Parray
   let set' = Parray.set
+  let copy m = m
   let copy_n m n = List.init n (fun _ -> m)
 end
 
@@ -97,7 +99,8 @@ sig
   val get : t -> dbm_var -> bound
   val set : t -> bound dbm_constraint -> t
   val project: t -> dbm_interval -> (bound * bound)
-  val copy : t -> int -> t list
+  val copy_n : t -> int -> t list
+  val copy : t -> t
   val dimension: t -> int
   val to_list: t -> bound list
   val print: Format.formatter -> t -> unit
@@ -128,7 +131,8 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
       dbm
 
   let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
-  let copy dbm n = List.map (fun m -> {dim=dbm.dim; m=m}) (A.copy_n dbm.m n)
+  let copy_n dbm n = List.map (fun m -> {dim=dbm.dim; m=m}) (A.copy_n dbm.m n)
+  let copy dbm = {dim=dbm.dim; m=(A.copy dbm.m)}
 
   let dimension dbm = dbm.dim
 

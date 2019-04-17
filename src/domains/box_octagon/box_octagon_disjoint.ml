@@ -124,6 +124,7 @@ struct
   let rec propagate vol box_oct =
     let box_oct = reified_closure box_oct in
     let box_oct = { box_oct with box=Box.closure box_oct.box } in
+    (* let box_oct = reified_closure box_oct in *)
     let box_oct = { box_oct with octagon=Octagon.closure box_oct.octagon } in
     let vol' = volume box_oct in
     if vol <> vol' then
