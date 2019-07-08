@@ -359,18 +359,21 @@ module MAKE(AP:ADomain) = struct
         ) (Tools.VarMap.empty,0) itvs
     in instance
 
-  (** returns a randomly uniformly chosen instanciation of the variables
-      if the polyhedron has a nul volume, (e.g equalities in the constraints)
-      uniformity is not guaranteed *)
-  let spawn poly =
-    let nb_try = 10 in
+(** Takes an integer and compute a spawner function. The integer
+ * corresponds to the number of tries allowed to proceed to the
+ * generation. The bigger it is, the more uniform the spawner will be.  A
+ * spawner returns a randomly uniformly chosen instanciation of the
+ * variables.  if the polyhedron has a nul (or very small) volume, (e.g
+ * equalities in the constraints) uniformity is not guaranteed *)
+  let spawner (nb_try:int) = fun poly ->
     let env = Abstract1.env poly in
     let rec retry poly n idx =
       let b = Abstract1.to_box man poly in
       let instance = spawn_box b in
       if is_abstraction poly instance then instance
       else if n >= nb_try then
-        (* in case we didnt manage to find an instance, we fix a variable and retry *)
+        (* in case we didnt find an instance, we fix a variable and retry.
+         we give up on uniformity to enforce termination *)
         let v = Environment.var_of_dim env idx in
         let typ = Environment.typ_of_var env v in
         let v_itv = Abstract1.bound_variable man poly v in
@@ -384,4 +387,6 @@ module MAKE(AP:ADomain) = struct
         retry poly 0 (idx+1)
       else retry poly (n+1) idx
     in retry poly 0 0
+
+  let spawn = spawner 10
 end

@@ -1,92 +1,53 @@
 (* This module handles the obj format generation *)
 
-type point3d = float * float * float
-
-let translate (x,y,z) (dx,dy,dz) = ((x+.dx), (y+.dy), (z+.dz))
-
-let ( @> ) = translate
-
-type obj = vertex Queue.t * face list
-and vertex = point3d
-and normal = point3d
+type vertex = float * float * float
 and face = (int * int * int)
 
 (* printing *)
 let print_vertex fmt (x,y,z) = Format.fprintf fmt "v %f %f %f\n" x y z
 
-let print_normal fmt (x,y,z) = Format.fprintf fmt "vn %f %f %f\n" x y z
-
 let print_face fmt (id1,id2,id3)  =
   Format.fprintf fmt "f %i %i %i\n" id1 id2 id3
 
-let print fmt ((vl,fl):obj) =
-  Queue.iter (print_vertex fmt) vl;
-  List.iter (print_face fmt) fl
+(* vertex id generator *)
+let gen_vert_id =
+  let v_id = ref 0 in
+  fun () ->
+  incr v_id;
+  !v_id
 
-(* an origin, width, height and depth *)
-type cube = point3d * float * float * float
+let square a b c d = (a,b,c),(a,c,d)
 
-let of_triangle_list tris : obj =
-  let v_id = ref 0 in let gen_vert_id () = incr v_id; !v_id in
-  let queue = Queue.create () in
-  (* removes useless vertices *)
+let print_vertex =
+ (* cache to remove redundant vertices *)
   let h_v = Hashtbl.create 10000 in
-  let id p =
-    try Hashtbl.find h_v p
-    with Not_found -> (
-      let id = gen_vert_id() in
-      Hashtbl.add h_v p id;
-      Queue.add p queue; id
-    )
-  in
-  (* removes useless faces *)
-  let h_f = Hashtbl.create 1000 in
-  let sort (a,b,c) =
-    match List.sort compare [a;b;c] with [a;b;c] -> (a,b,c) | _ -> assert false
-  in
-  let rec aux acc t_list =
-    match t_list with
-    | [] -> acc
-    | (p1,p2,p3)::tl ->
-      let i1 = id p1 and i2 = id p2 and i3 = id p3 in
-      let acc =
-	if Hashtbl.mem h_f (i1,i2,i3) then acc
-	else begin
-	  let norm = sort (i1,i2,i3) in
-	  Hashtbl.add h_f norm norm; norm::acc end
-      in aux acc tl
-  in queue,(aux [] tris)
+  fun fmt v ->
+  try Hashtbl.find h_v v
+  with Not_found -> (
+    let id = gen_vert_id() in
+    Hashtbl.add h_v v id;
+    Format.fprintf fmt "%a" print_vertex v;
+    id
+  )
 
-(* assuming the points are sorted in direct order *)
-let triangles_of_convex_face face =
-  let rec aux acc pivot cur vertices =
-    match vertices with
-    | h::tl -> aux ((pivot,cur,h)::acc) pivot h tl
-    | [] -> acc
-  in
-  match face with
-  | a::b::c -> aux [] a b c
-  | _ -> []
+let handle_c fmt acc (p0,p1,p2,p3,p4,p5,p6,p7) =
+  let id0 = print_vertex fmt p0 in
+  let id1 = print_vertex fmt p1 in
+  let id2 = print_vertex fmt p2 in
+  let id3 = print_vertex fmt p3 in
+  let id4 = print_vertex fmt p4 in
+  let id5 = print_vertex fmt p5 in
+  let id6 = print_vertex fmt p6 in
+  let id7 = print_vertex fmt p7 in
+  let t1,t2 = square id0 id1 id2 id3
+  and t3,t4 = square id4 id5 id6 id7
+  and t5,t6 = square id0 id1 id5 id4
+  and t7,t8 = square id2 id3 id7 id6
+  and t9,t10 = square id0 id3 id7 id4
+  and t11,t12 = square id1 id2 id6 id5 in
+  t12::t11::t10::t9::t8::t7::t6::t5::t4::t3::t2::t1::acc
 
-let build_cube_list (cubes: cube list) =
-  let square a b c d = (a,b,c),(a,c,d) in
-  let rec aux acc c_list =
-    match c_list with
-    | [] -> acc
-    | (((x0,y0,z0) as p0),x,y,z)::tl ->
-      let p0 = p0              and p1 = p0 @> (x,0.,0.)
-      and p2 = p0 @> (x,y,0.)  and p3 = p0 @> (0.,y,0.) in
-      let p4 = p0 @> (0.,0.,z) and p5 = p1 @> (0.,0.,z)
-      and p6 = p2 @> (0.,0.,z) and p7 = p3 @> (0.,0.,z) in
-      let t1,t2 = square p0 p1 p2 p3  and t3,t4 = square p4 p5 p6 p7
-      and t5,t6 = square p0 p1 p5 p4  and t7,t8 = square p2 p3 p7 p6
-      and t9,t10 = square p0 p3 p7 p4 and t11,t12 = square p1 p2 p6 p5 in
-      let faces = t12::t11::t10::t9::t8::t7::t6::t5::t4::t3::t2::t1::acc in
-      aux faces tl
-  in (aux [] cubes) |> of_triangle_list
-
-let print_to_file fn cubelist =
-  let oc = open_out fn in
-  let fmt = Format.formatter_of_out_channel oc in
-  let o:obj = build_cube_list cubelist in
-  Format.fprintf fmt "%a" print o
+(* On the fly version of the previous utility *)
+let print_to_file fmt cubelist =
+  let faces = List.fold_left (handle_c fmt) [] cubelist in
+  List.iter (print_face fmt) faces

@@ -43,8 +43,16 @@ let print_latex fmt =
 let draw2d = View.(draw draw_seg draw_dashed_seg fill_poly_mpqf)
 
 let draw3d fmt abs_list (v1,v2,v3) =
-  let make_cube (a,b) (c,d) (e,f) = ((a,c,e), b-.a, d-.c, f-.e) in
-  let cube e = make_cube (View.to_float(bound e v1)) (View.to_float(bound e v2)) (View.to_float(bound e v3)) in
-  let cubes = List.rev_map (fun e -> cube e) abs_list in
-  let o = Objgen.build_cube_list cubes in
-  Format.fprintf fmt "%a" Objgen.print o
+  let make_cube (a,b) (c,d) (e,f) =
+    ((a,c,e),(b,c,e),
+     (b,d,e),(a,d,e),
+     (a,c,f),(b,c,f),
+     (b,d,f),(a,d,f))
+  in
+  let cube e =
+    make_cube
+      (View.to_float (bound e v1))
+      (View.to_float (bound e v2))
+      (View.to_float (bound e v3)) in
+  let cubes = List.rev_map cube abs_list in
+  Objgen.print_to_file fmt cubes

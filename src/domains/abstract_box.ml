@@ -148,8 +148,7 @@ module Box (I:ITV) = struct
 
      This function is useful for testing transfer functions errors (e.g. division by zero).
      - We raise Bot_found in case the expression only evaluates to error values.
-     - Otherwise, we return only the non-error values.
-   *)
+     - Otherwise, we return only the non-error values. *)
   let rec eval (a:t) (e:expr) : bexpri =
     match e with
     | Funcall(name,args) ->
@@ -230,7 +229,7 @@ module Box (I:ITV) = struct
     | BUnary (o,(e1,i1)) ->
        let j = match o with
          | NEG -> I.filter_neg i1 x
-        in refine a e1 (debot j)
+       in refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
        let j = match o with
          | ADD -> refine_add (e1,i1) (e2,i2) x
