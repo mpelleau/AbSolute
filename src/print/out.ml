@@ -60,8 +60,7 @@ module Make (D:Drawer) = struct
     Tools.cyan_fprintf Format.std_formatter "%s" out;
     Format.printf " for 3d viewing. This may take few seconds ...\n%!";
     let out = open_out out in
-    let fmt = Format.formatter_of_out_channel out in
-    D.draw3d fmt values vars
+    D.draw3d out values vars
 
   let traceout sure unsure =
     List.iter (fun (e, c) ->

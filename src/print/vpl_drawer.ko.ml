@@ -18,5 +18,5 @@ let print : Format.formatter -> t -> unit
 let print_latex : Format.formatter -> t -> (Csp.var * Csp.var) -> Graphics.color -> unit
     = fun _ _ _ _ -> ()
 
-let draw3d : Format.formatter -> t list -> (Csp.var * Csp.var * Csp.var) -> unit
+let draw3d : out_channel -> t list -> (Csp.var * Csp.var * Csp.var) -> unit
     = fun _ _ _ -> ()
