@@ -1,0 +1,8 @@
+init{
+  int y = [1;5];
+  real x = [0;10];
+}
+
+constraints {
+  y - 2*x^2 = 0;
+}
