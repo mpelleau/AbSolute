@@ -1,24 +1,32 @@
-(* This module handles the obj format generation *)
+(* This module handles the obj file format generation *)
+type point3d = float * float * float
+type cube = point3d * point3d * point3d * point3d
+            * point3d * point3d * point3d * point3d
+type id = int
+type face = id * id * id
 
-(* printing *)
-let print_vertex fmt (x,y,z) = Printf.fprintf fmt "v %f %f %f\n" x y z
+(* Vertex printing *)
+let print_vertex fmt ((x,y,z):point3d) = Printf.fprintf fmt "v %f %f %f\n" x y z
 
-let print_face fmt (id1,id2,id3)  =
+(* Face printing *)
+let print_face fmt ((id1,id2,id3):face)  =
   Printf.fprintf fmt "f %i %i %i\n" id1 id2 id3
 
+(* Prints three faces at once *)
 let print_face3 fmt (id1,id2,id3) (id1',id2',id3') (id1'',id2'',id3'')  =
   Printf.fprintf fmt "f %i %i %i\nf %i %i %i\nf %i %i %i\n"
     id1 id2 id3 id1' id2' id3' id1'' id2'' id3''
 
 (* vertex id generator *)
-let gen_vert_id =
+let gen_vert_id : unit -> id =
   let v_id = ref 0 in
   fun () ->
   incr v_id;
   !v_id
 
-let print_vertex =
- (* cache to remove redundant vertices *)
+(* prints a vertex and return the associated ID *)
+let print_vertex : out_channel -> point3d -> id =
+  (* cache to avoid the multiple printing of the same vertice *)
   let h_v = Hashtbl.create 10000000 in
   fun fmt v ->
   try Hashtbl.find h_v v
@@ -29,6 +37,8 @@ let print_vertex =
     id
   )
 
+(* This function is expanded for efficiency purposes *)
+(* It prints 8 points and then the faces between those points *)
 let handle_c fmt (p0,p1,p2,p3,p4,p5,p6,p7) =
   let id0 = print_vertex fmt p0 in
   let id1 = print_vertex fmt p1 in
@@ -49,5 +59,6 @@ let handle_c fmt (p0,p1,p2,p3,p4,p5,p6,p7) =
   print_face3 fmt t7 t8 t9;
   print_face3 fmt t10 t11 t12
 
-let print_to_file fmt cubelist =
-  List.iter (handle_c fmt) cubelist
+(* Main function of the module. Prints the cube list *)
+let print_to_file fmt (cubes: cube list) =
+  List.iter (handle_c fmt) cubes
