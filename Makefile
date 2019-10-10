@@ -18,6 +18,5 @@ uninstall:
 
 clean:
 	dune clean
-# Optionally, remove all files/folders ignored by git as defined
-# in .gitignore (-X).
+# remove all files/folders ignored by git as defined in .gitignore (-X).
 	git clean -dfX

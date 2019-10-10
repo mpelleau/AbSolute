@@ -35,8 +35,8 @@ module BoxCP =
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       split abs jacobian (expr,expr')
 
-    let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
-    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+    let split_on _ _ _ = failwith "split_on: uninmplemented"
+    let shrink _ _ = failwith "shrink: uninmplemented"
 
     let volume abs =
       let box = Abstract1.to_box man abs in
@@ -305,8 +305,8 @@ module OctMinMaxCP =
       let poly = to_poly octad env in
       split octad jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
-    let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
-    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+    let split_on _ _ _ = failwith "split_on: uninmplemented"
+    let shrink _ _ = failwith "shrink: uninmplemented"
 
     let volume box = 0.
   end
@@ -347,8 +347,8 @@ module OctBoxCP =
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       split octad jacobian (expr, expr')
 
-    let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
-    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+    let split_on _ _ _ = failwith "split_on: uninmplemented"
+    let shrink _ _ = failwith "shrink: uninmplemented"
 
     let volume box = 0.
   end
@@ -400,9 +400,9 @@ module PolyCP = struct
 
   let volume box = 0.
 
-  let split_on _ _ _ = Pervasives.failwith "split_on: uninmplemented"
+  let split_on _ _ _ = failwith "split_on: uninmplemented"
 
-  let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+  let shrink _ _ = failwith "shrink: uninmplemented"
 
 
 end

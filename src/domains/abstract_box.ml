@@ -383,7 +383,7 @@ module Box (I:ITV) = struct
           | Bot.Bot -> (true, Env.empty)
           | Bot.Nb itv' -> (true, Env.add var itv' acc)
     ) a (false,Env.empty)
-    |> Pervasives.snd
+    |> snd
 
 end
 

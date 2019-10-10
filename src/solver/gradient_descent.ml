@@ -46,14 +46,14 @@ let rec expr_to_poly : Csp.expr -> P.Float.t
     | Binary (DIV, e1, e2) -> begin
         match P.Float.div (expr_to_poly e1) (expr_to_poly e2) with
         | Some p -> p
-        | _ -> Pervasives.invalid_arg "expr_to_poly:div"
+        | _ -> invalid_arg "expr_to_poly:div"
         end
     | Binary (POW, e1, e2) -> begin
         match P.Float.pow (expr_to_poly e1) (expr_to_poly e2) with
         | Some p -> p
-        | _ -> Pervasives.invalid_arg "expr_to_poly:div"
+        | _ -> invalid_arg "expr_to_poly:div"
         end
-    | _ -> Pervasives.invalid_arg "expr_to_poly")
+    | _ -> invalid_arg "expr_to_poly")
 
 (**
   * [gradient_descent x includes jacobian] returns the point resulting from the gradient descent along [jacobian], starting at [x].
@@ -89,8 +89,8 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
     in
     *)
     let vars = List.hd jacobian
-        |> Pervasives.snd
-        |> List.map Pervasives.fst
+        |> snd
+        |> List.map fst
     in
     Printf.sprintf "Variables: %s"
         (String.concat ", " vars)
@@ -99,7 +99,7 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
         List.find (
             fun (bexpr, _) -> not (Csp.is_cons_linear bexpr)
             ) jacobian
-        |> Pervasives.fst
+        |> fst
         |> function
         | Csp.Cmp (op,e1,e2) ->
             let bexpr' = Csp.(Cmp (op,
