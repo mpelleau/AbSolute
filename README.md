@@ -75,6 +75,7 @@ absolute --help
 Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
 
 ```sh
+opam install dune
 opam install apron
 git clone https://github.com/mpelleau/AbSolute
 cd AbSolute
