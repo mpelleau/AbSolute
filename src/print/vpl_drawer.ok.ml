@@ -65,7 +65,7 @@ module Binding_VPL_Apron = struct
                 and (e2, v2) = term' t2 in
                 (E.Binop (E.Div, e1, e2, typ, rnd), Set.union v1 v2)
     		| I.Term.Annot (annot, t) -> term' t
-            | I.Term.Poly _ -> Pervasives.failwith "term': poly unimplemented"
+            | I.Term.Poly _ -> Stdlib.failwith "term': poly unimplemented"
 
     	let term : I.Term.t -> E.expr * (Apron.Var.t list)
     		= fun t ->
@@ -129,7 +129,7 @@ module Binding_VPL_Apron = struct
           	| None, _ | _, None -> None
           	| Some (l1, env1), Some (l2, env2) -> Some (l1 @ l2, Apron.Environment.lce env1 env2)
           	end
-          | I.Cond.BinL (t1, WrapperTraductors.OR, t2) -> Pervasives.invalid_arg "Apron_binding.cond : OR"
+          | I.Cond.BinL (t1, WrapperTraductors.OR, t2) -> Stdlib.invalid_arg "Apron_binding.cond : OR"
           | I.Cond.Not t -> cond' (not positive) env t
 
     	let cond : Apron.Environment.t -> I.Cond.t -> (Apron.Tcons1.t list * Apron.Environment.t) option
@@ -177,7 +177,7 @@ module Binding_VPL_Apron = struct
     	let mk_earray : Environment.t -> I.Cond.t -> Tcons1.earray * Environment.t
     		= fun env cond ->
     		let (l, env') = match Translate.cond env cond with
-    			| None -> Pervasives.failwith "Apron_binding.mk_earray"
+    			| None -> Stdlib.failwith "Apron_binding.mk_earray"
     			| Some x -> x
     		in
     		let a = ref (Tcons1.array_make env' (List.length l)) in

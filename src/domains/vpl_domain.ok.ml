@@ -20,7 +20,7 @@ include MakeInterface(Coeff)
 module Expr = struct
     module Ident = UserInterface.Lift_Ident (struct
         type t = string
-        let compare = Pervasives.compare
+        let compare = Stdlib.compare
         let to_string s = s
         end)
 
@@ -43,7 +43,7 @@ module Expr = struct
             in
             Term.Prod (List.map (fun _ -> term) (Misc.range 0 n))
             end
-        | _ -> Pervasives.raise Out_of_Scope
+        | _ -> Stdlib.raise Out_of_Scope
 
     let rec of_term : Term.t -> t
         = function
@@ -61,7 +61,7 @@ module Expr = struct
             (Csp.Cst (Mpqf.of_int 1, Csp.Int))
             tl
     	| Term.Annot (_, t) -> of_term t
-        | _ -> Pervasives.invalid_arg "of_term"
+        | _ -> Stdlib.invalid_arg "of_term"
     end
 
 module VPL = struct
@@ -108,11 +108,11 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun p expr ->
         let itv = User.itvize p expr in
         let low = match itv.Pol.low with
-            | Pol.Infty -> Mpqf.of_float Pervasives.neg_infinity
+            | Pol.Infty -> Mpqf.of_float Stdlib.neg_infinity
         	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
         in
         let up = match itv.Pol.up with
-            | Pol.Infty -> Mpqf.of_float Pervasives.infinity
+            | Pol.Infty -> Mpqf.of_float Stdlib.infinity
         	| Pol.Open r | Pol.Closed r -> Q.to_string r |> Mpqf.of_string
         in
         (low,up)
@@ -166,10 +166,10 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     (* TODO: can we use this variable? *)
     let split_along : t -> Csp.var -> t list
-        = fun _ _ -> Pervasives.failwith "split_along: unimplemented"
+        = fun _ _ -> Stdlib.failwith "split_along: unimplemented"
 
     let split_on : t -> Csp.ctrs -> Csp.instance -> t list
-        = fun _ _ _ -> Pervasives.failwith "split_on: unimplemented"
+        = fun _ _ _ -> Stdlib.failwith "split_on: unimplemented"
 
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun state (e1,cmp,e2) ->
@@ -181,7 +181,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     (* TODO: Should return the variable with the maximal range as well. *)
     let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
         = fun _ _ ->
-        Pervasives.failwith "filter_maxvar: unimplemented"
+        Stdlib.failwith "filter_maxvar: unimplemented"
 
     (* TODO: use Format *)
     let print : Format.formatter -> t -> unit
@@ -219,7 +219,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
             | Cond.Basic false -> [csp_false]
         	| Cond.Atom (t1, cmp, t2) -> [Expr.of_term t1, translate_cmp' cmp, Expr.of_term t2]
         	| Cond.BinL (t1, Vpl.WrapperTraductors.AND, t2) -> of_bexpr t1 @ of_bexpr t2
-            | _ -> Pervasives.invalid_arg "to_bexpr"
+            | _ -> Stdlib.invalid_arg "to_bexpr"
         in
         fun p ->
         BuiltIn.get_cond p
@@ -251,7 +251,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
         | Csp.Not e -> not (is_representable e)
 
-    let shrink _ _ = Pervasives.failwith "shrink: uninmplemented"
+    let shrink _ _ = Stdlib.failwith "shrink: uninmplemented"
 
 end
 
