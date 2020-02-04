@@ -33,7 +33,7 @@ let parse_const c =
     let p = String.index c '.' in
     let p' = String.length c - p - 1 in
     let x = (String.sub c 0 p)^(String.sub c (p+1) p') in
-    div10 (Mpqf.of_int (int_of_string x)) p'
+    div10 (Mpqf.of_string x) p'
   with Not_found ->
     Mpqf.of_string c
 }

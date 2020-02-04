@@ -33,7 +33,16 @@ module Make (D:Drawer) = struct
         List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
     View.draw_end v1 v2
 
+  let check_dir()=
+    if not (Sys.file_exists "out" && Sys.is_directory "out") then begin
+        Unix.mkdir "out" 0o777;
+        Format.printf "directory ";
+        Tools.cyan_fprintf Format.std_formatter "out";
+        Format.printf " was created\n";
+      end
+
   let print_latex sure unsure (v1,v2) =
+    check_dir();
     Latex.create 8. 6.5;
     let v1_b = bound_dim v1 sure unsure
     and v2_b = bound_dim v2 sure unsure in
@@ -54,6 +63,7 @@ module Make (D:Drawer) = struct
 
   (* generation of an .obj file for 3d viewing. Works with g3dviewer for example *)
   let draw3d values vars =
+    check_dir();
     let out = Filename.basename !Constant.problem in
     let out = ("out/"^(Filename.chop_extension out)^".obj") in
     Format.printf "\ngeneration of ";
