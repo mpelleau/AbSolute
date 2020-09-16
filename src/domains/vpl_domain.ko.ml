@@ -53,9 +53,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> fail ()
 
-    let split_on : t -> Csp.ctrs -> Csp.instance -> t list
-        = fun _ _ _ -> fail ()
-
     (* assume e1 cmp e2 *)
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun _ _ -> fail ()
@@ -79,8 +76,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let to_bexpr _ = fail ()
 
     let is_representable _ = fail ()
-
-    let shrink _ _ = fail ()
 end
 
 let setup_flags : unit -> unit

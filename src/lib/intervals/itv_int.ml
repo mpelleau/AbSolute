@@ -91,7 +91,7 @@ let split_on ((a,b):t) (x : bound) =
   else match b-a with
   | 1 -> [(a,a); (b,b)]
   | 2 -> [(a,a); (a+1,a+1); (b,b)]
-  | r -> [(a,x); (x+1,b)]
+  | _ -> [(a,x); (x+1,b)]
 
 (* splits in two, around the middle *)
 let split ((a,b):t) = split_on (a,b) (a + (b-a)/2)
@@ -226,14 +226,3 @@ let filter_fun (x1:string) (x2:t list) (x3:t) : (t list) bot =
 let spawn (l,h:t) : int =
   let r = Random.int ((h-l)+1) in
   l + r
-
-let shrink (i : t) (c:Mpqf.t) : t bot =
-  try
-    let c' = Mpqf.to_float c |> int_of_float in
-    let i' =
-      (c', -1*c')
-      |> add i
-      |> validate
-    in
-    Nb i'
-  with Invalid_argument _ -> Bot

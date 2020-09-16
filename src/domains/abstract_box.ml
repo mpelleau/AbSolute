@@ -359,32 +359,6 @@ module Box (I:ITV) = struct
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
-  let split_on (a:t) (_:ctrs) (xs : instance) : t list =
-    let split_on_one (a:t) ((v,value) : (var * Mpqf.t)) : t list =
-      let i = Env.find v a in
-      I.split_on i value
-      |> List.fold_left (fun acc b ->
-          (Env.add v b a)::acc
-      ) []
-    in
-    VarMap.bindings xs
-    |> List.fold_left (fun box_list (var,value) ->
-      List.fold_left (fun acc box ->
-        split_on_one box (var,value) @ acc
-      ) [] box_list
-    ) [a]
-
-  let shrink (a:t) (c:Mpqf.t) : t =
-    Env.fold (fun var itv (b,acc) ->
-      if b && is_empty acc
-      then (b,acc)
-      else
-        match I.shrink itv c with
-          | Bot.Bot -> (true, Env.empty)
-          | Bot.Nb itv' -> (true, Env.add var itv' acc)
-    ) a (false,Env.empty)
-    |> snd
-
 end
 
 (*************)

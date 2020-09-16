@@ -168,9 +168,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let split_along : t -> Csp.var -> t list
         = fun _ _ -> Stdlib.failwith "split_along: unimplemented"
 
-    let split_on : t -> Csp.ctrs -> Csp.instance -> t list
-        = fun _ _ _ -> Stdlib.failwith "split_on: unimplemented"
-
     let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
         = fun state (e1,cmp,e2) ->
         Debug.log DebugTypes.Title (lazy "Filter");
@@ -250,9 +247,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         | Csp.And (e1, e2) -> combine (is_representable e1, is_representable e2)
         | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
         | Csp.Not e -> not (is_representable e)
-
-    let shrink _ _ = Stdlib.failwith "shrink: uninmplemented"
-
 end
 
 let setup_flags : unit -> unit

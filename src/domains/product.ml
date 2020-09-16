@@ -118,10 +118,6 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       let split_a = A.split abs jacobian in
       List.map (fun x -> (x, abs')) split_a
 
-    let split_on ((abs, abs'):t) (jacobian : Csp.ctrs) (xs : Csp.instance) =
-      let split_a = A.split_on abs jacobian xs in
-      List.map (fun x -> (x, abs')) split_a
-
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
     let meet (a,a') (b,b') = reduced_product (A.meet a b) (B.meet a' b')
@@ -158,8 +154,6 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
     let is_abstraction (a,b) i =
       A.is_abstraction a i && B.is_abstraction b i
 
-    let shrink (a,b) value =
-      (A.shrink a value, B.shrink b value)
   end
 (*
 module BoxAndPolyNew = MakeProduct (Abstract_box.BoxF) (ADCP.PolyCP)

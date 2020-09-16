@@ -27,10 +27,6 @@ module Make (Abs : AbstractCP) = struct
 
   let print_debug_const tab cstrs csts =
     if !Constant.debug >= 5 then Format.printf "#constraints = %d@." (List.length cstrs)
-  (*Format.printf "%sconstraints:\n" tab;
-      List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
-      Format.printf "%sconstants:\n" tab;
-      List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts*)
 
   let minimize_test obj abs =
     match obj with
@@ -139,37 +135,12 @@ module Make (Abs : AbstractCP) = struct
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid);
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 
-  let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
-    let abs' = (!Constant.precision *. 2. |> Mpqf.of_float)
-      |> Abs.shrink abs
-    in
-    if Abs.is_empty abs'
-    then Abs.split abs jacobian
-    else begin
-        let splits = begin
-          let starting_point = Abs.spawn abs'
-            |> VectorMap.RationalVec.map Mpqf.to_float
-          and includes x = VectorMap.FloatVec.map Mpqf.of_float x
-            |> Abs.is_abstraction abs'
-          in
-          match Gradient_descent.gradient_descent starting_point includes jacobian with
-          | Some xs -> Abs.split_on abs jacobian
-            (VectorMap.FloatVec.map Mpqf.of_float xs)
-          | None -> Abs.split abs jacobian
-          end
-        in (* case where the pizza split has been made on a corner *)
-        if List.length splits = 1
-        then Abs.split abs jacobian
-        else splits
-    end
-
   let split abs =
     Tools.debug 1 "splitting using %s\n%!" !Constant.split;
     let splitting_strategy =
       match !Constant.split with
       | "maxSmear" -> max_smear
       | "smear" -> sum_smear
-      | "pizza" -> pizza_split
       | _ -> Abs.split
     in
     splitting_strategy abs

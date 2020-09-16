@@ -35,9 +35,6 @@ module BoxCP =
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       split abs jacobian (expr,expr')
 
-    let split_on _ _ _ = failwith "split_on: uninmplemented"
-    let shrink _ _ = failwith "shrink: uninmplemented"
-
     let volume abs =
       let box = Abstract1.to_box man abs in
       let tab = box.Abstract1.interval_array in
@@ -305,9 +302,6 @@ module OctMinMaxCP =
       let poly = to_poly octad env in
       split octad jacobian (get_expr (Polka.manager_alloc_strict()) poly)
 
-    let split_on _ _ _ = failwith "split_on: uninmplemented"
-    let shrink _ _ = failwith "shrink: uninmplemented"
-
     let volume box = 0.
   end
 
@@ -342,9 +336,6 @@ module OctBoxCP =
       let expr' =  Linexpr1.make env in
       Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
       split octad jacobian (expr, expr')
-
-    let split_on _ _ _ = failwith "split_on: uninmplemented"
-    let shrink _ _ = failwith "shrink: uninmplemented"
 
     let volume box = 0.
   end
@@ -391,10 +382,5 @@ module PolyCP = struct
   let prune = Some prune
 
   let volume box = 0.
-
-  let split_on _ _ _ = failwith "split_on: uninmplemented"
-
-  let shrink _ _ = failwith "shrink: uninmplemented"
-
 
 end

@@ -3,18 +3,12 @@ open Csp
 (** {1 Constructors} *)
 
 let zero_val = Mpqf.of_int 0
-let is_zero = Mpqf.equal zero_val
-let is_neg c = Mpqf.cmp zero_val c > 0
 let one_val = Mpqf.of_int 1
 
 let one = Cst one_val
 let zero = Cst zero_val
 let two  = Cst (Mpqf.of_int 2)
 let sqr expr = Binary (POW, expr, two)
-let plus_one expr = Binary (ADD, one, expr)
-
-let power a b = Mpqf.of_float ((Mpqf.to_float a) ** (Mpqf.to_float b))
-
 
 (** {1 Predicates} *)
 
@@ -44,9 +38,12 @@ let rec is_cons_linear = function
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
 
-(** {1 Operations}*)
+let is_zero = Mpqf.equal zero_val
+let is_neg c = Mpqf.cmp zero_val c > 0
 
-(* cmp operator inversion *)
+(** {1 Operations} *)
+
+(** cmp operator inversion *)
 let inv = function
   | EQ  -> EQ
   | LEQ -> GEQ
@@ -59,21 +56,6 @@ let apply f e1 e2 b op =
   let (e1', b1) = f e1 b in
   let (e2', b2) = f e2 b in
   (Binary (op, e1', e2'), b1 || b2)
-
-let is_cst = function
-  | Cst _ -> true
-  | _ -> false
-
-let rec to_cst c b = function
-  | [] -> Cst c
-  | (Cst a)::t -> if b then to_cst (Mpqf.add c a) b t else to_cst (Mpqf.mul c a) b t
-  | h::t -> to_cst c b t
-
-let rec to_fcst c = function
-  | [] -> c
-  | (Cst a)::t -> to_fcst (Mpqf.add c a) t
-  | h::t -> to_fcst c t
-
 
 let rec distribute (op, c) = function
   | Funcall (name, args) ->  Binary (op, Funcall(name, args), c)
@@ -156,23 +138,10 @@ let rec simplify_expr expr change =
        (match e1, e2 with
         | _, Cst c when is_zero c -> (zero, true) (* TODO treat NaN *)
         | Cst c, _ when is_zero c -> (zero, true)
-        (* | Cst a, Cst b when Mpqf.equal a b -> (one, true)
-         * | Cst a, Cst b when Mpqf.equal a (Mpqf.neg b) -> (Cst (Mpqf.of_int (-1)), true)
-         * | Cst a, Cst b -> (Cst (Mpqf.div a b), true)
-         * | _, Cst c when Mpqf.equal c one_val -> simplify_expr e1 change
-         * | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
-         * | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(DIV, e1, Cst (Mpqf.neg c))))) true
-         * | Cst c, e2 when is_neg c -> simplify_expr (Unary(NEG, Binary(DIV, Cst (Mpqf.neg c), e2))) true *)
         | _, _ -> apply simplify_expr e1 e2 change DIV
        )
-     | POW ->
-       (match e1, e2 with
-        (* | Cst a, Cst b -> (Cst (power a b), true)
-         * | Cst c, _ when is_zero c -> (zero, true)
-         * | _, Cst c when is_zero c -> (one, true)
-         * | _, Cst c when Mpqf.equal one_val c -> simplify_expr e1 change *)
-        | _, _ -> apply simplify_expr e1 e2 change POW
-       )
+     | POW -> apply simplify_expr e1 e2 change POW
+
     )
 
 let rec simplify_fp expr =
@@ -282,7 +251,7 @@ let add_constr csp c =
   ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
-(* converts a domain representation to a couple of constraints *)
+(* converts a domain representation to a pair constraints *)
 let domain_to_constraints : assign -> bexpr =
   let of_singleton v f = Cmp (EQ, Var v, Cst f) in
   fun (_,v,d) ->

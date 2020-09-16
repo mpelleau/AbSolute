@@ -276,9 +276,6 @@ module Make(B:BOUND) = struct
            itv::acc
     in aux [] l [x]
 
-  let split_on (i : t) (x: Mpqf.t) : t list =
-    split_on_value i (B.of_rat_up x)
-
   (* splits in two, around the middle *)
   let split (i:t) : t list = split_on_value i (mean i)
 
@@ -873,15 +870,6 @@ module Make(B:BOUND) = struct
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
 
-  let shrink (i : t) (c:Mpqf.t) : t bot =
-    try
-      let i' =
-        ((Large, B.of_rat_up c), (Large, B.of_rat_down c |> B.neg))
-        |> add i
-        |> validate
-      in
-      Nb i'
-    with Invalid_argument _ -> Bot
 end
 
 module Test = Make(Bound_float)

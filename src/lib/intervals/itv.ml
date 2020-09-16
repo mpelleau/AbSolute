@@ -200,9 +200,6 @@ module Itv(B:BOUND) = struct
 	       itv::acc
     in aux [] l [x]
 
-  let split_on (i : t) (x: Mpqf.t) : t list =
-    split_on_value i (B.of_rat_up x)
-
   (* splits in two, around the middle *)
   let split (i:t) : t list = split_on_value i (mean i)
 
@@ -553,14 +550,6 @@ module Itv(B:BOUND) = struct
     let r = Random.float 1. in
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
-
-  let shrink ((l,h) : t) (c:Mpqf.t) : t bot =
-    try
-      let c' = B.of_rat_up c in
-      (B.add_up l c', B.sub_down h c')
-        |> validate
-        |> check_bot
-    with Invalid_argument _ -> Bot
 end
 
 module ItvF = Itv(Bound_float)
