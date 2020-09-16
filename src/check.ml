@@ -28,7 +28,7 @@ let print_results not_bads goods nb_files =
     goods
 
 
-module Make(Dom:Adcp_sig.AbstractCP) = struct
+module Make(Dom:Signature.AbstractCP) = struct
   module Check = Checker.Make(Dom)
 
   (* returns the couple (g,b) where g are the known solutions of the problem

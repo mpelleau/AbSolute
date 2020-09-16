@@ -32,10 +32,6 @@ module GoM (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
     Print.out_min prob res
 end
 
-(************************)
-(* THE SOLVER INSTANCES *)
-(************************)
-
 (***************)
 (*   domains   *)
 (***************)

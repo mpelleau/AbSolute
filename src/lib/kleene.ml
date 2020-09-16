@@ -11,7 +11,7 @@ let and_kleene x y =
 let or_kleene x y =
   match x, y with
   | True, _   | _, True -> True
-  | Unknown, _ | _, Unknown -> Unknown
+  | Unknown,_ | _, Unknown -> Unknown
   | False, False -> False
 
 let not_kleene = function
