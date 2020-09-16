@@ -97,7 +97,7 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
         |> print_endline;
     try
         List.find (
-            fun (bexpr, _) -> not (Csp.is_cons_linear bexpr)
+            fun (bexpr, _) -> not (Csp_helper.is_cons_linear bexpr)
             ) jacobian
         |> fst
         |> function
@@ -110,7 +110,7 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
                 fun v -> (Csp.Real, v, Csp.Top))
                 vars
             in
-            let gradient = Csp.ctr_jacobian bexpr' vars'
+            let gradient = Csp_helper.ctr_jacobian bexpr' vars'
                 |> List.fold_left (
                     fun map (var,expr) ->
                     Tools.VarMap.add var (expr_to_poly expr) map

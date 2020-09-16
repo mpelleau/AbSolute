@@ -16,29 +16,28 @@ module Make (Abs:Adcp_sig.AbstractCP) = struct
         | (Some a1),(Some a2) -> Abs.join a1 a2
         | None, (Some x) | (Some x), None -> x
         | _ -> raise Bot.Bot_found)
-    | Not b -> filter value (neg_bexpr b)
+    | Not b -> filter value (Csp_helper.neg_bexpr b)
     | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
 
   (** checks if an abstract satisfies a constraint, i.e all of the concrete
       instances abstracted by the element satisfy the constraint *)
   let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
-    let open Csp in
-    try Abs.is_empty (filter a (neg_bexpr constr))
+    try Abs.is_empty (filter a (Csp_helper.neg_bexpr constr))
     with Bot.Bot_found -> true
 
   let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =
     let newc = Abs.bound_vars a in
-    let tmp = Csp.get_vars_jacob constrs in
+    let tmp = Csp_helper.get_vars_jacob constrs in
     let ctrs = List.fold_left
                  (fun l (v, (a, _)) ->
-                   Csp.replace_cst_jacob (v, a) l
+                   Csp_helper.replace_cst_jacob (v, a) l
                  ) tmp newc in
     let newa = List.fold_left (fun a' (v, _) -> Abs.rem_var a' v) a newc in
     let (_, vars) = List.split (Abs.vars newa) in
     let ctrs_vars = List.fold_left
-                      ( fun s (_, v, _) -> Csp.Variables.union s v
-                      ) Csp.Variables.empty ctrs in
-    let unconstrained = List.filter (fun v -> not (Csp.Variables.mem v ctrs_vars)) vars in
+                      ( fun s (_, v, _) -> Csp_helper.Variables.union s v
+                      ) Csp_helper.Variables.empty ctrs in
+    let unconstrained = List.filter (fun v -> not (Csp_helper.Variables.mem v ctrs_vars)) vars in
     let v_unconst = List.map (fun v -> (v, Abs.var_bounds newa v)) unconstrained in
     let abs = List.fold_left (fun a' v -> Abs.rem_var a' v) newa unconstrained in
 

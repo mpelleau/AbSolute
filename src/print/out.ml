@@ -84,7 +84,7 @@ module Make (D:Drawer) = struct
     let open Csp in
     Array.of_list
       (match prob.to_draw with
-       | [] -> get_vars prob
+       | [] -> Csp_helper.get_vars prob
        | l -> l)
 
   let vars2D prob =

@@ -47,11 +47,11 @@ module Make (A: Res) = struct
       vol_sure   = 0.;
       vol_unsure = 0.;
       nb_steps   = 0;
-      best_value = Csp.zero_val
+      best_value = Csp_helper.zero_val
     }
 
   let to_abs abs consts views =
-    let csts_expr = Csp.csts_to_expr consts in
+    let csts_expr = Csp_helper.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
     let (views_vars, views_expr) = List.split views in
     let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars@views_vars) in
@@ -60,12 +60,12 @@ module Make (A: Res) = struct
     let (vars, csts) = List.fold_left (
                             fun (a, c) (v, e) ->
                             let (l, u) as d = A.forward_eval new_a' e in
-                            let id = List.hd (Csp.get_vars_expr e) in
+                            let id = List.hd (Csp_helper.get_vars_expr e) in
                             if List.mem id csts_vars
                             then (a, (v, d)::c)
                             else ((v, d)::a, c)
                           ) ([], []) views in
-    let to_add = Csp.csts_to_expr (vars@csts) in
+    let to_add = Csp_helper.csts_to_expr (vars@csts) in
     (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
 
 
@@ -74,7 +74,7 @@ module Make (A: Res) = struct
     let volume = A.volume abs' in
     let obj_value = match fobj with
       | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
-      | None -> Csp.zero_val
+      | None -> Csp_helper.zero_val
     in
     (abs', csts, volume, obj_value)
 

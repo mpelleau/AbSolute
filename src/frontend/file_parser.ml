@@ -88,7 +88,7 @@ let check_ast p =
            raise (IllFormedAST msg)
       | _ -> ()
     in
-    List.iter (iter_constr check_v (fun _ -> ())) p.constraints
+    List.iter (Csp_helper.iter_constr check_v (fun _ -> ())) p.constraints
   in
   check_vars ();
   check_csts ();
@@ -138,5 +138,5 @@ let parse (fn:string) =
   (*List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
   List.iter (fun (v, e) -> Format.printf "  // %s = %a\n" v Csp.print_expr e) prob.Csp.view;
   Format.printf "\n";*)
-  let j = Csp.compute_jacobian prob in
+  let j = Csp_helper.compute_jacobian prob in
   {prob with jacobian = j}

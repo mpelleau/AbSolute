@@ -6,7 +6,7 @@ module Product_Drawer (R : Product.Reduction) (D : Drawer_sig.Drawer with type t
     let bound = R.var_bounds
 
     let to_abs (abs, consts) =
-      let csts_expr = Csp.csts_to_expr consts in
+      let csts_expr = Csp_helper.csts_to_expr consts in
       let (csts_vars, _) = List.split consts in
 
       let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars) in

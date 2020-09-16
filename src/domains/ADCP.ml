@@ -323,7 +323,7 @@ module OctBoxCP =
               end)
 
     let is_representable c =
-      if (Csp.is_cons_linear c) then
+      if (Csp_helper.is_cons_linear c) then
         Adcp_sig.Yes
       else
         Adcp_sig.No
@@ -367,7 +367,7 @@ module PolyCP = struct
   let rec is_representable c =
     match c with
     | Csp.Cmp(_, _, _) as c ->
-       if (Csp.is_cons_linear c) then
+       if (Csp_helper.is_cons_linear c) then
          Adcp_sig.Yes
        else
          Adcp_sig.No

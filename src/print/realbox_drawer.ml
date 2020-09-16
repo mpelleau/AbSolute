@@ -9,7 +9,7 @@ let bound abs v = find v abs |> I.to_rational_range
 let is_empty = Abstract_box.BoxStrict.is_empty
 
 let to_abs (abs, consts) =
-  let csts_expr = Csp.csts_to_expr consts in
+  let csts_expr = Csp_helper.csts_to_expr consts in
   let (csts_vars, _) = List.split consts in
 
   let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars) in

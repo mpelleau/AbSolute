@@ -8,7 +8,7 @@ module Make(A:Adcp_sig.AbstractCP) = struct
   let is_empty = A.is_empty
 
   let to_abs (abs, consts) =
-    let csts_expr = Csp.csts_to_expr consts in
+    let csts_expr = Csp_helper.csts_to_expr consts in
     let (csts_vars, _) = List.split consts in
 
     let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars) in

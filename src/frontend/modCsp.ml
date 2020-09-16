@@ -127,9 +127,9 @@ let toCsp m =
 
    | Var (v, e1, e2) ->
       let e1' = evaluate env e1 and e2' = evaluate env e2 in
-      (env,Csp.add_real_var csp v e1' e2')
+      (env,Csp_helper.add_real_var csp v e1' e2')
 
-   | ParamList (v, (lower, upper), e1, e2) ->
+   | ParamList (_v, (_lower, _upper), _e1, _e2) ->
        (* let l = evaluate env lower |> int_of_float *)
        (* and u = evaluate env upper |> int_of_float in *)
        (* if l < u then *)
@@ -151,7 +151,7 @@ let toCsp m =
            if i > u then csp
            else
              let name = name v i in
-             let csp = Csp.add_real_var csp name inf sup in
+             let csp = Csp_helper.add_real_var csp name inf sup in
              loop (i+1) csp
          in
          env,(loop l csp)
@@ -159,9 +159,9 @@ let toCsp m =
 
    | SubjectTo (v, constr) ->
       let constr' = substitute_constr env constr in
-      env,(Csp.add_constr csp (to_csp_constr constr'))
+      env,(Csp_helper.add_constr csp (to_csp_constr constr'))
    | Ignore -> env,csp
   in
-  let empty_csp = Csp.empty in
+  let empty_csp = Csp_helper.empty in
   let empty_env = {params=Env.empty; paramsarray=Env.empty} in
   List.fold_left add (empty_env,empty_csp) m |> snd

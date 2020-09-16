@@ -8,7 +8,7 @@ module Make (Abs : AbstractCP) = struct
 
   let init (problem:Csp.prog) : Abs.t =
     Csp.(List.fold_left (fun abs (t,v,d) ->
-             let c = domain_to_constraints (t,v,d) in
+             let c = Csp_helper.domain_to_constraints (t,v,d) in
              let abs = Abs.add_var abs (t,v) in
              filter abs c
            )  Abs.empty problem.init)
@@ -82,7 +82,7 @@ module Make (Abs : AbstractCP) = struct
          | h::tl ->
 	          try
               let (c, _) = h in
-	            let neg = Csp.neg_bexpr c |> filter abs in
+	            let neg = Csp_helper.neg_bexpr c |> filter abs in
 	            let s = prune abs neg in
               let u = Abs.meet abs neg in
 	            let s',u' = List.fold_left (fun (sures,unsures) elm ->

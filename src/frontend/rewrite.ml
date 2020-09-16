@@ -98,7 +98,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
       | n -> iter (Binary(MUL,acc,(of_id id))) (n-1)
     in
     match exp with
-    | 0 -> one
+    | 0 -> Csp_helper.one
     | n -> iter (of_id id) (n - 1)
   in
   let cell_to_expr ((c,v) as m) =
@@ -116,7 +116,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
         ) (Cst (c,Real)) v
   in
   match p with
-  | [] -> zero
+  | [] -> Csp_helper.zero
   | h::tl -> List.fold_left (fun acc c -> Binary(ADD,acc,(cell_to_expr c)))
                             (cell_to_expr h)
                             tl
@@ -124,7 +124,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
 (* simplify the polynomial part of a constraint *)
 let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
   (* we move e2 to left side to perform potentially more simplifications *)
-  let e1', e2' = (expand e1, expand e2) in
+  let e1', e2' = (Csp_helper.expand e1, Csp_helper.expand e2) in
   (* Format.printf "---------- %a = %a@." print_expr e1' print_expr e2'; *)
   let p1, env1 = simplify CoEnv.empty e1' in
   let p2, env2 = simplify env1 e2' in
@@ -132,13 +132,13 @@ let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
   let polynom = PI.clean (PI.sub p1 p2) in
   let simplified_left = polynom_to_expr polynom env2 in
   (* Format.printf "$$$$$$$$$$ %a = 0@." print_expr simplified_left; *)
-  let simp_left = Csp.simplify_fp simplified_left in
+  let simp_left = Csp_helper.simplify_fp simplified_left in
   (* Format.printf "&&&&&&&&&& %a = 0@." print_expr simp_left; *)
-  let e2 = zero in
+  let e2 = Csp_helper.zero in
   (cmp,simp_left,e2)
 
 
 (* rewriting main function *)
 let rewrite_csp (p:Csp.prog) : Csp.prog =
-  let res = List.map (Csp.map_constr rewrite) p.constraints in
+  let res = List.map (Csp_helper.map_constr rewrite) p.constraints in
   {p with constraints = res}

@@ -112,7 +112,7 @@ module SyntaxTranslator (D:ADomain) = struct
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
-    (exp, typ, zero)
+    (exp, typ, Csp_helper.zero)
 
   let apron_to_bexpr abs =
     let abscons = Abstract1.to_tcons_array man abs in

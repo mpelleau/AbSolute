@@ -3,13 +3,13 @@
    in order to make the CSP easier to solve. *)
 
 open Csp
+open Csp_helper
 open Rewrite
-
 
 
 let get_csts csp =
   let (csts, vars) = List.partition
-    (fun (_, v, d) -> match d with
+    (fun (_, _v, d) -> match d with
        | Finite (a, b) when a=b -> true
        | _ -> false
     ) csp.init in
