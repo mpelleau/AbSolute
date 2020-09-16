@@ -8,8 +8,6 @@ let sy = ref 0.
 
 let fff = Format.fprintf
 
-let escape name = Str.(global_replace (regexp "_")) "" name
-
 let red_comp rgb = (rgb / (0xFFFF) |> float) /. 255.
 let green_comp rgb = ((rgb / 255) mod 256 |> float) /. 255.
 let blue_comp rgb = (rgb mod 256 |> float) /. 255.

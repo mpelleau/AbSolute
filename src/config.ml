@@ -79,7 +79,7 @@ let set_domain_from_names : string list -> (module FullDomain)
 
 let set_domain : unit -> (module FullDomain)
   = fun () ->
-  Str.split (Str.regexp ",") !Constant.domain
+  String.split_on_char ',' !Constant.domain
   |> set_domain_from_names
 
 (**
