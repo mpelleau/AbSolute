@@ -68,14 +68,24 @@ module Box (I:ITV) = struct
   (************************************************************************)
   (* NOTE: all binary operations assume that both boxes are defined on
      the same set of variables;
-     otherwise, an Invalid_argument exception will be raised
-   *)
+     otherwise, an Invalid_argument exception will be raised *)
 
   let join (a:t) (b:t) : t =
-    Env.map2z (fun _ x y -> I.join x y) a b
+    let join_opt a b =
+      match a,b with
+      | Some a, Some b -> Some (I.join a b)
+      | _ -> None
+    in
+    VarMap.merge (fun _ -> join_opt) a b
 
   let meet (a:t) (b:t) : t =
-    Env.map2z (fun _ x y -> debot(I.meet x y)) a b
+    let meet_opt a b =
+      match a,b with
+      | Some a, Some b -> Some (debot (I.meet a b))
+      | _ -> raise Bot_found
+    in
+    VarMap.merge (fun _ -> meet_opt) a b
+
 
   (* predicates *)
   (* ---------- *)

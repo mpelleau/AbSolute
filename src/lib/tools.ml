@@ -65,20 +65,12 @@ let debug level fmt =
 
 (** only one instanciation forall variable maps modules *)
 module VarMap = struct
-  include Mapext.Make(String)
-  (** we add few utilities inside it *)
+  include Map.Make(String)
 
-  (** we define a find_fail that fails directly with an error msg
-     when a variable is not found *)
+  (** fails directly with an error msg instead of raising Not_found *)
   let find_fail key map =
     try find key map
     with Not_found -> fail_fmt "variable not found: %s" key
-
-  (** we define a find_fail that fails directly with an error msg
-     when a variable is not found *)
-  let find_opt key map =
-    try Some (find key map)
-    with Not_found -> None
 
   (** builds a map from an association list*)
   let of_list (assoc: (string*'a) list) =
