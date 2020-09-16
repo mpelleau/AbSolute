@@ -75,10 +75,10 @@ module Make (D:Drawer) = struct
   let traceout sure unsure =
     List.iter (fun (e, c) ->
         if D.is_empty e then
-          Format.printf "sure: (), (%a)\n%!" Csp.print_all_csts c
+          Format.printf "sure: (), (%a)\n%!" Csp_printer.print_all_csts c
         else
-          Format.printf "sure: (), (%a %a)\n%!" D.print e Csp.print_all_csts c) sure;
-    List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp.print_all_csts c) unsure
+          Format.printf "sure: (), (%a %a)\n%!" D.print e Csp_printer.print_all_csts c) sure;
+    List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp_printer.print_all_csts c) unsure
 
   let draw_vars prob =
     let open Csp in

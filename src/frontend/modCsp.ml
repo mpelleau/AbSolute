@@ -68,7 +68,7 @@ let evaluate env expr =
     | Csp.SUB -> (Mpqf.sub)
     | Csp.DIV -> (Mpqf.div)
     | Csp.MUL -> (Mpqf.mul)
-    | x -> Format.printf "cant evaluate binary operator:%a\n" Csp.print_binop x;
+    | x -> Format.printf "cant evaluate binary operator:%a\n" Csp_printer.print_binop x;
            failwith "evaluation error"
   in
   let rec eval = function

@@ -2,6 +2,7 @@ open Tools
 open Bot
 open Itv_sig
 open Csp
+open Csp_printer
 
 (*******************)
 (* GENERIC FUNCTOR *)

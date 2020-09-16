@@ -1,4 +1,5 @@
 open Csp
+open Csp_printer
 open Tools
 
 module Make(Abs : Adcp_sig.AbstractCP) = struct
