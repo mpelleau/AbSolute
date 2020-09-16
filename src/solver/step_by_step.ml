@@ -1,4 +1,4 @@
-module Make(Abs : Adcp_sig.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
+module Make(Abs : Signature.AbstractCP) (Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
 
   include Splitter.Make(Abs)
   module Print = Out.Make(Dr)

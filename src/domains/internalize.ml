@@ -2,7 +2,7 @@
     it domain dependant. It allows to permform transformations on the problem
     at initialization *)
 
-module Make(D:Adcp_sig.AbstractCP) = struct
+module Make(D:Signature.AbstractCP) = struct
   include Boolean.Make(D)
 
   type t = {

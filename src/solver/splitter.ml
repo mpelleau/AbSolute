@@ -1,4 +1,4 @@
-open Adcp_sig
+open Signature
 open Tools
 
 (** Consistency computation and splitting strategy handling *)

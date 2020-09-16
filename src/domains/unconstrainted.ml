@@ -4,7 +4,7 @@
   regular domain
  *)
 open Tools
-open Adcp_sig
+open Signature
 
 module Make(Abs:AbstractCP) = struct
 
@@ -75,7 +75,7 @@ module Make(Abs:AbstractCP) = struct
     failwith "value 'to_bexpr' in file 'unconstrainted.ml' not implemented"
 
   (* check if a constraint is suited for this abstract domain *)
-  let is_representable (b:Csp.bexpr) : answer =
+  let is_representable (b:Csp.bexpr) : Kleene.t =
     (* TODO: replace the "failwith" with your own code *)
     failwith "value 'is_representable' in file 'unconstrainted.ml' not implemented"
 

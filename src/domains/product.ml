@@ -1,6 +1,6 @@
 (* Reduced product of domains A and B where B is more expressive than A *)
 
-open Adcp_sig
+open Signature
 
 module type Reduction =
   sig
@@ -127,9 +127,10 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
     let meet (a,a') (b,b') = reduced_product (A.meet a b) (B.meet a' b')
 
     let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
+      let open Kleene in
       match B.is_representable (Csp.Cmp(op, e1, e2)) with
-      | Yes -> (A.filter abs cons, B.filter abs' cons)
-      | Maybe | No -> (A.filter abs cons, abs')
+      | True -> (A.filter abs cons, B.filter abs' cons)
+      | Unknown | False -> (A.filter abs cons, abs')
 
 
     let forward_eval (abs, abs') cons =

@@ -1,4 +1,4 @@
-open Adcp_sig
+open Signature
 
 module Minimize(Abs : AbstractCP) = struct
 

@@ -8,8 +8,10 @@
 (* rendering module which fits the domain we use                  *)
 (******************************************************************)
 
+open Signature
+
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
+module GoS (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Sol = Solver.Solve(Abs)
   module Print = Out.Make(Dr)
   let go prob =
@@ -22,7 +24,7 @@ module GoS (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) =
 end
 
 (** Solve and minimize a CSP with the abstract domain Abs *)
-module GoM (Abs:Adcp_sig.AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
+module GoM (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
   module Min = Minimizer.Minimize(Abs)
   module Print = Out.Make(Dr)
   let go prob =
@@ -39,12 +41,12 @@ end
 (***************)
 
 module type FullDomain = sig
-  module Abstract : Adcp_sig.AbstractCP
+  module Abstract : AbstractCP
   module Drawer : Drawer_sig.Drawer with type t = Abstract.t
 end
 
 module MakeFullDomain
-         (Abstract : Adcp_sig.AbstractCP)
+         (Abstract : AbstractCP)
          (Drawer : Drawer_sig.Drawer with type t = Abstract.t)
   = struct
   module Abstract = Abstract

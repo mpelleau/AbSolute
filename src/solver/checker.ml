@@ -2,7 +2,7 @@ open Csp
 open Csp_printer
 open Tools
 
-module Make(Abs : Adcp_sig.AbstractCP) = struct
+module Make(Abs : Signature.AbstractCP) = struct
 
   include Solver.Solve(Abs)
 

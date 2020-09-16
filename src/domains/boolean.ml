@@ -2,7 +2,7 @@
     predicates (e1 < e2) to boolean formulas of the form (p1 \/ p2) *)
 
 (** Boolean expressions abstractions *)
-module Make (Abs:Adcp_sig.AbstractCP) = struct
+module Make (Abs:Signature.AbstractCP) = struct
 
   (** generic filter function over boolean formulas *)
   let rec filter (value:Abs.t) c =

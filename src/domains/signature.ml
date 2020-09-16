@@ -2,18 +2,6 @@
 (*            Module for Abstract Domains for Constraint Programming (ADCP).      *)
 (*   These are abstract domains with consistency, split and precision operators.  *)
 (**********************************************************************************)
-type answer = Yes | Maybe | No
-
-let and_ans a1 a2 =
-  match a1, a2 with
-  | No, _ | _, No -> No
-  | Maybe, _ | _, Maybe -> Maybe
-  | _, _ -> Yes
-
-let not_ans = function
-  | Yes -> No
-  | No -> Yes
-  | Maybe -> Maybe
 
 module type AbstractCP = sig
 
@@ -77,7 +65,7 @@ module type AbstractCP = sig
   val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list
 
   (** checks if a constraint is suited for this abstract domain *)
-  val is_representable : Csp.bexpr -> answer
+  val is_representable : Csp.bexpr -> Kleene.t
 
   (** printing *)
   val print : Format.formatter -> t -> unit

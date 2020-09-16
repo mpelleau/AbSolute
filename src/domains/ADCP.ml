@@ -12,7 +12,7 @@ module BoxCP =
                 let get_manager =  Box.manager_alloc ()
               end)
 
-    let is_representable _ = Adcp_sig.Yes
+    let is_representable _ = Kleene.True
 
     let is_small box : bool =
       let (_, _, max) = largest box in
@@ -322,11 +322,7 @@ module OctBoxCP =
                 let get_manager =  Oct.manager_alloc ()
               end)
 
-    let is_representable c =
-      if (Csp_helper.is_cons_linear c) then
-        Adcp_sig.Yes
-      else
-        Adcp_sig.No
+    let is_representable c = Csp_helper.is_cons_linear c |> Kleene.of_bool
 
     let is_small oct =
       let (_, _,max) = largest oct in
@@ -366,14 +362,10 @@ module PolyCP = struct
 
   let rec is_representable c =
     match c with
-    | Csp.Cmp(_, _, _) as c ->
-       if (Csp_helper.is_cons_linear c) then
-         Adcp_sig.Yes
-       else
-         Adcp_sig.No
-    | Csp.And(e1, e2) -> Adcp_sig.and_ans (is_representable e1) (is_representable e2)
-    | Csp.Or(e1, e2) -> Adcp_sig.No
-    | Csp.Not(e) -> Adcp_sig.not_ans (is_representable e)
+    | Csp.Cmp(_, _, _) -> Csp_helper.is_cons_linear c |> Kleene.of_bool
+    | Csp.And(e1, e2) -> Kleene.and_kleene (is_representable e1) (is_representable e2)
+    | Csp.Not(e) -> Kleene.not_kleene (is_representable e)
+    | _ -> Kleene.False
 
   let split poly jacobian =
     split poly jacobian (get_expr (Polka.manager_alloc_strict()) poly)

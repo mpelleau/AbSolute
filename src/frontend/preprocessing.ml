@@ -6,11 +6,10 @@ open Csp
 open Csp_helper
 open Rewrite
 
-
 let get_csts csp =
   let (csts, vars) = List.partition
     (fun (_, _v, d) -> match d with
-       | Finite (a, b) when a=b -> true
+       | Finite (a, b) -> a=b
        | _ -> false
     ) csp.init in
   let cst = List.map
@@ -18,7 +17,7 @@ let get_csts csp =
                 match d with
                 | Finite (a, b) when a=b -> (v, (a, b))
                 | _ -> assert false
-    ) csts in
+              ) csts in
   {csp with init = vars; constants = cst@csp.constants}
 
 
@@ -29,7 +28,7 @@ let replace_cst_cstrs (id, cst) cstrs =
   List.map (fun (c, vars) -> if Variables.mem id vars then
                                (replace_cst_bexpr (id, cst) c, Variables.remove id vars)
                              else (c, vars)
-  ) cstrs
+    ) cstrs
 
 let replace_cst ctrs csts =
   List.fold_left
@@ -258,22 +257,9 @@ let rec preprocess csp =
                       let e = List.assoc v views in
                       List.append (to_domains (e, d)) l) [] var_view in
 
-  let all_ctrs = (*List.map (rewrite_constraint)*) ctrs@ view_ctrs in
+  let all_ctrs = ctrs@ view_ctrs in
   let all_views = csp.view@views in
-
   let prob = {p with init = vars; constants = csts; constraints = all_ctrs; view = all_views} in
   let nb_eq' = get_nb_eq prob in
-
-  (* Format.printf "\n--------------------\n";
-  Format.printf "\n%i -> %i" nb_eq nb_eq';
-  Format.printf "\n--------------------\n";
-  Format.printf "\n---------- Constants ----------\n";
-  List.iter (Format.printf "%a@." print_csts) csts;
-  Format.printf "\n---------- Views ----------\n";
-  List.iter (Format.printf "%a@." print_view) views;
-  Format.printf "\n---------- Constraints ----------\n";
-  List.iter (Format.printf "%a@." print_bexpr) all_ctrs;
-  Format.printf "\n--------------------\n"; *)
-
   if nb_eq = nb_eq' then prob
   else preprocess prob

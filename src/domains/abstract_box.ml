@@ -38,7 +38,7 @@ module Box (I:ITV) = struct
         (typ, v)::acc
       ) abs []
 
-  let is_representable _ = Adcp_sig.Yes
+  let is_representable _ = Kleene.True
 
   (************************************************************************)
   (* PRINTING *)

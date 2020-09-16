@@ -1,5 +1,5 @@
 
-module Make(A:Adcp_sig.AbstractCP) = struct
+module Make(A:Signature.AbstractCP) = struct
   type t = A.t
   let print = A.print
 

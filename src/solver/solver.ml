@@ -1,4 +1,4 @@
-open Adcp_sig
+open Signature
 
 (* Solver *)
 module Solve(Abs : AbstractCP) = struct
