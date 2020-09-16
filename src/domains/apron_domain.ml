@@ -30,7 +30,7 @@ module SyntaxTranslator (D:ADomain) = struct
       if not (Environment.mem_var env var)
       then failwith ("variable not found: "^v);
       Texpr1.Var var
-    | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf c)
+    | Cst c -> Texpr1.Cst (Coeff.s_of_mpqf c)
     | Unary (o,e1) ->
       let r = match o with
         | NEG  -> Texpr1.Neg
@@ -75,7 +75,7 @@ module SyntaxTranslator (D:ADomain) = struct
 
   let rec apron_to_expr texpr env =
     match texpr with
-    | Texpr1.Cst c -> Cst (coeff_to_mpqf c,Real)
+    | Texpr1.Cst c -> Cst (coeff_to_mpqf c)
     | Texpr1.Var v ->
       let e = match (Environment.typ_of_var env v) with
               | Environment.INT -> Var ((Var.to_string v)^"%")

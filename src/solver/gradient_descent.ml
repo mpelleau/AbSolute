@@ -38,7 +38,7 @@ let rec descent : (FloatVec.t -> bool) -> float -> float -> FloatVec.t -> gradie
 let rec expr_to_poly : Csp.expr -> P.Float.t
     = Csp.(function
     | Var v -> P.Float.of_var v
-    | Cst (i, _) -> P.Float.of_constant (P.FloatRing.of_rational i)
+    | Cst i -> P.Float.of_constant (P.FloatRing.of_rational i)
     | Unary  (NEG, e) -> P.Float.neg (expr_to_poly e)
     | Binary (ADD, e1, e2) -> P.Float.add (expr_to_poly e1) (expr_to_poly e2)
     | Binary (SUB, e1, e2) -> P.Float.sub (expr_to_poly e1) (expr_to_poly e2)
@@ -103,8 +103,8 @@ let gradient_descent : FloatVec.t -> (FloatVec.t -> bool) -> Csp.ctrs -> FloatVe
         |> function
         | Csp.Cmp (op,e1,e2) ->
             let bexpr' = Csp.(Cmp (op,
-                Binary (POW, e1, Cst (Mpqf.of_int 2, Csp.Int)),
-                Binary (POW, e2, Cst (Mpqf.of_int 2, Csp.Int))))
+                Binary (POW, e1, Csp_helper.two),
+                Binary (POW, e2, Csp_helper.two)))
             in
             let vars' = List.map (
                 fun v -> (Csp.Real, v, Csp.Top))

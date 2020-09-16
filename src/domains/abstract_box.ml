@@ -160,7 +160,7 @@ module Box (I:ITV) = struct
     | Var v ->
         let r = find v a in
         BVar v, r
-    | Cst (c,_) ->
+    | Cst c ->
         let r = I.of_rat c in
         BCst r, r
     | Unary (o,e1) ->
@@ -314,17 +314,16 @@ module Box (I:ITV) = struct
 
  let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->
-        let annot = if is_integer a v then Int else Real in
         let ((op1, e1), (op2, e2)) = I.to_expr x in
         match e1, e2 with
-        | Cst(e1, _), Cst(e2, _) ->
-           acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, Cst(e2, annot))]
-        | Cst(e1, _), e2 ->
-           acc@[(Var(v), op1, Cst(e1, annot)); (Var(v), op2, e2)]
-        | e1, Cst(e2, _) ->
-           acc@[(Var(v), op1, e1); (Var(v), op2, Cst(e2, annot))]
+        | Cst e1, Cst e2 ->
+           acc@[(Var(v), op1, Cst e1); (Var v, op2, Cst e2)]
+        | Cst e1, e2 ->
+           acc@[(Var(v), op1, Cst e1); (Var v, op2, e2)]
+        | e1, Cst e2 ->
+           acc@[(Var(v), op1, e1); (Var v, op2, Cst e2)]
         | e1, e2 ->
-           acc@[(Var(v), op1, e1); (Var(v), op2, e2)]
+           acc@[(Var(v), op1, e1); (Var v, op2, e2)]
       ) a []
 
 

@@ -113,8 +113,8 @@ module Make (Abs : AbstractCP) = struct
             ) (m', mv', mid') l
         ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
-     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid);
+     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 
   let sum_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let smear =
@@ -136,8 +136,8 @@ module Make (Abs : AbstractCP) = struct
           else (m, v, s)
         ) smear (Mpqf.of_int (-1), "", Mpqf.of_int (-1))
     in
-    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst (mid, Csp.Real));
-     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst (mid, Csp.Real))]
+    [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid);
+     Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]
 
   let pizza_split (abs : Abs.t) (jacobian:Csp.ctrs) : Abs.t list =
     let abs' = (!Constant.precision *. 2. |> Mpqf.of_float)

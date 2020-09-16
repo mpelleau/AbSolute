@@ -34,7 +34,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   let eval (instance:Csp.instance) expr =
     let rec aux = function
       | Var v -> VarMap.find_fail v instance
-      | Cst (i,_) -> i
+      | Cst i -> i
       | Binary(op,e1,e2) ->
          let e1' = aux e1 and e2' = aux e2 in
          (match op with

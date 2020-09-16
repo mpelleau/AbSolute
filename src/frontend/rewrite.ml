@@ -42,7 +42,7 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
   let p,env =
   match expr with
   | Var v -> (PI.of_var v),env
-  | Cst (c,_) -> (PI.of_rational c),env
+  | Cst c -> (PI.of_rational c),env
   | Binary (op,e1,e2) ->
      (*Format.printf "===== %a, %a@." print_expr e1 print_expr e2;*)
      let p1,env' = simplify env e1 in
@@ -103,7 +103,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
   in
   let cell_to_expr ((c,v) as m) =
     let c = PI.to_rational c in
-    if PI.is_monom_constant m then Cst (c,Real)
+    if PI.is_monom_constant m then Cst c
     else if Mpqf.equal c (Mpqf.of_int 1) then
       match v with
       | h::tl -> List.fold_left (fun acc e ->
@@ -113,7 +113,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
     else
       List.fold_left (fun acc e ->
           Binary(MUL,acc,(var_to_expr e))
-        ) (Cst (c,Real)) v
+        ) (Cst c) v
   in
   match p with
   | [] -> Csp_helper.zero

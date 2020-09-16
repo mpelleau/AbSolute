@@ -208,8 +208,8 @@ let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
      else strict_bot (meet i2) (div r i1))
 
 let to_expr ((l,h):t) =
-  ((Csp.GEQ, Csp.Cst(Mpqf.of_int l, Csp.Int)),
-   (Csp.LEQ, Csp.Cst(Mpqf.of_int h, Csp.Int)))
+  ((Csp.GEQ, Csp.Cst(Mpqf.of_int l)),
+   (Csp.LEQ, Csp.Cst(Mpqf.of_int h)))
 
 (* returns the type annotation of the represented values *)
 let to_annot _ = Csp.Int

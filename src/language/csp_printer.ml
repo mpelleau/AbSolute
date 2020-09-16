@@ -75,7 +75,7 @@ let rec print_expr fmt = function
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
   | Var v -> Format.fprintf fmt "%s" v
-  | Cst (c,_) -> Format.fprintf fmt "%a" pp_print_mpqf c
+  | Cst c -> Format.fprintf fmt "%a" pp_print_mpqf c
 
 let rec print_bexpr fmt = function
   | Cmp (c,e1,e2) ->

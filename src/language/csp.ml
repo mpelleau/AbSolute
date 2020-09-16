@@ -24,7 +24,7 @@ type expr =
   | Unary   of unop * expr
   | Binary  of binop * expr * expr
   | Var     of var
-  | Cst     of i * annot
+  | Cst     of i
 
 (* boolean expressions *)
 type bexpr =
