@@ -22,6 +22,7 @@ depends: [
   "dune" {build}
   "ocaml" {>= "4.03"}
   "apron"
+  "apronext"
 ]
 depopts: [
   "vpl-core"

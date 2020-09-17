@@ -1,5 +1,6 @@
-open Apron
 open Csp
+open Apron
+open Apronext
 open Apron_utils
 
 module type ADomain = sig
@@ -276,7 +277,7 @@ module MAKE(AP:ADomain) = struct
 
   let split abs _ (e1,e2) =
     let meet_linexpr abs man expr =
-      let cons = Linconsext.make expr Linconsext.SUPEQ in
+      let cons = Linconsext.make expr Lincons1.SUPEQ in
       A.filter_lincons man abs cons
     in
     let abs1 = meet_linexpr abs man e1 in

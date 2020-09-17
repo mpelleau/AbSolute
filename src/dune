@@ -3,7 +3,7 @@
 (library
   (name libabsolute)
   (wrapped false)
-  (libraries bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ graphics
+  (libraries bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ apronext graphics
     (select vpl_domain.ml from
       (vpl zarith -> domains/vpl_domain.ok.ml)
       (!vpl       -> domains/vpl_domain.ko.ml))

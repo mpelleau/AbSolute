@@ -1,4 +1,5 @@
 open Apron
+open Apronext
 open Apron_utils
 
 (**
@@ -371,7 +372,7 @@ module PolyCP = struct
     in
     let _,pruned = Linconsext.array_fold
                      (fun (abs,acc) c ->
-                       if Linconsext.get_typ c = Linconsext.EQ then
+                       if Linconsext.get_typ c = Lincons1.EQ then
                          let c1,c2 = Linconsext.spliteq c in
                          let a',acc' = work acc a c1 in
                          work acc' a' c2
