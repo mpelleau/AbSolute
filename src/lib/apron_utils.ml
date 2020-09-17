@@ -1,24 +1,17 @@
 open Apron
 open Apronext
 
-(******************************************************************)
-(***************** Different conversion operators *****************)
-(******************************************************************)
+(** {1 Conversion operators } *)
 
-let scalar_to_float = function
-  | Scalar.Mpqf x -> Mpqf.to_float x
-  | Scalar.Float x -> x
-  | Scalar.Mpfrf x -> Mpfrf.to_float ~round:Mpfr.Near x
+let scalar_to_int x = Scalarext.to_float x |> int_of_float
 
-let scalar_to_int x = scalar_to_float x |> int_of_float
-
-let itv_to_float i = (scalar_to_float i.Interval.inf, scalar_to_float i.Interval.sup)
+let itv_to_float i = (Scalarext.to_float i.Interval.inf, Scalarext.to_float i.Interval.sup)
 
 let itv_to_mpqf i = (Scalarext.to_mpqf i.Interval.inf, Scalarext.to_mpqf i.Interval.sup)
 
 let coeff_to_float = function
-  | Coeff.Scalar x -> scalar_to_float x
-  | Coeff.Interval i -> scalar_to_float i.Interval.inf
+  | Coeff.Scalar x -> Scalarext.to_float x
+  | Coeff.Interval i -> Scalarext.to_float i.Interval.inf
 
 let coeff_to_mpqf = function
   | Coeff.Scalar x -> Scalarext.to_mpqf x
@@ -26,30 +19,13 @@ let coeff_to_mpqf = function
 
 let coeff_to_int x = coeff_to_float x |> int_of_float
 
-(**********************)
-(*   APRON Utilities  *)
-(**********************)
+(** {1 Operators } *)
 
-let empty_env = Environment.make [||] [||]
-
-(******************************************************************)
-(*********************** Various operators ************************)
-(******************************************************************)
-
-let split_prec = 0.00001
-let split_prec_mpqf = Mpqf.of_float split_prec
+let split_prec_mpqf = Mpqf.of_float !Constant.precision
 
 let sqrt2 = 0.707106781186548
 let sqrt2_mpqf = Mpqf.of_float sqrt2
 
-(* Compute the sum of two scalars *)
-let scalar_add sca sca' =
-  let value = Scalarext.to_mpqf sca in
-  let value' = Scalarext.to_mpqf sca' in
-  let sum = Mpqf.add value value' in
-  Scalar.of_mpqf sum
-
-(* Compute the sum of two scalars *)
 let scalar_mul_sqrt2 sca =
   let value = Scalarext.to_mpqf sca in
   let mult = Mpqf.mul value sqrt2_mpqf in
@@ -61,27 +37,11 @@ let scalar_plus_mpqf sca mpqf =
   let sum = Mpqf.add value mpqf in
   Scalar.of_mpqf sum
 
-(* Compute the medium value of two scalars *)
-let mid inf sup =
-  let mpqf_inf = Scalarext.to_mpqf inf
-  and mpqf_sup = Scalarext.to_mpqf sup in
-  let mid =
-    let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
-    and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2)
-    in Scalar.of_mpqf (Mpqf.add div_inf div_sup)
-  in mid
-  (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
-
-
 (* Compute the euclidian distance between two scalars *)
 let diam inf sup =
   let mpqf_inf = Scalarext.to_mpqf inf in
   let mpqf_sup = Scalarext.to_mpqf sup in
   Mpqf.sub mpqf_sup mpqf_inf
-
-(* Compute the diameter of an interval *)
-let diam_interval itv =
-  diam itv.Interval.inf itv.Interval.sup
 
 (* Compute the euclidian distance between two arrays of floats. *)
 let dist tab1 tab2 =

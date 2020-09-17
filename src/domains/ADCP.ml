@@ -32,7 +32,7 @@ module BoxCP = struct
   let volume abs =
     let box = Abstract1.to_box man abs in
     let tab = box.Abstract1.interval_array in
-    let vol = Array.fold_left (fun v itv -> Mpqf.mul v (diam_interval itv)) (Mpqf.of_int 1) tab in
+    let vol = Array.fold_left (fun v itv -> Mpqf.mul v (Intervalext.range_mpqf itv)) (Mpqf.of_int 1) tab in
     Mpqf.to_float vol
 
 end
@@ -62,9 +62,9 @@ module OctMinMinCP = struct
 
       (* Get the interval for the expression "vi + vj" and "vi -vj" *)
       let itv1 = Abstract1.bound_linexpr man octad expr1 in
-      let diam1 = Scalar.of_mpqf (diam_interval itv1) in
+      let diam1 = Intervalext.range itv1 in
       let itv2 = Abstract1.bound_linexpr man octad expr2 in
-      let diam2 = Scalar.of_mpqf (diam_interval itv2) in
+      let diam2 = Intervalext.range itv2 in
 
       let cond = (Scalar.cmp diam1 diam2 > 0) in
       let diam_max = if cond then (scalar_mul_sqrt2 diam1) else (scalar_mul_sqrt2 diam2) in
@@ -103,7 +103,7 @@ module OctMinMinCP = struct
 
     let box = Abstract1.to_box man octad in
     let tab = box.Abstract1.interval_array in
-    let (mmax, i_max, mmin, i_min) = minmax tab 1 (diam_interval tab.(0)) 0 (diam_interval tab.(0)) 0 in
+    let (mmax, i_max, mmin, i_min) = minmax tab 1 (Intervalext.range_mpqf tab.(0)) 0 (Intervalext.range_mpqf tab.(0)) 0 in
     let mmax' = Scalar.of_mpqf mmax in
     let expr1 = Linexpr1.make env in
     Linexpr1.set_list expr1 [(Coeffext.one, Environment.var_of_dim env i_max)] None;
@@ -111,31 +111,30 @@ module OctMinMinCP = struct
     Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
     let mmin' = Scalar.of_mpqf mmin in
     let (linexpr1, linexpr2, cst, max, min) = minmax_b 0 mmin' mmax' (Intervalext.mid tab.(i_max)) expr1 expr2 in
-    let max = scalar_to_float max in
+    let max = Scalarext.to_float max in
     (max <= !Constant.precision)
 
   let split octad =
     let env = Abstract1.env octad in
     let dim = Environment.size env in
-    let coeff_1 = Coeff.s_of_int (-1) in
 
     (* Compute the max and the min for the basis Bij *)
     let minmax_bij var_i var_j =
       let expr1 = Linexpr1.make env in
       Linexpr1.set_list expr1 [(Coeffext.one, var_i) ; (Coeffext.one, var_j)] None;
       let expr2 = Linexpr1.make env in
-      Linexpr1.set_list expr2 [(Coeffext.one, var_i) ; (coeff_1, var_j)] None;
+      Linexpr1.set_list expr2 [(Coeffext.one, var_i) ; (Coeffext.minus_one, var_j)] None;
 
       let expr1' = Linexpr1.make env in
-      Linexpr1.set_list expr1' [(coeff_1, var_i) ; (coeff_1, var_j)] None;
+      Linexpr1.set_list expr1' [(Coeffext.minus_one, var_i) ; (Coeffext.minus_one, var_j)] None;
       let expr2' = Linexpr1.make env in
-      Linexpr1.set_list expr2' [(coeff_1, var_i) ; (Coeffext.one, var_j)] None;
+      Linexpr1.set_list expr2' [(Coeffext.minus_one, var_i) ; (Coeffext.one, var_j)] None;
 
       (* Get the interval for the expression "vi + vj" and "vi -vj" *)
       let itv1 = Abstract1.bound_linexpr man octad expr1 in
-      let diam1 = Scalar.of_mpqf (diam_interval itv1) in
+      let diam1 = Intervalext.range itv1 in
       let itv2 = Abstract1.bound_linexpr man octad expr2 in
-      let diam2 = Scalar.of_mpqf (diam_interval itv2) in
+      let diam2 = Intervalext.range itv2 in
 
       let cond = (Scalar.cmp diam1 diam2 > 0) in
       let diam_max = if cond then (scalar_mul_sqrt2 diam1) else (scalar_mul_sqrt2 diam2) in
@@ -143,7 +142,6 @@ module OctMinMinCP = struct
       let expr_max' = if cond then expr1' else expr2' in
       let itv_max = if cond then itv1 else itv2 in
       let diam_min = if cond then (scalar_mul_sqrt2 diam2) else (scalar_mul_sqrt2 diam1) in
-      (*printf "      min = %f, max = %f@." (scalar_to_float diam_min) (scalar_to_float diam_max);*)
       (expr_max, expr_max', itv_max, diam_max, diam_min)
     in
 
@@ -171,12 +169,12 @@ module OctMinMinCP = struct
 
     let box = Abstract1.to_box man octad in
     let tab = box.Abstract1.interval_array in
-    let (mmax, i_max, mmin, i_min) = minmax tab 1 (diam_interval tab.(0)) 0 (diam_interval tab.(0)) 0 in
+    let (mmax, i_max, mmin, i_min) = minmax tab 1 (Intervalext.range_mpqf tab.(0)) 0 (Intervalext.range_mpqf tab.(0)) 0 in
     let mmax' = Scalar.of_mpqf mmax in
     let expr1 = Linexpr1.make env in
     Linexpr1.set_list expr1 [(Coeffext.one, Environment.var_of_dim env i_max)] None;
     let expr2 = Linexpr1.make env in
-    Linexpr1.set_list expr2 [(coeff_1, Environment.var_of_dim env i_max)] None;
+    Linexpr1.set_list expr2 [(Coeffext.minus_one, Environment.var_of_dim env i_max)] None;
     let mmin' = Scalar.of_mpqf mmin in
     let (linexpr1, linexpr2, _cst, _max, _min) = minmax_b 0 mmin' mmax' (Intervalext.mid tab.(i_max)) expr1 expr2 in
     split octad (linexpr1,linexpr2)
@@ -208,10 +206,9 @@ module OctMinMaxCP = struct
 
       (* Get the interval for the expression "vi + vj" and "vi -vj" *)
       let itv1 = Abstract1.bound_linexpr man octad expr1 in
-      let diam1 = Scalar.of_mpqf (diam_interval itv1) in
+      let diam1 = Intervalext.range itv1 in
       let itv2 = Abstract1.bound_linexpr man octad expr2 in
-      let diam2 = Scalar.of_mpqf (diam_interval itv2) in
-
+      let diam2 = Intervalext.range itv2 in
       let cond = (Scalar.cmp diam1 diam2 > 0) in
       let diam_tmp = if cond then diam1 else diam2 in
       (*printf "%a ? %a : %a@." Scalar.print diam1 Scalar.print diam2 Scalar.print diam_tmp;*)
@@ -271,11 +268,11 @@ module OctMinMaxCP = struct
     Linexpr1.set_cst linexpr1 (Coeff.Scalar (Scalar.neg sca_cst));
     Linexpr1.set_cst linexpr2 (Coeff.Scalar sca_cst);
 
-    let max = scalar_to_float min_max in
+    let max = Scalarext.to_float min_max in
     (*printf "max = %f@.split = [%a, %a]@." max Linexpr1.print linexpr1 Linexpr1.print linexpr2;*)
     (max <= !Constant.precision)
 
-  let split octad jacobian =
+  let split octad _ =
     let env = Abstract1.env octad in
     let poly = to_poly octad env in
     split octad (get_expr (Polka.manager_alloc_strict()) poly)

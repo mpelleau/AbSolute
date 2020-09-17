@@ -201,7 +201,7 @@ module MAKE(AP:ADomain) = struct
   let rec largest tab i max i_max =
     if i>=Array.length tab then (max, i_max)
     else
-      let dim = diam_interval (tab.(i)) in
+      let dim = Intervalext.range_mpqf (tab.(i)) in
       if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
       else largest tab (i+1) max i_max
 
@@ -216,7 +216,7 @@ module MAKE(AP:ADomain) = struct
       if cur>=Array.length tab then (i_max, diam_max, itv_max)
       else
         let e = tab.(cur) in
-        let diam = diam_interval e in
+        let diam = Intervalext.range_mpqf e in
         if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
         else aux (cur+1) i_max diam_max itv_max
     in
@@ -227,7 +227,7 @@ module MAKE(AP:ADomain) = struct
   let rec minmax tab i max i_max min i_min =
     if i>=Array.length tab then  (max, i_max, min, i_min)
     else
-      let dim = diam_interval (tab.(i)) in
+      let dim = Intervalext.range_mpqf (tab.(i)) in
       if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
       else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
       else minmax tab (i+1) max i_max min i_min
@@ -268,8 +268,8 @@ module MAKE(AP:ADomain) = struct
     let gen_float_array = Generatorext.to_float_array poly in
     let (p1, _, p2, _, _) = maxdisttab gen_float_array in
     let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
-    let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
-    let cst_sca2 = Scalar.of_float (cst +. split_prec) in
+    let cst_sca1 = Scalar.of_float (-1. *.(cst +. !Constant.precision)) in
+    let cst_sca2 = Scalar.of_float (cst +. !Constant.precision) in
     let linexp = Linexpr1.make gen_env in
     Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
     let linexp' = Linexpr1.make gen_env in
