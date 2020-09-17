@@ -127,23 +127,3 @@ let maxdisttab tabpoints =
   let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
   let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
   (p1, i1, p2, i2, dist_max)
-
-(* Converts a Generator0 into an array of floats. *)
-let to_float_array gen size =
-  let tab = Array.make size 0. in
-  let gen_lin = gen.Generator0.linexpr0 in
-  for i=0 to (size-1) do
-    let coeff = Linexpr0.get_coeff gen_lin i in
-    tab.(i) <- coeff_to_float coeff
-  done;
-  tab
-
-(* Converts a Generator1 into an array of array of floats. *)
-let gen_to_array gens size =
-  let gen_tab = gens.Generator1.generator0_array in
-  let tab = Array.make (Array.length gen_tab) (Array.make size 0.) in
-  for i=0 to ((Array.length gen_tab)-1) do
-    tab.(i) <- to_float_array gen_tab.(i) size
-  done;
-  tab
-

@@ -100,7 +100,6 @@ module SyntaxTranslator (D:ADomain) = struct
         apron_to_bexpr (Tcons1.{tcons0 = t; env = tenv}) tenv
       ) earray
     |> Array.to_list
-
 end
 
 
@@ -169,9 +168,6 @@ module MAKE(AP:ADomain) = struct
     else A.filter_tcons man b c
 
   let print = A.print
-
-
-  (* Useful cross-domain conversion utilities *)
 
   (** computes the smallest enclosing box *)
   let to_box abs env =
@@ -269,7 +265,7 @@ module MAKE(AP:ADomain) = struct
     let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)
     let size = Environment.size gen_env in
-    let gen_float_array = gen_to_array poly size in
+    let gen_float_array = Generatorext.to_float_array poly in
     let (p1, _, p2, _, _) = maxdisttab gen_float_array in
     let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
     let cst_sca1 = Scalar.of_float (-1. *.(cst +. split_prec)) in
@@ -282,10 +278,8 @@ module MAKE(AP:ADomain) = struct
 
   let is_small man polyad =
     let poly = A.to_generator_array man polyad in
-    let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)
-    let size = Environment.size gen_env in
-    let gen_float_array = gen_to_array poly size in
+    let gen_float_array = Generatorext.to_float_array poly in
     let (_p1, _i1, _p2, _i2, dist_max) = maxdisttab gen_float_array in
     (dist_max <= !Constant.precision)
 
