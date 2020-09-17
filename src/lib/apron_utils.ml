@@ -1,12 +1,9 @@
 open Apron
+open Apronext
+
 (******************************************************************)
 (***************** Different conversion operators *****************)
 (******************************************************************)
-
-let scalar_to_mpqf = function
-  | Scalar.Mpqf x -> x
-  | Scalar.Float x -> Mpqf.of_float x
-  | Scalar.Mpfrf x -> Mpfrf.to_mpqf x
 
 let scalar_to_float = function
   | Scalar.Mpqf x -> Mpqf.to_float x
@@ -17,15 +14,15 @@ let scalar_to_int x = scalar_to_float x |> int_of_float
 
 let itv_to_float i = (scalar_to_float i.Interval.inf, scalar_to_float i.Interval.sup)
 
-let itv_to_mpqf i = (scalar_to_mpqf i.Interval.inf, scalar_to_mpqf i.Interval.sup)
+let itv_to_mpqf i = (Scalarext.to_mpqf i.Interval.inf, Scalarext.to_mpqf i.Interval.sup)
 
 let coeff_to_float = function
   | Coeff.Scalar x -> scalar_to_float x
   | Coeff.Interval i -> scalar_to_float i.Interval.inf
 
 let coeff_to_mpqf = function
-  | Coeff.Scalar x -> scalar_to_mpqf x
-  | Coeff.Interval i -> scalar_to_mpqf i.Interval.inf
+  | Coeff.Scalar x -> Scalarext.to_mpqf x
+  | Coeff.Interval i -> Scalarext.to_mpqf i.Interval.inf
 
 let coeff_to_int x = coeff_to_float x |> int_of_float
 
@@ -47,27 +44,27 @@ let sqrt2_mpqf = Mpqf.of_float sqrt2
 
 (* Compute the sum of two scalars *)
 let scalar_add sca sca' =
-  let value = scalar_to_mpqf sca in
-  let value' = scalar_to_mpqf sca' in
+  let value = Scalarext.to_mpqf sca in
+  let value' = Scalarext.to_mpqf sca' in
   let sum = Mpqf.add value value' in
   Scalar.of_mpqf sum
 
 (* Compute the sum of two scalars *)
 let scalar_mul_sqrt2 sca =
-  let value = scalar_to_mpqf sca in
+  let value = Scalarext.to_mpqf sca in
   let mult = Mpqf.mul value sqrt2_mpqf in
   Scalar.of_mpqf mult
 
 (* Compute the sum of a scalar and a Mpqf *)
 let scalar_plus_mpqf sca mpqf =
-  let value = scalar_to_mpqf sca in
+  let value = Scalarext.to_mpqf sca in
   let sum = Mpqf.add value mpqf in
   Scalar.of_mpqf sum
 
 (* Compute the medium value of two scalars *)
 let mid inf sup =
-  let mpqf_inf = scalar_to_mpqf inf
-  and mpqf_sup = scalar_to_mpqf sup in
+  let mpqf_inf = Scalarext.to_mpqf inf
+  and mpqf_sup = Scalarext.to_mpqf sup in
   let mid =
     let div_inf = Mpqf.div mpqf_inf (Mpqf.of_int 2)
     and div_sup = Mpqf.div mpqf_sup (Mpqf.of_int 2)
@@ -75,15 +72,11 @@ let mid inf sup =
   in mid
   (* Scalar.of_mpqf (Mpqf.div (Mpqf.add mpqf_inf mpqf_sup) (Mpqf.of_int 2)) *)
 
-(* Compute the middle value of an interval *)
-let mid_interval itv =
-  mid itv.Interval.inf itv.Interval.sup
-
 
 (* Compute the euclidian distance between two scalars *)
 let diam inf sup =
-  let mpqf_inf = scalar_to_mpqf inf in
-  let mpqf_sup = scalar_to_mpqf sup in
+  let mpqf_inf = Scalarext.to_mpqf inf in
+  let mpqf_sup = Scalarext.to_mpqf sup in
   Mpqf.sub mpqf_sup mpqf_inf
 
 (* Compute the diameter of an interval *)
@@ -127,3 +120,14 @@ let maxdisttab tabpoints =
   let (p0, i0, dist) = maxdist tabpoints.(0) (Array.sub tabpoints 1 (length-1)) in
   let (p1, i1, p2, i2, dist_max) = maxd 1 tabpoints.(0) 0 p0 i0 dist in
   (p1, i1, p2, i2, dist_max)
+
+(* folder on all possible combinations of size 2 of an array *)
+let fold_on_combination_2 ?duplicate:(d=false) f acc arr =
+  let l = Array.length arr in
+  let rec aux res i1 i2 =
+    if i1 >= l then res
+    else if i2 = l then let n = i1+1 in aux res n n
+    else if i2 = i1 && (not d) then aux res i1 (i2+1)
+    else aux (f res arr.(i1) arr.(i2)) i1 (i2+1)
+  in
+  aux acc 0 0

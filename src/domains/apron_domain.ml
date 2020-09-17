@@ -5,12 +5,12 @@ open Apron_utils
 
 module type ADomain = sig
   type t
-  val get_manager: t Manager.t
+  val manager_alloc: unit -> t Manager.t
 end
 
 (* Translation functor for syntax.prog to apron values*)
 module SyntaxTranslator (D:ADomain) = struct
-  let man = D.get_manager
+  let man = D.manager_alloc ()
 
   let top_itv = Coeff.i_of_scalar (Scalar.of_infty (-1)) (Scalar.of_infty 1)
 
@@ -113,9 +113,9 @@ module MAKE(AP:ADomain) = struct
 
   type t = AP.t A.t
 
-  let man = AP.get_manager
-
   module T = SyntaxTranslator(AP)
+
+  let man = T.man
 
   let to_bexpr = T.apron_to_bexpr
 
@@ -193,7 +193,7 @@ module MAKE(AP:ADomain) = struct
     let obj_itv = A.bound_texpr man abs ap_expr in
     let obj_inf = obj_itv.Interval.inf
     and obj_sup = obj_itv.Interval.sup in
-    (scalar_to_mpqf obj_inf, scalar_to_mpqf obj_sup)
+    (Scalarext.to_mpqf obj_inf, Scalarext.to_mpqf obj_sup)
 
   (* utilties for splitting *)
   (* Similar to `largest abs` but does not deal with variables or abstract domain.
@@ -247,7 +247,7 @@ module MAKE(AP:ADomain) = struct
 	    let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
 	    genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
-  let split abs _ (e1,e2) =
+  let split abs (e1,e2) =
     let meet_linexpr abs man expr =
       let cons = Linconsext.make expr Lincons1.SUPEQ in
       A.filter_lincons man abs cons
@@ -306,8 +306,8 @@ module MAKE(AP:ADomain) = struct
 
   (** Random uniform value within an interval, according to the type *)
   let spawn_itv typ (i:Interval.t) =
-    let inf = Apron_utils.scalar_to_mpqf i.Interval.inf in
-    let sup = Apron_utils.scalar_to_mpqf i.Interval.sup in
+    let inf = Scalarext.to_mpqf i.Interval.inf in
+    let sup = Scalarext.to_mpqf i.Interval.sup in
     match typ with
     | Environment.INT ->
        let size = Mpqf.sub sup inf |> Mpqf.to_float |> int_of_float in

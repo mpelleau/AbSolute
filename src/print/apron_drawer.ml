@@ -8,9 +8,9 @@ module Make(AP:ADomain) = struct
 
   type t = AP.t A.t
 
-  let man = AP.get_manager
-
   module T = MAKE(AP)
+
+  let man = T.man
 
   let polkaman = Polka.manager_alloc_strict ()
 
@@ -21,8 +21,9 @@ module Make(AP:ADomain) = struct
   let print = Abstract1.print
 
   let bound abs v =
+    let open Apronext in
     let i = A.bound_variable man abs (Apron.Var.of_string v) in
-    Apron.Interval.(scalar_to_mpqf i.inf,scalar_to_mpqf i.sup)
+    Apron.Interval.(Scalarext.to_mpqf i.inf,Scalarext.to_mpqf i.sup)
 
   let is_empty = A.is_bottom man
 
@@ -72,17 +73,11 @@ module Make(AP:ADomain) = struct
 
 end
 
-module BoxDrawer = Make(struct
-  type t = Box.t
-  let get_manager =  Box.manager_alloc ()
-end)
+module BoxDrawer = Make(Box)
 
-module OctDrawer = Make(struct
-  type t = Oct.t
-  let get_manager =  Oct.manager_alloc ()
-end)
+module OctDrawer = Make(Oct)
 
 module PolyDrawer = Make(struct
   type t = Polka.strict Polka.t
-  let get_manager = Polka.manager_alloc_strict()
+  let manager_alloc = Polka.manager_alloc_strict
 end)
