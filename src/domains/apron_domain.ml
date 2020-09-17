@@ -14,58 +14,35 @@ module SyntaxTranslator (D:ADomain) = struct
 
   let top_itv = Coeff.i_of_scalar (Scalar.of_infty (-1)) (Scalar.of_infty 1)
 
-  let rec expr_to_apron a (e:expr) : Texpr1.expr =
-    let env = Abstract1.env a in
-    match e with
-    | Funcall (name,args) ->
-       (match name,args with
-        | "sqrt",[x] ->
-           let e1 = expr_to_apron a x in
-           Texpr1.Unop (Texpr1.Sqrt, e1, Texpr1.Real, Texpr1.Near)
-        (* for function not supported by apron, we return an approximation *)
-        | "cos",[_] | "sin",[_] -> Texpr1.Cst (Coeff.i_of_int (-1) 1)
-        | _ -> Texpr1.Cst top_itv
-       )
-    | Var v ->
-      let var = Var.of_string v in
-      if not (Environment.mem_var env var)
-      then failwith ("variable not found: "^v);
-      Texpr1.Var var
-    | Cst c -> Texpr1.Cst (Coeff.s_of_mpqf c)
-    | Unary (o,e1) ->
-      let r = match o with
-        | NEG  -> Texpr1.Neg
-      in
-      let e1 = expr_to_apron a e1 in
-      Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
-    | Binary (o,e1,e2) ->
-       let r = match o with
-         | ADD -> Texpr1.Add
-         | SUB -> Texpr1.Sub
-         | DIV -> Texpr1.Div
-         | MUL -> Texpr1.Mul
-         | POW -> Texpr1.Pow
-       in
-       let e1 = expr_to_apron a e1
-       and e2 = expr_to_apron a e2 in
-       Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
+  let expr_to_apron env (e:expr) : Texpr1.t =
+    let rec aux = function
+      | Funcall (name,args) ->
+         (match name,args with
+          | "sqrt",[x] -> Texprext.sqrt (aux x)
+          | name,_ -> Tools.fail_fmt "%s not supported by apron" name
+         )
+      | Var v -> Texprext.var env (Var.of_string v)
+      | Cst c -> Texprext.cst env (Coeff.s_of_mpqf c)
+      | Unary (NEG,e) -> Texprext.neg (aux e)
+      | Binary (o,e1,e2) ->
+         (match o with
+         | ADD -> Texprext.add
+         | SUB -> Texprext.sub
+         | DIV -> Texprext.div
+         | MUL -> Texprext.mul
+         | POW -> Texprext.pow) (aux e1) (aux e2)
+    in aux e
 
-  let cmp_expr_to_tcons b env =
-    let cmp_to_apron (e1,op,e2) =
-      match op with
-      | EQ  -> e1, e2, Tcons1.EQ
-      | NEQ -> e1, e2, Tcons1.DISEQ
-      | GEQ -> e1, e2, Tcons1.SUPEQ
-      | GT  -> e1, e2, Tcons1.SUP
-      | LEQ -> e2, e1, Tcons1.SUPEQ
-      | LT  -> e2, e1, Tcons1.SUP
-    in
-    let e1,e2,op = cmp_to_apron b in
-    let e = Binary (SUB, e1, e2) in
-    let a = Abstract1.top man env in
-    let e = Texpr1.of_expr env (expr_to_apron a e) in
-    let res = Tcons1.make e op in
-    res
+  let of_cmp_expr elem (op,e1,e2) =
+    let env = Abstract1.env elem in
+    let e1 = expr_to_apron env e1 and e2 = expr_to_apron env e2 in
+    match op with
+    | EQ  -> Tconsext.eq e1 e2
+    | NEQ -> Tconsext.diseq e1 e2
+    | GEQ -> Tconsext.geq e1 e2
+    | GT  -> Tconsext.gt e1 e2
+    | LEQ -> Tconsext.leq e1 e2
+    | LT  -> Tconsext.lt  e1 e2
 
   let apron_to_var abs =
     let env = Abstract1.env abs in
@@ -184,9 +161,8 @@ module MAKE(AP:ADomain) = struct
 
   let prune = None
 
-  let filter b (e1,c,e2) =
-    let env = A.env b in
-    let c = T.cmp_expr_to_tcons (e1,c,e2) env in
+  let filter b (c,e1,e2) =
+    let c = T.of_cmp_expr b (e1,c,e2) in
     if Tconsext.get_typ c = Tconsext.DISEQ then
       let t1,t2 = Tconsext.splitdiseq c in
       join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
@@ -217,7 +193,7 @@ module MAKE(AP:ADomain) = struct
 
   (** interval evaluation of an expression within an abtract domain *)
   let forward_eval abs cons =
-    let ap_expr = T.expr_to_apron abs cons |> Texpr1.of_expr (A.env abs) in
+    let ap_expr = T.expr_to_apron (A.env abs) cons in
     let obj_itv = A.bound_texpr man abs ap_expr in
     let obj_inf = obj_itv.Interval.inf
     and obj_sup = obj_itv.Interval.sup in
