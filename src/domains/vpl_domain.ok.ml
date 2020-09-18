@@ -247,6 +247,9 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         | Csp.And (e1, e2) -> combine (is_representable e1, is_representable e2)
         | Csp.Or (e1, e2) -> combine (Adcp_sig.Maybe, combine (is_representable e1, is_representable e2))
         | Csp.Not e -> not (is_representable e)
+
+    val render _ = failwith "Visualization non available with Vpl domains"
+
 end
 
 let setup_flags : unit -> unit

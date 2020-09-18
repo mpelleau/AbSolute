@@ -33,7 +33,7 @@ module Box (I:ITV) = struct
   let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
 
   let vars abs =
-    Env.fold (fun v x acc ->
+    Env.fold (fun v _ acc ->
         let typ = if is_integer abs v then Int else Real in
         (typ, v)::acc
       ) abs []
@@ -369,6 +369,9 @@ module Box (I:ITV) = struct
     Tools.debug 3 "variable split : %s\n%!" v;
     split_along a v
 
+  let render x =
+    let vars,values = VarMap.bindings x |> List.split in
+    Picasso.Drawable.of_ranges vars (List.map I.to_float_range values)
 end
 
 (*************)

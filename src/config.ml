@@ -11,9 +11,9 @@
 open Signature
 
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
+module GoS (Abs:AbstractCP) = struct
   module Sol = Solver.Solve(Abs)
-  module Print = Out.Make(Dr)
+  module Print = Out.Make(Abs)
   let go prob =
     Format.printf "Starting the resolution using the ";
     Tools.green_fprintf Format.std_formatter "%s" (!Constant.domain);
@@ -24,9 +24,9 @@ module GoS (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
 end
 
 (** Solve and minimize a CSP with the abstract domain Abs *)
-module GoM (Abs:AbstractCP)(Dr:Drawer_sig.Drawer with type t = Abs.t) = struct
+module GoM (Abs:AbstractCP) = struct
   module Min = Minimizer.Minimize(Abs)
-  module Print = Out.Make(Dr)
+  module Print = Out.Make(Abs)
   let go prob =
     let res = Min.minimizing prob in
     Print.out_min prob res
@@ -38,32 +38,28 @@ end
 
 module type FullDomain = sig
   module Abstract : AbstractCP
-  module Drawer : Drawer_sig.Drawer with type t = Abstract.t
 end
 
 module MakeFullDomain
          (Abstract : AbstractCP)
-         (Drawer : Drawer_sig.Drawer with type t = Abstract.t)
   = struct
   module Abstract = Abstract
-  module Drawer = Drawer
 end
 
 module MakeProduct (D1 : FullDomain) (D2 : FullDomain) = struct
   module Abstract = Product.MakeProduct(D1.Abstract)(D2.Abstract)
-  module Drawer = Product_drawer.Product_Drawer(Abstract)(D2.Drawer)
 end
 
 let get_domain : string -> (module FullDomain) = function
-  | "box"    -> (module MakeFullDomain (Abstract_box.BoxF) (Box_drawer.Make(Abstract_box.BoxF)))
-  | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict) (Realbox_drawer))
-  | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix) (Box_drawer.Make(Abstract_box.BoxMix)))
-  | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ) (Box_drawer.Make(Abstract_box.BoxQ)))
-  | "boxQS"  -> (module MakeFullDomain (Abstract_box.BoxQStrict) (Box_drawer.Make(Abstract_box.BoxQStrict)))
-  | "boxCP"  -> (module MakeFullDomain (ADCP.BoxCP) (Apron_drawer.BoxDrawer))
-  | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
-  | "poly"   -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
-  | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
+  | "box"    -> (module MakeFullDomain (Abstract_box.BoxF))
+  | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict))
+  | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix))
+  | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ))
+  | "boxQS"  -> (module MakeFullDomain (Abstract_box.BoxQStrict))
+  | "boxCP"  -> (module MakeFullDomain (ADCP.BoxCP))
+  | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP))
+  | "poly"   -> (module MakeFullDomain (ADCP.PolyCP))
+  | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP))
   | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
@@ -88,14 +84,14 @@ let set_domain : unit -> (module FullDomain)
  *)
 let lift (module D : FullDomain) (prob : Csp.prog) : unit =
   if !Constant.minimizing
-  then let module Minimizer = GoM (D.Abstract)(D.Drawer) in
+  then let module Minimizer = GoM (D.Abstract) in
        Minimizer.go prob
   else
-    if !Constant.step_by_step
-    then let module SBS = Step_by_step.Make (D.Abstract)(D.Drawer) in
-         SBS.solving prob
-    else let module Solver = GoS (D.Abstract)(D.Drawer) in
-         Solver.go prob
+    (* if !Constant.step_by_step
+     * then let module SBS = Step_by_step.Make (D.Abstract) in
+     *      SBS.solving prob else *)
+    let module Solver = GoS (D.Abstract) in
+    Solver.go prob
 
 (********************)
 (* OPTIONS HANDLING *)

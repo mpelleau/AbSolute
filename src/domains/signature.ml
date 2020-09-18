@@ -78,4 +78,6 @@ module type AbstractCP = sig
   (** check if an abstract element is an abstraction of an instance *)
   val is_abstraction : t -> Csp.instance -> bool
 
+  (** transforms an abstract element into a Picasso.Drawable.t for drawing *)
+  val render : t -> Picasso.Drawable.t
  end

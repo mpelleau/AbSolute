@@ -5,9 +5,9 @@ open Apronext
 
 let scalar_to_int x = Scalarext.to_float x |> int_of_float
 
-let itv_to_float i = (Scalarext.to_float i.Interval.inf, Scalarext.to_float i.Interval.sup)
+let itv_to_float i = Interval.(Scalarext.(to_float i.inf, to_float i.sup))
 
-let itv_to_mpqf i = (Scalarext.to_mpqf i.Interval.inf, Scalarext.to_mpqf i.Interval.sup)
+let itv_to_mpqf i = Interval.(Scalarext.(to_mpqf i.inf,to_mpqf i.sup))
 
 let coeff_to_float = function
   | Coeff.Scalar x -> Scalarext.to_float x

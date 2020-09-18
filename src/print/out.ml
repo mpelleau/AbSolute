@@ -1,37 +1,15 @@
-open Drawer_sig
+open Picasso
 
-module Make (D:Drawer) = struct
+module Make (D:Signature.AbstractCP) = struct
 
-  let color_sure = Graphics.rgb 100 200 255
-  let color_unsure = Graphics.green
-
-  let bound_dim v sure unsure =
-    let aux v info_init abs_list =
-      List.fold_left (fun a b ->
-          let (l,h) = D.bound b v in
-          match a with
-          | None -> Some(l,h)
-          | Some(l',h') -> Some((min l l'),(max h h'))
-	      ) info_init abs_list
-    in
-    let onlysure = aux v None sure in
-    if !Constant.sure |> not then aux v onlysure unsure
-    else onlysure
-
-  let draw2d sure unsure (v1,v2) =
-    View.create_window 800 800;
-    let v1_b = bound_dim v1 sure unsure
-    and v2_b = bound_dim v2 sure unsure in
-    (match v1_b,v2_b with
-     | None, None -> failwith "nothing to draw"
-     | Some(a,b),None | None, Some(a,b) -> View.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
-     | Some(a,b),Some(c,d) ->
-        let (a,b,c,d) = Mpqf.((to_float a), (to_float b), (to_float c), (to_float d)) in
-        View.init (a,b) (c,d));
-    List.iter (fun a -> D.draw2d a (v1,v2) color_sure) sure;
-      if !Constant.sure |> not then
-        List.iter (fun a -> D.draw2d a (v1,v2) color_unsure) unsure;
-    View.draw_end v1 v2
+  let build_render =
+    let b = (150,150,255) in
+    let g = (150,255,150) in
+    fun abciss ordinate res ->
+    let open Result in
+    let r = Rendering.create ~abciss ~ordinate ~title:"AbSolute" 800. 800. in
+    let r' = List.fold_left (fun acc (e,_) -> Rendering.add acc (b,D.render e)) r res.sure in
+    List.fold_left (fun acc (e,_) -> Rendering.add acc (g,D.render e)) r' res.unsure
 
   let check_dir()=
     if not (Sys.file_exists "out" && Sys.is_directory "out") then begin
@@ -40,37 +18,6 @@ module Make (D:Drawer) = struct
         Tools.cyan_fprintf Format.std_formatter "out";
         Format.printf " was created\n";
       end
-
-  let print_latex sure unsure (v1,v2) =
-    check_dir();
-    Latex.create 8. 6.5;
-    let v1_b = bound_dim v1 sure unsure
-    and v2_b = bound_dim v2 sure unsure in
-    (match v1_b,v2_b with
-     | None, None -> failwith "nothing to draw"
-     | Some(a,b),None | None, Some(a,b) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) (1.,1.)
-     | Some(a,b),Some(c,d) -> Latex.init ((Mpqf.to_float a), (Mpqf.to_float b)) ((Mpqf.to_float c), (Mpqf.to_float d)));
-    let name = Filename.(basename !Constant.problem |> chop_extension) in
-    let out = ("out/"^name^"_"^(!Constant.domain)^".tex") in
-    let fmt = Format.formatter_of_out_channel (open_out out) in
-       Format.fprintf fmt "\\documentclass{standalone}\n\n\\usepackage{xcolor}\n\\usepackage{pgf, tikz}\n\n\\definecolor{sure}{rgb}{0.4, 0.8, 1}\n\\definecolor{unsure}{rgb}{0, 0.9, 0}\n\n\\begin{document}\n  \\begin{tikzpicture}\n";
-    List.iter (fun a -> D.print_latex fmt a (v1,v2) color_sure) sure;
-    if !Constant.sure |> not then
-      List.iter (fun a -> D.print_latex fmt a (v1,v2) color_unsure) unsure;
-    Format.fprintf fmt "\n  \\end{tikzpicture}\n\\end{document}@.";
-    Format.printf "written latex file: ";
-    Tools.cyan_fprintf Format.std_formatter "%s@.%!" out
-
-  (* generation of an .obj file for 3d viewing. Works with g3dviewer for example *)
-  let draw3d values vars =
-    check_dir();
-    let out = Filename.basename !Constant.problem in
-    let out = ("out/"^(Filename.chop_extension out)^".obj") in
-    Format.printf "\ngeneration of ";
-    Tools.cyan_fprintf Format.std_formatter "%s" out;
-    Format.printf " for 3d viewing. This may take few seconds ...\n%!";
-    let out = open_out out in
-    D.draw3d out values vars
 
   let traceout sure unsure =
     List.iter (fun (e, c) ->
@@ -106,7 +53,7 @@ module Make (D:Drawer) = struct
         Format.fprintf fmt "Inner solutions:";
         if !Constant.trace then begin
             Format.printf "\n";
-           List.iter (fun (e,s) -> Format.fprintf fmt "%a\n" D.print e) l
+           List.iter (fun (e,_) -> Format.fprintf fmt "%a\n" D.print e) l
           end else
           Format.printf " %i\n" (res.nb_sure)
     );
@@ -117,7 +64,7 @@ module Make (D:Drawer) = struct
         Format.fprintf fmt "Outter solutions:";
         if !Constant.trace then begin
             Format.printf "\n";
-            List.iter (fun (e,s) -> Format.fprintf fmt "%a\n" D.print e) l
+            List.iter (fun (e,_) -> Format.fprintf fmt "%a\n" D.print e) l
           end else
           Format.printf " %i\n" (res.nb_unsure)
     );
@@ -127,32 +74,31 @@ module Make (D:Drawer) = struct
     if not (!Constant.trace) then
       Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"
 
-  let out prob res =
-    let open Result in
-    let open Constant in
-    Tools.green_fprintf Format.std_formatter "Results:\n";
-    Format.printf "%a\n%!" terminal_output res;
-    if !visualization || !tex || !obj then
-      let s = List.rev_map D.to_abs res.sure in
-      let u = if !sure then [] else List.rev_map D.to_abs res.unsure in
-      if !tex then print_latex s u (vars2D prob);
-      if !obj then draw3d (s@u) (vars3D prob);
-      if !visualization then draw2d s u (vars2D prob)
-
   let trace_min sure unsure value =
     Format.printf "best value:%s\n%!" (Mpqf.to_string value);
     traceout sure unsure
 
-  let out_min prob res =
+  let out_min _prob res =
     Format.printf "\ntime : %fs\n" (Sys.time ());
     let open Result in
     let open Constant in
-    let (s, _) = List.split res.sure in
-    let (u, c) = if !sure then ([], []) else List.split res.unsure in
-    if !visualization then draw2d s u (vars2D prob);
-    if !tex then print_latex s u (vars2D prob);
-    if !obj then draw3d s (vars3D prob);
     let u = if !sure then [] else res.unsure in
     if !trace then trace_min res.sure u res.best_value
+
+  let vars2D prob =
+    let vars = Csp_helper.get_vars prob |> Array.of_list in
+    let size = Array.length vars in
+    (vars.(0)),(vars.(1 mod size))
+
+  let out prob res =
+    let open Constant in
+    Tools.green_fprintf Format.std_formatter "Results:\n";
+    Format.printf "%a\n%!" terminal_output res;
+    if !visualization || !tex || !obj then
+      let v1,v2 = vars2D prob in
+      let render = build_render v1 v2 res in
+      if !tex then to_latex render "name";
+      if !obj then failwith "picasso 3d";
+      if !visualization then in_gtk_canvas render
 
 end

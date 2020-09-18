@@ -119,7 +119,7 @@ module MAKE(AP:ADomain) = struct
 
   let to_bexpr = T.apron_to_bexpr
 
-  let empty = A.top man (Environment.make [||] [||])
+  let empty = A.top man (Environmentext.empty)
 
   let vars abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
@@ -128,9 +128,11 @@ module MAKE(AP:ADomain) = struct
     iv@rv
 
   let add_var abs (typ,v) =
-    let e = A.env abs in
-    let ints,reals = if typ = Int then [|Var.of_string v|],[||] else [||],[|Var.of_string v|] in
-    let env = Environment.add e ints reals in
+    let env =
+      match typ with
+      | Int -> Environmentext.add_int_s v A.(abs.env)
+      | Real-> Environmentext.add_real_s v A.(abs.env)
+    in
     A.change_environment man abs env false
 
   let var_bounds abs v =
@@ -360,4 +362,6 @@ module MAKE(AP:ADomain) = struct
     in retry poly 0 0
 
   let spawn = spawner 10
+
+  let render abs = Picasso.Drawable.of_pol (to_poly abs Abstract1.(abs.env))
 end
