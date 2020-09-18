@@ -17,16 +17,12 @@ module BoxCP = struct
     let env = Abstract1.env abs in
     let (var, itv, _size) = largest abs in
     let mid = Intervalext.mid itv in
-    let value = match Environment.typ_of_var env var with
-      | Environment.INT -> scalar_plus_mpqf mid split_prec_mpqf
-      | _ -> mid
-    in
     (* var <= mid*)
     let expr =  Linexpr1.make env in
     Linexpr1.set_list expr [(Coeffext.minus_one, var)] (Some (Coeff.Scalar (mid)));
     (* var >= value*)
     let expr' =  Linexpr1.make env in
-    Linexpr1.set_list expr' [(Coeffext.one, var)] (Some (Coeff.Scalar (Scalar.neg value)));
+    Linexpr1.set_list expr' [(Coeffext.one, var)] (Some (Coeff.Scalar (Scalar.neg mid)));
     split abs (expr,expr')
 
   let volume abs =
@@ -263,10 +259,8 @@ module OctMinMaxCP = struct
     let expr2 = Linexpr1.make env in
     Linexpr1.set_list expr2 [(Coeffext.minus_one, var)] None;
     let (linexpr1, linexpr2, cst, min_max) = max 0 mmax' (Intervalext.mid itv) expr1 expr2 in
-
-    let sca_cst = scalar_plus_mpqf cst split_prec_mpqf in
-    Linexpr1.set_cst linexpr1 (Coeff.Scalar (Scalar.neg sca_cst));
-    Linexpr1.set_cst linexpr2 (Coeff.Scalar sca_cst);
+    Linexpr1.set_cst linexpr1 (Coeff.Scalar (Scalar.neg cst));
+    Linexpr1.set_cst linexpr2 (Coeff.Scalar cst);
 
     let max = Scalarext.to_float min_max in
     (*printf "max = %f@.split = [%a, %a]@." max Linexpr1.print linexpr1 Linexpr1.print linexpr2;*)
@@ -296,14 +290,12 @@ module OctBoxCP = struct
     let env = Abstract1.env octad in
     let (var, itv, _size) = largest octad in
     let mid = Intervalext.mid itv in
-    let typ_var = Environment.typ_of_var env var in
-    let value = if typ_var == Environment.INT then (scalar_plus_mpqf mid split_prec_mpqf) else mid in
     (* var <= mid*)
     let expr =  Linexpr1.make env in
     Linexpr1.set_list expr [(Coeff.s_of_int (-1), var)] (Some (Coeff.Scalar (mid)));
     (* var >= value*)
     let expr' =  Linexpr1.make env in
-    Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg value)));
+    Linexpr1.set_list expr' [(Coeff.s_of_int 1, var)] (Some (Coeff.Scalar (Scalar.neg mid)));
     split octad (expr, expr')
 
   let volume _ = 0.

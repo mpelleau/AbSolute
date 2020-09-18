@@ -53,7 +53,7 @@ module SyntaxTranslator (D:ADomain) = struct
 
   let rec apron_to_expr texpr env =
     match texpr with
-    | Texpr1.Cst c -> Cst (coeff_to_mpqf c)
+    | Texpr1.Cst c -> Cst (Coeffext.to_mpqf c)
     | Texpr1.Var v ->
       let e = match (Environment.typ_of_var env v) with
               | Environment.INT -> Var ((Var.to_string v)^"%")
@@ -268,7 +268,7 @@ module MAKE(AP:ADomain) = struct
     (*print_gen gens gen_env;*)
     let size = Environment.size gen_env in
     let gen_float_array = Generatorext.to_float_array poly in
-    let (p1, _, p2, _, _) = maxdisttab gen_float_array in
+    let (p1, p2, _) = most_distant_pair gen_float_array in
     let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
     let cst_sca1 = Scalar.of_float (-1. *.(cst +. !Constant.precision)) in
     let cst_sca2 = Scalar.of_float (cst +. !Constant.precision) in
@@ -282,7 +282,7 @@ module MAKE(AP:ADomain) = struct
     let poly = A.to_generator_array man polyad in
     (*print_gen gens gen_env;*)
     let gen_float_array = Generatorext.to_float_array poly in
-    let (_p1, _i1, _p2, _i2, dist_max) = maxdisttab gen_float_array in
+    let (_p1, _p2, dist_max) = most_distant_pair gen_float_array in
     (dist_max <= !Constant.precision)
 
   (*********************************)
