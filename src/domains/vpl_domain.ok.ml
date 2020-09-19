@@ -52,13 +52,13 @@ module Expr = struct
     	| Term.Add (t1,t2) -> Csp.Binary (Csp.ADD, of_term t1, of_term t2)
         | Term.Sum tl -> List.fold_left
             (fun res t -> Csp.Binary (Csp.ADD, res, of_term t))
-            (Csp.Cst (Mpqf.of_int 0, Csp.Int))
+            (Csp.Cst (Q.zero, Csp.Int))
             tl
         | Term.Opp t -> Csp.Unary (Csp.NEG, of_term t)
     	| Term.Mul (t1, t2) -> Csp.Binary (Csp.MUL, of_term t1, of_term t2)
     	| Term.Prod tl -> List.fold_left
             (fun res t -> Csp.Binary (Csp.MUL, res, of_term t))
-            (Csp.Cst (Mpqf.of_int 1, Csp.Int))
+            (Csp.Cst (Q.one, Csp.Int))
             tl
     	| Term.Annot (_, t) -> of_term t
         | _ -> Stdlib.invalid_arg "of_term"

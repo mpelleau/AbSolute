@@ -1,6 +1,6 @@
-(* This module provides preprocessing utilities.
-   It finds the constants in the CSP and the views
-   in order to make the CSP easier to solve. *)
+(* This module provides preprocessing utilities.  It finds the
+   constants in the CSP and the views in order to make the CSP easier
+   to solve. *)
 
 open Csp
 open Csp_helper

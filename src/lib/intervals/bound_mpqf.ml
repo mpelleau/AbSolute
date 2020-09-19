@@ -1,6 +1,6 @@
 type t = Mpqf.t
 
-      
+
 (* ordering *)
 
 let name = "rational"
@@ -12,14 +12,14 @@ let geq (x:t) (y:t) : bool = (Mpqf.cmp x y) >= 0
 let lt (x:t) (y:t) : bool = (Mpqf.cmp x y) < 0
 let gt (x:t) (y:t) : bool = (Mpqf.cmp x y) > 0
 let neq (x:t) (y:t) : bool = not (Mpqf.equal x y)
-    
+
 let min (x:t) (y:t) : t = if (Mpqf.cmp x y) <= 0 then x else y
 let max (x:t) (y:t) : t = if (Mpqf.cmp x y) >= 0 then x else y
-    
+
 let sign (x:t) : int = Mpqf.sgn x
 let odd (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float <>  (Mpqf.to_float x)
 let even (x:t) : bool = ((int_of_float (Mpqf.to_float x)) / 2) * 2 |> float =  (Mpqf.to_float x)
-    
+
 (* conversion, printing *)
 
 let of_int_up a = Mpqf.of_int a
@@ -31,17 +31,17 @@ let of_rat_down a : t = a
 
 let of_string x = Mpqf.of_string x
 
-(* TODO *)    
+(* TODO *)
 let of_string_up = of_string
 let of_string_down = of_string
-    
+
 (* Note: adds 0. to favor positive 0 *)
 let to_string x = (*string_of_float (Mpqf.to_float x)*) Mpqf.to_string x
 
 let to_float_up x : float = Mpqf.to_float x
 let to_float_down x : float = -. (Mpqf.to_float (Mpqf.neg x))
 let to_rat x = x
-    
+
 (* printing *)
 let output chan x = output_string chan (to_string x)
 let sprint () x = to_string x
@@ -49,10 +49,10 @@ let bprint b x = Buffer.add_string b (to_string x)
 let pp_print f x = Format.pp_print_string f (to_string x)
 
 
-(* classification *)    
-      
+(* classification *)
+
 type kind = FINITE | MINF | INF | INVALID
-  
+
 let classify (x:t) : kind =
   let (num, den) = Mpqf.to_mpzf2 x in
   match (Mpzf.sgn num, Mpzf.sgn den) with
@@ -61,12 +61,12 @@ let classify (x:t) : kind =
     | -1, 0 -> MINF
     | _ -> FINITE
 
-(* useful constants *)        
+(* useful constants *)
 
-let zero : t = Mpqf.of_int 0
-let one : t = Mpqf.of_int 1
-let two : t = Mpqf.of_int 2
-let minus_one : t = Mpqf.of_int (-1)
+let zero : t = Q.zero
+let one : t = Q.one
+let two : t = Q.two
+let minus_one : t = Q.minus_one
 let inf : t = Mpqf.of_frac 1 0
 let minus_inf : t = Mpqf.of_frac (-1) 0
 let nan : t = Mpqf.of_frac 0 0
@@ -77,7 +77,7 @@ let neg x = Mpqf.neg x
 let abs x = Mpqf.abs x
 
 
-(* operators with rounding *)    
+(* operators with rounding *)
 
 let add_up a b = Mpqf.add a b
 let sub_up a b = Mpqf.sub a b
@@ -135,7 +135,7 @@ let log_down x = Mpqf.of_float (log10 (Mpqf.to_float x))
 let floor x = Mpqf.of_float (floor (Mpqf.to_float x))
 let ceil x = Mpqf.of_float (ceil (Mpqf.to_float x))
 
-let pow_up x n = Mpqf.of_float ((Mpqf.to_float x) ** (float n)) 
+let pow_up x n = Mpqf.of_float ((Mpqf.to_float x) ** (float n))
 let pow_down x n =  Mpqf.of_float (-. ((-. (Mpqf.to_float x)) ** (float n)))
 let root_up x n =  Mpqf.of_float (exp((log (Mpqf.to_float x)) /. (float n)))
 let root_down x n =  Mpqf.of_float (exp((log (Mpqf.to_float x)) /. (float n)))

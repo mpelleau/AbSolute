@@ -95,7 +95,7 @@ module Make (Abs : AbstractCP) = struct
     let (xl, xu) = Abs.forward_eval abs (Csp.Var v) in
     let diam = Mpqf.sub xu xl in
     let value = Mpqf.mul slope diam in
-    (value, Mpqf.div (Mpqf.add xu xl) (Mpqf.of_int 2))
+    (value, Mpqf.div (Q.add xu xl) Q.two)
 
   let max_smear abs (jacobian:Csp.ctrs) : Abs.t list =
     let (_, vsplit, mid) =
@@ -107,7 +107,7 @@ module Make (Abs : AbstractCP) = struct
               if m < value then (value, v, half)
               else (m, mv, mid)
             ) (m', mv', mid') l
-        ) (Mpqf.of_int (-1), "", Mpqf.of_int (-1)) jacobian
+        ) (Q.minus_one, "", Q.minus_one) jacobian
     in
     [Abs.filter abs (Csp.Var vsplit, Csp.LEQ, Csp.Cst mid);
      Abs.filter abs (Csp.Var vsplit, Csp.GT, Csp.Cst mid)]

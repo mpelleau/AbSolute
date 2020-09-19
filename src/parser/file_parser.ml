@@ -121,22 +121,12 @@ let parse (filename:string) : prog =
     fileparser lex
   with
   | IllFormedAST s -> failwith s
-  (* | Failure s -> *)
-  (*     Printf.eprintf "Error near %s\n%s\n" *)
-  (*       (string_of_position lex.lex_start_p) *)
-	(*       s; *)
-  (*     failwith "Parse error" *)
   | Parsing.Parse_error -> failwith "Parse error"
 
 
 let parse (fn:string) =
   let p = parse fn in
   check_ast p;
-  (*List.iter (fun c -> Format.printf "  -- %a\n" Csp.print_bexpr c) p.Csp.constraints;*)
   let prob = if !Constant.rewrite then Preprocessing.preprocess p else Preprocessing.no_views p in
-  (*List.iter (fun c -> Format.printf "  ++ %a\n" Csp.print_bexpr c) prob.Csp.constraints;*)
-  (*List.iter (fun (v, (l, h)) -> Format.printf "  ** %s = %f (%f)\n" v l h) prob.Csp.constants;
-  List.iter (fun (v, e) -> Format.printf "  // %s = %a\n" v Csp.print_expr e) prob.Csp.view;
-  Format.printf "\n";*)
   let j = Csp_helper.compute_jacobian prob in
   {prob with jacobian = j}

@@ -222,7 +222,7 @@ module MAKE(AP:ADomain) = struct
         if Mpqf.cmp diam diam_max > 0 then aux (cur+1) cur diam e
         else aux (cur+1) i_max diam_max itv_max
     in
-    let (a,b,c) = aux 0 0 (Mpqf.of_int 0) tab.(0) in
+    let (a,b,c) = aux 0 0 Q.zero tab.(0) in
     ((Environment.var_of_dim env a),c,b)
 
   (* Compute the minimal and the maximal diameter of an array on intervals *)
