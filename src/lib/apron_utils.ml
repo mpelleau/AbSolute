@@ -5,25 +5,12 @@ open Apronext
 
 let itv_to_mpqf i = Interval.(Scalarext.(to_mpqf i.inf,to_mpqf i.sup))
 
-let coeff_to_int x = Coeffext.to_int x
-(** {1 Operators } *)
-
-let split_prec_mpqf = Mpqf.of_float !Constant.precision
-
-let sqrt2 = 0.707106781186548
-let sqrt2_mpqf = Mpqf.of_float sqrt2
-
-let scalar_mul_sqrt2 sca =
+let scalar_mul_sqrt2 =
+  let sqrt2_mpqf = Mpqf.of_float 0.707106781186548 in
+  fun sca ->
   let value = Scalarext.to_mpqf sca in
   let mult = Mpqf.mul value sqrt2_mpqf in
   Scalar.of_mpqf mult
-
-
-(* Compute the euclidian distance between two scalars *)
-let diam inf sup =
-  let mpqf_inf = Scalarext.to_mpqf inf in
-  let mpqf_sup = Scalarext.to_mpqf sup in
-  Mpqf.sub mpqf_sup mpqf_inf
 
 (* folder on all possible combinations of size 2 of an array *)
 let fold_on_combination_2 ?duplicate:(d=false) f acc arr =

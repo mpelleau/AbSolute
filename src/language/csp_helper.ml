@@ -2,12 +2,9 @@ open Csp
 
 (** {1 Constructors} *)
 
-let zero_val = Mpqf.of_int 0
-let one_val = Mpqf.of_int 1
-
-let one = Cst one_val
-let zero = Cst zero_val
-let two  = Cst (Mpqf.of_int 2)
+let one = Cst Q.one
+let zero = Cst Q.zero
+let two  = Cst Q.two
 let sqr expr = Binary (POW, expr, two)
 
 (** {1 Predicates} *)
@@ -38,8 +35,8 @@ let rec is_cons_linear = function
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
 
-let is_zero = Mpqf.equal zero_val
-let is_neg c = Mpqf.cmp zero_val c > 0
+let is_zero = Mpqf.equal Q.zero
+let is_neg c = Mpqf.cmp Q.zero c > 0
 
 (** {1 Operations} *)
 
@@ -127,8 +124,8 @@ let rec simplify_expr expr change =
         | Cst a, Cst b -> (Cst (Mpqf.mul a b), true)
         | Cst c, _ when is_zero c -> (zero, true)
         | _, Cst c when is_zero c -> (zero, true)
-        | Cst c, _ when Mpqf.equal one_val c -> simplify_expr e2 change
-        | _, Cst c when Mpqf.equal one_val c -> simplify_expr e1 change
+        | Cst c, _ when Mpqf.equal Q.one c -> simplify_expr e2 change
+        | _, Cst c when Mpqf.equal Q.one c -> simplify_expr e1 change
         | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst (Mpqf.neg c))))) true
         | Cst c, e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst (Mpqf.neg c)))) true
         | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
@@ -168,6 +165,14 @@ let rec left_hand = function
   | And (b1,b2) | Or (b1,b2) -> left_hand b1
   | Not b -> left_hand b
 
+let flatten_pow e =
+  let rec loop = function
+  | 0 -> one
+  | 1 -> e
+  | n -> let sq = loop (n/2) in
+         if n mod 2 = 0 then Binary (MUL, sq, sq)
+         else Binary (MUL, e,Binary (MUL, sq, sq))
+  in loop
 
 (* derives a function regarding a variable *)
 let rec derivate expr var =
@@ -182,15 +187,9 @@ let rec derivate expr var =
      | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
      | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
      | POW -> begin
-        let rec flatten_pow e
-            = function
-            | 0 -> one
-            | 1 -> e
-            | n -> Binary (MUL, e, flatten_pow e (n-1))
-        in
         match e2 with
         | Cst i -> begin
-            match Polynom.RationalRing.to_int i with
+            match Q.to_int i with
             | Some i -> let expr' = flatten_pow e1 i in
                 derivate expr' var
             | None -> zero

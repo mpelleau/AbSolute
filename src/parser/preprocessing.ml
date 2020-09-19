@@ -62,10 +62,8 @@ let rec get_cst_value expr c =
 
 let rewrite_ctr (op, e1, e2) =
   let (_, e1', _) = rewrite (op, expand e1, expand e2) in
-  (* Format.printf "\t\t%a ; %a\n" print_expr e1' print_expr ttt; *)
-  let (e, cst) = get_cst_value e1' zero_val in
-  let neg_cst = if is_zero cst then cst else Mpqf.neg cst in
-  (* Format.printf "\t\t%a ; %s\n" print_expr e (Mpqf.to_string neg_cst); *)
+  let (e, cst) = get_cst_value e1' Q.zero in
+  let neg_cst = if is_zero cst then cst else Q.neg cst in
   (e, cst, neg_cst)
 
 let rewrite_constraint = function
@@ -101,11 +99,6 @@ let rec repeat ctr_vars csts =
   else
     (ctrs', csts')
 
-
-
-
-
-
 let rec view e1 e2 =
   match e1, e2 with
   | Var v, _ -> (v, e2)
@@ -131,10 +124,7 @@ let rec view e1 e2 =
   | Binary (DIV, d1, d2), e when has_variable d1
     -> view d1 (simplify_fp (Binary(MUL, e, d2)))
   | Binary (DIV, d1, d2), e -> view d2 (simplify_fp (Binary(MUL, e, d1)))
-  | _, _ -> Format.printf "NOOOOOOOOOOOOO\n"; ("NOPE", Binary(SUB, e1, e2))
-
-
-
+  | _, _ -> ("NOPE", Binary(SUB, e1, e2))
 
 let rec replace_view_expr ((id, e) as view) expr =
   match expr with

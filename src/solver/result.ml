@@ -47,7 +47,7 @@ module Make (A: Res) = struct
       vol_sure   = 0.;
       vol_unsure = 0.;
       nb_steps   = 0;
-      best_value = Csp_helper.zero_val
+      best_value = Q.zero
     }
 
   let to_abs abs consts views =
@@ -74,7 +74,7 @@ module Make (A: Res) = struct
     let volume = A.volume abs' in
     let obj_value = match fobj with
       | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
-      | None -> Csp_helper.zero_val
+      | None -> Q.zero
     in
     (abs', csts, volume, obj_value)
 

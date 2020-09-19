@@ -53,22 +53,16 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
       | SUB -> (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.sub p1 p2) env'');*) (PI.sub p1 p2),env''
       | MUL -> (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.mul p1 p2) env'');*) (PI.mul p1 p2),env''
       | DIV ->
-         (* only division by a constant to make sure we do not shadow any dbz *)
-         (match PI.div p1 p2 with
-         | Some p -> p,env''
-         | None ->
+         (* TODO: handle division by a constant to make sure we do not shadow any dbz *)
             let e1 = polynom_to_expr p1 env''
             and e2 = polynom_to_expr p2 env'' in
             let e = Binary (DIV,e1,e2) in
-            check_var e env'')
+            check_var e env''
       | POW ->
-         (* only constant exponentiation *)
-         (match PI.pow p1 p2 with
-         | Some p -> p,env''
-         | None ->
+         (* TODO: constant exponentiation *)
          let e1 = polynom_to_expr p1 env'' and e2 = polynom_to_expr p2 env'' in
          let e = Binary (POW,e1,e2) in
-         check_var e env''))
+         check_var e env'')
   | Unary (u,e) ->
      let p,env = simplify env e in
      (match u with
