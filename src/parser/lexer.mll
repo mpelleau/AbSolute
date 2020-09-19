@@ -9,8 +9,6 @@ let kwd_table = Hashtbl.create 10
 let _ =
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
-      "info",           TOK_ANNOT;
-      "draw",           TOK_DRAW;
       "init",           TOK_INIT;
       "objective", 	    TOK_OBJ;
       "constraints",    TOK_CONSTR;

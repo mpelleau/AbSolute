@@ -92,5 +92,4 @@ module Make (D:Signature.AbstractCP) = struct
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name";
       if !visualization then in_gtk_canvas render
-
 end

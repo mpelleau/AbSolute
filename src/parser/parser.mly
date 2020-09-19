@@ -12,10 +12,8 @@ open Csp_helper
 %token TOK_INIT          /* init */
 %token TOK_OBJ           /* objective */
 %token TOK_CONSTR        /* constraints */
-%token TOK_ANNOT         /* info */
 %token TOK_SOL           /* solutions */
 %token TOK_NONE          /* none */
-%token TOK_DRAW          /* draw */
 %token TOK_MINF          /* -oo */
 %token TOK_INF           /* oo */
 
@@ -72,7 +70,6 @@ open Csp_helper
 %%
 
 file:
-  annot
   constants
   domains
   objective
@@ -83,17 +80,13 @@ file:
     {
       jacobian=[];
       view=[];
-      init=$3;
-      objective=$4;
-      constraints=$5;
-      constants=$2;
-      solutions=$6;
+      init=$2;
+      objective=$3;
+      constraints=$4;
+      constants=$1;
+      solutions=$5;
     }
   }
-
-annot:
- | TOK_ANNOT TOK_LBRACE annot2 TOK_RBRACE {$3}
- | {[]}
 
 domains:
  | TOK_INIT TOK_LBRACE decls TOK_RBRACE {$3}
@@ -138,9 +131,6 @@ value:
 rational:
   | const TOK_DIVIDE const {Mpqf.div $1 $3}
   | const {$1}
-
-annot2:
- | TOK_DRAW TOK_COLON varlist {$3}
 
 varlist:
   | TOK_id varlist {$1::$2}
