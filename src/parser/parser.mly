@@ -86,7 +86,6 @@ file:
       init=$3;
       objective=$4;
       constraints=$5;
-      to_draw=$1;
       constants=$2;
       solutions=$6;
     }

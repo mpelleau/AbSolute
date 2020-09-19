@@ -74,7 +74,6 @@ type prog = {
     objective   : expr;
     constraints : constrs;
     jacobian    : ctrs;
-    to_draw     : var list;
     view        : jacob;
     solutions   : solution_info (* extra information about the solutions of te problem *)
   }

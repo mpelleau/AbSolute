@@ -27,22 +27,15 @@ module Make (D:Signature.AbstractCP) = struct
           Format.printf "sure: (), (%a %a)\n%!" D.print e Csp_printer.print_all_csts c) sure;
     List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp_printer.print_all_csts c) unsure
 
-  let draw_vars prob =
-    let open Csp in
-    Array.of_list
-      (match prob.to_draw with
-       | [] -> Csp_helper.get_vars prob
-       | l -> l)
-
   let vars2D prob =
-    let vars = draw_vars prob in
+    let vars = Csp_helper.get_vars prob |> Array.of_list in
     let size = Array.length vars in
     (vars.(0)),(vars.(1 mod size))
 
   let vars3D prob =
-    let vars = draw_vars prob in
+    let vars = Csp_helper.get_vars prob |> Array.of_list in
     let size = Array.length vars in
-    ((vars.(0)),(vars.(1 mod size)),(vars.(2 mod size)))
+    (vars.(0)),(vars.(1 mod size)),(vars.(2 mod size))
 
   (* text output on std out *)
   let terminal_output fmt res =
@@ -94,11 +87,10 @@ module Make (D:Signature.AbstractCP) = struct
     let open Constant in
     Tools.green_fprintf Format.std_formatter "Results:\n";
     Format.printf "%a\n%!" terminal_output res;
-    if !visualization || !tex || !obj then
+    if !visualization || !tex then
       let v1,v2 = vars2D prob in
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name";
-      if !obj then failwith "picasso 3d";
       if !visualization then in_gtk_canvas render
 
 end

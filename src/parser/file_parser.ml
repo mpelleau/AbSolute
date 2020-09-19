@@ -1,23 +1,7 @@
 open Csp
 open Lexing
 
-(*****************************************)
-(*              AST CHECKING             *)
-(*****************************************)
-
-
-(*errors*)
 exception IllFormedAST of string
-
-let illegal_var_draw v =
-  Format.sprintf
-    "Illegal variable to draw:%s don't belong to the variables of the problem"
-    v
-
-let illegal_var_draw2 v1 v2 =
-  Format.sprintf
-    "Illegal variable to draw:%s and %s don't belong to the variables of the problem"
-    v1 v2
 
 let illegal_constraint spec =
   Format.sprintf "Illegal constraint: %s" spec
@@ -59,11 +43,6 @@ let check_ast p =
       raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
     ) p.constants
-  and check_draw () =
-    match p.to_draw with
-    | [] -> ()
-    | l -> List.iter (fun v ->
-      if not (Hashtbl.mem h v) then raise (IllFormedAST (illegal_var_draw v))) l
 
   and check_dom () =
     let aux (_, var, d) =
@@ -93,16 +72,7 @@ let check_ast p =
   check_vars ();
   check_csts ();
   check_dom ();
-  check_draw ();
   check_constrs ()
-
-
-(****************************************)
-(*               Parsing                *)
-(****************************************)
-
-let string_of_position p =
-  Printf.sprintf "%s:%i:%i" p.pos_fname p.pos_lnum (p.pos_cnum - p.pos_bol)
 
 (* open a file and parse it *)
 let parse (filename:string) : prog =
@@ -122,7 +92,6 @@ let parse (filename:string) : prog =
   with
   | IllFormedAST s -> failwith s
   | Parsing.Parse_error -> failwith "Parse error"
-
 
 let parse (fn:string) =
   let p = parse fn in
