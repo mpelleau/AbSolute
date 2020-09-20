@@ -12,8 +12,6 @@ end
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.manager_alloc ()
 
-  let top_itv = Coeff.i_of_scalar (Scalar.of_infty (-1)) (Scalar.of_infty 1)
-
   let expr_to_apron env (e:expr) : Texpr1.t =
     let rec aux = function
       | Funcall (name,args) ->
@@ -153,8 +151,7 @@ module MAKE(AP:ADomain) = struct
     let e = Environment.remove (A.env abs) (Array.of_list [var]) in
     A.change_environment man abs e false
 
-  let is_empty a =
-    A.is_bottom man a
+  let is_empty a = A.is_bottom man a
 
   let join a b = A.join man a b
 
@@ -197,16 +194,6 @@ module MAKE(AP:ADomain) = struct
     and obj_sup = obj_itv.Interval.sup in
     (Scalarext.to_mpqf obj_inf, Scalarext.to_mpqf obj_sup)
 
-  (* utilties for splitting *)
-  (* Similar to `largest abs` but does not deal with variables or abstract domain.
-   * Instead, it manipulates an array of intervals `tab`. *)
-  let rec largest tab i max i_max =
-    if i>=Array.length tab then (max, i_max)
-    else
-      let dim = Intervalext.range_mpqf (tab.(i)) in
-      if Mpqf.cmp dim max > 0 then largest tab (i+1) dim i
-      else largest tab (i+1) max i_max
-
   (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs`
    * with the largest interval `i` = [l, u], and `d` the dimension of the
    * interval (`u - l` with appropriate rounding). *)
@@ -226,13 +213,13 @@ module MAKE(AP:ADomain) = struct
     ((Environment.var_of_dim env a),c,b)
 
   (* Compute the minimal and the maximal diameter of an array on intervals *)
-  let rec minmax tab i max i_max min i_min =
-    if i>=Array.length tab then  (max, i_max, min, i_min)
+  let rec minmax tab i max i_max min  =
+    if i>=Array.length tab then  (max, i_max, min)
     else
       let dim = Intervalext.range_mpqf (tab.(i)) in
-      if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min i_min
-      else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim i
-      else minmax tab (i+1) max i_max min i_min
+      if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min
+      else if Mpqf.cmp min dim > 0 then minmax tab (i+1) max i_max dim
+      else minmax tab (i+1) max i_max min
 
   (* let p1 = (p11, p12, ..., p1n) and p2 = (p21, p22, ..., p2n) two points
    * The vector p1p2 is (p21-p11, p22-p12, ..., p2n-p1n) and the orthogonal line
