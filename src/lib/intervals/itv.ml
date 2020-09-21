@@ -459,12 +459,10 @@ module Itv(B:BOUND) = struct
     else meet i (B.minus_inf, snd rr)
 
   (* r = exp i => i = ln r *)
-  let filter_exp i r =
-    meet_bot meet i (ln r)
+  let filter_exp i r = meet_bot meet i (ln r)
 
   (* r = ln i => i = exp r *)
-  let filter_ln i r =
-    meet i (exp r)
+  let filter_ln i r = meet i (exp r)
 
   (* r = log i => i = *)
   let filter_log i r = failwith "todo filter_log"

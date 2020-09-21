@@ -9,6 +9,8 @@ module Make(B:BOUND) = struct
 
   type kind = Strict | Large
 
+  type real_bound = kind * bound
+
   let sym = function
     | Large,x -> Strict,x
     | Strict,x -> Large,x
@@ -17,14 +19,12 @@ module Make(B:BOUND) = struct
     | Large,x -> Strict,x
     | x -> x
 
-  type real_bound = kind * bound
-
   let mix k1 k2 =
     match k1,k2 with
     | Large,Large -> Large
     | _ -> Strict
 
-  let bound_arith ((k1,b1):real_bound) ((k2,b2):real_bound) f =
+  let bound_arith  f ((k1,b1):real_bound) ((k2,b2):real_bound) =
     (mix k1 k2),(f b1 b2)
 
   let bound_mul_up   = B.bound_mul B.mul_up
@@ -32,22 +32,21 @@ module Make(B:BOUND) = struct
   let bound_div_up   = B.bound_div B.div_up
   let bound_div_down = B.bound_div B.div_down
 
-  let ( +@ ) rb1 rb2 = bound_arith rb1 rb2 B.add_up
+  let ( +@ ) = bound_arith B.add_up
 
-  let ( +$ ) rb1 rb2 = bound_arith rb1 rb2 B.add_down
+  let ( +$ ) = bound_arith B.add_down
 
-  let ( -@ ) rb1 rb2 = bound_arith rb1 rb2 B.sub_up
+  let ( -@ ) = bound_arith B.sub_up
 
-  let ( -$ ) rb1 rb2 = bound_arith rb1 rb2 B.sub_down
+  let ( -$ ) = bound_arith B.sub_down
 
-  let ( *@ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_up
+  let ( *@ ) = bound_arith bound_mul_up
 
-  let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_down
+  let ( *$ ) = bound_arith bound_mul_down
 
-  let ( /@ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_up
+  let ( /@ ) = bound_arith bound_div_up
 
-  (*let ( /$ ) rb1 rb2 = *)
-  let ( /$ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_down
+  let ( /$ ) = bound_arith bound_div_down
 
   type t = real_bound * real_bound
 
@@ -177,17 +176,11 @@ module Make(B:BOUND) = struct
   let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
 
   let to_expr (((kl, l), (kh, h)):t) =
-    match kl, kh with
-      | Strict, Strict -> ((Csp.GT, Csp.Cst(B.to_rat l)),
-                           (Csp.LT, Csp.Cst(B.to_rat h)))
-      | Strict, Large -> ((Csp.GT, Csp.Cst(B.to_rat l)),
-                          (Csp.LEQ, Csp.Cst(B.to_rat h)))
-      | Large, Strict -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
-                          (Csp.LT, Csp.Cst(B.to_rat h)))
-      | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l)),
-                         (Csp.LEQ, Csp.Cst(B.to_rat h)))
+    let l_cst = Csp.Cst (B.to_rat l) and h_cst = Csp.Cst (B.to_rat h) in
+    ((match kl with | Strict -> Csp.GT | Large -> Csp.GEQ), l_cst),
+    ((match kh with | Strict -> Csp.LT | Large -> Csp.LEQ), h_cst)
 
-   (************************************************************************)
+  (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
 
