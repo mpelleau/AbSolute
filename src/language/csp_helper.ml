@@ -1,11 +1,37 @@
 open Csp
 
-(** {1 Constructors} *)
-
+(** {1 Constants }*)
 let one = Cst Q.one
 let zero = Cst Q.zero
 let two  = Cst Q.two
-let sqr expr = Binary (POW, expr, two)
+
+(** {1 Expression Constructors} *)
+
+(** builds an expression from an integer *)
+let of_int n = Cst (Q.of_int n)
+
+(** builds an expression from an float *)
+let of_float f = Cst (Q.of_float f)
+
+(** builds an expression from an Mpqf.t *)
+let of_mpqf m = Cst m
+
+(** given an expression [e] builds the expresspion for [e*e]*)
+let square expr = Binary (POW, expr, two)
+
+(** {1 Constraint constructor} *)
+
+(** {2 comparisons} *)
+let leq e1 e2 = Cmp (LEQ,e1,e2)
+let lt  e1 e2 = Cmp (LT,e1,e2)
+let geq e1 e2 = Cmp (GEQ,e1,e2)
+let gt  e1 e2 = Cmp (GT,e1,e2)
+let eq  e1 e2 = Cmp (EQ,e1,e2)
+let neq e1 e2 = Cmp (NEQ,e1,e2)
+
+(** constraint for variable assignment by a constant *)
+let assign var value =
+  eq (Var var) (of_mpqf value)
 
 (** {1 Predicates} *)
 
@@ -35,8 +61,8 @@ let rec is_cons_linear = function
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
 
-let is_zero = Mpqf.equal Q.zero
-let is_neg c = Mpqf.cmp Q.zero c > 0
+let is_zero = Q.equal Q.zero
+let is_neg c = Q.compare Q.zero c > 0
 
 (** {1 Operations} *)
 
@@ -48,6 +74,65 @@ let inv = function
   | NEQ -> NEQ
   | GT  -> LT
   | LT  -> GT
+
+(** comparison operator negation *)
+let neg = function
+  | EQ  -> NEQ
+  | LEQ -> GT
+  | GEQ -> LT
+  | NEQ -> EQ
+  | GT  -> LEQ
+  | LT  -> GEQ
+
+(** converts a domain representation to a constraint *)
+(* TODO: use type *)
+let domain_to_constraints ((_,v,d):assign) : bexpr =
+  match d with
+  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst l), (Cmp (LEQ, Var v, Cst h)))
+  | Minf i -> Cmp(LEQ, Var v, Cst i)
+  | Inf i -> Cmp(GEQ, Var v, Cst i)
+  | Set (h::tl) ->
+     List.fold_left (fun acc e ->
+         Or(acc, assign v e)
+       ) (assign v h) tl
+  | _ -> Cmp(EQ, one, one)
+
+(** iter on expr *)
+let rec iter_expr f = function
+  | Binary (_,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
+  | Unary (_,e) as u -> f u; iter_expr f e
+  | x -> f x
+
+(** iter on constraints *)
+let rec iter_constr f_expr f_constr = function
+  | Cmp (_,e1,e2) as constr ->
+     f_constr constr;
+     iter_expr f_expr e1;
+     iter_expr f_expr e2
+  | (And (b1,b2) as constr)
+  | (Or  (b1,b2) as constr) ->
+     f_constr constr;
+     iter_constr f_expr f_constr b1;
+     iter_constr f_expr f_constr b2
+  | Not b as constr ->
+     f_constr constr;
+     iter_constr f_expr f_constr b
+
+(** boolean formulae map *)
+let rec map_constr f = function
+  | Cmp (op,e1,e2) ->
+     let op',e1',e2' = f (op,e1,e2) in
+     Cmp(op',e1',e2')
+  | And (b1,b2) -> Or (map_constr f b1, map_constr f b2)
+  | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
+  | Not b -> Not (map_constr f b)
+
+(** constraint negation *)
+let rec neg_bexpr = function
+  | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
+  | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
+  | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
+  | Not b -> b
 
 let apply f e1 e2 b op =
   let (e1', b1) = f e1 b in
@@ -78,15 +163,12 @@ let rec expand = function
 
 (* simplifies elementary function *)
 let rec simplify_expr expr change =
-  (* Format.printf "  --> %a@." print_expr expr; *)
   match expr with
-  | Funcall (name, args) -> (Funcall (name, args), change)
-  | Cst c -> (Cst c, change)
-  | Var v -> (Var v, change)
+  | Funcall _ | Cst _ | Var _ -> expr,change
   | Unary (NEG, e) ->
     (match e with
      | Cst c when is_zero c -> (zero, true)
-     | Cst c -> (Cst (Mpqf.neg c), true)
+     | Cst c -> (Cst (Q.neg c), true)
      | Unary (NEG, e') -> simplify_expr e' true
      | Binary (SUB, Cst a, Cst b) -> (Cst (Mpqf.sub b a), true)
      | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
@@ -141,12 +223,11 @@ let rec simplify_expr expr change =
 
     )
 
+(** calls simplify until it reaches a fixpoint *)
 let rec simplify_fp expr =
   let (e, b) = simplify_expr expr false in
-  if b then
-    simplify_fp e
-  else
-    e
+  if b then simplify_fp e
+  else e
 
 let rec simplify_bexpr = function
   | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
@@ -162,7 +243,7 @@ let left_hand_side (op, e1, e2) =
 
 let rec left_hand = function
   | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
-  | And (b1,b2) | Or (b1,b2) -> left_hand b1
+  | And (b1,_) | Or (b1,_) -> left_hand b1
   | Not b -> left_hand b
 
 let flatten_pow e =
@@ -185,7 +266,7 @@ let rec derivate expr var =
      | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)
      | SUB -> Binary (SUB, derivate e1 var, derivate e2 var)
      | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
-     | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
+     | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), square e2)
      | POW -> begin
         match e2 with
         | Cst i -> begin
@@ -215,7 +296,7 @@ let ctr_jacobian c vars =
     fun l (_, v, _) ->
       let expr = if is_arith c then
           let new_c = simplify_bexpr (derivative c v) in
-          let (op, e) = left_hand new_c in
+          let (_, e) = left_hand new_c in
           e
         else zero
       in
@@ -249,66 +330,6 @@ let add_constr csp c =
     (v, expr)
   ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
-
-(* converts a domain representation to a pair constraints *)
-let domain_to_constraints : assign -> bexpr =
-  let of_singleton v f = Cmp (EQ, Var v, Cst f) in
-  fun (_,v,d) ->
-  match d with
-  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst l), (Cmp (LEQ, Var v, Cst h)))
-  | Minf i -> Cmp(LEQ, Var v, Cst i)
-  | Inf i -> Cmp(GEQ, Var v, Cst i)
-  | Set (h::tl) ->
-     List.fold_left (fun acc e ->
-         Or(acc, of_singleton v e)
-       ) (of_singleton v h) tl
-  | _ -> Cmp(EQ, one, one)
-
-(* iter on expr*)
-let rec iter_expr f = function
-  | Binary (_,e1,e2) as b -> f b; iter_expr f e1; iter_expr f e2
-  | Unary (_,e) as u -> f u; iter_expr f e
-  | x -> f x
-
-(* iter on constraints *)
-let rec iter_constr f_expr f_constr = function
-  | Cmp (_,e1,e2) as constr ->
-     f_constr constr;
-     iter_expr f_expr e1;
-     iter_expr f_expr e2
-  | (And (b1,b2) as constr)
-  | (Or  (b1,b2) as constr) ->
-     f_constr constr;
-     iter_constr f_expr f_constr b1;
-     iter_constr f_expr f_constr b2
-  | Not b as constr ->
-     f_constr constr;
-     iter_constr f_expr f_constr b
-
-(* boolean formules map *)
-let rec map_constr f = function
-  | Cmp (op,e1,e2) ->
-     let op',e1',e2' = f (op,e1,e2) in
-     Cmp(op',e1',e2')
-  | And (b1,b2) -> Or (map_constr f b1, map_constr f b2)
-  | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
-  | Not b -> Not (map_constr f b)
-
-(** comparison operator negation *)
-let neg = function
-  | EQ  -> NEQ
-  | LEQ -> GT
-  | GEQ -> LT
-  | NEQ -> EQ
-  | GT  -> LEQ
-  | LT  -> GEQ
-
-(** constraint negation *)
-let rec neg_bexpr = function
-  | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
-  | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
-  | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
-  | Not b -> b
 
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
