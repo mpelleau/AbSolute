@@ -429,8 +429,6 @@ module Itv(B:BOUND) = struct
   let filter_root_f i r n =
     meet i (pow r n)
 
-
-
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
   let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
@@ -438,20 +436,6 @@ module Itv(B:BOUND) = struct
   (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
   let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
-
-  (* (\* r = i*c => (i = r/c \/ c=r=0) *\)
-   * let filter_mul_cst (i:t) (c:t) (r:t) : (t*t) bot =
-   *   merge_bot2
-   *     (if contains r B.zero && contains c B.zero then Nb i
-   *     else match fst (div r c) with Bot -> Bot | Nb x -> meet i x)
-   *     (Nb c)
-   *
-   * (\* r = i*c => (i = r/c \/ c=r=0) *\)
-   * let filter_cst_mul (i:t) (c:t) (r:t) : (t*t) bot =
-   *   merge_bot2
-   *     (Nb c)
-   *     (if contains r B.zero && contains c B.zero then Nb i
-   *     else match fst (div r c) with Bot -> Bot | Nb x -> meet i x) *)
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
   let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
@@ -487,9 +471,6 @@ module Itv(B:BOUND) = struct
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
-    (* let nri = n_root r n in *)
-    (* let fnri = meet_bot meet i (n_root r n) in *)
-    (* Format.printf "%s %s %s => %s => %s%!\n" (to_string i) (to_string r) (to_string n) (Bot.bot_to_string to_string nri) (Bot.bot_to_string to_string fnri); *)
     merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
 
   (* r = nroot i => i = r ** n *)
@@ -530,11 +511,7 @@ module Itv(B:BOUND) = struct
     | "min"  -> arity_2 filter_min
     | s -> failwith (Format.sprintf "unknown filter function : %s" s)
 
-
-  let filter_bounds (l,h) =
-    let inf = B.ceil l
-    and sup = B.floor h in
-    check_bot (inf, sup)
+  let filter_bounds (l,h) = check_bot (B.ceil l, B.floor h)
 
   let to_float_range (l,h) =
     (B.to_float_down l),(B.to_float_up h)

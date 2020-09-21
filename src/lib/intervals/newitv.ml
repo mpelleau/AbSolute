@@ -443,80 +443,6 @@ module Make(B:BOUND) = struct
     (k, f v)
 
 
-  let sin ((((kl,l) as lb), ((kh,h) as lh)):t) : t =
-    let diam = range (lb, lh) in
-    if B.geq diam (B.add_down pi_down pi_down) then minus_one_one
-    else
-      let (l', h') = scale_to_two_pi_itv (l, h) in
-      let q_inf = quadrant l'
-      and q_sup = quadrant h' in
-      match q_inf, q_sup with
-      | a, b when a = b && B.gt l' h' -> (b_minus_one, b_one)
-
-      | One, One | Four, Four | Four, One
-        -> mon_incr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
-      | Two, Two | Three, Three | Two, Three
-        -> mon_decr (B.sin_down, B.sin_up) ((kl, l'), (kh, h'))
-
-      | One, Two | Four, Three -> (bfg B.min B.sin_down (kl  , l') (kh, h'), (Large, B.one))
-      | Two, One | Three, Four -> (b_minus_one, bfg B.max B.sin_up (kl, l') (kh, h'))
-
-      | One, Three -> (uf B.sin_down (kh, h'), b_one)
-      | Two, Four -> (b_minus_one, uf B.sin_up (kl, l'))
-      | Three, One -> (b_minus_one, uf B.sin_up (kh, h'))
-      | Four, Two -> (uf B.sin_down (kl, l'), b_one)
-
-      | _ -> (b_minus_one, b_one)
-
-  let cos (itv:t) : t = sin (add itv i_pi_half)
-
-  let tan (((kl, l), (kh, h) as itv):t) =
-    let diam = range itv in
-    if B.geq diam (snd (fst i_pi)) then top
-    else
-      let (l',h') = scale_to_two_pi_itv (l, h) in
-      let diam = range itv
-      and q_inf = quadrant l'
-      and q_sup = quadrant h' in
-      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then top
-      else
-        match q_inf, q_sup with
-        | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
-	   mon_incr (B.tan_down, B.tan_up) ((kl, l'), (kh, h'))
-        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
-  (*| _  -> (bfg B.min B.tan_down (kl, l') (kh, h'), bfg B.max B.tan_up (kl, l') (kh, h'))*)
-
-  (* interval cot *)
-  let cot itv =
-    let itv' = tan (add itv i_pi_half) in
-    neg itv'
-
-  let asin (((kl, l), (kh, h)):t) : t bot =
-    if B.lt h B.minus_one || B.gt l B.one then Bot
-    else
-      let is_minus_one = B.lt l B.minus_one
-      and is_plus_one = B.gt h B.one in
-      match (is_minus_one, is_plus_one) with
-      | true, true -> Nb ((uf B.neg (fst i_pi_half)), (snd i_pi_half))
-      | true, false -> Nb ((uf B.neg (fst i_pi_half)), (uf B.asin_up (kh, h)))
-      | false, true -> Nb ((uf B.asin_down (kl, l)), (snd i_pi_half))
-      | false, false -> Nb (mon_incr (B.asin_down, B.asin_up) ((kl, l), (kh, h)))
-
-  let acos (((kl, l), (kh, h)):t) : t bot =
-    if B.lt h B.minus_one || B.gt l B.one then Bot
-    else
-      let is_minus_one = B.lt l B.minus_one
-      and is_plus_one = B.gt h B.one in
-      match (is_minus_one, is_plus_one) with
-      | true, true -> Nb ((Large, B.zero), (snd i_pi))
-      | true, false -> Nb ((uf B.acos_down (kh, h)), (snd i_pi))
-      | false, true -> Nb ((Large, B.zero), (uf B.acos_up (kl, l)))
-      | false, false -> Nb (mon_decr (B.acos_down, B.acos_up) ((kl, l), (kh, h)))
-
-  let atan ((l, h):t) = mon_incr (B.atan_down, B.atan_up) (l, h)
-
-  let acot (itv:t) : t = add (atan (neg itv)) i_pi_half
-
   let ln (i:t) : t bot =
     match meet i positive with
     | Bot -> Bot
@@ -599,11 +525,6 @@ module Make(B:BOUND) = struct
     | "exp"   -> arity_1 exp
     | "ln"    -> arity_1_bot ln
     | "log"   -> arity_1_bot log
-    (* trigonometry *)
-    | "cos"   -> arity_1 cos
-    | "sin"   -> arity_1 sin
-    | "acos"  -> arity_1_bot acos
-    | "asin"  -> arity_1_bot asin
     (* min max *)
     | "max"   -> arity_2 max
     | "min"   -> arity_2 min
@@ -715,93 +636,6 @@ module Make(B:BOUND) = struct
       else sub (mul i_pi (of_int i')) itv'
     in meet itv aux
 
-  (* r = sin i => i = arcsin r *)
-  let filter_sin i r =
-    let asin_r = asin r in
-    let aux = div (add i i_pi_half) i_pi in
-    match (aux, asin_r) with
-    | Bot, _ | _, Bot -> Bot
-    | Nb (p1, p2), Nb ((l, h) as a_r) ->
-      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
-      let itv = ref (compute_itv i a_r !idx !idx) in
-      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
-        idx := !idx + 1;
-        itv := compute_itv i a_r !idx !idx;
-      done;
-      if (is_Bot !itv) then Bot
-      else
-        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
-        let itv' = ref (compute_itv i a_r !idx !idx) in
-        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
-          idx := !idx - 1;
-          itv' := compute_itv i a_r !idx !idx;
-        done;
-        (Bot.join_bot2 join !itv !itv')
-
-  (* r = cos i => i = arccos r *)
-  let filter_cos i r =
-    let acos_r = acos r in
-    let aux = div i i_pi in
-    match (aux, acos_r) with
-    | Bot, _ | _, Bot -> Bot
-    | Nb (p1,p2), Nb ((l,h) as a_r) ->
-      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
-      let itv = ref (compute_itv i a_r !idx (!idx+1)) in
-      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
-        idx := !idx + 1;
-        itv := compute_itv i a_r !idx (!idx+1);
-      done;
-      if (is_Bot !itv) then
-        Bot
-      else
-        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
-        let itv' = ref (compute_itv i a_r !idx (!idx+1)) in
-        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
-          idx := !idx - 1;
-          itv' := compute_itv i a_r !idx (!idx+1);
-        done;
-        (Bot.join_bot2 join !itv !itv')
-
-  (* r = atan i => i = tan r *)
-  let filter_tan i r =
-    let atan_r = atan r in
-    let aux = div (add i i_pi_half) i_pi in
-    (*Format.printf "atan = %s\n aux = %s\n" (to_string atan_r) (Bot.bot_to_string to_string aux);*)
-    match aux with
-    | Bot -> Bot
-    | Nb (p1,p2) ->
-      let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
-      let itv = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
-      while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
-        idx := !idx + 1;
-        itv := meet i (add atan_r (mul i_pi (of_int !idx)));
-      done;
-      if (is_Bot !itv) then
-        Bot
-      else
-        let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p2)))) + 1) in
-        let itv' = ref (meet i (add atan_r (mul i_pi (of_int !idx)))) in
-        while !idx > (int_of_float (B.to_float_down (snd p1))) && is_Bot !itv' do
-          idx := !idx - 1;
-          itv' := meet i (add atan_r (mul i_pi (of_int !idx)));
-        done;
-        Bot.join_bot2 join !itv !itv'
-
-  (* r = cot i => i = arccot r *)
-  let filter_cot i r = failwith "todo filter_cot"
-
-  (* r = asin i => i = sin r *)
-  let filter_asin i r = meet i (sin r)
-
-  (* r = acos i => i = cos r *)
-  let filter_acos i r = meet i (cos r)
-
-  (* r = atan i => i = tan r *)
-  let filter_atan i r = meet i (tan r)
-
-  (* r = acot i => i = cot r *)
-  let filter_acot i r = meet i (cot r)
-
   (* r = exp i => i = ln r *)
   let filter_exp i r = meet_bot meet i (ln r)
 
@@ -847,10 +681,6 @@ module Make(B:BOUND) = struct
     match name with
     | "sqrt" -> arity_1 filter_sqrt
     | "exp"  -> arity_1 filter_exp
-    | "cos"  -> arity_1 filter_cos
-    | "sin"  -> arity_1 filter_sin
-    | "acos" -> arity_1 filter_acos
-    | "asin" -> arity_1 filter_asin
     | "ln"   -> arity_1 filter_ln
     | "max"  -> arity_2 filter_max
     | "min"  -> arity_2 filter_min
