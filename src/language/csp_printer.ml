@@ -5,9 +5,6 @@ open Csp
 (*                    PRINTING UTILITIES                     *)
 (*************************************************************)
 
-let print_unop fmt = function
-  | NEG -> Format.fprintf fmt "-"
-
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
   | SUB -> Format.fprintf fmt "-"
@@ -70,7 +67,7 @@ let rec print_expr fmt = function
          print_expr fmt
      in
      Format.fprintf fmt "%s(%a)" name print_args args
-  | Unary (NEG, e) ->
+  | Neg e ->
     Format.fprintf fmt "(- %a)" print_expr e
   | Binary (b, e1 , e2) ->
     Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2

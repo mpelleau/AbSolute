@@ -183,7 +183,7 @@ expr:
   | TOK_id TOK_LPAREN args TOK_RPAREN   { Funcall ($1,$3) }
   | TOK_LPAREN expr TOK_RPAREN          { $2 }
   | binop_expr                          { $1 }
-  | TOK_MINUS expr %prec unary_minus    { Unary (NEG, $2) }
+  | TOK_MINUS expr %prec unary_minus    { Neg $2 }
   | leaf                                { $1 }
 
 args:

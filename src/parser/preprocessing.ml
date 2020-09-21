@@ -50,7 +50,7 @@ let rec get_cst_value expr c =
      )
   | Binary (SUB, e1, e2) ->
      (match e1, e2 with
-      | Cst a, e -> (Unary (NEG, e), Mpqf.add c a)
+      | Cst a, e -> Neg e, Mpqf.add c a
       | e, Cst a -> (e, Mpqf.sub c a)
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
@@ -82,9 +82,11 @@ let filter_cstrs ctr_vars consts =
             (* Format.printf "%a ===== (%s) %s@." print_expr e (Mpqf.to_string cst) (Mpqf.to_string negc); *)
             match e with
             | Var var -> (cstr, (var, (negc, negc))::csts, true)
-            | Unary(NEG, Var var) -> (cstr, (var, (cst, cst))::csts,  true)
-            | Binary(MUL, Var var, Cst a) | Binary(MUL, Cst a, Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
-            | Unary(NEG, (Binary(MUL, Var var, Cst a))) |  Unary(NEG, (Binary(MUL, Cst a, Var var))) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
+            | Neg (Var var) -> (cstr, (var, (cst, cst))::csts,  true)
+            | Binary(MUL, Var var, Cst a)
+              | Binary(MUL, Cst a, Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
+            | Neg (Binary(MUL, Var var, Cst a))
+              | Neg (Binary(MUL, Cst a, Var var)) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
             | _ -> ((c, v)::cstr, csts, b))
         | _ -> ((c, v)::cstr, csts, b)
       else ((c, v)::cstr, csts, b)
@@ -103,7 +105,7 @@ let rec view e1 e2 =
   match e1, e2 with
   | Var v, _ -> (v, e2)
   | _, Var v  -> (v, e1)
-  | Unary (NEG, n), e -> view n (simplify_fp (Unary (NEG, e)))
+  | Neg n, e -> view n (simplify_fp (Neg e))
   | Binary (ADD, Var v, a), e
     | Binary (ADD, a, Var v), e
     -> (v, simplify_fp (Binary (SUB, e, a)))
@@ -129,7 +131,7 @@ let rec view e1 e2 =
 let rec replace_view_expr ((id, e) as view) expr =
   match expr with
   | Var v when v = id -> e
-  | Unary (op, u) -> Unary (op, replace_view_expr view u)
+  | Neg u -> Neg (replace_view_expr view u)
   | Binary (op, b1, b2) -> Binary (op, replace_view_expr view b1, replace_view_expr view b2)
   | Funcall (f, l) -> Funcall (f, List.map (replace_view_expr view) l)
   | _ as expr -> expr

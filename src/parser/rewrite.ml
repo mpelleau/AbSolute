@@ -63,10 +63,7 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
          let e1 = polynom_to_expr p1 env'' and e2 = polynom_to_expr p2 env'' in
          let e = Binary (POW,e1,e2) in
          check_var e env'')
-  | Unary (u,e) ->
-     let p,env = simplify env e in
-     (match u with
-      | NEG -> (PI.neg p),env)
+  | Neg e -> let p,env = simplify env e in (PI.neg p),env
   | Funcall(name,args) ->
      let p_args,env' =
        List.fold_left (fun (pargs,env) arg ->

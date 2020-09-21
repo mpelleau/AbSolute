@@ -146,7 +146,7 @@ module Box (I:ITV) = struct
   (* trees with nodes annotated with evaluation *)
   type bexpr =
     | BFuncall of string * bexpri list
-    | BUnary   of unop * bexpri
+    | BNeg     of bexpri
     | BBinary  of binop * bexpri * bexpri
     | BVar     of var
     | BCst     of i
@@ -173,12 +173,9 @@ module Box (I:ITV) = struct
     | Cst c ->
         let r = I.of_rat c in
         BCst r, r
-    | Unary (o,e1) ->
+    | Neg e1 ->
         let _,i1 as b1 = eval a e1 in
-        let r = match o with
-          | NEG -> I.neg i1
-        in
-        BUnary (o,b1), r
+        BNeg b1, I.neg i1
     | Binary (o,e1,e2) ->
        let _,i1 as b1 = eval a e1
        and _,i2 as b2 = eval a e2 in
@@ -237,10 +234,7 @@ module Box (I:ITV) = struct
            refine acc e2 e1) a (debot res) bexpr
     | BVar v -> Env.add v (debot (I.meet x (find v a))) a
     | BCst i -> ignore (debot (I.meet x i)); a
-    | BUnary (o,(e1,i1)) ->
-       let j = match o with
-         | NEG -> I.filter_neg i1 x
-       in refine a e1 (debot j)
+    | BNeg (e1,i1) -> refine a e1 (debot  (I.filter_neg i1 x))
     | BBinary (o,(e1,i1),(e2,i2)) ->
        let j = match o with
          | ADD -> refine_add (e1,i1) (e2,i2) x
@@ -313,7 +307,7 @@ module Box (I:ITV) = struct
        (try ignore (VarMap.find v abs); true
        with Not_found -> false)
     | Cst _ -> true
-    | Unary (_, e1) -> is_applicable abs e1
+    | Neg e1 -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
     | Funcall (name, args) -> false (* check if sound *)
 

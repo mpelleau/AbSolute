@@ -21,7 +21,7 @@ module SyntaxTranslator (D:ADomain) = struct
          )
       | Var v -> Texprext.var env (Var.of_string v)
       | Cst c -> Texprext.cst env (Coeff.s_of_mpqf c)
-      | Unary (NEG,e) -> Texprext.neg (aux e)
+      | Neg e -> Texprext.neg (aux e)
       | Binary (o,e1,e2) ->
          (match o with
          | ADD -> Texprext.add
@@ -60,9 +60,7 @@ module SyntaxTranslator (D:ADomain) = struct
     | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
        let e = apron_to_expr e env in
        Funcall ("sqrt",[e])
-    | Texpr1.Unop (Texpr1.Neg, e, _, _) ->
-      let e = apron_to_expr e env in
-      Unary (NEG, e)
+    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Neg (apron_to_expr e env)
     | Texpr1.Unop (Texpr1.Cast, _, _, _) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
       let o = match op with

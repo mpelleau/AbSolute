@@ -2,7 +2,7 @@ open Tools
 
 (* numeric expressions *)
 type expr =
-  | Unary of Csp.unop * expr
+  | Neg of expr
   | Binary of Csp.binop * expr * expr
   | Var of Csp.var
   | Array of Csp.var * int
@@ -38,8 +38,8 @@ let get env name i =
 
 (*replaces the param by the expression they represent*)
 let rec substitute env = function
-  | Unary (Csp.NEG, Cst i) -> Cst (Mpqf.neg i)
-  | Unary (u, e)-> Unary (u,substitute env e)
+  | Neg (Cst i) -> Cst (Mpqf.neg i)
+  | Neg e -> Neg (substitute env e)
   | Binary (b, e1, e2)->
      let e1' = substitute env e1
      and e2' = substitute env e2
@@ -62,18 +62,17 @@ let substitute_constr env =
 
 (* force evaluation of some expressions *)
 let evaluate env expr =
-  let unary = function Csp.NEG -> fun x -> (Mpqf.neg x) in
   let binary = function
-    | Csp.ADD -> (Mpqf.add)
-    | Csp.SUB -> (Mpqf.sub)
-    | Csp.DIV -> (Mpqf.div)
-    | Csp.MUL -> (Mpqf.mul)
+    | Csp.ADD -> Mpqf.add
+    | Csp.SUB -> Mpqf.sub
+    | Csp.DIV -> Mpqf.div
+    | Csp.MUL -> Mpqf.mul
     | x -> Format.printf "cant evaluate binary operator:%a\n" Csp_printer.print_binop x;
            failwith "evaluation error"
   in
   let rec eval = function
     | Cst i -> i
-    | Unary (uop, e) -> (unary uop) (eval e)
+    | Neg e -> Q.neg (eval e)
     | Binary (bop, e1, e2) -> (binary bop) (eval e1) (eval e2)
     | Var v ->
        (try param env v |> eval
@@ -84,8 +83,8 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Unary (Csp.NEG, Cst i)-> Csp.Cst (Mpqf.neg i)
-  | Unary (u, e)-> Csp.Unary (u,to_csp e)
+  | Neg (Cst i)-> Csp.Cst (Mpqf.neg i)
+  | Neg e -> Csp.Neg (to_csp e)
   | Binary (b, e1, e2)->
      let e1' = to_csp e1
      and e2' = to_csp e2

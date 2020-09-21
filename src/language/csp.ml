@@ -8,9 +8,6 @@ type i = Mpqf.t
 
 type annot = Int | Real
 
-(* unary arithmetic operators *)
-type unop = NEG
-
 (* binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
 
@@ -18,10 +15,11 @@ type binop = ADD | SUB | MUL | DIV | POW
 type cmpop =
   | EQ | LEQ | GEQ | NEQ | GT | LT
 
-(* numeric expressions *)
+(* numeric expressions (function call, unary negation, binary
+   operations, variables and constants)*)
 type expr =
   | Funcall of var * expr list
-  | Unary   of unop * expr
+  | Neg     of expr
   | Binary  of binop * expr * expr
   | Var     of var
   | Cst     of i

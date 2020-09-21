@@ -110,7 +110,7 @@ bexpr:
 expr:
   | LPAREN expr RPAREN              { $2 }
   | binop_expr                      { $1 }
-  | MINUS expr %prec unary_minus    { Unary (Csp.NEG, $2) }
+  | MINUS expr %prec unary_minus    { Neg $2 }
   | leaf                            { $1 }
 
 leaf:

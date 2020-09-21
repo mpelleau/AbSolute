@@ -43,10 +43,7 @@ module Make(Abs : Signature.AbstractCP) = struct
           | MUL -> Mpqf.mul e1' e2'
           | DIV -> Mpqf.div e1' e2'
         | POW -> Mpqf.of_float ((Mpqf.to_float e1') ** (Mpqf.to_float e2')))
-      | Unary(u,e) ->
-         let e' = aux e in
-         (match u with
-          | NEG -> (Mpqf.neg e'))
+      | Neg e -> Mpqf.neg (aux e)
       | Funcall(name, [e]) ->
          let e = Mpqf.to_float (aux e) in
          let func =
