@@ -1,4 +1,5 @@
 open Csp
+open Tools
 
 (** {1 Constants }*)
 let one = Cst Q.one
@@ -345,8 +346,6 @@ let rec replace_cst_bexpr cst = function
   | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Not b -> Not (replace_cst_bexpr cst b)
 
-module Variables = Set.Make(struct type t=var let compare=compare end)
-
 let rec get_vars_expr = function
   | Cst _              -> []
   | Var v              -> [v]
@@ -354,7 +353,7 @@ let rec get_vars_expr = function
   | Binary (_, e1, e2) -> List.rev_append (get_vars_expr e1) (get_vars_expr e2)
   | Funcall (_,args)   -> List.concat (List.map get_vars_expr args)
 
-let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
+let get_vars_set_expr expr = VarSet.of_list (get_vars_expr expr)
 
 let rec get_vars_bexpr = function
   | Cmp (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
@@ -362,15 +361,15 @@ let rec get_vars_bexpr = function
   | Or (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
   | Not b -> get_vars_bexpr b
 
-let get_vars_set_bexpr bexpr = Variables.of_list (get_vars_bexpr bexpr)
+let get_vars_set_bexpr bexpr = VarSet.of_list (get_vars_bexpr bexpr)
 
 let get_vars_jacob jacob =
   List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
 
 let replace_cst_jacob (id, cst) jacob =
   List.map (fun (c, vars, j) ->
-    if Variables.mem id vars then
-      (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
+    if VarSet.mem id vars then
+      (replace_cst_bexpr (id, cst) c, VarSet.remove id vars, j)
     else (c, vars, j)
   ) jacob
 

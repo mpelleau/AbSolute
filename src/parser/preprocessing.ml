@@ -5,6 +5,7 @@
 open Csp
 open Csp_helper
 open Rewrite
+open Tools
 
 let get_csts csp =
   let (csts, vars) = List.partition
@@ -25,8 +26,8 @@ let get_vars_cstrs cstrs =
   List.map (fun c -> (c, get_vars_set_bexpr c)) cstrs
 
 let replace_cst_cstrs (id, cst) cstrs =
-  List.map (fun (c, vars) -> if Variables.mem id vars then
-                               (replace_cst_bexpr (id, cst) c, Variables.remove id vars)
+  List.map (fun (c, vars) -> if VarSet.mem id vars then
+                               (replace_cst_bexpr (id, cst) c, VarSet.remove id vars)
                              else (c, vars)
     ) cstrs
 
@@ -74,7 +75,7 @@ let rewrite_constraint = function
 
 let filter_cstrs ctr_vars consts =
   List.fold_left (fun (cstr, csts, b) (c, v) ->
-      if Variables.cardinal v = 1 then
+      if VarSet.cardinal v = 1 then
         match c with
         | Cmp (EQ, e1, e2) ->
            ((* Format.printf "%a@." print_bexpr c; *)
@@ -143,10 +144,10 @@ let rec replace_view_bexpr view = function
   | Not b -> Not (replace_view_bexpr view b)
 
 let rep_view_ctr ((id, e) as view) ctrs =
-  List.map (fun (c, vars) -> if Variables.mem id vars then
+  List.map (fun (c, vars) -> if VarSet.mem id vars then
                                (replace_view_bexpr view c,
-                                Variables.union (Variables.remove id vars)
-                                  (Variables.of_list (get_vars_expr e)))
+                                VarSet.union (VarSet.remove id vars)
+                                  (VarSet.of_list (get_vars_expr e)))
                              else (c, vars)
     ) ctrs
 
@@ -166,22 +167,18 @@ let replace_view_ctr ctr views =
   | Cmp (_, e1', e2') -> e1',e2'
   | _ -> assert false
 
-
 let rec aux_view ctrs views = function
   | [] -> (ctrs, views)
-  | (Cmp (EQ, e1, e2) as c, v)::t when is_cons_linear c && Variables.cardinal v = 2 ->
+  | (Cmp (EQ, e1, e2) as c, v)::t when is_cons_linear c && VarSet.cardinal v = 2 ->
      let (e, _, value) = rewrite_ctr (EQ, e1, e2) in
      let new_view = rep_in_view (view e (Cst value)) views in
      let views' = rep_view new_view views in
      let t' = rep_view_ctr new_view t in
      aux_view ctrs (new_view::views') t'
-  | (c, v)::t ->
-     aux_view ((c, v)::ctrs) views t
-
+  | (c, v)::t -> aux_view ((c, v)::ctrs) views t
 
 let get_views ctr_vars =
   aux_view [] [] ctr_vars
-
 
 let rec find_all_views ctrs =
   let (ctrs, vws) = get_views ctrs in
@@ -193,7 +190,6 @@ let rec find_all_views ctrs =
   else
     ([], ctrs)
 
-
 let to_domains (e, d) =
   match d with
   | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
@@ -201,54 +197,36 @@ let to_domains (e, d) =
   | Inf (i) -> [Cmp(GEQ, e, Cst i)]
   | _ -> []
 
-
 let is_cons_linear_eq = function
   | Cmp (EQ, _, _) as c when is_cons_linear c -> true
   | _ -> false
 
 let get_nb_eq csp = List.length (List.filter (is_cons_linear) csp.constraints)
 
-
 let no_views csp =
   let p = get_csts csp in
   let ctr_vars = get_vars_cstrs p.constraints in
   let (ctrs, csts) = repeat ctr_vars p.constants in
-
   let (ctrs, _) = List.split ctrs in
   let (cons, _) = List.split csts in
-
   let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) p.init in
-
   {p with init = vars; constants = csts; constraints = ctrs}
-
-
-
 
 let rec preprocess csp =
   let nb_eq = get_nb_eq csp in
-
   let p = get_csts csp in
   let ctr_vars = get_vars_cstrs p.constraints in
   let (ctrs, csts) = repeat ctr_vars p.constants in
-
-
-
   let (views, ctrs') = find_all_views ctrs in
-
   let (ctrs, _) = List.split ctrs' in
   let (cons, _) = List.split csts in
   let (view, _) = List.split views in
-
-
   let (var_view, vars') = List.partition (fun (_, v, _) -> List.mem v view) p.init in
-
   let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) vars' in
-
   let view_ctrs = List.fold_left (
                       fun l (_, v, d) ->
                       let e = List.assoc v views in
                       List.append (to_domains (e, d)) l) [] var_view in
-
   let all_ctrs = ctrs@ view_ctrs in
   let all_views = csp.view@views in
   let prob = {p with init = vars; constants = csts; constraints = all_ctrs; view = all_views} in

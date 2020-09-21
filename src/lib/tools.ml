@@ -111,3 +111,5 @@ module VarMap = struct
   let of_list (assoc: (string*'a) list) =
     List.fold_left (fun acc (k,m) -> add k m acc) empty assoc
 end
+
+module VarSet = Set.Make(String)

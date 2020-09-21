@@ -1,6 +1,8 @@
 (** This wrapper lifts the filtering and the satisfies function over arithmetical
     predicates (e1 < e2) to boolean formulas of the form (p1 \/ p2) *)
 
+open Tools
+
 (** Boolean expressions abstractions *)
 module Make (Abs:Signature.AbstractCP) = struct
 
@@ -35,9 +37,9 @@ module Make (Abs:Signature.AbstractCP) = struct
     let newa = List.fold_left (fun a' (v, _) -> Abs.rem_var a' v) a newc in
     let (_, vars) = List.split (Abs.vars newa) in
     let ctrs_vars = List.fold_left
-                      ( fun s (_, v, _) -> Csp_helper.Variables.union s v
-                      ) Csp_helper.Variables.empty ctrs in
-    let unconstrained = List.filter (fun v -> not (Csp_helper.Variables.mem v ctrs_vars)) vars in
+                      ( fun s (_, v, _) -> VarSet.union s v
+                      ) VarSet.empty ctrs in
+    let unconstrained = List.filter (fun v -> not (VarSet.mem v ctrs_vars)) vars in
     let v_unconst = List.map (fun v -> (v, Abs.var_bounds newa v)) unconstrained in
     let abs = List.fold_left (fun a' v -> Abs.rem_var a' v) newa unconstrained in
 
