@@ -282,7 +282,7 @@ module PolyCP = struct
       else a',(s::acc)
     in
     let _,pruned = Linconsext.array_fold
-                     (fun (abs,acc) c ->
+                     (fun (_,acc) c ->
                        if Linconsext.get_typ c = Lincons1.EQ then
                          let c1,c2 = Linconsext.spliteq c in
                          let a',acc' = work acc a c1 in

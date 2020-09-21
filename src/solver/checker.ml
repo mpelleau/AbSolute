@@ -110,7 +110,7 @@ module Make(Abs : Signature.AbstractCP) = struct
     check_type typ value && check_dom dom (Mpqf.of_float value)
 
   (* checks if an instance satisfies a csp *)
-  let check_instance fn print (instance:Csp.instance) csp =
+  let check_instance _ print (instance:Csp.instance) csp =
     List.for_all (belong_to instance) csp.init
     &&
     List.for_all (check_cstr print instance) csp.constraints

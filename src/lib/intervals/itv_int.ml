@@ -162,7 +162,7 @@ let pow =
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,
    it returns a possibly bottom result *)
-let eval_fun (x1:string) (x2:t list) : t bot =
+let eval_fun (_:string) (_:t list) : t bot =
   (*TODO: replace "assert false" with your own code *)
   assert false
 
@@ -189,7 +189,7 @@ let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t * t) bot =
 let filter_neg (i:t) (r:t) : t bot =
   meet i (neg r)
 
-let filter_abs ((il,ih) as i:t) ((rl,rh) as r:t) : t bot =
+let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t bot =
   if il >= 0 then meet i r
   else if ih <= 0 then meet i (neg r)
   else meet i (-rh, rh)
@@ -218,7 +218,7 @@ let to_annot _ = Csp.Int
      given a function name, a list of argument, and a result,
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
      it returns a possibly bottom result *)
-let filter_fun (x1:string) (x2:t list) (x3:t) : (t list) bot =
+let filter_fun (_:string) (_:t list) (_:t) : (t list) bot =
   (*TODO: replace "assert false" with your own code *)
   assert false
 

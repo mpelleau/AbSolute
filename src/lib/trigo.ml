@@ -25,8 +25,6 @@ module Make (I:Itv_sig.ITV) = struct
   (* real pi  = 3.141592653589793238462.......... *)
   let pi_up   = 3.14159265358979356 (* closest bigger float than pi *)
 
-  let pi_itv = pi_down,pi_up
-
   (*********************)
   (* SIN APPROXIMATION *)
   (*********************)
@@ -256,7 +254,7 @@ module Make (I:Itv_sig.ITV) = struct
   let normalize target maxsize i =
     if maxsize <= I.float_size i then raise Exit
     else
-      let (a,b) = I.to_float_range i in
+      let (a,_) = I.to_float_range i in
       let nb = floor (F.div_down (a-.target) maxsize) in
       let dist = I.mul (I.of_float nb) (I.of_float maxsize) in
       let i' = I.sub i dist in

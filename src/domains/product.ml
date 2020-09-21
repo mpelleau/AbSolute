@@ -84,9 +84,9 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       let la = A.bound_vars abs
       and lb = B.bound_vars abs' in
       let (tmp, _) = List.split lb in
-      let (same, diffa) = List.partition (fun (v, c) -> List.mem v tmp) la in
+      let (same, _) = List.partition (fun (v, _) -> List.mem v tmp) la in
       let (tmp, _) = List.split same in
-      let (_, diffb) = List.partition (fun (v, c) -> List.mem v tmp) lb in
+      let (_, diffb) = List.partition (fun (v, _) -> List.mem v tmp) lb in
       List.append la diffb
 
     let vars (abs, abs') =
@@ -94,7 +94,7 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
       and vb = B.vars abs' in
       List.sort_uniq (compare) (va@vb)
 
-    let is_small ((abs, abs'):t) = A.is_small abs
+    let is_small ((abs, _):t) = A.is_small abs
 
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 

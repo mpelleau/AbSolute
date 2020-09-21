@@ -116,13 +116,13 @@ let meet (x1:t) (x2:t) : t bot =
 (* retruns true if the interval is positive (large sense), false otherwise *)
 let is_positive (itv:t) : bool =
   match itv with
-  | Int (a,b) -> a >= 0
+  | Int (a,_) -> a >= 0
   | Real r -> R.subseteq r R.positive
 
 (* retruns true if the interval is negative (large sense), false otherwise *)
 let is_negative (itv:t) : bool =
   match itv with
-  | Int (a,b) -> b <= 0
+  | Int (_,b) -> b <= 0
   | Real r -> R.subseteq r R.negative
 
 let contains_float (x:t) (f:float) : bool =
@@ -160,7 +160,7 @@ let split (x:t) : t list =
 
 (* pruning *)
 (* ------- *)
-let prune (x1:t) (x2:t) : t list =
+let prune (_:t) (_:t) : t list =
   (* TODO: replace the "failwith" with your own code *)
   failwith "function 'prune' in file 'itv_mix.ml' not implemented"
 

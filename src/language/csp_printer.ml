@@ -95,7 +95,7 @@ let print_jacob fmt (v, e) =
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+  | (c, _)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e

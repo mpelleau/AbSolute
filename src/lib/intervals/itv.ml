@@ -70,11 +70,13 @@ module Itv(B:BOUND) = struct
 
   let of_int (x:int) = of_ints x x
 
-  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
+  let of_rats (l:Mpqf.t) (h:Mpqf.t) : t =
+    of_bounds (B.of_rat_down l) (B.of_rat_up h)
 
   let of_rat (x:Mpqf.t) = of_rats x x
 
-  let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
+  let of_floats (l:float) (h:float) : t =
+    of_bounds (B.of_float_down l) (B.of_float_up h)
 
   let of_float (x:float) = of_floats x x
 
@@ -398,11 +400,10 @@ module Itv(B:BOUND) = struct
   let filter_neg (i:t) (r:t) : t bot =
     meet i (neg r)
 
-  let filter_abs ((il,ih) as i:t) ((rl,rh) as r:t) : t bot =
+  let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t bot =
     if B.sign il >= 0 then meet i r
     else if B.sign ih <= 0 then meet i (neg r)
     else meet i (B.neg rh, rh)
-
 
   (* r = i + c => i = r - c *)
   let filter_add_f (i:t) (c:t) (r:t) : t bot =
@@ -453,7 +454,7 @@ module Itv(B:BOUND) = struct
       else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt ((il,ih) as i:t) ((rl,rh):t) : t bot =
+  let filter_sqrt ((il,_) as i:t) ((rl,rh):t) : t bot =
     let rr = B.mul_down rl rl, B.mul_up rh rh in
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
@@ -465,7 +466,7 @@ module Itv(B:BOUND) = struct
   let filter_ln i r = meet i (exp r)
 
   (* r = log i => i = *)
-  let filter_log i r = failwith "todo filter_log"
+  let filter_log _ = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =

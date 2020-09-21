@@ -68,7 +68,7 @@ let rewrite_ctr (op, e1, e2) =
 
 let rewrite_constraint = function
   | Cmp (op, e1, e2) ->
-     let (e, c, negc) = rewrite_ctr (op, e1, e2) in
+     let (e, _, negc) = rewrite_ctr (op, e1, e2) in
      Cmp (op, e, Cst negc)
   | _ as c -> c
 
@@ -171,7 +171,7 @@ let rec aux_view ctrs views = function
   | [] -> (ctrs, views)
   | (Cmp (EQ, e1, e2) as c, v)::t when is_cons_linear c && Variables.cardinal v = 2 ->
      let (e, _, value) = rewrite_ctr (EQ, e1, e2) in
-     let (tmp, tmp2) as new_view = rep_in_view (view e (Cst value)) views in
+     let new_view = rep_in_view (view e (Cst value)) views in
      let views' = rep_view new_view views in
      let t' = rep_view_ctr new_view t in
      aux_view ctrs (new_view::views') t'
@@ -217,7 +217,7 @@ let no_views csp =
   let (ctrs, _) = List.split ctrs in
   let (cons, _) = List.split csts in
 
-  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) p.init in
+  let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) p.init in
 
   {p with init = vars; constants = csts; constraints = ctrs}
 
@@ -240,9 +240,9 @@ let rec preprocess csp =
   let (view, _) = List.split views in
 
 
-  let (var_view, vars') = List.partition (fun (t, v, d) -> List.mem v view) p.init in
+  let (var_view, vars') = List.partition (fun (_, v, _) -> List.mem v view) p.init in
 
-  let vars = List.filter (fun (t, v, d) -> not(List.mem v cons)) vars' in
+  let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) vars' in
 
   let view_ctrs = List.fold_left (
                       fun l (_, v, d) ->

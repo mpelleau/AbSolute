@@ -439,7 +439,7 @@ module Make(B:BOUND) = struct
   let ln (i:t) : t bot =
     match meet i positive with
     | Bot -> Bot
-    | Nb itv -> Nb (mon_incr (B.ln_down,B.ln_up) i)
+    | Nb _ -> Nb (mon_incr (B.ln_down,B.ln_up) i)
 
   let exp (i:t) = mon_incr (B.exp_down,B.exp_up) i
 
@@ -539,7 +539,7 @@ module Make(B:BOUND) = struct
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     lift_bot (fun x -> x,x) (meet i1 i2)
 
-  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
+  let filter_neq (i1:t) (i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && equal i1 i2 then Bot
     else Nb (i1,i2)
 
@@ -618,7 +618,7 @@ module Make(B:BOUND) = struct
       else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt (((k_il,il),ih) as i:t) ((rl,rh):t) : t bot =
+  let filter_sqrt (((k_il,il),_) as i:t) ((rl,rh):t) : t bot =
     let rr = rl *$ rl, rh *@ rh in
     if B.sign il > 0 || (B.sign il = 0 && k_il = Large) then meet i rr
     else meet i ((Strict,B.minus_inf), snd rr)
@@ -636,7 +636,7 @@ module Make(B:BOUND) = struct
   let filter_ln i r = meet i (exp r)
 
   (* r = log i => i = *)
-  let filter_log i r = failwith "todo filter_log"
+  let filter_log _ = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =

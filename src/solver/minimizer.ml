@@ -21,7 +21,7 @@ module Minimize(Abs : AbstractCP) = struct
       match consistency abs ~obj:obj cstrs csts with
       | Empty -> res
       | Full (abs', const) -> add_s res ~obj:obj (abs', const, views)
-      | Maybe(a, cstrs, csts) when stop res a || is_small a obj -> add_u res ~obj:obj (a, csts, views)
+      | Maybe(a,_,csts) when stop res a || is_small a obj -> add_u res ~obj:obj (a, csts, views)
       | Maybe(abs', cstrs, csts)  ->
          if !Constant.pruning && depth < !Constant.pruning_iter then
            let ls,lu = prune abs' cstrs in

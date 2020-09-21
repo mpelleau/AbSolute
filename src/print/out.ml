@@ -27,11 +27,6 @@ module Make (D:Signature.AbstractCP) = struct
           Format.printf "sure: (), (%a %a)\n%!" D.print e Csp_printer.print_all_csts c) sure;
     List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp_printer.print_all_csts c) unsure
 
-  let vars2D prob =
-    let vars = Csp_helper.get_vars prob |> Array.of_list in
-    let size = Array.length vars in
-    (vars.(0)),(vars.(1 mod size))
-
   let vars3D prob =
     let vars = Csp_helper.get_vars prob |> Array.of_list in
     let size = Array.length vars in

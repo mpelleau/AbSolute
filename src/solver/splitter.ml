@@ -25,7 +25,7 @@ module Make (Abs : AbstractCP) = struct
          Format.printf "%sabs = %a\tobjective = (%s, %s)@." tab Abs.print abs (Mpqf.to_string inf) (Mpqf.to_string sup)
       | None -> Format.printf "%sabs = %a@." tab Abs.print abs
 
-  let print_debug_const tab cstrs csts =
+  let print_debug_const cstrs =
     if !Constant.debug >= 5 then Format.printf "#constraints = %d@." (List.length cstrs)
 
   let minimize_test obj abs =
@@ -50,12 +50,12 @@ module Make (Abs : AbstractCP) = struct
                   (print_debug "\t*******=> sure:" objv abs'; Full (abs', const))
                 else (
                   print_debug "\t=> " objv abs';
-                  print_debug_const "\t  " unsat const;
+                  print_debug_const unsat;
                   let (abs'', unsat', const') = check_csts abs' unsat const in
                   match Abs.vars abs'' with
                   | [] -> print_debug "\t=> sure:" objv abs''; Full (abs'', const')
                   | _ -> (
-                    print_debug_const "\t  " unsat' const';
+                    print_debug_const unsat';
                     if !Constant.iter then
                       let ratio = (Abs.volume abs'')/.(Abs.volume abs) in
                       if ratio > 0.9 || abs = abs'' then

@@ -156,7 +156,7 @@ let toCsp m =
          env,(loop l csp)
        else failwith ("vars with inf index greater than sup index : "^v)
 
-   | SubjectTo (v, constr) ->
+   | SubjectTo (_, constr) ->
       let constr' = substitute_constr env constr in
       env,(Csp_helper.add_constr csp (to_csp_constr constr'))
    | Ignore -> env,csp

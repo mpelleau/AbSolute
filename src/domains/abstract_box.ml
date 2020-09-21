@@ -49,12 +49,6 @@ module Box (I:ITV) = struct
 
   let float_bounds a v = I.to_float_range (find v a)
 
-  let to_expr abs =
-    Env.fold (fun v x lexp ->
-        let ((cl, l), (ch, h)) = I.to_expr x in
-        (Csp.Var(v), cl, l)::(Csp.Var(v), ch, h)::lexp
-      ) abs []
-
   let to_expr abs vars : (Csp.expr * Csp.cmpop * Csp.expr) list =
     Env.fold (fun v x lexp ->
         if List.exists (fun vn -> String.equal v vn) vars then
@@ -108,7 +102,7 @@ module Box (I:ITV) = struct
       ) a (VarMap.min_binding a)
 
   let is_small (a:t) : bool =
-    let (v,i) = max_range a in
+    let (_,i) = max_range a in
     (I.float_size i) <= !Constant.precision
 
   let volume (a:t) : float =
@@ -194,10 +188,10 @@ module Box (I:ITV) = struct
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
     match e1, e2, b with
-    | BCst c1, BCst c2, _ -> Nb (i1, i2)
-    | BCst c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
+    | BCst _, BCst _, _ -> Nb (i1, i2)
+    | BCst _, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
+    | BCst _, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
+    | _, BCst _, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
     | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
     | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
 
@@ -291,7 +285,7 @@ module Box (I:ITV) = struct
 
   let bound_vars (abs:t) =
     let b = Env.bindings abs in
-    let l = List.filter (fun (v, d) -> I.is_singleton d) b in
+    let l = List.filter (fun (_, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l
 
   let rem_var abs var : t =
@@ -309,10 +303,10 @@ module Box (I:ITV) = struct
     | Cst _ -> true
     | Neg e1 -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
-    | Funcall (name, args) -> false (* check if sound *)
+    | Funcall (_, _) -> false (* check if sound *)
 
   let lfilter (a:t) l : t =
-    let la = List.filter (fun (e1, op, e2) ->
+    let la = List.filter (fun (e1, _, e2) ->
                            (is_applicable a e1) && (is_applicable a e2)) l in
     List.fold_left (fun a' e -> filter a' e) a la
 
