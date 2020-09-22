@@ -78,9 +78,7 @@ let filter_cstrs ctr_vars consts =
       if VarSet.cardinal v = 1 then
         match c with
         | Cmp (e1,EQ, e2) ->
-           ((* Format.printf "%a@." print_bexpr c; *)
-            let (e, cst, negc) = rewrite_ctr (e1,EQ,e2) in
-            (* Format.printf "%a ===== (%s) %s@." print_expr e (Mpqf.to_string cst) (Mpqf.to_string negc); *)
+           (let (e, cst, negc) = rewrite_ctr (e1,EQ,e2) in
             match e with
             | Var var -> (cstr, (var, (negc, negc))::csts, true)
             | Neg (Var var) -> (cstr, (var, (cst, cst))::csts,  true)
@@ -193,15 +191,18 @@ let rec find_all_views ctrs =
 let to_domains (e, d) =
   match d with
   | Finite (l,h) -> [geq e (Cst l); leq e (Cst h)]
-  | Minf (i) -> [leq e (Cst i)]
-  | Inf (i) -> [geq e (Cst i)]
+  | Minf i -> [leq e (Cst i)]
+  | Inf i -> [geq e (Cst i)]
   | _ -> []
 
 let is_cons_linear_eq = function
   | Cmp (_, EQ, _) as c when is_cons_linear c -> true
   | _ -> false
 
-let get_nb_eq csp = List.length (List.filter (is_cons_linear) csp.constraints)
+let get_nb_eq csp =
+  let cpt = ref 0 in
+  List.iter (fun c -> if is_cons_linear c then incr cpt) csp.constraints;
+  !cpt
 
 let no_views csp =
   let p = get_csts csp in

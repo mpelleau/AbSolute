@@ -27,9 +27,9 @@ let print_typ fmt = function
 let print_var fmt s = Format.fprintf fmt "%s" s
 
 let print_dom fmt = function
-  | Finite (a,b) ->  Format.fprintf fmt "[%s; %s]" (Mpqf.to_string a) (Mpqf.to_string b)
-  | Minf i -> Format.fprintf fmt "[-oo; %s]" (Mpqf.to_string i)
-  | Inf i -> Format.fprintf fmt "[%s; +oo]" (Mpqf.to_string i)
+  | Finite (a,b) ->  Format.fprintf fmt "[%a; %a]" Q.print a Q.print b
+  | Minf i -> Format.fprintf fmt "[-oo; %a]" Q.print i
+  | Inf i -> Format.fprintf fmt "[%a; +oo]" Q.print i
   | Set l ->
      let print_set =
        (Format.pp_print_list
