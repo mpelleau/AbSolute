@@ -101,7 +101,7 @@ const:
   | MINUS FLOAT {(-.$2)}
 
 bexpr:
-  | expr cmp expr                   {Cmp ($2, $1, $3)}
+  | expr cmp expr                   {Cmp ($1, $2, $3)}
   | bexpr OR bexpr                  {Or  ($1,$3)}
   | bexpr AND bexpr                 {And ($1,$3)}
   | NOT bexpr                       {Not ($2)}

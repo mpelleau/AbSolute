@@ -247,11 +247,9 @@ module Box (I:ITV) = struct
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
-    (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
     let j1,j2 = match o with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
-      (* a > b <=> b < a*)
       | GEQ -> let j2,j1 = debot (I.filter_leq i2 i1) in (j1,j2)
       | GT  -> let j2,j1 = debot (I.filter_lt i2 i1) in (j1,j2)
       | NEQ -> debot (I.filter_neq i1 i2)
@@ -261,10 +259,10 @@ module Box (I:ITV) = struct
     let refined1 = if j1 = i1 then a else refine a b1 j1 in
     Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
-  let filter (a:t) (e1,binop,e2) : t =
+  let filter (a:t) ((e1,binop,e2) as x) : t =
     match test a e1 binop e2 with
     | Bot ->
-       Tools.debug 5 "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a;
+       Tools.debug 5 "\n%a\n\t%a\n" print_cmp x print a;
        raise Bot_found
     | Nb e -> e
 

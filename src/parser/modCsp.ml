@@ -10,7 +10,7 @@ type expr =
 
 (* boolean expressions *)
 type bexpr =
-  | Cmp of Csp.cmpop * expr * expr
+  | Cmp of expr * Csp.cmpop * expr
   | And of bexpr * bexpr
   | Or of bexpr * bexpr
   | Not of bexpr
@@ -54,7 +54,7 @@ let rec substitute env = function
 
 let substitute_constr env =
   let rec subs = function
-  | Cmp (c,e1,e2) -> Cmp(c, (substitute env e1), (substitute env e2))
+  | Cmp (e1,c,e2) -> Cmp((substitute env e1),c ,(substitute env e2))
   | And (b1,b2) -> And (subs b1, subs b2)
   | Or  (b1,b2) -> Or (subs b1, subs b2)
   | Not b -> Not (subs b)
@@ -95,7 +95,7 @@ let rec to_csp = function
 
 (* to csp expr conversion *)
 let rec to_csp_constr = function
-  | Cmp (c,e1,e2) -> Csp.Cmp(c, (to_csp e1), (to_csp e2))
+  | Cmp (e1,c,e2) -> Csp.Cmp(to_csp e1, c, to_csp e2)
   | And (b1,b2) -> Csp.And (to_csp_constr b1, to_csp_constr b2)
   | Or  (b1,b2) -> Csp.Or (to_csp_constr b1, to_csp_constr b2)
   | Not b -> Csp.Not (to_csp_constr b)

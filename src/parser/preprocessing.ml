@@ -61,25 +61,25 @@ let rec get_cst_value expr c =
   | _ -> (expr, c)
 
 
-let rewrite_ctr (op, e1, e2) =
-  let (_, e1', _) = rewrite (op, expand e1, expand e2) in
+let rewrite_ctr (e1,op,e2) =
+  let (e1',_, _) = rewrite (expand e1, op, expand e2) in
   let (e, cst) = get_cst_value e1' Q.zero in
   let neg_cst = if is_zero cst then cst else Q.neg cst in
   (e, cst, neg_cst)
 
 let rewrite_constraint = function
-  | Cmp (op, e1, e2) ->
-     let (e, _, negc) = rewrite_ctr (op, e1, e2) in
-     Cmp (op, e, Cst negc)
+  | Cmp (e1, op, e2) ->
+     let (e, _, negc) = rewrite_ctr (e1, op, e2) in
+     Cmp (e, op, Cst negc)
   | _ as c -> c
 
 let filter_cstrs ctr_vars consts =
   List.fold_left (fun (cstr, csts, b) (c, v) ->
       if VarSet.cardinal v = 1 then
         match c with
-        | Cmp (EQ, e1, e2) ->
+        | Cmp (e1,EQ, e2) ->
            ((* Format.printf "%a@." print_bexpr c; *)
-            let (e, cst, negc) = rewrite_ctr (EQ, e1, e2) in
+            let (e, cst, negc) = rewrite_ctr (e1,EQ,e2) in
             (* Format.printf "%a ===== (%s) %s@." print_expr e (Mpqf.to_string cst) (Mpqf.to_string negc); *)
             match e with
             | Var var -> (cstr, (var, (negc, negc))::csts, true)
@@ -138,7 +138,7 @@ let rec replace_view_expr ((id, e) as view) expr =
   | _ as expr -> expr
 
 let rec replace_view_bexpr view = function
-  | Cmp (op, e1, e2) -> Cmp(op, replace_view_expr view e1, replace_view_expr view e2)
+  | Cmp (e1, op, e2) -> Cmp(replace_view_expr view e1, op, replace_view_expr view e2)
   | And (b1, b2) -> And (replace_view_bexpr view b1, replace_view_bexpr view b2)
   | Or (b1, b2) -> Or (replace_view_bexpr view b1, replace_view_bexpr view b2)
   | Not b -> Not (replace_view_bexpr view b)
@@ -169,8 +169,8 @@ let replace_view_ctr ctr views =
 
 let rec aux_view ctrs views = function
   | [] -> (ctrs, views)
-  | (Cmp (EQ, e1, e2) as c, v)::t when is_cons_linear c && VarSet.cardinal v = 2 ->
-     let (e, _, value) = rewrite_ctr (EQ, e1, e2) in
+  | (Cmp (e1, EQ, e2) as c, v)::t when is_cons_linear c && VarSet.cardinal v = 2 ->
+     let (e, _, value) = rewrite_ctr (e1, EQ, e2) in
      let new_view = rep_in_view (view e (Cst value)) views in
      let views' = rep_view new_view views in
      let t' = rep_view_ctr new_view t in
@@ -192,13 +192,13 @@ let rec find_all_views ctrs =
 
 let to_domains (e, d) =
   match d with
-  | Finite (l,h) -> [Cmp(GEQ, e, Cst l); Cmp(LEQ, e, Cst h)]
-  | Minf (i) -> [Cmp(LEQ, e, Cst i)]
-  | Inf (i) -> [Cmp(GEQ, e, Cst i)]
+  | Finite (l,h) -> [geq e (Cst l); leq e (Cst h)]
+  | Minf (i) -> [leq e (Cst i)]
+  | Inf (i) -> [geq e (Cst i)]
   | _ -> []
 
 let is_cons_linear_eq = function
-  | Cmp (EQ, _, _) as c when is_cons_linear c -> true
+  | Cmp (_, EQ, _) as c when is_cons_linear c -> true
   | _ -> false
 
 let get_nb_eq csp = List.length (List.filter (is_cons_linear) csp.constraints)

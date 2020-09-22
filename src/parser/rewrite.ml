@@ -113,7 +113,7 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
                             tl
 
 (* simplify the polynomial part of a constraint *)
-let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
+let rewrite (e1,cmp,e2) : comparison =
   (* we move e2 to left side to perform potentially more simplifications *)
   let e1', e2' = (Csp_helper.expand e1, Csp_helper.expand e2) in
   (* Format.printf "---------- %a = %a@." print_expr e1' print_expr e2'; *)
@@ -126,7 +126,7 @@ let rewrite (cmp,e1,e2) : (cmpop * expr * expr) =
   let simp_left = Csp_helper.simplify_fp simplified_left in
   (* Format.printf "&&&&&&&&&& %a = 0@." print_expr simp_left; *)
   let e2 = Csp_helper.zero in
-  (cmp,simp_left,e2)
+  (simp_left,cmp,e2)
 
 
 (* rewriting main function *)

@@ -124,7 +124,7 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
 
     let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
       let open Kleene in
-      match B.is_representable (Csp.Cmp(op, e1, e2)) with
+      match B.is_representable (Csp.Cmp(e1, op, e2)) with
       | True -> (A.filter abs cons, B.filter abs' cons)
       | Unknown | False -> (A.filter abs cons, abs')
 

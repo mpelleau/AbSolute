@@ -23,16 +23,21 @@ let square expr = Binary (POW, expr, two)
 (** {1 Constraint constructor} *)
 
 (** {2 comparisons} *)
-let leq e1 e2 = Cmp (LEQ,e1,e2)
-let lt  e1 e2 = Cmp (LT,e1,e2)
-let geq e1 e2 = Cmp (GEQ,e1,e2)
-let gt  e1 e2 = Cmp (GT,e1,e2)
-let eq  e1 e2 = Cmp (EQ,e1,e2)
-let neq e1 e2 = Cmp (NEQ,e1,e2)
+let leq e1 e2 = Cmp (e1,LEQ,e2)
+let lt  e1 e2 = Cmp (e1,LT,e2)
+let geq e1 e2 = Cmp (e1,GEQ,e2)
+let gt  e1 e2 = Cmp (e1,GT,e2)
+let eq  e1 e2 = Cmp (e1,EQ,e2)
+let neq e1 e2 = Cmp (e1,NEQ,e2)
 
 (** constraint for variable assignment by a constant *)
 let assign var value =
   eq (Var var) (of_mpqf value)
+
+(** constraint for 'v \in [low;high]' *)
+let inside v low high =
+  let v = Var v in
+  And ((geq v (of_mpqf low)), (leq v (of_mpqf high)))
 
 (** {1 Predicates} *)
 
@@ -57,7 +62,7 @@ let rec is_linear = function
 
 (** checks if a constraints is linear *)
 let rec is_cons_linear = function
-  | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
+  | Cmp (e1,_,e2) -> is_linear e1 && is_linear e2
   | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
@@ -89,14 +94,14 @@ let neg = function
 (* TODO: use type *)
 let domain_to_constraints ((_,v,d):assign) : bexpr =
   match d with
-  | Finite (l,h) -> And (Cmp (GEQ, Var v, Cst l), (Cmp (LEQ, Var v, Cst h)))
-  | Minf i -> Cmp(LEQ, Var v, Cst i)
-  | Inf i -> Cmp(GEQ, Var v, Cst i)
+  | Finite (l,h) -> inside v l h
+  | Minf i -> leq (Var v) (Cst i)
+  | Inf i -> geq (Var v) (Cst i)
   | Set (h::tl) ->
      List.fold_left (fun acc e ->
          Or(acc, assign v e)
        ) (assign v h) tl
-  | _ -> Cmp(EQ, one, one)
+  | _ -> eq one one
 
 (** iter on expr *)
 let rec iter_expr f = function
@@ -106,7 +111,7 @@ let rec iter_expr f = function
 
 (** iter on constraints *)
 let rec iter_constr f_expr f_constr = function
-  | Cmp (_,e1,e2) as constr ->
+  | Cmp (e1,_,e2) as constr ->
      f_constr constr;
      iter_expr f_expr e1;
      iter_expr f_expr e2
@@ -130,7 +135,7 @@ let rec map_constr f = function
 
 (** constraint negation *)
 let rec neg_bexpr = function
-  | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
+  | Cmp (e1,op,e2) -> Cmp(e1,neg op,e2)
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
@@ -227,19 +232,19 @@ let rec simplify_fp expr =
   else e
 
 let rec simplify_bexpr = function
-  | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
+  | Cmp (e1,op,e2) -> Cmp (simplify_fp e1,op, simplify_fp e2)
   | And (b1,b2) -> And (simplify_bexpr b1, simplify_bexpr b2)
   | Or (b1,b2) -> Or (simplify_bexpr b1, simplify_bexpr b2)
   | Not b -> Not (simplify_bexpr b)
 
-let left_hand_side (op, e1, e2) =
+let left_hand_side (e1,op,e2) =
   match e1, e2 with
   | Cst c, _  when is_zero c-> (inv op, e2)
   | _, Cst c when is_zero c -> (op, e1)
   | _, _ -> (op, simplify_fp (Binary (SUB, e1, e2)))
 
 let rec left_hand = function
-  | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
+  | Cmp (e1,op,e2) -> left_hand_side (e1,op,e2)
   | And (b1,_) | Or (b1,_) -> left_hand b1
   | Not b -> left_hand b
 
@@ -279,7 +284,7 @@ let rec derivate expr var =
 
 let rec derivative bexpr var =
   match bexpr with
-  | Cmp (op,e1,e2) -> Cmp (op, derivate e1 var, derivate e2 var)
+  | Cmp (e1,op,e2) -> Cmp (derivate e1 var,op, derivate e2 var)
   | And (b1,b2) -> And (derivative b1 var, derivative b2 var)
   | Or (b1,b2) -> Or (derivative b1 var, derivative b2 var)
   | Not b -> Not (derivative b var)
@@ -341,7 +346,7 @@ let rec replace_cst_expr (id, cst) expr =
   | _ as e -> e
 
 let rec replace_cst_bexpr cst = function
-  | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr cst e1, replace_cst_expr cst e2)
+  | Cmp (e1,op, e2) -> Cmp (replace_cst_expr cst e1,op, replace_cst_expr cst e2)
   | And (b1, b2) -> And (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Not b -> Not (replace_cst_bexpr cst b)
@@ -356,7 +361,7 @@ let rec get_vars_expr = function
 let get_vars_set_expr expr = VarSet.of_list (get_vars_expr expr)
 
 let rec get_vars_bexpr = function
-  | Cmp (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
+  | Cmp (e1,_, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
   | And (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
   | Or (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
   | Not b -> get_vars_bexpr b

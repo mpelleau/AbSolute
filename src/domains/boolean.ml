@@ -19,7 +19,7 @@ module Make (Abs:Signature.AbstractCP) = struct
         | None, (Some x) | (Some x), None -> x
         | _ -> raise Bot.Bot_found)
     | Not b -> filter value (Csp_helper.neg_bexpr b)
-    | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
+    | Cmp (e1,binop,e2) -> Abs.filter value (e1,binop,e2)
 
   (** checks if an abstract satisfies a constraint, i.e all of the concrete
       instances abstracted by the element satisfy the constraint *)

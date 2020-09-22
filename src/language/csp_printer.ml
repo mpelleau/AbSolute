@@ -74,9 +74,11 @@ let rec print_expr fmt = function
   | Var v -> Format.fprintf fmt "%s" v
   | Cst c -> Format.fprintf fmt "%a" pp_print_mpqf c
 
+let print_cmp fmt (e1,c,e2) =
+  Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
+
 let rec print_bexpr fmt = function
-  | Cmp (c,e1,e2) ->
-    Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
+  | Cmp c -> print_cmp fmt c
   | And (b1,b2) ->
     Format.fprintf fmt "%a && %a" print_bexpr b1 print_bexpr b2
   | Or  (b1,b2) ->
@@ -95,7 +97,7 @@ let print_jacob fmt (v, e) =
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, _)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+  | (c, _)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; print_jacobian fmt tl
 
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e

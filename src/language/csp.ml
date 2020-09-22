@@ -24,9 +24,12 @@ type expr =
   | Var     of var
   | Cst     of i
 
+(* boolean expression : e1 <> e2 *)
+type comparison = expr * cmpop * expr
+
 (* boolean expressions *)
 type bexpr =
-  | Cmp of cmpop * expr * expr
+  | Cmp of comparison
   | And of bexpr * bexpr
   | Or  of bexpr * bexpr
   | Not of bexpr
@@ -73,5 +76,5 @@ type prog = {
     constraints : constrs;
     jacobian    : ctrs;
     view        : jacob;
-    solutions   : solution_info (* extra information about the solutions of te problem *)
+    solutions   : solution_info (* extra information about the solutions of the problem *)
   }

@@ -74,7 +74,7 @@ module Make(Abs : Signature.AbstractCP) = struct
   (* check if an instance is valid wrt to a constraint *)
   let check_cstr print (instance:Csp.instance) cstr =
     let rec aux = function
-      | Cmp(op,e1,e2) ->
+      | Cmp(e1,op,e2) ->
          let e1' = eval instance e1 and e2' = eval instance e2 in
          let res =
            (match op with
