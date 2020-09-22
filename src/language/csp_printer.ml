@@ -1,10 +1,6 @@
 open Tools
 open Csp
 
-(*************************************************************)
-(*                    PRINTING UTILITIES                     *)
-(*************************************************************)
-
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
   | SUB -> Format.fprintf fmt "-"
@@ -24,7 +20,7 @@ let print_typ fmt = function
   | Int  ->  Format.fprintf fmt "int"
   | Real ->  Format.fprintf fmt "real"
 
-let print_var fmt s = Format.fprintf fmt "%s" s
+let print_var = Format.pp_print_string
 
 let print_dom fmt = function
   | Finite (a,b) ->  Format.fprintf fmt "[%a; %a]" Q.print a Q.print b
@@ -33,8 +29,7 @@ let print_dom fmt = function
   | Set l ->
      let print_set =
        (Format.pp_print_list
-          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
-          (fun fmt f -> Format.fprintf fmt "%s" (Mpqf.to_string f)))
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ") Q.print)
      in
      Format.fprintf fmt "{%a}" print_set l
   | Top -> Format.fprintf fmt "[-oo; +oo]"
@@ -94,13 +89,6 @@ let print_constraints fmt constraints =
 
 let print_jacob fmt (v, e) =
   Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e
-
-let rec print_jacobian fmt = function
-  | [] -> ()
-  | (c, _)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; print_jacobian fmt tl
-
-let print_view fmt (v, e) =
-  Format.fprintf fmt "%a = %a" print_var v print_expr e
 
 let print fmt prog =
   Format.fprintf fmt "%a\n" print_assign prog.init;
