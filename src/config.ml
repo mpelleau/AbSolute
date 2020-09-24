@@ -36,44 +36,30 @@ end
 (*   domains   *)
 (***************)
 
-module type FullDomain = sig
-  module Abstract : AbstractCP
-end
-
-module MakeFullDomain
-         (Abstract : AbstractCP)
-  = struct
-  module Abstract = Abstract
-end
-
-module MakeProduct (D1 : FullDomain) (D2 : FullDomain) = struct
-  module Abstract = Product.MakeProduct(D1.Abstract)(D2.Abstract)
-end
-
-let get_domain : string -> (module FullDomain) = function
-  | "box"    -> (module MakeFullDomain (Abstract_box.BoxF))
-  | "boxS"   -> (module MakeFullDomain (Abstract_box.BoxStrict))
-  | "boxMix" -> (module MakeFullDomain (Abstract_box.BoxMix))
-  | "boxQ"   -> (module MakeFullDomain (Abstract_box.BoxQ))
-  | "boxQS"  -> (module MakeFullDomain (Abstract_box.BoxQStrict))
-  | "boxCP"  -> (module MakeFullDomain (ADCP.BoxCP))
-  | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP))
-  | "poly"   -> (module MakeFullDomain (ADCP.PolyCP))
-  | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP))
+let get_domain : string -> (module AbstractCP) = function
+  | "box"    -> (module Abstract_box.BoxF)
+  | "boxS"   -> (module Abstract_box.BoxStrict)
+  | "boxMix" -> (module Abstract_box.BoxMix)
+  | "boxQ"   -> (module Abstract_box.BoxQ)
+  | "boxQS"  -> (module Abstract_box.BoxQStrict)
+  | "boxCP"  -> (module ADCP.BoxCP)
+  | "oct"    -> (module ADCP.OctBoxCP)
+  | "poly"   -> (module ADCP.PolyCP)
+  | "vpl"    -> (module Vpl_domain.VplCP)
   | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
-let set_domain_from_names : string list -> (module FullDomain)
+let set_domain_from_names : string list -> (module AbstractCP)
   = fun names ->
   List.fold_left
-    (fun (module D : FullDomain) name ->
-      let (module F : FullDomain) = get_domain name in
-      let module P = MakeProduct (D)(F) in
+    (fun (module D : AbstractCP) name ->
+      let (module F : AbstractCP) = get_domain name in
+      let module P = Product.MakeProduct (D)(F) in
       (module P)
     )
     (List.hd names |> get_domain)
     (List.tl names)
 
-let set_domain : unit -> (module FullDomain)
+let set_domain : unit -> (module AbstractCP)
   = fun () ->
   String.split_on_char ',' !Constant.domain
   |> set_domain_from_names
@@ -82,15 +68,16 @@ let set_domain : unit -> (module FullDomain)
  * Lifts the given abstract domain and its associated drawer into a runnable domain.
  * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
  *)
-let lift (module D : FullDomain) (prob : Csp.prog) : unit =
+let lift (module D : AbstractCP) (prob : Csp.prog) : unit =
   if !Constant.minimizing
-  then let module Minimizer = GoM (D.Abstract) in
-       Minimizer.go prob
+  then
+    let module Minimizer = GoM (D) in
+    Minimizer.go prob
   else
     (* if !Constant.step_by_step
      * then let module SBS = Step_by_step.Make (D.Abstract) in
      *      SBS.solving prob else *)
-    let module Solver = GoS (D.Abstract) in
+    let module Solver = GoS (D) in
     Solver.go prob
 
 (********************)

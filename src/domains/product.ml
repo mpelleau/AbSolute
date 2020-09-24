@@ -80,9 +80,9 @@ module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
        and b = B.rem_var abs' v in
        (a, b)
 
-    let bound_vars (abs,abs')  =
-      let la = A.bound_vars abs
-      and lb = B.bound_vars abs' in
+    let bounds (abs,abs')  =
+      let la = A.bounds abs
+      and lb = B.bounds abs' in
       let (tmp, _) = List.split lb in
       let (same, _) = List.partition (fun (v, _) -> List.mem v tmp) la in
       let (tmp, _) = List.split same in

@@ -130,7 +130,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun p var ->
         forward_eval p (Csp.Var var)
 
-    let bound_vars : t -> Csp.csts
+    let bounds : t -> Csp.csts
         = fun p ->
         BuiltIn.get_vars p
         |> List.map (fun var ->

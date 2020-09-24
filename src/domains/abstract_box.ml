@@ -281,7 +281,7 @@ module Box (I:ITV) = struct
     let itv = find var abs in
     I.to_rational_range itv
 
-  let bound_vars (abs:t) =
+  let bounds (abs:t) =
     let b = Env.bindings abs in
     let l = List.filter (fun (_, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l

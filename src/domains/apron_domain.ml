@@ -136,7 +136,7 @@ module MAKE(AP:ADomain) = struct
     let i = A.bound_variable man abs var in
     itv_to_mpqf i
 
-  let bound_vars abs =
+  let bounds abs =
     let (ivars, rvars) = Environment.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->

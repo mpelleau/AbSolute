@@ -12,20 +12,20 @@ module type AbstractCP = sig
   (** returns an empty element *)
   val empty : t
 
-  (** returns the variables annoted by their type *)
-  val vars : t -> (Csp.annot * Csp.var) list
-
   (** adds an unconstrained variable to the environnement *)
   val add_var : t -> Csp.annot * Csp.var -> t
 
-  (** returns the bounds of a variable *)
-  val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
-
-  (** returns the bound variables *)
-  val bound_vars : t -> Csp.csts
-
   (** removes an unconstrained variable from the environnement *)
   val rem_var : t -> Csp.var -> t
+
+  (** returns the variables annoted by their type *)
+  val vars : t -> (Csp.annot * Csp.var) list
+
+  (** returns the bounds of a variable *)
+  val var_bounds : t -> Csp.var -> (Q.t * Q.t)
+
+  (** returns the bound variables *)
+  val bounds : t -> (Csp.var * (Q.t * Q.t)) list
 
   (*** PREDICATES ***)
 
