@@ -53,7 +53,7 @@ let set_domain_from_names : string list -> (module AbstractCP)
   List.fold_left
     (fun (module D : AbstractCP) name ->
       let (module F : AbstractCP) = get_domain name in
-      let module P = Product.MakeProduct (D)(F) in
+      let module P = Product.Make (D)(F) in
       (module P)
     )
     (List.hd names |> get_domain)

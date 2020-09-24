@@ -2,27 +2,7 @@
 
 open Signature
 
-module type Reduction =
-  sig
-    module A : AbstractCP
-    module B : AbstractCP
-    type t = A.t * B.t
-
-    val var_bounds : t -> Csp.var -> (Mpqf.t * Mpqf.t)
-
-    val add_var : t -> Csp.annot * Csp.var -> t
-
-    val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
-
-    val reduced_product : A.t -> B.t -> (A.t * B.t)
-
-    val print : Format.formatter -> t -> unit
-
-    val is_empty : t -> bool
-
-  end
-
-module MakeProduct (A : AbstractCP) (B : AbstractCP)  =
+module Make (A : AbstractCP) (B : AbstractCP)  =
   struct
 
     module A = A
