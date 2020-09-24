@@ -1,8 +1,4 @@
 (******************************************************************)
-(*                   entry point of the solver                    *)
-(******************************************************************)
-
-(******************************************************************)
 (* An instance of the solver is parametrized by an abstract domain*)
 (* which will be used in the abstract solving process and a       *)
 (* rendering module which fits the domain we use                  *)

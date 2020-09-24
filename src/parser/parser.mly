@@ -79,7 +79,6 @@ file:
   {
     {
       jacobian=[];
-      view=[];
       init=$2;
       objective=$3;
       constraints=$4;

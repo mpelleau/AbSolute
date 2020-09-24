@@ -1,8 +1,8 @@
 (* Module that handles solution of the abstract solver *)
 
 type 'a res = {
-    sure       : ('a * Csp.csts) list;   (* elements that satisfy the constraints *)
-    unsure     : ('a * Csp.csts) list;   (* elements that MAY satisfy the constraints *)
+    sure       : 'a list;   (* elements that satisfy the constraints *)
+    unsure     : 'a list;   (* elements that MAY satisfy the constraints *)
     nb_sure    : int;       (* size of sure list *)
     nb_unsure  : int;       (* size of unsure list *)
     vol_sure   : float;     (* volume of the elements in the sure list *)
@@ -69,24 +69,23 @@ module Make (A: Res) = struct
     (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
 
 
-  let get_solution (views:Csp.jacob) ?obj:fobj (abs:A.t) (consts:Csp.csts) =
-    let (abs', csts) = to_abs abs consts views in
-    let volume = A.volume abs' in
+  let get_solution ?obj:fobj (abs:A.t) (consts:Csp.csts) =
+    let volume = A.volume abs in
     let obj_value = match fobj with
-      | Some fobj -> let (l, _) = A.forward_eval abs' fobj in l
+      | Some fobj -> let (l, _) = A.forward_eval abs fobj in l
       | None -> Q.zero
     in
-    (abs', csts, volume, obj_value)
+    (abs, consts, volume, obj_value)
 
 
   (* adds an unsure element to a result *)
-  let add_u res ?obj:fobj (u, c, v) =
+  let add_u res ?obj:fobj (u, c) =
     match !Constant.sure with
     | true -> res
     | false -> (
     match fobj with
     | Some fobj ->
-       let (u, c, v, obj_value) = get_solution v ~obj:fobj u c in
+       let (u, c, v, obj_value) = get_solution ~obj:fobj u c in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
@@ -103,17 +102,17 @@ module Make (A: Res) = struct
                    nb_unsure  = res.nb_unsure + 1;
                    vol_unsure = res.vol_unsure +. v}
     | None ->
-       let (u, c, v, _) = get_solution v u c in
+       let (u, c, v, _) = get_solution u c in
        {res with unsure     = (u, c)::res.unsure;
                  nb_unsure  = res.nb_unsure+1;
                  vol_unsure = res.vol_unsure+.v}
     )
 
   (* adds a sure element to a result *)
-  let add_s res ?obj:fobj (s, c, v) =
+  let add_s res ?obj:fobj (s, c) =
     match fobj with
     | Some fobj ->
-       let (s, c, v, obj_value) = get_solution v ~obj:fobj s c in
+       let (s, c, v, obj_value) = get_solution ~obj:fobj s c in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
@@ -130,7 +129,7 @@ module Make (A: Res) = struct
                    nb_sure  = res.nb_sure + 1;
                    vol_sure = res.vol_sure +. A.volume s}
     | None ->
-       let (_, c, v, _) = get_solution v s c in
+       let (_, c, v, _) = get_solution s c in
        {res with sure     = (s, c)::res.sure;
                  nb_sure  = res.nb_sure+1;
                  vol_sure = res.vol_sure +. v}

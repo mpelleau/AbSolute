@@ -229,8 +229,7 @@ let rec preprocess csp =
                       let e = List.assoc v views in
                       List.append (to_domains (e, d)) l) [] var_view in
   let all_ctrs = ctrs@ view_ctrs in
-  let all_views = csp.view@views in
-  let prob = {p with init = vars; constants = csts; constraints = all_ctrs; view = all_views} in
+  let prob = {p with init = vars; constants = csts; constraints = all_ctrs;} in
   let nb_eq' = get_nb_eq prob in
   if nb_eq = nb_eq' then prob
   else preprocess prob
