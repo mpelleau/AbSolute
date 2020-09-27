@@ -6,8 +6,8 @@ module R = Newitv.Test
 type t = Int of I.t | Real of R.t
 
 (* useful constructors *)
-let make_real x = Real x
-let make_int x  = Int x
+let real x = Real x
+let int x  = Int x
 
 (* Conversion utilities *)
 (************************)
@@ -65,8 +65,8 @@ let of_rat (m1:Mpqf.t) : t =
 (* maps empty intervals to explicit bottom *)
 let check_bot (x:t) : t bot =
   match x with
-  | Int x -> lift_bot make_int (I.check_bot x)
-  | Real x -> lift_bot make_real (R.check_bot x)
+  | Int x -> lift_bot int (I.check_bot x)
+  | Real x -> lift_bot real (R.check_bot x)
 
 (* unbounded interval constructor *)
 let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
@@ -104,11 +104,11 @@ let join (x1:t) (x2:t) : t =
 
 let meet (x1:t) (x2:t) : t bot =
   match x1,x2 with
-  | Int x1, Int x2 -> lift_bot make_int (I.meet x1 x2)
-  | Real x1, Real x2 -> lift_bot make_real (R.meet x1 x2)
+  | Int x1, Int x2 -> lift_bot int (I.meet x1 x2)
+  | Real x1, Real x2 -> lift_bot real (R.meet x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 ->
      let x1 = to_float x1 in
-     lift_bot make_int (strict_bot to_int (R.meet x1 x2))
+     lift_bot int (strict_bot to_int (R.meet x1 x2))
 
 (* predicates *)
 (* ---------- *)
@@ -155,8 +155,8 @@ let score = dispatch I.score R.score
 (* ----- *)
 let split (x:t) : t list =
   match x with
-  | Real x -> R.split x |> List.map make_real
-  | Int x -> I.split x  |> List.map make_int
+  | Real x -> R.split x |> List.map real
+  | Int x -> I.split x  |> List.map int
 
 (* pruning *)
 (* ------- *)
@@ -224,9 +224,9 @@ let div (x1:t) (x2:t) : t bot =
        let pos = I.meet I.positive x2 and neg = I.meet I.negative x2 in
        let divpos = strict_bot (fun x -> R.div x1 (to_float x)) pos
        and divneg = strict_bot (fun x -> R.div x1 (to_float x)) neg
-       in lift_bot make_real (join_bot2 R.join divpos divneg)
-     else lift_bot make_real (R.div x1 (to_float x2))
-  | Real x2 -> lift_bot make_real (R.div x1 x2)
+       in lift_bot real (join_bot2 R.join divpos divneg)
+     else lift_bot real (R.div x1 (to_float x2))
+  | Real x2 -> lift_bot real (R.div x1 x2)
 
 (* returns valid value when the exponant is a singleton positive integer.
      fails otherwise *)
@@ -241,14 +241,14 @@ let pow (x1:t) (x2:t) : t =
 let n_root (i1:t) (i2:t) =
   (*TODO: maybe improve precision on perfect nth roots *)
   let i1,i2 = (force_real i1),(force_real i2) in
-  lift_bot make_real (R.n_root i1 i2)
+  lift_bot real (R.n_root i1 i2)
 
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,
    it returns a possibly bottom result *)
 let eval_fun (name:string) (args:t list) : t bot =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
-  lift_bot make_real (R.eval_fun name args)
+  lift_bot real (R.eval_fun name args)
 
 (************************************************************************)
 (* FILTERING (TEST TRANSRER RUNCTIONS) *)
@@ -295,49 +295,37 @@ let filter_lt (x1:t) (x2:t) : (t * t) bot =
 
 let filter_eq (x1:t) (x2:t) : t bot =
   match x1,x2 with
-  | Int x1 , Int x2 -> lift_bot (fun x -> Int x) (I.filter_eq x1 x2)
-  | Real x1, Real x2 -> lift_bot (fun x -> Real x) (R.filter_eq x1 x2)
+  | Int x1 , Int x2 -> lift_bot int (I.filter_eq x1 x2)
+  | Real x1, Real x2 -> lift_bot real (R.filter_eq x1 x2)
   | Int x1, Real x2   | Real x2, Int x1 ->
      let x1 = to_float x1 in
      (match R.filter_eq x1 x2 with
      | Bot -> Bot
-     | Nb x -> lift_bot (fun x -> Int x) (to_int x))
+     | Nb x -> lift_bot int (to_int x))
 
 let filter_neq (i1:t) (i2:t) : (t * t) bot =
-  (* Format.printf "filter: %a <> %a\n%!" print i1 print i2; *)
   match i1,i2 with
-  | Int x1 , Int x2    -> lift_bot (fun (x,y) -> (Int x),(Int y)) (I.filter_neq x1 x2)
-  | Real x1, Real x2   -> lift_bot (fun (x,y) -> (Real x),(Real y)) (R.filter_neq x1 x2)
+  | Int x1 , Int x2    -> lift_bot (fun (x,y) -> Int x,Int y) (I.filter_neq x1 x2)
+  | Real x1, Real x2   -> lift_bot (fun (x,y) -> Real x,Real y) (R.filter_neq x1 x2)
   (* Special handling of singleton to add precision *)
-  | Real x1, Int (a,b) ->
+  | Real x1, Int (a,b) | Int (a,b),Real x1 ->
      let r1,r2 = R.to_float_range x1 in
      if r1=r2 then
        if float a = r1 then
          let new_i2 = I.check_bot ((a+1),b) in
-         lift_bot (fun (x,y) -> (Real x),(Int y)) (lift_bot (fun x2->x1,x2) new_i2)
+         lift_bot (fun (x,y) -> Int x,Real y) (lift_bot (fun x2->x2,x1) new_i2)
        else if float b = r1 then
          let new_i2 = I.check_bot (a,b-1) in
-         lift_bot (fun (x,y) -> (Real x),(Int y)) (lift_bot (fun x2->x1,x2) new_i2)
+         lift_bot (fun (x,y) -> Int x,Real y) (lift_bot (fun x2->x2,x1) new_i2)
        else Nb (i1,i2)
      else Nb (i1,i2)
-  | Int (a,b),Real x1 ->
-     let r1,r2 = R.to_float_range x1 in
-     if r1=r2 then
-       if float a = r1 then
-         let new_i2 = I.check_bot ((a+1),b) in
-         lift_bot (fun (x,y) -> (Int x),(Real y)) (lift_bot (fun x2->x2,x1) new_i2)
-       else if float b = r1 then
-         let new_i2 = I.check_bot (a,b-1) in
-         lift_bot (fun (x,y) -> (Int x),(Real y)) (lift_bot (fun x2->x2,x1) new_i2)
-       else Nb (i1,i2)
-     else Nb (i1,i2)
+
 (* given the interval argument(s) and the expected interval result of
    a numeric operation, returns a refined interval argument(s) where
    points that cannot contribute to a value in the result are
    removed;
    may also return Bot if no point in an argument can lead to a
    point in the result *)
-
 let filter_neg (i:t) (r:t) : t bot =
   meet i (neg r)
 
@@ -426,7 +414,7 @@ let to_annot x =
 let filter_fun (name:string) (args:t list) (res:t) : (t list) bot =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
   let float_res = match res with Real x -> x | Int x -> to_float x in
-  lift_bot (List.map make_real) (R.filter_fun name args float_res)
+  lift_bot (List.map real) (R.filter_fun name args float_res)
 
 (* generate a random float within the given interval *)
 let spawn (x:t) : float =

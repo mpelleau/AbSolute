@@ -195,9 +195,7 @@ module Make (I:Itv_sig.ITV) = struct
   let cos_itv i =
     let (a,b) = I.to_float_range i in
     match cosmonotony (a,b) with
-    | mon ->
-       (* Format.printf "monotony is %a on %a\n%!" print_monotony mon print_fitv (a,b); *)
-       fitv_to_i (itv mon cos_down cos_up (a,b))
+    | mon -> fitv_to_i (itv mon cos_down cos_up (a,b))
     | exception Exit -> I.of_floats (-1.) 1.
 
   (* interval acos *)
@@ -353,8 +351,4 @@ module Make (I:Itv_sig.ITV) = struct
     | "tan"  -> arity_1 filter_tan
     | "atan" -> arity_1 filter_atan
     | _ -> I.filter_fun name args r
-
 end
-
-module ItvF = Make(Itv.ItvF)
-(* module ItvMix = Make(Itv_mix) *)
