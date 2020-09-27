@@ -159,10 +159,13 @@ module MAKE(AP:ADomain) = struct
 
   let filter b (c,e1,e2) =
     let c = T.of_cmp_expr b (e1,c,e2) in
-    if Tconsext.get_typ c = Tconsext.DISEQ then
-      let t1,t2 = Tconsext.splitdiseq c in
-      join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
-    else A.filter_tcons man b c
+    let a =
+      if Tconsext.get_typ c = Tconsext.DISEQ then
+        let t1,t2 = Tconsext.splitdiseq c in
+        join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
+      else A.filter_tcons man b c
+    in
+    Consistency.Filtered(a,false)
 
   let print = A.print
 

@@ -1,6 +1,7 @@
 (* Reduced product of domains A and B where B is more expressive than A *)
 
 open Signature
+open Consistency
 
 module Make (A : AbstractCP) (B : AbstractCP)  =
   struct
@@ -13,38 +14,42 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
 
     let to_bexpr (a, b) = (A.to_bexpr a)@(B.to_bexpr b)
 
-    let a_meet_b a b =
-      let b_expr = B.to_bexpr b in
-      let b_vars = B.vars b in
+    let a_meet_b a b : B.t Consistency.t =
       let a_expr = A.to_bexpr a in
-      let a_vars = A.vars a in
-      let to_add = List.fold_left (fun acc vb ->
-                       if List.exists (fun va -> va = vb) a_vars then
-                         acc
-                       else
-                         vb::acc
-                     ) [] b_vars in
-      let b' = List.fold_left (fun abs v -> B.add_var abs v) B.empty (a_vars@to_add) in
-      List.fold_left (fun abs c -> B.filter abs c) b' (a_expr@b_expr)
+      try
+        let a' =
+          List.fold_left (fun acc e ->
+              match B.filter acc e with
+              | Unsat -> raise Exit
+              | Sat -> acc
+              | Filtered (a,_) -> a
+            ) b a_expr
+        in Filtered (a',false)
+      with Exit -> Unsat
 
-    let b_meet_a a b =
+    let b_meet_a a b : A.t Consistency.t =
       let b_expr = B.to_bexpr b in
-      let b_vars = B.vars b in
-      let a_expr = A.to_bexpr a in
-      let a_vars = A.vars a in
-      let to_add = List.fold_left (fun acc vb ->
-                       if List.exists (fun va -> va = vb) a_vars then
-                         acc
-                       else
-                         vb::acc
-                     ) [] b_vars in
-      let a' = List.fold_left (fun abs v -> A.add_var abs v) A.empty (a_vars@to_add) in
-      List.fold_left (fun abs c -> A.filter abs c) a' (a_expr@b_expr)
+      try
+        let a' =
+          List.fold_left (fun acc e ->
+              match A.filter acc e with
+              | Unsat -> raise Exit
+              | Sat -> acc
+              | Filtered (a,_) -> a
+            ) a b_expr
+        in Filtered (a',false)
+      with Exit -> Unsat
 
-    let reduced_product (a:A.t) (b:B.t) : (A.t * B.t) =
+    let reduced_product (a:A.t) (b:B.t) : (A.t * B.t) Consistency.t =
       let new_a = b_meet_a a b in
-      let new_b = a_meet_b a b in
-      (new_a, new_b)
+      match new_a with
+      | Sat -> Consistency.map (fun b -> a,b) (a_meet_b a b)
+      | Unsat -> Unsat
+      | Filtered (a',success1) ->
+         match a_meet_b a' b with
+         | Sat -> Filtered ((a',b),success1)
+         | Unsat -> Unsat
+         | Filtered (b',success2) -> Filtered((a',b'),success1 && success2)
 
     let empty = A.empty,B.empty
 
@@ -78,21 +83,7 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
 
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
-    let prune : (t -> t -> t list) option =
-      match A.prune, B.prune with
-      | Some a_p, Some b_p ->
-         Some (fun (a, b) (a', b') ->
-             let la = a_p a a' and lb = b_p b b' in
-             let l = List.fold_left (fun acc ea ->
-                         List.fold_left (fun lacc eb -> (ea, eb)::lacc) acc lb
-                       ) [] la in
-             let l' = List.filter (fun (abs, abs') ->
-                          try (not (is_empty (reduced_product abs abs')))
-                          with Bot.Bot_found -> false
-                        ) l in
-             l'
-           )
-      | _ -> None
+    let prune : (t -> t -> t list) option = None
 
     let split ((abs, abs'):t) (jacobian : Csp.ctrs) =
       let split_a = A.split abs jacobian in
@@ -100,26 +91,30 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
 
     let join (a,a') (b,b') = (A.join a b), (B.join a' b')
 
-    let meet (a,a') (b,b') = reduced_product (A.meet a b) (B.meet a' b')
+    let meet (a,a') (b,b') =
+      match reduced_product (A.meet a b) (B.meet a' b') with
+      | Sat -> (a,a')
+      | Unsat -> raise Bot.Bot_found
+      | Filtered (x,_) -> x
 
-    let filter ((abs, abs'):t) ((e1, op, e2) as cons) =
+    let filter ((a, b):t) ((e1, op, e2) as cons) : t Consistency.t =
       let open Kleene in
       match B.is_representable (Csp.Cmp(e1, op, e2)) with
-      | True -> (A.filter abs cons, B.filter abs' cons)
-      | Unknown | False -> (A.filter abs cons, abs')
+      | True -> Consistency.map (fun b -> a,b) (B.filter b cons)
+      | Unknown | False -> Consistency.map (fun a -> a,b) (A.filter a cons)
 
-
-    let forward_eval (abs, abs') cons =
-      let abs_tmp = a_meet_b abs abs' in
-      B.forward_eval abs_tmp cons
+    let forward_eval ((a, b):t) obj =
+      let (l_a,u_a) = A.forward_eval a obj in
+      let (l_b,u_b) = B.forward_eval b obj in
+      (max l_a l_b),(min u_a u_b)
 
     let print fmt ((abs, abs'):t) =
       A.print fmt abs;
       Format.printf ", ";
       B.print fmt abs'
 
-    let volume ((abs, abs'):t) =
-      B.volume (a_meet_b abs abs')
+    let volume ((_, abs'):t) =
+      B.volume abs'
 
     (* concretization function. we call it a spawner.
      useful to do tests, and to reuse the results.

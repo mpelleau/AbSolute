@@ -54,11 +54,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         = fun _ _ -> fail ()
 
     (* assume e1 cmp e2 *)
-    let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
-        = fun _ _ -> fail ()
-
-    (* TODO: Should return the variable with the maximal range as well. *)
-    let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
+    let filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t Consistency.t
         = fun _ _ -> fail ()
 
     (* TODO: use Format *)

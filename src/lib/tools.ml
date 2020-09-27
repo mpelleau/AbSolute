@@ -24,6 +24,15 @@ let green_fprintf fmt x = color_printf fmt "\027[32m" x
 (** yellow terminal output *)
 let yellow_fprintf fmt x = color_printf fmt "\027[33m" x
 
+(** printing that erases previous output. should not be
+   intertwined with orher prints *)
+let inplace_print () =
+  let size_last = ref 0 in
+  (fun fmt s ->
+    let erase = String.make !size_last '\b' in
+    size_last := String.length s;
+    (Format.fprintf fmt "%s%s" erase s))
+
 (** 2D table print indentation *)
 let matrix_print_indent fmt mat =
   let sizes = Array.make (Array.length mat.(0)) 0 in

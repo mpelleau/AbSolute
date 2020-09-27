@@ -4,37 +4,30 @@ open Bot
 
 module type ITV = sig
 
-  (************************************************************************)
   (** {1 TYPES} *)
-  (************************************************************************)
 
   (** an interval is a pair of bounds (lower,upper);
      intervals are always non-empty: lower <= upper;
      functions that can return an empty interval return it as Bot *)
   type t
 
-  (************************************************************************)
   (** {1 CONSTRUCTORS AND CONSTANTS} *)
-  (************************************************************************)
 
   (** default value for unconstrained variables *)
   val top_int : t
   val top_real : t
 
   val of_ints: int -> int -> t
-  val of_rats: Mpqf.t -> Mpqf.t -> t
+  val of_rats: Q.t -> Q.t -> t
   val of_floats: float -> float -> t
 
   val of_int: int -> t
-  val of_rat: Mpqf.t -> t
+  val of_rat: Q.t -> t
   val of_float: float -> t
 
-  (************************************************************************)
   (** {1 PRINTING and CONVERSIONS } *)
-  (************************************************************************)
-
   val to_float_range : t -> float * float
-  val to_rational_range : t -> Mpqf.t * Mpqf.t
+  val to_rational_range : t -> Q.t * Q.t
 
   (** returns the type annotation of the represented values *)
   val to_annot : t -> Csp.annot
@@ -42,9 +35,7 @@ module type ITV = sig
 
   val to_expr: t -> (Csp.cmpop * Csp.expr) * (Csp.cmpop * Csp.expr)
 
-  (************************************************************************)
   (** {1 SET-THEORETIC } *)
-  (************************************************************************)
 
   (** operations *)
 
@@ -55,7 +46,6 @@ module type ITV = sig
   val contains_float: t -> float -> bool
 
   val is_singleton: t -> bool
-  val check_bot: t -> t bot
 
   (** mesure *)
   val float_size: t -> float
@@ -84,7 +74,8 @@ module type ITV = sig
   (** return valid values (possibly Bot, if dividend is nul) *)
   val div: t -> t -> t bot
 
-  (** returns valid value when the exponant is a singleton positive integer. fails otherwise*)
+  (** returns valid value when the exponant is a singleton positive
+     integer. fails otherwise*)
   val pow: t -> t -> t
 
   (** function calls (sqrt, exp, ln ...) are handled here :
@@ -92,9 +83,7 @@ module type ITV = sig
      it returns a possibly bottom result *)
   val eval_fun : string -> t list -> t bot
 
-  (************************************************************************)
   (** {1 FILTERING (TEST TRANSFER FUNCTIONS)}                             *)
-  (************************************************************************)
 
   (** given two interval arguments, return a subset of each argument
       by removing points that cannot satisfy the predicate;
@@ -103,7 +92,7 @@ module type ITV = sig
 
   val filter_leq: t -> t -> (t * t) bot
   val filter_lt : t -> t -> (t * t) bot
-  val filter_eq : t -> t -> (t * t) bot
+  val filter_eq : t -> t -> t bot
   val filter_neq: t -> t -> (t * t) bot
 
   (** given the interval argument(s) and the expected interval result of

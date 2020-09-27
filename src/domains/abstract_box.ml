@@ -2,7 +2,6 @@ open Tools
 open Bot
 open Itv_sig
 open Csp
-open Csp_printer
 
 (*******************)
 (* GENERIC FUNCTOR *)
@@ -253,18 +252,16 @@ module Box (I:ITV) = struct
       | GEQ -> let j2,j1 = debot (I.filter_leq i2 i1) in (j1,j2)
       | GT  -> let j2,j1 = debot (I.filter_lt i2 i1) in (j1,j2)
       | NEQ -> debot (I.filter_neq i1 i2)
-      | EQ  -> debot (I.filter_eq i1 i2)
+      | EQ  -> let x = debot (I.filter_eq i1 i2) in x,x
     in
     Tools.debug 2 "HC4 - refine\n%!";
     let refined1 = if j1 = i1 then a else refine a b1 j1 in
     Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
 
-  let filter (a:t) ((e1,binop,e2) as x) : t =
+  let filter (a:t) (e1,binop,e2) : t Consistency.t =
     match test a e1 binop e2 with
-    | Bot ->
-       Tools.debug 5 "\n%a\n\t%a\n" print_cmp x print a;
-       raise Bot_found
-    | Nb e -> e
+    | Bot -> Consistency.Unsat
+    | Nb e -> Filtered (e,false)
 
   let empty : t = Env.empty
 
@@ -303,10 +300,10 @@ module Box (I:ITV) = struct
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
     | Funcall (_, _) -> false (* check if sound *)
 
-  let lfilter (a:t) l : t =
-    let la = List.filter (fun (e1, _, e2) ->
-                           (is_applicable a e1) && (is_applicable a e2)) l in
-    List.fold_left (fun a' e -> filter a' e) a la
+  (* let lfilter (a:t) l : t =
+   *   let la = List.filter (fun (e1, _, e2) ->
+   *                (is_applicable a e1) && (is_applicable a e2)) l in
+   *   List.fold_left (fun a' e -> filter a' e) a la *)
 
  let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->

@@ -173,12 +173,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         Debug.log DebugTypes.Title (lazy "Filter");
         let cond = to_cond (Csp.Cmp (cmp, e1, e2)) in
         Debug.log DebugTypes.MInput (lazy (UserCond.to_string cond));
-        User.assume cond state
-
-    (* TODO: Should return the variable with the maximal range as well. *)
-    let filter_maxvar : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t * (Csp.var*float)
-        = fun _ _ ->
-        Stdlib.failwith "filter_maxvar: unimplemented"
+        Consistency.Filtered(User.assume cond state,false)
 
     (* TODO: use Format *)
     let print : Format.formatter -> t -> unit

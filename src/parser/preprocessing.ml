@@ -7,19 +7,19 @@ open Csp_helper
 open Rewrite
 open Tools
 
-let get_csts csp =
-  let (csts, vars) = List.partition
-    (fun (_, _v, d) -> match d with
-       | Finite (a, b) -> a=b
-       | _ -> false
-    ) csp.init in
-  let cst = List.map
-              (fun (_, v, d) ->
-                match d with
-                | Finite (a, b) when a=b -> (v, (a, b))
-                | _ -> assert false
-              ) csts in
-  {csp with init = vars; constants = cst@csp.constants}
+(* let get_csts csp =
+ *   let (csts, vars) = List.partition
+ *     (fun (_, _v, d) -> match d with
+ *        | Finite (a, b) -> a=b
+ *        | _ -> false
+ *     ) csp.init in
+ *   let cst = List.map
+ *               (fun (_, v, d) ->
+ *                 match d with
+ *                 | Finite (a, b) when a=b -> (v, (a, b))
+ *                 | _ -> assert false
+ *               ) csts in
+ *   {csp with init = vars} *)
 
 
 let get_vars_cstrs cstrs =
@@ -204,32 +204,32 @@ let get_nb_eq csp =
   List.iter (fun c -> if is_cons_linear c then incr cpt) csp.constraints;
   !cpt
 
-let no_views csp =
-  let p = get_csts csp in
-  let ctr_vars = get_vars_cstrs p.constraints in
-  let (ctrs, csts) = repeat ctr_vars p.constants in
-  let (ctrs, _) = List.split ctrs in
-  let (cons, _) = List.split csts in
-  let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) p.init in
-  {p with init = vars; constants = csts; constraints = ctrs}
+(* let no_views csp =
+ *   let p = get_csts csp in
+ *   let ctr_vars = get_vars_cstrs p.constraints in
+ *   let (ctrs, csts) = repeat ctr_vars  in
+ *   let (ctrs, _) = List.split ctrs in
+ *   let (cons, _) = List.split csts in
+ *   let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) p.init in
+ *   {p with init = vars; constants = csts; constraints = ctrs} *)
 
-let rec preprocess csp =
-  let nb_eq = get_nb_eq csp in
-  let p = get_csts csp in
-  let ctr_vars = get_vars_cstrs p.constraints in
-  let (ctrs, csts) = repeat ctr_vars p.constants in
-  let (views, ctrs') = find_all_views ctrs in
-  let (ctrs, _) = List.split ctrs' in
-  let (cons, _) = List.split csts in
-  let (view, _) = List.split views in
-  let (var_view, vars') = List.partition (fun (_, v, _) -> List.mem v view) p.init in
-  let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) vars' in
-  let view_ctrs = List.fold_left (
-                      fun l (_, v, d) ->
-                      let e = List.assoc v views in
-                      List.append (to_domains (e, d)) l) [] var_view in
-  let all_ctrs = ctrs@ view_ctrs in
-  let prob = {p with init = vars; constants = csts; constraints = all_ctrs;} in
-  let nb_eq' = get_nb_eq prob in
-  if nb_eq = nb_eq' then prob
-  else preprocess prob
+(* let rec preprocess csp =
+ *   let nb_eq = get_nb_eq csp in
+ *   let p = get_csts csp in
+ *   let ctr_vars = get_vars_cstrs p.constraints in
+ *   let (ctrs, csts) = repeat ctr_vars p.constants in
+ *   let (views, ctrs') = find_all_views ctrs in
+ *   let (ctrs, _) = List.split ctrs' in
+ *   let (cons, _) = List.split csts in
+ *   let (view, _) = List.split views in
+ *   let (var_view, vars') = List.partition (fun (_, v, _) -> List.mem v view) p.init in
+ *   let vars = List.filter (fun (_, v, _) -> not(List.mem v cons)) vars' in
+ *   let view_ctrs = List.fold_left (
+ *                       fun l (_, v, d) ->
+ *                       let e = List.assoc v views in
+ *                       List.append (to_domains (e, d)) l) [] var_view in
+ *   let all_ctrs = ctrs@ view_ctrs in
+ *   let prob = {p with init = vars; constants = csts; constraints = all_ctrs;} in
+ *   let nb_eq' = get_nb_eq prob in
+ *   if nb_eq = nb_eq' then prob
+ *   else preprocess prob *)

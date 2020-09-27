@@ -293,28 +293,15 @@ let filter_lt (x1:t) (x2:t) : (t * t) bot =
      | Nb (x1,x2) ->
         lift_bot (fun x2 -> Real x1, Int x2) (to_int x2))
 
-let filter_eq (x1:t) (x2:t) : (t * t) bot =
-  (* Format.printf "filter_eq : %a = %a => " print x1 print x2;
-   * let res = *)
+let filter_eq (x1:t) (x2:t) : t bot =
   match x1,x2 with
-  | Int x1 , Int x2 ->  lift_bot (fun (x,y) -> (Int x),(Int y)) (I.filter_eq x1 x2)
-  | Real x1, Real x2 -> lift_bot (fun (x,y) -> (Real x),(Real y)) (R.filter_eq x1 x2)
-  | Int x1, Real x2 ->
+  | Int x1 , Int x2 -> lift_bot (fun x -> Int x) (I.filter_eq x1 x2)
+  | Real x1, Real x2 -> lift_bot (fun x -> Real x) (R.filter_eq x1 x2)
+  | Int x1, Real x2   | Real x2, Int x1 ->
      let x1 = to_float x1 in
      (match R.filter_eq x1 x2 with
      | Bot -> Bot
-     | Nb (x1,x2) ->
-        lift_bot (fun x1 -> Int x1, Real x2) (to_int x1))
-  | Real x1, Int x2 ->
-     let x2 = to_float x2 in
-     (match R.filter_eq x1 x2 with
-     | Bot -> Bot
-     | Nb (x1,x2) ->
-        lift_bot (fun x2 -> Real x1, Int x2) (to_int x2))
-  (* in
-   * match res with
-   * | Nb (r1,r2) -> Format.printf "%a, %a \n%!" print r1 print r2; res
-   * | Bot -> Format.printf "bottom"; res *)
+     | Nb x -> lift_bot (fun x -> Int x) (to_int x))
 
 let filter_neq (i1:t) (i2:t) : (t * t) bot =
   (* Format.printf "filter: %a <> %a\n%!" print i1 print i2; *)

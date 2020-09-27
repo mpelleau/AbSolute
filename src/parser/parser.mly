@@ -82,7 +82,6 @@ file:
       init=$2;
       objective=$3;
       constraints=$4;
-      constants=$1;
       solutions=$5;
     }
   }

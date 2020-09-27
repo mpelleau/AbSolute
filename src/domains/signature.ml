@@ -53,10 +53,10 @@ module type AbstractCP = sig
 
   (** filters an abstract element with respect to an arithmetic constraint,
       may raise bot found. *)
-  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
+  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t Consistency.t
 
   (** returns the range of value of a given expression for an abstract element *)
-  val forward_eval : t -> Csp.expr -> (Mpqf.t * Mpqf.t)
+  val forward_eval : t -> Csp.expr -> (Q.t * Q.t)
 
   (** transforms an abstract element into constraints *)
   val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list

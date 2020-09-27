@@ -18,23 +18,8 @@ let inner_ratio res =
   else res.vol_sure /. divider
 
 
-(* Shapes that have a volume, and can be evaluated *)
-module type Res = sig
-  type t
-
-  val empty : t
-
-  val forward_eval : t -> Csp.expr -> Mpqf.t * Mpqf.t
-
-  val add_var : t -> Csp.annot * Csp.var -> t
-
-  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t
-
-  val volume : t -> float
-end
-
 (* the abstract result type we will be manipulating *)
-module Make (A: Res) = struct
+module Make (A: Signature.AbstractCP) = struct
 
   type t = A.t res
 
@@ -50,47 +35,29 @@ module Make (A: Res) = struct
       best_value = Q.zero
     }
 
-  let to_abs abs consts views =
-    let csts_expr = Csp_helper.csts_to_expr consts in
-    let (csts_vars, _) = List.split consts in
-    let (views_vars, _) = List.split views in
-    let new_vars = List.map (fun v -> (Csp.Real, v)) (csts_vars@views_vars) in
-    let new_a = List.fold_left (A.add_var) abs new_vars in
-    let new_a' = List.fold_left (fun a c -> A.filter a c) new_a csts_expr in
-    let (vars, csts) = List.fold_left (
-                            fun (a, c) (v, e) ->
-                            let  d = A.forward_eval new_a' e in
-                            let id = List.hd (Csp_helper.get_vars_expr e) in
-                            if List.mem id csts_vars
-                            then (a, (v, d)::c)
-                            else ((v, d)::a, c)
-                          ) ([], []) views in
-    let to_add = Csp_helper.csts_to_expr (vars@csts) in
-    (List.fold_left (fun a c -> A.filter a c) new_a' to_add, csts@consts)
 
-
-  let get_solution ?obj:fobj (abs:A.t) (consts:Csp.csts) =
+  let get_solution ?obj:fobj (abs:A.t) =
     let volume = A.volume abs in
     let obj_value = match fobj with
       | Some fobj -> let (l, _) = A.forward_eval abs fobj in l
       | None -> Q.zero
     in
-    (abs, consts, volume, obj_value)
+    (abs, volume, obj_value)
 
 
   (* adds an unsure element to a result *)
-  let add_u res ?obj:fobj (u, c) =
+  let add_u res ?obj:fobj u =
     match !Constant.sure with
     | true -> res
     | false -> (
     match fobj with
     | Some fobj ->
-       let (u, c, v, obj_value) = get_solution ~obj:fobj u c in
+       let (u, v, obj_value) = get_solution ~obj:fobj u in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
          {sure       = [];
-          unsure     = [(u, c)];
+          unsure     = [u];
           best_value = obj_value;
           nb_unsure  = 0;
           nb_sure    = 1;
@@ -98,25 +65,25 @@ module Make (A: Res) = struct
           vol_unsure = v;
           vol_sure   = 0.}
        else
-         {res with unsure     = (u, c)::res.unsure;
+         {res with unsure     = u::res.unsure;
                    nb_unsure  = res.nb_unsure + 1;
                    vol_unsure = res.vol_unsure +. v}
     | None ->
-       let (u, c, v, _) = get_solution u c in
-       {res with unsure     = (u, c)::res.unsure;
+       let (u, v, _) = get_solution u in
+       {res with unsure     = u::res.unsure;
                  nb_unsure  = res.nb_unsure+1;
                  vol_unsure = res.vol_unsure+.v}
     )
 
   (* adds a sure element to a result *)
-  let add_s res ?obj:fobj (s, c) =
+  let add_s res ?obj:fobj s =
     match fobj with
     | Some fobj ->
-       let (s, c, v, obj_value) = get_solution ~obj:fobj s c in
+       let (s, v, obj_value) = get_solution ~obj:fobj s in
        if obj_value > res.best_value then
          res
        else if obj_value < res.best_value then
-         {sure       = [(A.empty, c)];
+         {sure       = [A.empty];
           unsure     = [];
           best_value = obj_value;
           nb_sure    = 1;
@@ -125,12 +92,12 @@ module Make (A: Res) = struct
           vol_sure   = v;
           vol_unsure = 0.}
        else
-         {res with sure     = (s, c)::res.sure;
+         {res with sure     = s::res.sure;
                    nb_sure  = res.nb_sure + 1;
                    vol_sure = res.vol_sure +. A.volume s}
     | None ->
-       let (_, c, v, _) = get_solution s c in
-       {res with sure     = (s, c)::res.sure;
+       let (_, v, _) = get_solution s in
+       {res with sure     = s::res.sure;
                  nb_sure  = res.nb_sure+1;
                  vol_sure = res.vol_sure +. v}
 

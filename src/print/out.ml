@@ -8,8 +8,8 @@ module Make (D:Signature.AbstractCP) = struct
     fun abciss ordinate res ->
     let open Result in
     let r = Rendering.create ~abciss ~ordinate ~title:"AbSolute" 800. 800. in
-    let r' = List.fold_left (fun acc (e,_) -> Rendering.add acc (b,D.render e)) r res.sure in
-    List.fold_left (fun acc (e,_) -> Rendering.add acc (g,D.render e)) r' res.unsure
+    let r' = List.fold_left (fun acc e -> Rendering.add acc (b,D.render e)) r res.sure in
+    List.fold_left (fun acc e -> Rendering.add acc (g,D.render e)) r' res.unsure
 
   let check_dir()=
     if not (Sys.file_exists "out" && Sys.is_directory "out") then begin
@@ -20,12 +20,9 @@ module Make (D:Signature.AbstractCP) = struct
       end
 
   let traceout sure unsure =
-    List.iter (fun (e, c) ->
-        if D.is_empty e then
-          Format.printf "sure: (), (%a)\n%!" Csp_printer.print_all_csts c
-        else
-          Format.printf "sure: (), (%a %a)\n%!" D.print e Csp_printer.print_all_csts c) sure;
-    List.iter (fun (e, c) -> Format.printf "unsure: (%a), (%a)\n%!" D.print e Csp_printer.print_all_csts c) unsure
+    List.iter (fun e ->
+        Format.printf "sure: %a\n%!" D.print e) sure;
+    List.iter (fun e -> Format.printf "unsure: (%a)\n%!" D.print e) unsure
 
   let vars3D prob =
     let vars = Csp_helper.get_vars prob |> Array.of_list in
@@ -41,7 +38,7 @@ module Make (D:Signature.AbstractCP) = struct
         Format.fprintf fmt "Inner solutions:";
         if !Constant.trace then begin
             Format.printf "\n";
-           List.iter (fun (e,_) -> Format.fprintf fmt "%a\n" D.print e) l
+           List.iter (Format.fprintf fmt "%a\n" D.print) l
           end else
           Format.printf " %i\n" (res.nb_sure)
     );
@@ -52,7 +49,7 @@ module Make (D:Signature.AbstractCP) = struct
         Format.fprintf fmt "Outter solutions:";
         if !Constant.trace then begin
             Format.printf "\n";
-            List.iter (fun (e,_) -> Format.fprintf fmt "%a\n" D.print e) l
+            List.iter (Format.fprintf fmt "%a\n" D.print) l
           end else
           Format.printf " %i\n" (res.nb_unsure)
     );
@@ -63,7 +60,7 @@ module Make (D:Signature.AbstractCP) = struct
       Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"
 
   let trace_min sure unsure value =
-    Format.printf "best value:%s\n%!" (Mpqf.to_string value);
+    Format.printf "best value:%a\n%!" Q.print value;
     traceout sure unsure
 
   let out_min _prob res =

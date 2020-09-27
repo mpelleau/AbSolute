@@ -1,50 +1,53 @@
 open Signature
+open Consistency
 
-(* Solver *)
+(** This module builds different resolution scheme according to a
+   solvable module **)
 module Solve(Abs : AbstractCP) = struct
 
   include Splitter.Make(Abs)
   include Result.Make(Abs)
 
-  let explore (abs:Abs.t) (constrs:Csp.ctrs) (consts:Csp.csts) =
+  (* prints (in-place) the current approximated progression of the
+     solving: when a searchspace is processed (Sat, unsat or too
+     small) at a given depth d, we increase the progress bar by
+     1/(2^d). *)
+  let loading =
+    let progress = ref Q.zero in
+    let print = Tools.inplace_print () in
+    fun depth ->
+    let p = Mpz.init() in
+    Mpz.mul_2exp p (Mpz.of_int 1) (depth-1);
+    progress := Mpqf.add !progress  (Mpqf.inv (Mpqf.of_mpz p));
+    if Mpqf.cmp !progress Q.one >= 0 then
+      Format.printf "%a\n%!" print "done."
+    else
+      Mpqf.mul !progress (Mpqf.of_int 100)
+      |> Mpqf.to_float |> Float.to_int
+      |> Format.asprintf "%i%%"
+      |> Format.printf "%a%!" print
+
+  (* increases the loading bar by d and returns the value v *)
+  let return d v = loading d; v
+
+  let explore (abs:Abs.t) constrs =
     (* propagation/exploration loop *)
-    let rec aux cstrs csts depth res abs =
-      match consistency abs cstrs csts with
-      | Empty -> res
-      | Full (abs', const) -> add_s res (abs', const)
-      | Maybe(a, _, csts) when stop res a || Abs.is_small a -> add_u res (a, csts)
-      | Maybe(abs', cstrs, csts) ->
+    let rec aux cstrs depth res abs =
+      match consistency abs cstrs with
+      | Unsat -> res
+      | Sat -> add_s res abs
+      | Filtered(a, _) when stop res a || Abs.is_small a -> add_u res a
+      | Filtered(abs', _) ->
          List.fold_left (fun res elem ->
-             aux cstrs csts (depth +1) (incr_step res) elem
-           ) res (split abs' cstrs)
+             aux cstrs (depth +1) (incr_step res) elem
+           ) res (split abs' [])
     in
-    (* propagation/elimination/exploration loop *)
-    let rec aux_elim cstrs csts depth res abs =
-      match consistency abs cstrs csts with
-      | Empty -> res
-      | Full (abs', const) -> add_s res (abs', const)
-      | Maybe(a, _, csts) when stop res a || Abs.is_small a -> add_u res (a, csts)
-      | Maybe(abs', cstrs, csts) ->
-         if depth < !Constant.pruning_iter then
-           let ls,lu = prune abs' cstrs in
-           let res = List.fold_left (fun r x -> add_s r (x, csts)) res ls in
-           List.fold_left (fun res x ->
-               List.fold_left (fun res elem ->
-                   aux_elim cstrs csts (depth +1) (incr_step res) elem
-                 ) res (split x cstrs)
-             ) res lu
-         else
-           List.fold_left (fun res elem ->
-               aux cstrs csts (depth +1) (incr_step res) elem
-             ) res (split abs' cstrs)
-    in
-    (if !Constant.pruning then aux_elim else aux)
-      constrs consts 0 empty_res abs
+    aux constrs 0 empty_res abs
 
   (* entry point of the solver *)
   let solving prob =
     Tools.debug 1 "entering the resolution\n";
     let abs = init prob in
-    let res = explore abs prob.Csp.jacobian prob.Csp.constants in
+    let res = explore abs prob.constraints in
     res
 end

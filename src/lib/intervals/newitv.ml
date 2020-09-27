@@ -536,8 +536,7 @@ module Make(B:BOUND) = struct
   let filter_lt ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
     merge_check l1 (min_up h1 (stricten h2)) (max_low (stricten l1) l2) h2
 
-  let filter_eq (i1:t) (i2:t) : (t*t) bot =
-    lift_bot (fun x -> x,x) (meet i1 i2)
+  let filter_eq (i1:t) (i2:t) : t bot = meet i1 i2
 
   let filter_neq (i1:t) (i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && equal i1 i2 then Bot

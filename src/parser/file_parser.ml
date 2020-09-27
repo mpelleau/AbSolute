@@ -38,11 +38,11 @@ let check_ast p =
 	raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
     ) p.init
-  and check_csts () =
-    List.iter (fun (v,_) -> if Hashtbl.mem h v then
-      raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
-      else Hashtbl.add h v true
-    ) p.constants
+  (* and check_csts () =
+   *   List.iter (fun (v,_) -> if Hashtbl.mem h v then
+   *     raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
+   *     else Hashtbl.add h v true
+   *   ) p.constants *)
 
   and check_dom () =
     let aux (_, var, d) =
@@ -70,7 +70,6 @@ let check_ast p =
     List.iter (Csp_helper.iter_constr check_v (fun _ -> ())) p.constraints
   in
   check_vars ();
-  check_csts ();
   check_dom ();
   check_constrs ()
 
@@ -96,6 +95,6 @@ let parse (filename:string) : prog =
 let parse (fn:string) =
   let p = parse fn in
   check_ast p;
-  let prob = if !Constant.rewrite then Preprocessing.preprocess p else Preprocessing.no_views p in
-  let j = Csp_helper.compute_jacobian prob in
-  {prob with jacobian = j}
+  (* let p = if !Constant.rewrite then Preprocessing.preprocess p else Preprocessing.no_views p in *)
+  let j = Csp_helper.compute_jacobian p in
+  {p with jacobian = j}

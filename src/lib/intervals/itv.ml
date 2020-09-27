@@ -1,14 +1,10 @@
-(*
-   Generic intervals.
-   Can be instantiated with any bound type.
-   An interval is a pair `(l,u)` where `l` is the lower bound and `u` is the upper bound.
-   Therefore it does not handle "holes" in the domain.
-*)
-
+(** Generic intervals.  Can be instantiated with any bound type.  An
+   interval is a pair `(l,u)` where `l` is the lower bound and `u` is
+   the upper bound.  Therefore it does not handle "holes" in the
+   domain.  *)
 
 open Bot
 open Bound_sig
-
 
 module Itv(B:BOUND) = struct
 
@@ -331,8 +327,8 @@ module Itv(B:BOUND) = struct
   (** runtime functions **)
   let eval_fun name args : t bot =
     let arity_1 (f: t -> t) : t bot =
-       match args with
-       | [i] -> Nb (f i)
+      match args with
+      | [i] -> Nb (f i)
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
     let arity_1_bot (f: t -> t bot) : t bot =
@@ -353,7 +349,7 @@ module Itv(B:BOUND) = struct
       | [i1;i2] ->
          (match f i1 i2 with
           | Bot -> Bot
-          | Nb(i) -> Nb i)
+          | Nb i -> Nb i)
       | _ -> failwith (Format.sprintf "%s expect two arguments" name)
     in
     match name with
@@ -368,11 +364,9 @@ module Itv(B:BOUND) = struct
     | "min"   -> arity_2 min
     | s -> failwith (Format.sprintf "unknown eval function : %s" s)
 
-
   (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
   (************************************************************************)
-
 
   (* tests *)
   (* ----- *)
@@ -385,9 +379,7 @@ module Itv(B:BOUND) = struct
     else if B.leq h2 l1 then Bot
     else filter_leq i1 i2
 
-  let filter_eq (i1:t) (i2:t) : (t*t) bot =
-    (*Format.printf "%a = %a\n" print i1 print i2;*)
-    lift_bot (fun x -> x,x) (meet i1 i2)
+  let filter_eq (i1:t) (i2:t) : t bot = meet i1 i2
 
   let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot

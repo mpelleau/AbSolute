@@ -71,7 +71,6 @@ type solution_info =
 (* program *)
 type prog = {
     init        : decls;
-    constants   : csts;
     objective   : expr;
     constraints : constrs;
     jacobian    : ctrs;
