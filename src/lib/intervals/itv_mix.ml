@@ -170,50 +170,28 @@ let prune = Some prune
 (* INTERVAL ARITHMETICS (RORWARD EVALUATION) *)
 (************************************************************************)
 
-let neg (x:t) : t =
-  (* Format.printf "neg : - %a = " print x;
-   * let res = *)
-    map I.neg R.neg x
-  (* in
-   * Format.printf "%a\n%!" print res;
-   * res *)
+let neg (x:t) : t = map I.neg R.neg x
 
-let abs (x:t) : t =
-  map I.abs R.abs x
+let abs (x:t) : t = map I.abs R.abs x
 
 let add (x1:t) (x2:t) : t =
-  (* Format.printf "add : %a + %a = " print x1 print x2;
-   * let res = *)
     match x1,x2 with
   | Int x1 , Int x2 ->  Int(I.add x1 x2)
   | Real x1, Real x2 -> Real (R.add x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 -> Real (R.add x2 (to_float x1))
-  (* in
-   * Format.printf "%a\n%!" print res;
-   * res *)
 
 let sub (x1:t) (x2:t) : t =
-  (* Format.printf "sub : %a - %a = " print x1 print x2;
-   * let res = *)
-    match x1,x2 with
-    | Int x1 , Int x2  -> Int  (I.sub x1 x2)
-    | Real x1, Real x2 -> Real (R.sub x1 x2)
-    | Int x1 , Real x2 -> Real (R.sub (to_float x1) x2)
-    | Real x1, Int x2  -> Real (R.sub x1 (to_float x2))
-  (* in
-   * Format.printf "%a\n%!" print res;
-   * res *)
+  match x1,x2 with
+  | Int x1 , Int x2  -> Int  (I.sub x1 x2)
+  | Real x1, Real x2 -> Real (R.sub x1 x2)
+  | Int x1 , Real x2 -> Real (R.sub (to_float x1) x2)
+  | Real x1, Int x2  -> Real (R.sub x1 (to_float x2))
 
 let mul (x1:t) (x2:t) : t =
-  (* Format.printf "mul : %a * %a = " print x1 print x2;
-   * let res = *)
-    match x1,x2 with
-    | Int x1 , Int x2 ->  Int (I.mul x1 x2)
-    | Real x1, Real x2 -> Real (R.mul x1 x2)
-    | Int x1, Real x2 | Real x2, Int x1 -> Real (R.mul (to_float x1) x2)
-  (* in
-   * Format.printf "%a\n%!" print res;
-   * res *)
+  match x1,x2 with
+  | Int x1 , Int x2 ->  Int (I.mul x1 x2)
+  | Real x1, Real x2 -> Real (R.mul x1 x2)
+  | Int x1, Real x2 | Real x2, Int x1 -> Real (R.mul (to_float x1) x2)
 
 (* return valid values (possibly Bot) *)
 let div (x1:t) (x2:t) : t bot =
@@ -258,10 +236,9 @@ let eval_fun (name:string) (args:t list) : t bot =
    by removing points that cannot satisfy the predicate;
    may also return Bot if no point can satisfy the predicate *)
 let filter_leq (x1:t) (x2:t) : (t * t) bot =
-  (* Format.printf "filter_leq : %a <= %a => " print x1 print x2; *)
   match x1,x2 with
-  | Int x1 , Int x2 ->  lift_bot (fun (x,y) -> (Int x),(Int y)) (I.filter_leq x1 x2)
-  | Real x1, Real x2 -> lift_bot (fun (x,y) -> (Real x),(Real y)) (R.filter_leq x1 x2)
+  | Int x, Int y ->  lift_bot (fun (x,y) -> Int x,Int y) (I.filter_leq x y)
+  | Real x, Real y -> lift_bot (fun (x,y) -> Real x,Real y) (R.filter_leq x y)
   | Int x1, Real x2 ->
      let x1 = to_float x1 in
      (match R.filter_leq x1 x2 with
@@ -357,48 +334,13 @@ let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
 
 (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
 let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
-  (* Format.printf "filter_div : %a / %a => " print i1 print i2;
-   * let res = *)
-    merge_bot2
+  merge_bot2
     (meet i1 (mul i2 r))
     (if contains_float r 0. && contains_float i1 0. then Nb i2
      else match (div i1 r) with Bot -> Bot | Nb x -> meet i2 x)
-  (* in
-   * match res with
-   * | Nb (r1,r2) -> Format.printf "%a, %a \n%!" print r1 print r2; res
-   * | Bot -> Format.printf "bottom\n%!"; res *)
 
 let filter_pow (i:t) (n:t) (r:t) : (t*t) bot =
   merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
-
-
-(* filtering first operand only *)
-(********************************)
-
-(* r = i + c => i = r - c *)
-let filter_add_f (i:t) (c:t) (r:t) : t bot =
-  meet i (sub r c)
-
-(* r = i - c => i = r + c *)
-let filter_sub_f (i:t) (c:t) (r:t) : t bot =
-  meet i (add c r)
-
-(* r = i*c => (i = r/c \/ c=r=0) *)
-let filter_mul_f (i:t) (c:t) (r:t) : t bot =
-  if contains_float r 0. && contains_float c 0. then Nb i
-  else match div r c with Bot -> Bot | Nb x -> meet i x
-
-(* r = i/c => i = r*c *)
-let filter_div_f (i:t) (c:t) (r:t) : t bot =
-  meet i (mul c r)
-
-(* r = i ** n => i = nroot r *)
-let filter_pow_f (i:t) n (r:t) =
-  meet_bot meet i (n_root r n)
-
-(* r = nroot i => i = r ** n *)
-let filter_root_f i r n =
-  meet i (pow r n)
 
 let to_expr (itv:t) =
   dispatch I.to_expr R.to_expr itv

@@ -1,23 +1,14 @@
-(*
-  This modules defines sound operators for trogonometrical functions
-  It uses floating point precision
-  It plugs itself over a interval arithmetic module
-  The interface is functional.
-*)
+(* This modules defines sound operators for trogonometrical functions
+   It uses floating point precision It plugs itself over a interval
+   arithmetic module. The interface is functional.  *)
 
 open Bot
-
 module F = Bound_float
 
 module Make (I:Itv_sig.ITV) = struct
 
   (* All the classical interval computations are keeped *)
   include I
-
-
-  (********************)
-  (* PI APPROXIMATION *)
-  (********************)
 
   (* pi approximation (double precision) *)
 

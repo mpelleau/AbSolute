@@ -184,39 +184,14 @@ module Box (I:ITV) = struct
             else r
          | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
 
-  (* refines binary operator to handle constants *)
-  let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
-    match e1, e2, b with
-    | BCst _, BCst _, _ -> Nb (i1, i2)
-    | BCst _, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst _, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst _, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
-    | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
-    | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
-
-  (* u + v = r => u = r - v /\ v = r - u *)
-  let refine_add u v r =
-    refine_bop I.filter_add_f I.filter_add_f u v r true
-
-  (* u - v = r => u = r + v /\ v = u - r *)
-  let refine_sub u v r =
-    refine_bop I.filter_sub_f I.filter_add_f u v r false
-
-  (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
-  let refine_mul u v r =
-    refine_bop I.filter_mul_f I.filter_mul_f u v r true
-
-  (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
-  let refine_div u v r =
-    refine_bop I.filter_div_f I.filter_mul_f u v r false
-
-  (* Second step of the HC4-revise algorithm.
-     It propagates the intervals from the root of the expression tree `e` to the leaves.
+  (* Second step of the HC4-revise algorithm.  It propagates the
+     intervals from the root of the expression tree `e` to the leaves.
      For example: Given `y = x + 3`, `x in [1..3]`, `y in [1..5]`.
-                  Then after `eval` we know that the node at `+` has the interval `[4..6]`.
-                  Therefore we can intersect `y` with `[4..6]` due to the equality.
-     Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
-     We raise `Bot_found` in case of unsatisfiability. *)
+     Then after `eval` we know that the node at `+` has the interval
+     `[4..6]`.  Therefore we can intersect `y` with `[4..6]` due to
+     the equality.  Note that we can call again `eval` to restrain
+     further `+`, and then another round of `refine` will restrain `x`
+     as well.  We raise `Bot_found` in case of unsatisfiability. *)
   let rec refine (a:t) (e:bexpr) (x:i) : t =
     (*Format.printf "%a\n" print_bexpri (e, x);*)
     match e with
@@ -230,19 +205,18 @@ module Box (I:ITV) = struct
     | BNeg (e1,i1) -> refine a e1 (debot  (I.filter_neg i1 x))
     | BBinary (o,(e1,i1),(e2,i2)) ->
        let j = match o with
-         | ADD -> refine_add (e1,i1) (e2,i2) x
-         | SUB -> refine_sub (e1,i1) (e2,i2) x
-         | MUL -> refine_mul (e1,i1) (e2,i2) x
-         | DIV -> refine_div (e1,i1) (e2,i2) x
+         | ADD -> I.filter_add i1 i2 x
+         | SUB -> I.filter_sub i1 i2 x
+         | MUL -> I.filter_mul i1 i2 x
+         | DIV -> I.filter_div i1 i2 x
 	       | POW -> I.filter_pow i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
 
-  (* test transfer function.
-     Apply the evaluation followed by the refine step of the HC4-revise algorithm.
-     It prunes the domain of the variables in `a` according to the constraint `e1 o e2`.
-  *)
+  (* test transfer function.  Apply the evaluation followed by the
+     refine step of the HC4-revise algorithm.  It prunes the domain of
+     the variables in `a` according to the constraint `e1 o e2`.  *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
@@ -299,11 +273,6 @@ module Box (I:ITV) = struct
     | Neg e1 -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
     | Funcall (_, _) -> false (* check if sound *)
-
-  (* let lfilter (a:t) l : t =
-   *   let la = List.filter (fun (e1, _, e2) ->
-   *                (is_applicable a e1) && (is_applicable a e2)) l in
-   *   List.fold_left (fun a' e -> filter a' e) a la *)
 
  let to_bexpr (a:t) : (expr * cmpop * expr) list =
     Env.fold (fun v x acc ->

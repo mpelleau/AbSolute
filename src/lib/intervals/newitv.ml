@@ -553,31 +553,6 @@ module Make(B:BOUND) = struct
     assert (subseteq r positive);
     meet i (join r (neg r))
 
-  (* r = i + c => i = r - c *)
-  let filter_add_f (i:t) (c:t) (r:t) : t bot =
-    meet i (sub r c)
-
-  (* r = i - c => i = r + c *)
-  let filter_sub_f (i:t) (c:t) (r:t) : t bot =
-    meet i (add c r)
-
-  (* r = i*c => (i = r/c \/ c=r=0) *)
-  let filter_mul_f (i:t) (c:t) (r:t) : t bot =
-    if contains r B.zero && contains c B.zero then Nb i
-    else strict_bot (meet i) (div r c)
-
-  (* r = i/c => i = r*c *)
-  let filter_div_f (i:t) (c:t) (r:t) : t bot =
-    meet i (mul c r)
-
-  (* r = i ** n => i = nroot r *)
-  let filter_pow_f (i:t) n (r:t) =
-    meet_bot meet i (n_root r n)
-
-  (* r = nroot i => i = r ** n *)
-  let filter_root_f i r n =
-    meet i (pow r n)
-
 
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
   let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =

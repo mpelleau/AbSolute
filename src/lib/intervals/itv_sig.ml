@@ -44,7 +44,6 @@ module type ITV = sig
 
   (** predicates *)
   val contains_float: t -> float -> bool
-
   val is_singleton: t -> bool
 
   (** mesure *)
@@ -60,9 +59,7 @@ module type ITV = sig
   (** pruning *)
   val prune : (t -> t -> t list) option
 
-  (************************************************************************)
   (** {1 INTERVAL ARITHMETICS (FORWARD EVALUATION)} *)
-  (************************************************************************)
 
   val neg: t -> t
   val abs: t -> t
@@ -83,7 +80,7 @@ module type ITV = sig
      it returns a possibly bottom result *)
   val eval_fun : string -> t list -> t bot
 
-  (** {1 FILTERING (TEST TRANSFER FUNCTIONS)}                             *)
+  (** {1 FILTERING (TEST TRANSFER FUNCTIONS)} *)
 
   (** given two interval arguments, return a subset of each argument
       by removing points that cannot satisfy the predicate;
@@ -118,16 +115,6 @@ module type ITV = sig
      it returns a possibly bottom result *)
   val filter_fun: string -> t list -> t -> (t list) bot
 
-  (** Only filters the first argument *)
-  val filter_add_f: t -> t -> t -> t bot
-  val filter_sub_f: t -> t -> t -> t bot
-  val filter_mul_f: t -> t -> t -> t bot
-  val filter_div_f: t -> t -> t -> t bot
-  val filter_pow_f: t -> t -> t -> t bot
-  val filter_root_f: t -> t -> t -> t bot
-
   (** generate a random float within the given interval *)
   val spawn : t -> float
-
-  (** shrinks each bound of the interval by the given value *)
 end
