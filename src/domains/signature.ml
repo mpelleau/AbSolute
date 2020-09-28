@@ -1,16 +1,15 @@
-(**********************************************************************************)
-(*            Module for Abstract Domains for Constraint Programming (ADCP).      *)
-(*   These are abstract domains with consistency, split and precision operators.  *)
-(**********************************************************************************)
+(** Module for Abstract Domains for Constraint Programming (ADCP) they
+   must feature consistency, split and precision operators.  *)
 
 module type AbstractCP = sig
 
-  (*** TYPES ***)
-  (** abstract elements *)
+  (** the type of abstract elements *)
   type t
 
   (** returns an empty element *)
   val empty : t
+
+  (** {1. Variables management }*)
 
   (** adds an unconstrained variable to the environnement *)
   val add_var : t -> Csp.annot * Csp.var -> t
@@ -27,7 +26,7 @@ module type AbstractCP = sig
   (** returns the bound variables *)
   val bounds : t -> (Csp.var * (Q.t * Q.t)) list
 
-  (*** PREDICATES ***)
+  (** {1 Measure} *)
 
   (** tests if an abstract element is small enough with respect to `Constant.precision` *)
   val is_small : t -> bool
@@ -35,17 +34,19 @@ module type AbstractCP = sig
   (** tests if an abstract element is empty *)
   val is_empty : t -> bool
 
-  (*** OPERATIONS ***)
+  (** {1 OPERATIONS} *)
+
   (** joins two abstract elements *)
   val join: t -> t -> t
 
   (** meet two abstract elements, may raise bot_found *)
   val meet: t -> t -> t
 
-  (** substracts the second abstract element from the first (difference operator)
-      if an exact operator can not be defined (None), the solver doesn't use the pruning
-      features.
-      precondition: the two abstract elements must be defined onto the same set of variables. *)
+  (** substracts the second abstract element from the first
+     (difference operator) if an exact operator can not be defined
+     (None), the solver doesn't use the pruning features.
+     precondition: the two abstract elements must be defined onto the
+     same set of variables. *)
   val prune : (t -> t -> t list) option
 
   (** splits an abstract element *)
@@ -80,4 +81,4 @@ module type AbstractCP = sig
 
   (** transforms an abstract element into a Picasso.Drawable.t for drawing *)
   val render : t -> Picasso.Drawable.t
- end
+end

@@ -217,25 +217,22 @@ module Box (I:ITV) = struct
   (* test transfer function.  Apply the evaluation followed by the
      refine step of the HC4-revise algorithm.  It prunes the domain of
      the variables in `a` according to the constraint `e1 o e2`.  *)
-  let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
-    Tools.debug 2 "HC4 - eval\n%!";
-    let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
-    let j1,j2 = match o with
-      | LT  -> debot (I.filter_lt i1 i2)
-      | LEQ -> debot (I.filter_leq i1 i2)
-      | GEQ -> let j2,j1 = debot (I.filter_leq i2 i1) in (j1,j2)
-      | GT  -> let j2,j1 = debot (I.filter_lt i2 i1) in (j1,j2)
-      | NEQ -> debot (I.filter_neq i1 i2)
-      | EQ  -> let x = debot (I.filter_eq i1 i2) in x,x
-    in
-    Tools.debug 2 "HC4 - refine\n%!";
-    let refined1 = if j1 = i1 then a else refine a b1 j1 in
-    Nb(if j2 = i2 then refined1 else refine refined1 b2 j2)
+  let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t Consistency.t =
+    try
+      let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
+      let res = match o with
+        | LT  -> (I.filter_lt i1 i2)
+        | LEQ -> (I.filter_leq i1 i2)
+        (* a > b <=> b < a*)
+        | GEQ -> Consistency.map swap_pair (I.filter_leq i2 i1)
+        | GT  -> Consistency.map swap_pair (I.filter_lt i2 i1)
+        | NEQ -> (I.filter_neq i1 i2)
+        | EQ  -> Consistency.map (fun x -> x,x) (I.filter_eq i1 i2)
+      in
+      Consistency.map (fun (j1,j2) -> refine (refine a b1 j1) b2 j2) res
+    with Bot_found -> Consistency.Unsat
 
-  let filter (a:t) (e1,binop,e2) : t Consistency.t =
-    match test a e1 binop e2 with
-    | Bot -> Consistency.Unsat
-    | Nb e -> Filtered (e,false)
+  let filter (a:t) (e1,binop,e2) : t Consistency.t = test a e1 binop e2
 
   let empty : t = Env.empty
 

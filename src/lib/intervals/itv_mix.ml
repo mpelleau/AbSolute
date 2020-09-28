@@ -232,70 +232,33 @@ let eval_fun (name:string) (args:t list) : t bot =
 (* FILTERING (TEST TRANSRER RUNCTIONS) *)
 (************************************************************************)
 
-(* given two interval arguments, return a subset of each argument
-   by removing points that cannot satisfy the predicate;
-   may also return Bot if no point can satisfy the predicate *)
-let filter_leq (x1:t) (x2:t) : (t * t) bot =
+let filter i_f r_f (x1:t) (x2:t) : (t * t) Consistency.t =
+  let open Consistency in
   match x1,x2 with
-  | Int x, Int y ->  lift_bot (fun (x,y) -> Int x,Int y) (I.filter_leq x y)
-  | Real x, Real y -> lift_bot (fun (x,y) -> Real x,Real y) (R.filter_leq x y)
+  | Int x1 , Int x2 -> Consistency.map (fun (x,y) -> (Int x),(Int y)) (i_f x1 x2)
+  | Real x1, Real x2 -> Consistency.map (fun (x,y) -> (Real x),(Real y)) (r_f x1 x2)
   | Int x1, Real x2 ->
      let x1 = to_float x1 in
-     (match R.filter_leq x1 x2 with
-     | Bot -> Bot
-     | Nb (x1,x2) ->
-        lift_bot (fun x1 -> Int x1, Real x2) (to_int x1))
+     (try Consistency.map (fun (x1,x2) -> Int (debot (to_int x1)), Real x2) (r_f x1 x2)
+     with Bot_found -> Unsat)
   | Real x1, Int x2 ->
      let x2 = to_float x2 in
-     (match R.filter_leq x1 x2 with
-     | Bot -> Bot
-     | Nb (x1,x2) ->
-        lift_bot (fun x2 -> Real x1, Int x2) (to_int x2))
+     (try Consistency.map (fun (x1,x2) -> Real x1, Int (debot (to_int x2))) (r_f x1 x2)
+      with Bot_found -> Unsat)
 
-let filter_lt (x1:t) (x2:t) : (t * t) bot =
-  (* Format.printf "filter_lt : %a < %a => " print x1 print x2; *)
-  match x1,x2 with
-  | Int x1 , Int x2 ->  lift_bot (fun (x,y) -> (Int x),(Int y)) (I.filter_lt x1 x2)
-  | Real x1, Real x2 -> lift_bot (fun (x,y) -> (Real x),(Real y)) (R.filter_lt x1 x2)
-  | Int x1, Real x2 ->
-     let x1 = to_float x1 in
-     (match R.filter_lt x1 x2 with
-      | Bot -> Bot
-      | Nb (x1,x2) ->
-        lift_bot (fun x1 -> Int x1, Real x2) (to_int x1))
-  | Real x1, Int x2 ->
-     let x2 = to_float x2 in
-     (match R.filter_lt x1 x2 with
-     | Bot -> Bot
-     | Nb (x1,x2) ->
-        lift_bot (fun x2 -> Real x1, Int x2) (to_int x2))
+let filter_leq = filter I.filter_leq R.filter_leq
 
-let filter_eq (x1:t) (x2:t) : t bot =
-  match x1,x2 with
-  | Int x1 , Int x2 -> lift_bot int (I.filter_eq x1 x2)
-  | Real x1, Real x2 -> lift_bot real (R.filter_eq x1 x2)
-  | Int x1, Real x2   | Real x2, Int x1 ->
-     let x1 = to_float x1 in
-     (match R.filter_eq x1 x2 with
-     | Bot -> Bot
-     | Nb x -> lift_bot int (to_int x))
+let filter_lt = filter I.filter_lt R.filter_lt
 
-let filter_neq (i1:t) (i2:t) : (t * t) bot =
-  match i1,i2 with
-  | Int x1 , Int x2    -> lift_bot (fun (x,y) -> Int x,Int y) (I.filter_neq x1 x2)
-  | Real x1, Real x2   -> lift_bot (fun (x,y) -> Real x,Real y) (R.filter_neq x1 x2)
-  (* Special handling of singleton to add precision *)
-  | Real x1, Int (a,b) | Int (a,b),Real x1 ->
-     let r1,r2 = R.to_float_range x1 in
-     if r1=r2 then
-       if float a = r1 then
-         let new_i2 = I.check_bot ((a+1),b) in
-         lift_bot (fun (x,y) -> Int x,Real y) (lift_bot (fun x2->x2,x1) new_i2)
-       else if float b = r1 then
-         let new_i2 = I.check_bot (a,b-1) in
-         lift_bot (fun (x,y) -> Int x,Real y) (lift_bot (fun x2->x2,x1) new_i2)
-       else Nb (i1,i2)
-     else Nb (i1,i2)
+let filter_eq i1 i2 =
+  let open Consistency in
+  if is_singleton i1 && i1 = i2 then Sat
+  else
+    match meet i1 i2 with
+    | Nb i -> Filtered (i,false)
+    | Bot ->  Unsat
+
+let filter_neq = filter I.filter_neq R.filter_neq
 
 (* given the interval argument(s) and the expected interval result of
    a numeric operation, returns a refined interval argument(s) where

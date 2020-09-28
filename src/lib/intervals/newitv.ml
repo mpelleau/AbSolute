@@ -56,10 +56,10 @@ module Make(B:BOUND) = struct
      Ex: half_space (Strict,0) true gives ]0; +oo[ *)
   let half_space (k,b) dir =
     (match (k,dir) with
-    | Strict, false  -> B.gt
-    | Strict, true -> B.lt
-    | Large , false  -> B.geq
-    | Large , true -> B.leq) b
+     | Strict, false  -> B.gt
+     | Strict, true -> B.lt
+     | Large , false  -> B.geq
+     | Large , true -> B.leq) b
 
   (* check if a value is in a half space *)
   let in_half (k,b) dir v : bool = v |> half_space (k,b) dir
@@ -103,7 +103,7 @@ module Make(B:BOUND) = struct
   let validate x =
     if check_bot x = Bot then failwith "invalid interval" else x
 
-    (************************************************************************)
+  (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
 
@@ -209,7 +209,7 @@ module Make(B:BOUND) = struct
 
   let contains_float (i:t) (x:float) : bool =
     contains i (B.of_float_up x)
-    (*TODO: improve rounding errors resiliance *)
+  (*TODO: improve rounding errors resiliance *)
 
   let intersect i1 i2 : bool =
     meet i1 i2 <> Bot
@@ -262,11 +262,11 @@ module Make(B:BOUND) = struct
     let rec aux acc cur bounds =
       match bounds with
       |  hd::tl ->
-	       let itv = validate (cur,(Large,hd)) in
-           aux (itv::acc) (Strict,hd) tl
+	        let itv = validate (cur,(Large,hd)) in
+          aux (itv::acc) (Strict,hd) tl
       | [] ->
-           let itv = validate (cur,h) in
-           itv::acc
+         let itv = validate (cur,h) in
+         itv::acc
     in aux [] l [x]
 
   (* splits in two, around the middle *)
@@ -399,9 +399,9 @@ module Make(B:BOUND) = struct
 
 
   type quadrant = | One
-		  | Two
-		  | Three
-		  | Four
+		              | Two
+		              | Three
+		              | Four
 
   (* Returns the quadrant in which the bound is. the value must be in [0, 2pi[ *)
   let quadrant value =
@@ -486,8 +486,8 @@ module Make(B:BOUND) = struct
   (** runtime functions **)
   let eval_fun name args : t bot =
     let arity_1 (f: t -> t) : t bot =
-       match args with
-       | [i] -> Nb (f i)
+      match args with
+      | [i] -> Nb (f i)
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
     let arity_1_bot (f: t -> t bot) : t bot =
@@ -527,20 +527,38 @@ module Make(B:BOUND) = struct
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
   (************************************************************************)
 
-  let merge_check a b c d =
-    merge_bot2 (check_bot (a,b)) (check_bot (c,d))
+  let filter_leq
+        (((_,vl1) as l1, ((_,vh1) as h1)):t)
+        (((_,vl2) as l2, ((_,vh2) as h2)):t) : (t * t) Consistency.t =
+    let open Consistency in
+    if B.leq vh1 vl2 then Sat
+    else if B.gt vl1 vh2 then Unsat
+    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),false)
 
-  let filter_leq ((l1,h1):t) ((l2,h2):t) : (t * t) bot =
-    merge_check l1 (min_up h1 h2) (max_low l1 l2) h2
+  let filter_lt
+        (((_,vl1) as l1, ((kh1,vh1) as h1)):t)
+        (((kl2,vl2) as l2, ((_,vh2) as h2)):t) : (t * t) Consistency.t =
+    let open Consistency in
+    if B.lt vh1 vl2 || (B.equal vh1 vl2 && (kh1 = Strict || kl2 = Strict)) then Sat
+    else if B.geq vl1 vh2 then Unsat
+    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),false)
 
-  let filter_lt ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_check l1 (min_up h1 (stricten h2)) (max_low (stricten l1) l2) h2
+  let filter_eq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : t Consistency.t =
+    let open Consistency in
+    if is_singleton i1 && is_singleton i2 && equal i1 i2 then Sat
+    else
+      let (_,vl) as l = max_low l1 l2 and (_,vh) as h = min_up h1 h2 in
+      if in_half l true vh && in_half h false vl then Filtered ((l,h),false)
+      else Unsat
 
-  let filter_eq (i1:t) (i2:t) : t bot = meet i1 i2
-
-  let filter_neq (i1:t) (i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && equal i1 i2 then Bot
-    else Nb (i1,i2)
+  let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t * t) Consistency.t =
+    let open Consistency in
+    if is_singleton i1 && is_singleton i2 && equal i1 i2 then Unsat
+    else
+      let (_,vl) as l = max_low l1 l2 and (_,vh) as h = min_up h1 h2 in
+      if in_half l true vh && in_half h false vl then
+        let r = l,h in Filtered ((r,r),false)
+      else Sat
 
   (* arithmetic *)
   (* --------- *)
@@ -566,7 +584,7 @@ module Make(B:BOUND) = struct
   let filter_mul_cst (i:t) (c:t) (r:t) : (t*t) bot =
     merge_bot2
       (if contains r B.zero && contains c B.zero then Nb i
-      else strict_bot (meet i) (div r c))
+       else strict_bot (meet i) (div r c))
       (Nb c)
 
   (* r = i*c => (i = r/c \/ c=r=0) *)
@@ -574,22 +592,22 @@ module Make(B:BOUND) = struct
     merge_bot2
       (Nb c)
       (if contains r B.zero && contains c B.zero then Nb i
-      else strict_bot (meet i) (div r c))
+       else strict_bot (meet i) (div r c))
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
   let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2
       (if contains r B.zero && contains i2 B.zero then Nb i1
-      else strict_bot (meet i1) (div r i2))
+       else strict_bot (meet i1) (div r i2))
       (if contains r B.zero && contains i1 B.zero then Nb i2
        else strict_bot (meet i2) (div r i1))
 
-   (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
+  (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
   let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
     merge_bot2
       (meet i1 (mul i2 r))
       (if contains r B.zero && contains i1 B.zero then Nb i2
-      else strict_bot (meet i2) (div i1 r))
+       else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
   let filter_sqrt (((k_il,il),_) as i:t) ((rl,rh):t) : t bot =
@@ -633,8 +651,8 @@ module Make(B:BOUND) = struct
       match args with
       | [i] ->
          (match f i r with
-         | Bot -> Bot
-         | Nb i -> Nb [i])
+          | Bot -> Bot
+          | Nb i -> Nb [i])
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
     let arity_2 (f: t -> t -> t -> (t*t) bot) : (t list) bot  =

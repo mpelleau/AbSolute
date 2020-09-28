@@ -169,17 +169,31 @@ let eval_fun (_:string) (_:t list) : t bot =
 (************************************************************************)
 (* FILTERING (TEST TRANSFER FUNCTIONS)                                  *)
 (************************************************************************)
-let filter_leq (l1,h1:t) (l2,h2:t) : (t * t) bot =
-  merge_bot2 (check_bot (l1, min h1 h2)) (check_bot (max l1 l2, h2))
+let filter_leq (l1,h1:t) (l2,h2:t) : (t * t) Consistency.t =
+  let open Consistency in
+  if h1 <= l2 then Sat
+  else if l1 > h2 then Unsat
+  else Filtered (((l1, min h1 h2),(max l1 l2, h2)),false)
 
-let filter_lt ((l1,h1):t) ((l2,h2):t) : (t * t) bot =
-  merge_bot2 (check_bot (l1, min h1 (h2-1))) (check_bot (max (l1+1) l2, h2))
+let filter_lt ((l1,h1):t) ((l2,h2):t) : (t * t) Consistency.t =
+  let open Consistency in
+  if h1 < l2 then Sat
+  else if l1 >= h2 then Unsat
+  else Filtered (((l1, min h1 (h2-1)),(max (l1+1) l2, h2)),false)
 
-let filter_eq (i1:t) (i2:t) : t bot = meet i1 i2
+let filter_eq ((l1,h1):t) ((l2,h2):t) : t Consistency.t =
+  let open Consistency in
+  if l1=h1 && l2=h2 && l1 = l2 then Sat
+  else
+    let l = max l1 l2 and h = min h1 h2 in
+    if l <= h then Filtered ((l,h),false)
+    else Unsat
 
-let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t * t) bot =
-  if l1=h1 && l2=h2 && l1 = l2 then Bot
-  else Nb (i1,i2)
+let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t * t) Consistency.t =
+  let open Consistency in
+  if l1=h1 && l2=h2 && l1 = l2 then Unsat
+  else if intersect i1 i2 then Filtered ((i1,i2),false)
+  else Sat
 
 (* arithmetic *)
 (* --------- *)

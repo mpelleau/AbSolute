@@ -371,19 +371,33 @@ module Itv(B:BOUND) = struct
   (* tests *)
   (* ----- *)
 
-  let filter_leq ((l1,h1):t) ((l2,h2):t) : (t*t) bot =
-    merge_bot2 (check_bot (l1, B.min h1 h2)) (check_bot (B.max l1 l2, h2))
+  let filter_leq ((l1,h1):t) ((l2,h2):t) : (t*t) Consistency.t =
+    let open Consistency in
+    if B.leq h1 l2 then Sat
+    else if B.gt l1 h2 then Unsat
+    else Filtered (((l1, B.min h1 h2),(B.max l1 l2, h2)),false)
 
-  let filter_lt ((l1,_) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else if B.leq h2 l1 then Bot
-    else filter_leq i1 i2
+  let filter_lt ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t*t) Consistency.t =
+    let open Consistency in
+    if B.lt h1 l2 then Sat
+    else if is_singleton i1 && i1 = i2 then Unsat
+    else Filtered (((l1, B.min h1 h2),(B.max l1 l2, h2)),false)
 
-  let filter_eq (i1:t) (i2:t) : t bot = meet i1 i2
+  let filter_eq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : t Consistency.t =
+    let open Consistency in
+    if is_singleton i1 && i1 = i2 then Sat
+    else
+      let l = B.max l1 l2 and u = B.min h1 h2 in
+      if B.leq l u then Filtered ((l,u),false)
+      else Unsat
 
-  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
-    if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
-    else Nb (i1,i2)
+  let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t*t) Consistency.t =
+    let open Consistency in
+    if B.equal l1 h1 && B.equal l2 h2 && B.equal l1 l2 then Unsat
+    else
+      let l = (B.max l1 l2) and u = (B.min h1 h2) in
+      if B.leq l u then Filtered ((i1,i2),false)
+      else Sat
 
   (* arithmetic *)
   (* --------- *)

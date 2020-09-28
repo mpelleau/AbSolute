@@ -103,6 +103,9 @@ let debug level fmt =
     let spacing = String.make level ' ' in
     Format.kasprintf (fun msg -> Format.printf "%s%s%s" spacing spacing msg) fmt
 
+(** misc *)
+let swap_pair (a,b) = (b,a)
+
 (**********************)
 (** {1} Map instances *)
 (**********************)

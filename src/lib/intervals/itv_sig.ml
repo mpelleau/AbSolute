@@ -82,23 +82,20 @@ module type ITV = sig
 
   (** {1 FILTERING (TEST TRANSFER FUNCTIONS)} *)
 
-  (** given two interval arguments, return a subset of each argument
-      by removing points that cannot satisfy the predicate;
-      may also return Bot if no point can satisfy the predicate
-      simplified interface since a > b <=> b < a *)
+  (** given two interval arguments, return a filtered subset of each
+     argument by removing points that cannot satisfy the predicate;
+     may also return Sat or Unsat if all (resp. no) point can satisfy
+     the predicate. Interface is simplified since a > b <=> b < a *)
+  val filter_leq: t -> t -> (t * t) Consistency.t
+  val filter_lt : t -> t -> (t * t) Consistency.t
+  val filter_neq: t -> t -> (t * t) Consistency.t
+  val filter_eq : t -> t -> t Consistency.t
 
-  val filter_leq: t -> t -> (t * t) bot
-  val filter_lt : t -> t -> (t * t) bot
-  val filter_eq : t -> t -> t bot
-  val filter_neq: t -> t -> (t * t) bot
-
-  (** given the interval argument(s) and the expected interval result of
-     a numeric operation, returns refined interval argument(s) where
-     points that cannot contribute to a value in the result are
-     removed;
-     may also return Bot if no point in an argument can lead to a
-     point in the result *)
-
+  (** given the interval argument(s) and the expected interval result
+     of a numeric operation, returns refined interval argument(s)
+     where points that cannot contribute to a value in the result are
+     removed; may also return Bot if no point in an argument can lead
+     to a point in the result *)
   val filter_neg: t -> t -> t bot
   val filter_abs: t -> t -> t bot
 
