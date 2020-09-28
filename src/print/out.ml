@@ -1,6 +1,26 @@
+open Signature
 open Picasso
 
-module Make (D:Signature.AbstractCP) = struct
+module Make (D:AbstractCP) = struct
+
+  let print_list msg print l =
+    Format.printf "%i %s"(List.length l) msg;
+    if !Constant.trace then
+      List.iteri (fun i -> Format.printf "\nsol n°%i:\n%a" (i+1) print) l;
+    Format.printf "\n"
+
+  (* text output on std out *)
+  let terminal_output fmt res =
+    let print_unsure fmt e =
+      Format.fprintf fmt "%a\n"
+        D.print e
+    in
+    let open Result in
+    print_list "inner solutions" D.print res.sure;
+    print_list "outter solutions" print_unsure res.unsure;
+    Format.printf "total time : %fs\n" (Sys.time ());
+    if not (!Constant.trace) then
+      Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"
 
   let build_render =
     let b = (150,150,255) in
@@ -11,77 +31,39 @@ module Make (D:Signature.AbstractCP) = struct
     let r' = List.fold_left (fun acc e -> Rendering.add acc (b,D.render e)) r res.sure in
     List.fold_left (fun acc e -> Rendering.add acc (g,D.render e)) r' res.unsure
 
-  let check_dir()=
-    if not (Sys.file_exists "out" && Sys.is_directory "out") then begin
-        Unix.mkdir "out" 0o777;
-        Format.printf "directory ";
-        Tools.cyan_fprintf Format.std_formatter "out";
-        Format.printf " was created\n";
-      end
+  let witness w =
+    Tools.green_fprintf Format.std_formatter "Results:\n";
+    let open Kleene in
+    match w with
+    | False, None ->
+       Format.printf "problem unsatisfiable.\n"
+    | Unknown, None ->
+       Format.printf "no solution found, but the problem maybe admits some.\n"
+    | True, Some i ->
+       Format.printf "problem satisfiable.\nwitness value:\n%a\n" Csp_printer.instance i
+    | _ -> assert false
 
-  let traceout sure unsure =
-    List.iter (fun e ->
-        Format.printf "sure: %a\n%!" D.print e) sure;
-    List.iter (fun e -> Format.printf "unsure: (%a)\n%!" D.print e) unsure
-
-  let vars3D prob =
-    let vars = Csp_helper.get_vars prob |> Array.of_list in
-    let size = Array.length vars in
-    (vars.(0)),(vars.(1 mod size)),(vars.(2 mod size))
-
-  (* text output on std out *)
-  let terminal_output fmt res =
-    let open Result in
-    (match res.sure with
-     | [] -> Format.fprintf fmt "No inner solutions found\n"
-     | l ->
-        Format.fprintf fmt "Inner solutions:";
-        if !Constant.trace then begin
-            Format.printf "\n";
-           List.iter (Format.fprintf fmt "%a\n" D.print) l
-          end else
-          Format.printf " %i\n" (res.nb_sure)
-    );
-    Format.fprintf fmt "Inner volume : %f\n" (res.vol_sure);
-    (match res.unsure with
-     | [] -> Format.fprintf fmt "No outter solutions found\n"
-     | l ->
-        Format.fprintf fmt "Outter solutions:";
-        if !Constant.trace then begin
-            Format.printf "\n";
-            List.iter (Format.fprintf fmt "%a\n" D.print) l
-          end else
-          Format.printf " %i\n" (res.nb_unsure)
-    );
-    Format.fprintf fmt "Outer volume : %f\n" (res.vol_unsure);
-    Format.fprintf fmt "Inner ratio : %a%%\n" Format.pp_print_float ((Result.inner_ratio res) *. 100.);
-    Format.printf "solving time : %fs\n" (Sys.time ());
-    if not (!Constant.trace) then
-      Format.fprintf fmt "you can use the -trace (or -t) option to list the solutions\n"
-
-  let trace_min sure unsure value =
-    Format.printf "best value:%a\n%!" Q.print value;
-    traceout sure unsure
-
-  let out_min _prob res =
-    Format.printf "\ntime : %fs\n" (Sys.time ());
-    let open Result in
-    let open Constant in
-    let u = if !sure then [] else res.unsure in
-    if !trace then trace_min res.sure u res.best_value
+  let satisfiability w =
+    Tools.green_fprintf Format.std_formatter "Results:\n";
+    let open Kleene in
+    match w with
+    | False -> Format.printf "problem unsatisfiable.\n"
+    | Unknown -> Format.printf "no solution found, but the problem maybe admits some.\n"
+    | True -> Format.printf "problem satisfiable.\n"
 
   let vars2D prob =
     let vars = Csp_helper.get_vars prob |> Array.of_list in
     let size = Array.length vars in
     (vars.(0)),(vars.(1 mod size))
 
-  let out prob res =
+  let results prob res =
     let open Constant in
     Tools.green_fprintf Format.std_formatter "Results:\n";
     Format.printf "%a\n%!" terminal_output res;
-    if !visualization || !tex then
+    if !visualization || !tex || !obj then
       let v1,v2 = vars2D prob in
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name";
+      if !obj then failwith "picasso 3d";
       if !visualization then in_gtk_canvas render
 end

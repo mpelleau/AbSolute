@@ -93,3 +93,10 @@ let print_jacob fmt (v, e) =
 let print fmt prog =
   Format.fprintf fmt "%a\n" print_assign prog.init;
   Format.fprintf fmt "%a\n" print_constraints prog.constraints
+
+let instance fmt (instance:Csp.instance) =
+  let bind fmt (var,value) =
+    Format.fprintf fmt "%s : %a" var pp_print_mpqf value
+  in
+  VarMap.bindings instance |>
+  Format.fprintf fmt "{%a}" (Format.pp_print_list ~pp_sep:newline_sep bind)

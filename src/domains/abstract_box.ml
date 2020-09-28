@@ -161,14 +161,14 @@ module Box (I:ITV) = struct
        let r = debot (I.eval_fun name iargs) in
        BFuncall(name, bargs),r
     | Var v ->
-        let r = find v a in
-        BVar v, r
+       let r = find v a in
+       BVar v, r
     | Cst c ->
-        let r = I.of_rat c in
-        BCst r, r
+       let r = I.of_rat c in
+       BCst r, r
     | Neg e1 ->
-        let _,i1 as b1 = eval a e1 in
-        BNeg b1, I.neg i1
+       let _,i1 as b1 = eval a e1 in
+       BNeg b1, I.neg i1
     | Binary (o,e1,e2) ->
        let _,i1 as b1 = eval a e1
        and _,i2 as b2 = eval a e2 in
@@ -218,7 +218,6 @@ module Box (I:ITV) = struct
      refine step of the HC4-revise algorithm.  It prunes the domain of
      the variables in `a` according to the constraint `e1 o e2`.  *)
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t Consistency.t =
-    try
       let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
       let res = match o with
         | LT  -> (I.filter_lt i1 i2)
@@ -230,19 +229,22 @@ module Box (I:ITV) = struct
         | EQ  -> Consistency.map (fun x -> x,x) (I.filter_eq i1 i2)
       in
       Consistency.map (fun (j1,j2) -> refine (refine a b1 j1) b2 j2) res
-    with Bot_found -> Consistency.Unsat
 
-  let filter (a:t) (e1,binop,e2) : t Consistency.t = test a e1 binop e2
+  let filter (a:t) (e1,binop,e2) : t Consistency.t =
+    try test a e1 binop e2
+    with Bot_found -> Consistency.Unsat
 
   let empty : t = Env.empty
 
   let is_empty abs = Env.is_empty abs
 
-  let add_var (abs:t) (typ,var) : t =
-    Env.add var
-      (match typ with
-      | Int -> I.top_int
-      | Real -> I.top_real)
+  let add_var (abs:t) (typ,var,domain) : t =
+    VarMap.add var
+      (match typ,domain with
+       | Int,Finite(l,u) -> I.of_rats l u
+       | Real,Finite(l,u) -> I.of_rats l u
+       | _ -> failwith "cartesian.ml : add_var"
+      )
       abs
 
   let var_bounds (abs:t) var =
@@ -307,16 +309,20 @@ module Box (I:ITV) = struct
   (* ----- *)
 
   let split_along (a:t) (v:var) : t list =
-    let i = Env.find v a in
+    let i = VarMap.find v a in
     let i_list = I.split i in
     List.fold_left (fun acc b ->
-        (Env.add v b a)::acc
-    ) [] i_list
+        (VarMap.add v b a)::acc
+      ) [] i_list
 
-  let split (a:t) (_:ctrs) : t list =
-    let (v,_) = mix_range a in
-    Tools.debug 3 "variable split : %s\n%!" v;
-    split_along a v
+  let split (a:t) _ : t list =
+    let (v,i) = max_range a in
+    if I.float_size i < !Constant.precision then raise Signature.TooSmall
+    else
+      begin
+        Tools.debug 3 "variable split : %s\n%!" v;
+        split_along a v
+      end
 
   let render x =
     let vars,values = VarMap.bindings x |> List.split in

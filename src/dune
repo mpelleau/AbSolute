@@ -15,8 +15,3 @@
  (public_name absolute)
  (modules absolute)
  (libraries libabsolute))
-
-(test
-  (name check)
-  (modules check)
-  (libraries libabsolute))

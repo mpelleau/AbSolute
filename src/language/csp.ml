@@ -40,11 +40,11 @@ type dom = Finite of i * i   (* [a;b] *)
          | Set    of i list  (* {x1; x2; ...; xn} *)
          | Top               (* [-oo; +oo] *)
 
-(* assign *)
-type assign = (annot * var * dom)
+(* declaration *)
+type decl = (annot * var * dom)
 
 (* declarations *)
-type decls =  assign list
+type decls =  decl list
 
 (* statements *)
 type constrs = bexpr list

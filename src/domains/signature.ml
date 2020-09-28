@@ -1,6 +1,9 @@
 (** Module for Abstract Domains for Constraint Programming (ADCP) they
    must feature consistency, split and precision operators.  *)
 
+(** can be raised by split operations *)
+exception TooSmall
+
 module type AbstractCP = sig
 
   (** the type of abstract elements *)
@@ -12,7 +15,7 @@ module type AbstractCP = sig
   (** {1. Variables management }*)
 
   (** adds an unconstrained variable to the environnement *)
-  val add_var : t -> Csp.annot * Csp.var -> t
+  val add_var : t -> Csp.decl -> t
 
   (** removes an unconstrained variable from the environnement *)
   val rem_var : t -> Csp.var -> t
@@ -81,4 +84,15 @@ module type AbstractCP = sig
 
   (** transforms an abstract element into a Picasso.Drawable.t for drawing *)
   val render : t -> Picasso.Drawable.t
+end
+
+(** An actual solvable unit *)
+module type Solvable = sig
+  type t (* internal representation of a solving state *)
+  val propagate: t -> t Consistency.t
+  val split : t -> t list
+  val spawn : t -> Csp.instance
+  val init : Csp.prog -> t
+  type space (* internal representation of a search space *)
+  val to_result : inner:bool -> space Result.t -> t -> space Result.t
 end

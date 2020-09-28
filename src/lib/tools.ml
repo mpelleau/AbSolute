@@ -103,6 +103,15 @@ let debug level fmt =
     let spacing = String.make level ' ' in
     Format.kasprintf (fun msg -> Format.printf "%s%s%s" spacing spacing msg) fmt
 
+(** semi_colon separator *)
+let semi_colon_sep fmt () = Format.fprintf fmt ";"
+
+(** comma separator *)
+let comma_sep fmt () = Format.fprintf fmt ","
+
+(** newline separator *)
+let newline_sep fmt () = Format.fprintf fmt "\n"
+
 (** misc *)
 let swap_pair (a,b) = (b,a)
 

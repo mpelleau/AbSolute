@@ -86,12 +86,12 @@ module VPL = struct
         | Cstr.GT -> Csp.GT
         | Cstr.LT -> Csp.LT
 
-    let rec to_cond : Csp.bexpr -> UserCond.t
-        = function
-        | Csp.Cmp (cmp, e1, e2) -> UserCond.Atom (e1, translate_cmp cmp, e2)
-        | Csp.And (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.AND, to_cond e2)
-        | Csp.Or (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.OR, to_cond e2)
-        | Csp.Not e -> UserCond.Not (to_cond e)
+  let rec to_cond : Csp.bexpr -> UserCond.t
+    = function
+    | Csp.Cmp (cmp, e1, e2) -> UserCond.Atom (e1, translate_cmp cmp, e2)
+    | Csp.And (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.AND, to_cond e2)
+    | Csp.Or (e1, e2) -> UserCond.BinL(to_cond e1, WrapperTraductors.OR, to_cond e2)
+    | Csp.Not e -> UserCond.Not (to_cond e)
 
 end
 
@@ -117,7 +117,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
         in
         (low,up)
 
-    let add_var : t -> Csp.annot * Csp.var -> t
+    let add_var : t -> Csp.decl -> t
         = fun p _ -> p
 
     let vars : t -> (Csp.annot * Csp.var) list

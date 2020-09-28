@@ -92,7 +92,7 @@ let neg = function
 
 (** converts a domain representation to a constraint *)
 (* TODO: use type *)
-let domain_to_constraints ((_,v,d):assign) : bexpr =
+let domain_to_constraints ((_,v,d):decl) : bexpr =
   match d with
   | Finite (l,h) -> inside v l h
   | Minf i -> leq (Var v) (Cst i)

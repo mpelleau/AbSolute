@@ -9,6 +9,9 @@ type t = Int of I.t | Real of R.t
 let real x = Real x
 let int x  = Int x
 
+let real2 (x,y) = Real x, Real y
+let int2 (x,y) = Int x, Int y
+
 (* Conversion utilities *)
 (************************)
 
@@ -235,8 +238,8 @@ let eval_fun (name:string) (args:t list) : t bot =
 let filter i_f r_f (x1:t) (x2:t) : (t * t) Consistency.t =
   let open Consistency in
   match x1,x2 with
-  | Int x1 , Int x2 -> Consistency.map (fun (x,y) -> (Int x),(Int y)) (i_f x1 x2)
-  | Real x1, Real x2 -> Consistency.map (fun (x,y) -> (Real x),(Real y)) (r_f x1 x2)
+  | Int x1 , Int x2 -> Consistency.map int2 (i_f x1 x2)
+  | Real x1, Real x2 -> Consistency.map real2 (r_f x1 x2)
   | Int x1, Real x2 ->
      let x1 = to_float x1 in
      (try Consistency.map (fun (x1,x2) -> Int (debot (to_int x1)), Real x2) (r_f x1 x2)
@@ -255,7 +258,7 @@ let filter_eq i1 i2 =
   if is_singleton i1 && i1 = i2 then Sat
   else
     match meet i1 i2 with
-    | Nb i -> Filtered (i,false)
+    | Nb i -> Filtered (i,is_singleton i)
     | Bot ->  Unsat
 
 let filter_neq = filter I.filter_neq R.filter_neq
@@ -266,8 +269,7 @@ let filter_neq = filter I.filter_neq R.filter_neq
    removed;
    may also return Bot if no point in an argument can lead to a
    point in the result *)
-let filter_neg (i:t) (r:t) : t bot =
-  meet i (neg r)
+let filter_neg (i:t) (r:t) : t bot = meet i (neg r)
 
 let filter_abs (i:t) (r:t) : t bot =
   if is_positive i then meet i r

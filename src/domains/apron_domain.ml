@@ -123,13 +123,23 @@ module MAKE(AP:ADomain) = struct
     let rv = Array.to_list rvars |> List.map (fun v -> (Csp.Real, Var.to_string v)) in
     iv@rv
 
-  let add_var abs (typ,v) =
-    let env =
-      match typ with
-      | Int -> Environmentext.add_int_s v A.(abs.env)
-      | Real-> Environmentext.add_real_s v A.(abs.env)
-    in
-    A.change_environment man abs env false
+  let dom_to_texpr env =
+    let open Csp in
+    function
+    | Top -> assert false
+    | Finite (b1,b2)  -> Texpr1.cst env (Coeff.i_of_mpqf b1 b2)
+    | Minf _ -> assert false
+    | Inf _ -> assert false
+    | Set _ -> assert false
+
+  let add_var abs (typ,v,dom) =
+    let e = A.env abs in
+    let v = Var.of_string v in
+    let ints,reals = if typ = Int then [|v|],[||] else [||],[|v|] in
+    let env = Environmentext.add e ints reals in
+    let abs = A.change_environment man abs env false in
+    let texpr = dom_to_texpr env dom in
+    A.assign_texpr man abs v texpr None
 
   let var_bounds abs v =
     let var = Var.of_string v in

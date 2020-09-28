@@ -34,7 +34,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
 
     let vars _ = fail ()
 
-    let add_var : t -> Csp.annot * Csp.var -> t
+    let add_var : t -> Csp.decl -> t
         = fun _ _ -> fail ()
 
     let volume : t -> float

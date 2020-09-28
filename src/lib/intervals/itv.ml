@@ -400,7 +400,7 @@ module Itv(B:BOUND) = struct
       else Sat
 
   (* arithmetic *)
-  (* --------- *)
+  (* ---------- *)
 
   (* r = -i => i = -r *)
   let filter_neg (i:t) (r:t) : t bot =

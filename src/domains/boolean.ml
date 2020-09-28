@@ -1,5 +1,7 @@
-(** This wrapper lifts the filtering and the satisfies function over arithmetical
-    predicates (e1 < e2) to boolean formulas of the form (p1 \/ p2) *)
+(** This wrapper lifts the filtering and the satisfies function over
+   arithmetical predicates (e1 < e2) to boolean formulas of the form
+   (p1 \/ p2) *)
+
 open Signature
 open Csp
 open Consistency

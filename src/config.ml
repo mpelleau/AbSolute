@@ -7,26 +7,42 @@
 open Signature
 
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (Abs:AbstractCP) = struct
-  module Sol = Solver.Solve(Abs)
-  module Print = Out.Make(Abs)
-  let go prob =
-    Format.printf "Starting the resolution using the ";
-    Tools.green_fprintf Format.std_formatter "%s" (!Constant.domain);
-    Format.printf " domain ...\n%!";
-    let res = Sol.solving prob in
-    Format.printf "Solving finished\n\n%!";
-    Print.out prob res
+module GoS (N:AbstractCP) = struct
+  module It = Iterator.Make(N)
+  module Solv = Solver.Make(It)
+  module Print = Out.Make(N)
+  let time_stats prob solve =
+    Tools.green_fprintf Format.std_formatter "\nSolving\n";
+    Format.printf "domain: ";
+    (* Tools.cyan_fprintf Format.std_formatter "%s\n" N.name; *)
+    let time_start = Sys.time () in
+    let csp = Solv.init prob in
+    let res = solve csp in
+    let time_end = Sys.time () -. time_start in
+    Format.printf "solving time %f\n\n%!" time_end;
+    res
+
+  let coverage prob =
+    let res = time_stats prob Solv.coverage in
+    Print.results prob res
+
+  let satisfiability prob =
+    let res = time_stats prob Solv.satisfiability in
+    Print.satisfiability res
+
+  let witness prob =
+    let res = time_stats prob Solv.witness in
+    Print.witness res
 end
 
-(** Solve and minimize a CSP with the abstract domain Abs *)
-module GoM (Abs:AbstractCP) = struct
-  module Min = Minimizer.Minimize(Abs)
-  module Print = Out.Make(Abs)
-  let go prob =
-    let res = Min.minimizing prob in
-    Print.out_min prob res
-end
+(* (\** Solve and minimize a CSP with the abstract domain Abs *\)
+ * module GoM (Abs:AbstractCP) = struct
+ *   module Min = Minimizer.Minimize(Abs)
+ *   module Print = Out.Make(Abs)
+ *   let go prob =
+ *     let res = Min.minimizing prob in
+ *     Print.out_min prob res
+ * end *)
 
 (***************)
 (*   domains   *)
@@ -60,22 +76,13 @@ let set_domain : unit -> (module AbstractCP)
   String.split_on_char ',' !Constant.domain
   |> set_domain_from_names
 
-(**
- * Lifts the given abstract domain and its associated drawer into a runnable domain.
- * The results depends on the value of flags {!val:Constant.minimizing} and {!val:Constant.step_by_step}.
- *)
+(** * Lifts the given abstract domain and its associated drawer into a
+   runnable domain.  The results depends on the value of flags
+   {!val:Constant.minimizing} *)
 let lift (module D : AbstractCP) (prob : Csp.prog) : unit =
-  if !Constant.minimizing
-  then
-    let module Minimizer = GoM (D) in
-    Minimizer.go prob
-  else
-    (* if !Constant.step_by_step
-     * then let module SBS = Step_by_step.Make (D.Abstract) in
-     *      SBS.solving prob else *)
-    let module Solver = GoS (D) in
-    Solver.go prob
-
+  let module Solver = GoS (D) in
+  if !Constant.witness then Solver.witness prob
+  else Solver.coverage prob
 (********************)
 (* OPTIONS HANDLING *)
 (********************)
@@ -100,6 +107,7 @@ let speclist =
     ("-sure"         , Set sure             , "Keeps only the sure solutions");
     ("-trace"        , Set trace            , "Prints the solutions on standard output");
     ("-visualization", Set visualization    , "Enables visualization mode");
+    ("-witness"      , Set witness          , "Enables witness mode");
     ("-obj"          , Set obj              , "Generates an .obj file (for 3D visualization)");
     ("-tex"          , Set tex              , "Prints the solutions in latex format on standard output");
     ("-sbs"          , Set step_by_step     , "Enabling step by step visualization");
