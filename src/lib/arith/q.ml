@@ -17,17 +17,17 @@ let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
 
 let neg x = Mpqf.neg x
 
+let ceil x = x |> Mpqf.to_float |> ceil |> int_of_float
+let floor x = x |> Mpqf.to_float |> floor |> int_of_float
+
+(** {1 Conversions} *)
 let to_int x =
   let xi = int_of_float (Mpqf.to_float x) in
   if Mpqf.equal x (Mpqf.of_int xi) then Some xi else None
 
-(** {1 Conversions} *)
-
 let to_float = Mpqf.to_float
 
 let to_rational : t -> t = Fun.id
-
-let floor x = to_float x |> int_of_float
 
 let of_int = Mpqf.of_int
 let of_float = Mpqf.of_float

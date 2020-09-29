@@ -9,7 +9,7 @@ module type ADomain = sig
   val manager_alloc: unit -> t Manager.t
 end
 
-(* Translation functor for syntax.prog to apron values*)
+(* Translation functor for csp.prog to apron values*)
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.manager_alloc ()
 
@@ -206,9 +206,10 @@ module MAKE(AP:ADomain) = struct
     and obj_sup = obj_itv.Interval.sup in
     (Scalarext.to_mpqf obj_inf, Scalarext.to_mpqf obj_sup)
 
-  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from `abs`
-   * with the largest interval `i` = [l, u], and `d` the dimension of the
-   * interval (`u - l` with appropriate rounding). *)
+  (* Given `largest abs = (v, i, d)`, `largest` extracts the variable
+     `v` from `abs` * with the largest interval `i` = [l, u], and `d`
+     the dimension of the * interval (`u - l` with appropriate
+     rounding). *)
   let largest abs : (Var.t * Interval.t * Mpqf.t) =
     let env = A.env abs in
     let box = A.to_box man abs in
@@ -226,7 +227,7 @@ module MAKE(AP:ADomain) = struct
 
   (* Compute the minimal and the maximal diameter of an array on intervals *)
   let rec minmax tab i max i_max min  =
-    if i>=Array.length tab then  (max, i_max, min)
+    if i>=Array.length tab then  (Scalar.of_mpqf max, i_max, Scalar.of_mpqf min)
     else
       let dim = Intervalext.range_mpqf (tab.(i)) in
       if Mpqf.cmp dim max > 0 then minmax tab (i+1) dim i min
@@ -257,52 +258,42 @@ module MAKE(AP:ADomain) = struct
     let abs2 = meet_linexpr abs man e2 in
     [abs1; abs2]
 
-  (************************************************)
-  (* POLYHEDRIC VERSION OF SOME USEFUL OPERATIONS *)
-  (************************************************)
+  (* Polyhedric version of some operations *)
 
-  let get_expr man (polyad:Polka.strict Polka.t A.t) =
-    let poly = A.to_generator_array man polyad in
+  let get_expr =
+    let pman = Polka.manager_alloc_strict() in
+    fun (polyad:Polka.strict Polka.t A.t) ->
+    let poly = A.to_generator_array pman polyad in
     let gen_env = poly.Generator1.array_env in
-    (*print_gen gens gen_env;*)
     let size = E.size gen_env in
     let gen_float_array = Generatorext.to_float_array poly in
-    let (p1, p2, _) = most_distant_pair gen_float_array in
-    let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
-    let cst_sca1 = Scalar.of_float (-1. *.(cst +. !Constant.precision)) in
-    let cst_sca2 = Scalar.of_float (cst +. !Constant.precision) in
-    let linexp = Linexpr1.make gen_env in
-    Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
-    let linexp' = Linexpr1.make gen_env in
-    Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
-    (linexp, linexp')
+    let (p1, p2, dist) = most_distant_pair gen_float_array in
+    if dist <= !Constant.precision then raise Signature.TooSmall
+    else
+      let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
+      let cst_sca1 = Scalar.of_float (-1. *.(cst +. !Constant.precision)) in
+      let cst_sca2 = Scalar.of_float (cst +. !Constant.precision) in
+      let linexp = Linexpr1.make gen_env in
+      Linexpr1.set_list linexp list1 (Some (Coeff.Scalar cst_sca1));
+      let linexp' = Linexpr1.make gen_env in
+      Linexpr1.set_list linexp' list2 (Some (Coeff.Scalar cst_sca2));
+      (linexp, linexp')
 
-  let is_small man polyad =
-    let poly = A.to_generator_array man polyad in
-    (*print_gen gens gen_env;*)
-    let gen_float_array = Generatorext.to_float_array poly in
-    let (_p1, _p2, dist_max) = most_distant_pair gen_float_array in
-    (dist_max <= !Constant.precision)
-
-  (*********************************)
-  (* Sanity and checking functions *)
-  (*********************************)
+  (* Sanity checking functions *)
 
   (** given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
   let is_abstraction poly instance =
     let env = Abstract1.env poly in
-    let var_texpr =
-      VarMap.fold (fun var value acc ->
+    let var,texpr =
+      VarMap.fold (fun var value (acc1,acc2) ->
           let var = Apron.Var.of_string var in
           let value = Texpr1.cst env (Coeff.s_of_mpqf value) in
-          (var,value)::acc
-        ) instance []
+          (var::acc1),(value::acc2)
+        ) instance ([],[])
     in
-    let var,texpr = List.split var_texpr in
-    let varray = Array.of_list var in
-    let tarray = Array.of_list texpr in
-    let poly_subst = Abstract1.substitute_texpr_array man poly varray tarray None in
+    let var = Array.of_list var and tar = Array.of_list texpr in
+    let poly_subst = Abstract1.substitute_texpr_array man poly var tar None in
     Abstract1.is_top man poly_subst
 
   (** Random uniform value within an interval, according to the type *)
@@ -310,12 +301,12 @@ module MAKE(AP:ADomain) = struct
     let inf,sup = itv_to_mpqf i in
     match typ with
     | Environment.INT ->
-       let size = Mpqf.sub sup inf |> Mpqf.to_float |> int_of_float in
-       let r = Mpqf.of_int (Random.int (size+1)) in
-       Mpqf.add inf r
+       let size = Mpqf.sub sup inf |> Q.ceil in
+       let r = Q.of_int (Random.int (size+1)) in
+       Q.add inf r
     | Environment.REAL ->
-       let r = Mpqf.of_float (Random.float 1.) in
-       Mpqf.add inf (Mpqf.mul (Mpqf.sub sup inf) r)
+       let r = Q.of_float (Random.float 1.) in
+       Q.add inf (Q.mul (Mpqf.sub sup inf) r)
 
   (** spawns an instance within a box *)
   let spawn_box box =

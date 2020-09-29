@@ -31,9 +31,6 @@ module type AbstractCP = sig
 
   (** {1 Measure} *)
 
-  (** tests if an abstract element is small enough with respect to `Constant.precision` *)
-  val is_small : t -> bool
-
   (** tests if an abstract element is empty *)
   val is_empty : t -> bool
 

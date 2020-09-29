@@ -100,10 +100,6 @@ module Box (I:ITV) = struct
         if (I.score i) > (I.score io) then v,i else vo,io
       ) a (VarMap.min_binding a)
 
-  let is_small (a:t) : bool =
-    let (_,i) = max_range a in
-    (I.float_size i) <= !Constant.precision
-
   let volume (a:t) : float =
     VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
 

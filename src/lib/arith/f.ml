@@ -16,6 +16,9 @@ let div x y = if y <> 0. && (x/.y) *. y = x then Some (x/.y) else None
 
 let neg x = -1. *. x
 
+let ceil x = ceil x |> int_of_float
+let floor x = floor x |> int_of_float
+
 (** {1 Conversions} *)
 
 let to_int x =
@@ -24,7 +27,6 @@ let to_int x =
 
 let to_float = Fun.id
 let to_rational = Mpqf.of_float
-let floor = int_of_float
 
 let of_int = float_of_int
 let of_float = Fun.id

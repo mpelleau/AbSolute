@@ -48,33 +48,8 @@ end
 (*   domains   *)
 (***************)
 
-let get_domain : string -> (module AbstractCP) = function
-  | "box"    -> (module Abstract_box.BoxF)
-  | "boxS"   -> (module Abstract_box.BoxStrict)
-  | "boxMix" -> (module Abstract_box.BoxMix)
-  | "boxQ"   -> (module Abstract_box.BoxQ)
-  | "boxQS"  -> (module Abstract_box.BoxQStrict)
-  | "boxCP"  -> (module ADCP.BoxCP)
-  | "oct"    -> (module ADCP.OctBoxCP)
-  | "poly"   -> (module ADCP.PolyCP)
-  | "vpl"    -> (module Vpl_domain.VplCP)
-  | s        -> Tools.fail_fmt "Domain %s does not exist" s
-
-let set_domain_from_names : string list -> (module AbstractCP)
-  = fun names ->
-  List.fold_left
-    (fun (module D : AbstractCP) name ->
-      let (module F : AbstractCP) = get_domain name in
-      let module P = Product.Make (D)(F) in
-      (module P)
-    )
-    (List.hd names |> get_domain)
-    (List.tl names)
-
-let set_domain : unit -> (module AbstractCP)
-  = fun () ->
-  String.split_on_char ',' !Constant.domain
-  |> set_domain_from_names
+let set_domain : unit -> (module AbstractCP) = fun () ->
+  Domains.parse !Constant.domain
 
 (** * Lifts the given abstract domain and its associated drawer into a
    runnable domain.  The results depends on the value of flags
@@ -94,7 +69,7 @@ let speclist =
     ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
     ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
     ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-    ("-domain"       , Set_string domain    , options (default_string "Changes the domain used for the solving" domain) "box, boxS, boxQ, boxQS, boxCP, oct, poly, vpl or any combination of them separated by commas (e.g. box,poly,boxQS) ");
+    ("-domain"       , Set_string domain    , default_string "Changes the domain used for the solving" domain);
     ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
     ("-iter"         , Set iter             , "Enables the loop for the propagation");
     ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");

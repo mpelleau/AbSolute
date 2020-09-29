@@ -79,8 +79,6 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       and vb = B.vars abs' in
       List.sort_uniq (compare) (va@vb)
 
-    let is_small ((abs, _):t) = A.is_small abs
-
     let is_empty (abs, abs') = A.is_empty abs || B.is_empty abs'
 
     let prune : (t -> t -> t list) option = None
@@ -133,9 +131,3 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       Picasso.Drawable.product (A.render a) (B.render b)
 
   end
-(*
-module BoxAndPolyNew = MakeProduct (Abstract_box.BoxF) (ADCP.PolyCP)
-module BoxAndOct = MakeProduct (ADCP.BoxCP) (ADCP.OctBoxCP)
-module BoxAndPoly = MakeProduct (ADCP.BoxCP) (ADCP.PolyCP)
-module OctAndPoly = MakeProduct (ADCP.OctBoxCP) (ADCP.PolyCP)
-*)
