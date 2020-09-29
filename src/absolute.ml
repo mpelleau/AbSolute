@@ -1,10 +1,10 @@
 open Config
 
-(***************)
 (* entry point *)
-(***************)
 
-let go() =
+let _ =
+  (* Initializing random with the seed : AbSolute converted to hexa *)
+  Random.init 0x4162536f6c757465;
   let open Constant in
   try
     parse_args ();
@@ -14,8 +14,3 @@ let go() =
     if !debug > 0 then Vpl_domain.enable_debug();
     lift (set_domain ()) prob
   with Error msg -> Terminal.error msg
-
-let _ =
-  (* Initializing random with the seed : AbSolute converted to hexa *)
-  Random.init 0x4162536f6c757465;
-  go()

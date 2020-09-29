@@ -1,4 +1,5 @@
 open Csp
+open Tools
 open Apron
 open Apronext
 open Apron_utils
@@ -17,7 +18,7 @@ module SyntaxTranslator (D:ADomain) = struct
       | Funcall (name,args) ->
          (match name,args with
           | "sqrt",[x] -> Texprext.sqrt (aux x)
-          | name,_ -> Tools.fail_fmt "%s not supported by apron" name
+          | name,_ -> fail_fmt "%s not supported by apron" name
          )
       | Var v -> Texprext.var env (Var.of_string v)
       | Cst c -> Texprext.cst env (Coeff.s_of_mpqf c)
@@ -106,6 +107,7 @@ end
 module MAKE(AP:ADomain) = struct
 
   module A = Abstractext
+  module E = Environmentext
 
   type t = AP.t A.t
 
@@ -115,13 +117,12 @@ module MAKE(AP:ADomain) = struct
 
   let to_bexpr = T.apron_to_bexpr
 
-  let empty = A.top man (Environmentext.empty)
+  let empty = A.top man (E.empty)
 
   let vars abs =
-    let (ivars, rvars) = Environment.vars (A.env abs) in
-    let iv = Array.to_list ivars |> List.map (fun v -> (Csp.Int, Var.to_string v)) in
-    let rv = Array.to_list rvars |> List.map (fun v -> (Csp.Real, Var.to_string v)) in
-    iv@rv
+    let iv, rv = E.vars (A.env abs) in
+    let iv = Array.fold_left (fun a v -> (Int, Var.to_string v)::a) [] iv in
+    Array.fold_left (fun a v -> (Real, Var.to_string v)::a) iv rv
 
   let dom_to_texpr env =
     let open Csp in
@@ -136,7 +137,7 @@ module MAKE(AP:ADomain) = struct
     let e = A.env abs in
     let v = Var.of_string v in
     let ints,reals = if typ = Int then [|v|],[||] else [||],[|v|] in
-    let env = Environmentext.add e ints reals in
+    let env = E.add e ints reals in
     let abs = A.change_environment man abs env false in
     let texpr = dom_to_texpr env dom in
     A.assign_texpr man abs v texpr None
@@ -147,7 +148,7 @@ module MAKE(AP:ADomain) = struct
     itv_to_mpqf i
 
   let bounds abs =
-    let (ivars, rvars) = Environment.vars (A.env abs) in
+    let (ivars, rvars) = E.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->
       (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
@@ -156,7 +157,7 @@ module MAKE(AP:ADomain) = struct
 
   let rem_var abs v =
     let var = Var.of_string v in
-    let e = Environment.remove (A.env abs) (Array.of_list [var]) in
+    let e = E.remove (A.env abs) (Array.of_list [var]) in
     A.change_environment man abs e false
 
   let is_empty a = A.is_bottom man a
@@ -221,7 +222,7 @@ module MAKE(AP:ADomain) = struct
         else aux (cur+1) i_max diam_max itv_max
     in
     let (a,b,c) = aux 0 0 Q.zero tab.(0) in
-    ((Environment.var_of_dim env a),c,b)
+    ((E.var_of_dim env a),c,b)
 
   (* Compute the minimal and the maximal diameter of an array on intervals *)
   let rec minmax tab i max i_max min  =
@@ -242,9 +243,9 @@ module MAKE(AP:ADomain) = struct
 	    let ci = p2.(i) -. p1.(i) in
 	    let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
 	    let ci' = 2. *. ci in
-	    let coeffi = Coeff.Scalar (Scalar.of_float ci') in
-	    let list1' = List.append list1 [(coeffi, Environment.var_of_dim gen_env i)] in
-	    let list2' = List.append list2 [(Coeff.neg coeffi, Environment.var_of_dim gen_env i)] in
+	    let c = Coeff.s_of_float ci' in
+	    let list1' = List.append list1 [(c, E.var_of_dim gen_env i)] in
+	    let list2' = List.append list2 [(Coeff.neg c, E.var_of_dim gen_env i)] in
 	    genere_linexpr gen_env size p1 p2 (i+1) list1' list2' cst'
 
   let split abs (e1,e2) =
@@ -264,7 +265,7 @@ module MAKE(AP:ADomain) = struct
     let poly = A.to_generator_array man polyad in
     let gen_env = poly.Generator1.array_env in
     (*print_gen gens gen_env;*)
-    let size = Environment.size gen_env in
+    let size = E.size gen_env in
     let gen_float_array = Generatorext.to_float_array poly in
     let (p1, p2, _) = most_distant_pair gen_float_array in
     let (list1, list2, cst) = genere_linexpr gen_env size p1 p2 0 [] [] 0. in
@@ -292,7 +293,7 @@ module MAKE(AP:ADomain) = struct
   let is_abstraction poly instance =
     let env = Abstract1.env poly in
     let var_texpr =
-      Tools.VarMap.fold (fun var value acc ->
+      VarMap.fold (fun var value acc ->
           let var = Apron.Var.of_string var in
           let value = Texpr1.cst env (Coeff.s_of_mpqf value) in
           (var,value)::acc
@@ -306,8 +307,7 @@ module MAKE(AP:ADomain) = struct
 
   (** Random uniform value within an interval, according to the type *)
   let spawn_itv typ (i:Interval.t) =
-    let inf = Scalarext.to_mpqf i.Interval.inf in
-    let sup = Scalarext.to_mpqf i.Interval.sup in
+    let inf,sup = itv_to_mpqf i in
     match typ with
     | Environment.INT ->
        let size = Mpqf.sub sup inf |> Mpqf.to_float |> int_of_float in
@@ -323,11 +323,11 @@ module MAKE(AP:ADomain) = struct
     let itvs = box.Abstract1.interval_array in
     let instance,_ =
       Array.fold_left (fun (acc,idx) i ->
-          let v = Environment.var_of_dim env idx in
-          let typ = Environment.typ_of_var env v in
-          let instance = Tools.VarMap.add (Var.to_string v) (spawn_itv typ i) acc in
+          let v = E.var_of_dim env idx in
+          let typ = E.typ_of_var env v in
+          let instance = VarMap.add (Var.to_string v) (spawn_itv typ i) acc in
           instance,(idx+1)
-        ) (Tools.VarMap.empty,0) itvs
+        ) (VarMap.empty,0) itvs
     in instance
 
 (** Takes an integer and compute a spawner function. The integer
@@ -345,10 +345,10 @@ module MAKE(AP:ADomain) = struct
       else if n >= nb_try then
         (* in case we didnt find an instance, we fix a variable and retry.
          we give up on uniformity to enforce termination *)
-        let v = Environment.var_of_dim env idx in
-        let typ = Environment.typ_of_var env v in
+        let v = E.var_of_dim env idx in
+        let typ = E.typ_of_var env v in
         let v_itv = Abstract1.bound_variable man poly v in
-        let v = Texpr1.var env (Environment.var_of_dim env idx) in
+        let v = Texpr1.var env (E.var_of_dim env idx) in
         let value = Texpr1.cst env (Coeff.s_of_mpqf (spawn_itv typ v_itv)) in
         let texpr = Texpr1.binop Texpr1.Sub v value Texpr1.Real Texpr1.Near in
         let tcons = Tcons1.make texpr Tcons1.EQ in
