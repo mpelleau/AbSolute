@@ -61,11 +61,11 @@ let split_args (s:string) =
 
 (** builds the abstract domain corresponding to the name given in
    parameter *)
-let rec parse : string -> (module AbstractCP) = fun name ->
+let rec parse name :  (module AbstractCP) =
   match String.index_opt name '(' with
   | None ->
-     let m = VarMap.find_fail name !arity_0 in
-     (module (val m : AbstractCP))
+     let (module M) = VarMap.find_fail name !arity_0 in
+     (module M)
   | Some 0 -> failwith "a domain description can not begin with a parenthesis"
   | Some i ->
      (match String.rindex_opt name ')' with
@@ -75,11 +75,14 @@ let rec parse : string -> (module AbstractCP) = fun name ->
          let args = split_args (String.sub name (i+1) (j-i-1)) in
          (match args with
           | [arg] ->
-             let module Mk = (val VarMap.find_fail s !arity_1) in
-             (module Mk.Make(val parse arg))
+             let (module Mk) = VarMap.find_fail s !arity_1 in
+             let (module Arg:AbstractCP) = parse arg in
+             (module Mk.Make(Arg))
           | [arg1; arg2] ->
-             let module Mk = (val VarMap.find_fail s !arity_2) in
-             (module Mk.Make(val parse arg1)(val parse arg2))
+             let (module Mk) = VarMap.find_fail s !arity_2 in
+             let (module Arg1:AbstractCP) = parse arg1 in
+             let (module Arg2:AbstractCP) = parse arg2 in
+             (module Mk.Make(Arg1)(Arg2))
           | _ -> failwith "max arity 2 for domain description"))
   | exception Not_found ->
      fail_fmt "domain unknown %s. Possible domains are %a"

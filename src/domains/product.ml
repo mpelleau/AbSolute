@@ -6,8 +6,6 @@ open Consistency
 module Make (A : AbstractCP) (B : AbstractCP)  =
   struct
 
-    module A = A
-    module B = B
     type t = A.t * B.t
 
     let is_representable = B.is_representable
@@ -16,29 +14,11 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
 
     let a_meet_b a b : B.t Consistency.t =
       let a_expr = A.to_bexpr a in
-      try
-        let a' =
-          List.fold_left (fun acc e ->
-              match B.filter acc e with
-              | Unsat -> raise Exit
-              | Sat -> acc
-              | Filtered (a,_) -> a
-            ) b a_expr
-        in Filtered (a',false)
-      with Exit -> Unsat
+      Consistency.fold_and B.filter b a_expr
 
     let b_meet_a a b : A.t Consistency.t =
       let b_expr = B.to_bexpr b in
-      try
-        let a' =
-          List.fold_left (fun acc e ->
-              match A.filter acc e with
-              | Unsat -> raise Exit
-              | Sat -> acc
-              | Filtered (a,_) -> a
-            ) a b_expr
-        in Filtered (a',false)
-      with Exit -> Unsat
+      Consistency.fold_and A.filter a b_expr
 
     let reduced_product (a:A.t) (b:B.t) : (A.t * B.t) Consistency.t =
       let new_a = b_meet_a a b in
@@ -60,10 +40,7 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       and (lb, hb) = B.var_bounds abs' v in
       ((max la lb), (min ha hb))
 
-    let rem_var (abs,abs') v =
-       let a = A.rem_var abs v
-       and b = B.rem_var abs' v in
-       (a, b)
+    let rem_var (a,b) v = (A.rem_var a v),(B.rem_var b v)
 
     let bounds (abs,abs')  =
       let la = A.bounds abs
@@ -107,16 +84,12 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       (max l_a l_b),(min u_a u_b)
 
     let print fmt ((abs, abs'):t) =
-      A.print fmt abs;
-      Format.printf ", ";
-      B.print fmt abs'
+      Format.fprintf fmt "%a, %a" A.print abs B.print abs'
 
     let volume ((_, abs'):t) =
       B.volume abs'
 
-    (* concretization function. we call it a spawner.
-     useful to do tests, and to reuse the results.
-     values are generated randomly *)
+    (* concretization function *)
     let spawn (a,b) =
       let rec generate () =
         let i = A.spawn a in

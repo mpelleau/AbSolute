@@ -9,6 +9,12 @@ type 'a t =
   | Unsat                 (* when s' = \emptyset *)
   | Filtered of 'a * bool (* filtered (s',b) : \forall x \in s', b \implies p(x) *)
 
+let print fmt = function
+   | Unsat -> Format.fprintf fmt "Unsat"
+   | Sat -> Format.fprintf fmt "Sat"
+   | Filtered (_,true) -> Format.fprintf fmt "filtered successfully"
+   | Filtered (_,false) -> Format.fprintf fmt "filtered"
+
 let map f = function
    | Unsat -> Unsat
    | Sat -> Sat
@@ -19,8 +25,15 @@ let bind f = function
    | Sat -> Sat
    | Filtered (a,b) -> f a b
 
-let print fmt = function
-   | Unsat -> Format.fprintf fmt "Unsat"
-   | Sat -> Format.fprintf fmt "Sat"
-   | Filtered (_,true) -> Format.fprintf fmt "filtered successfully"
-   | Filtered (_,false) -> Format.fprintf fmt "filtered"
+(** apply several filtering operation, with early termination when a
+   unsatisfiable filter is met *)
+let fold_and f init l =
+  let next ((abs,flag) as acc) c =
+    match f abs c with
+    | Unsat -> raise Exit
+    | Sat -> acc
+    | Filtered (a,sat) -> (a,flag&&sat)
+  in
+  try let a,b = List.fold_left next (init,true) l in
+      Filtered (a,b)
+  with Exit -> Unsat
