@@ -3,13 +3,13 @@ open Signature
 
 type dom_list = (module AbstractCP) list
 
-module type MK1 = sig
-  module Make : functor (D:AbstractCP) -> AbstractCP
-end
+module type MK1 = sig module Make : functor (D:AbstractCP) -> AbstractCP end
 
-module type MK2 = sig
-  module Make : functor(D1:AbstractCP) -> functor(D2:AbstractCP) -> AbstractCP
-end
+module type MK2 =
+  sig module Make :
+      functor(A:AbstractCP) ->
+      functor(B:AbstractCP) -> AbstractCP
+  end
 
 (* module maps *)
 let arity_0 = ref VarMap.empty
@@ -21,7 +21,7 @@ let get_all =
   fun () ->
   (aux !arity_0)@(aux !arity_1)@(aux !arity_2)
 
-(** map updating function *)
+(* map updating function *)
 let update name d = function
   | None -> Some d
   | Some _ -> failwith ("name clash between abstract domains: "^name)
@@ -44,28 +44,27 @@ let register2 name (d:(module MK2)) =
 (** splits a string into a list of args. ignores the nested calls *)
 let split_args (s:string) =
   let l = String.length s in
-  let rec loop acc first i nb =
+  let rec loop acc first i nested =
     if i = l then
       let arg = String.sub s first (i-first) in
       List.rev (arg::acc)
     else
       match s.[i] with
-      | '(' -> loop acc first (i+1) (nb+1)
-      | ')' -> loop acc first (i+1) (nb-1)
-      | ',' -> if nb = 0 then
+      | '(' -> loop acc first (i+1) (nested+1)
+      | ')' -> loop acc first (i+1) (nested-1)
+      | ',' -> if nested = 0 then
                  let arg = String.sub s first (i-first) in
-                 loop (arg::acc) (i+1) (i+1) nb
-               else loop acc first (i+1) nb
-      | _ -> loop acc first (i+1) nb
+                 loop (arg::acc) (i+1) (i+1) nested
+               else loop acc first (i+1) nested
+      | _ -> loop acc first (i+1) nested
   in loop [] 0 0 0
 
 (** builds the abstract domain corresponding to the name given in
    parameter *)
-let rec parse name :  (module AbstractCP) =
+let rec parse name : (module AbstractCP) =
   match String.index_opt name '(' with
-  | None ->
-     let (module M) = VarMap.find_fail name !arity_0 in
-     (module M)
+  | None -> let (module M) = VarMap.find_fail name !arity_0 in
+            (module M)
   | Some 0 -> failwith "a domain description can not begin with a parenthesis"
   | Some i ->
      (match String.rindex_opt name ')' with
@@ -86,8 +85,8 @@ let rec parse name :  (module AbstractCP) =
           | _ -> failwith "max arity 2 for domain description"))
   | exception Not_found ->
      fail_fmt "domain unknown %s. Possible domains are %a"
-       name (Format.pp_print_list ~pp_sep:(fun f ()-> Format.fprintf f ", ")
-               (fun fmt -> Format.fprintf fmt "%s")) (get_all())
+       name (Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ")
+               (fun f -> fprintf f "%s"))) (get_all())
 
 (* Registering the abstract domains *)
 

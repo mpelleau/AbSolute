@@ -126,10 +126,10 @@ module VarMap = struct
   (** fails directly with an error msg instead of raising Not_found *)
   let find_fail key map =
     try find key map
-    with Not_found -> fail_fmt "variable not found: %s" key
+    with Not_found -> fail_fmt "key not found: %s" key
 
   (** builds a map from an association list*)
-  let of_list (assoc: (string*'a) list) =
+  let of_list (assoc : (key * 'a) list) =
     List.fold_left (fun acc (k,m) -> add k m acc) empty assoc
 end
 

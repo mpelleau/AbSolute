@@ -22,8 +22,8 @@ module Make (Abs:AbstractCP) = struct
               | Sat -> Sat
               | Unsat -> x
               | Filtered (n2,_) ->
-                 let union = Abs.join n1 n2 in
-                 Filtered ((union,false))))
+                 let union,exact = Abs.join n1 n2 in
+                 Filtered ((union,exact))))
       | And(b1,b2) -> Consistency.fold_and loop num [b1;b2]
       | Not _ -> assert false
     in loop num c

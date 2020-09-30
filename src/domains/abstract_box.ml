@@ -63,13 +63,13 @@ module Box (I:ITV) = struct
      the same set of variables;
      otherwise, an Invalid_argument exception will be raised *)
 
-  let join (a:t) (b:t) : t =
+  let join (a:t) (b:t) : t * bool =
     let join_opt a b =
       match a,b with
       | Some a, Some b -> Some (I.join a b)
       | _ -> None
     in
-    VarMap.merge (fun _ -> join_opt) a b
+    (VarMap.merge (fun _ -> join_opt) a b),false
 
   let meet (a:t) (b:t) : t =
     let meet_opt a b =
@@ -252,7 +252,7 @@ module Box (I:ITV) = struct
     let l = List.filter (fun (_, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l
 
-  let rem_var abs var : t =
+  let rm_var abs var : t =
     Env.remove var abs
 
   let forward_eval abs cons =

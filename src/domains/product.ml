@@ -40,7 +40,7 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       and (lb, hb) = B.var_bounds abs' v in
       ((max la lb), (min ha hb))
 
-    let rem_var (a,b) v = (A.rem_var a v),(B.rem_var b v)
+    let rm_var (a,b) v = (A.rm_var a v),(B.rm_var b v)
 
     let bounds (abs,abs')  =
       let la = A.bounds abs
@@ -64,7 +64,10 @@ module Make (A : AbstractCP) (B : AbstractCP)  =
       let split_a = A.split abs jacobian in
       List.map (fun x -> (x, abs')) split_a
 
-    let join (a,a') (b,b') = (A.join a b), (B.join a' b')
+    let join (a,b) (a',b') =
+      let a,exact_a = A.join a a' in
+      let b,exact_b = B.join b b' in
+      (a,b),(exact_a && exact_b)
 
     let meet (a,a') (b,b') =
       match reduced_product (A.meet a b) (B.meet a' b') with

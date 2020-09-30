@@ -155,14 +155,14 @@ module MAKE(AP:ADomain) = struct
       ) [] vars in
     List.filter (fun (_, (l, u)) -> l = u) itvs
 
-  let rem_var abs v =
+  let rm_var abs v =
     let var = Var.of_string v in
     let e = E.remove (A.env abs) (Array.of_list [var]) in
     A.change_environment man abs e false
 
   let is_empty a = A.is_bottom man a
 
-  let join a b = A.join man a b
+  let join a b = (A.join man a b),false
 
   let meet a b = A.meet man a b
 
@@ -173,7 +173,7 @@ module MAKE(AP:ADomain) = struct
     let a =
       if Tconsext.get_typ c = Tconsext.DISEQ then
         let t1,t2 = Tconsext.splitdiseq c in
-        join (A.filter_tcons man b t1) (A.filter_tcons man b t2)
+        fst (join (A.filter_tcons man b t1) (A.filter_tcons man b t2))
       else A.filter_tcons man b c
     in
     Consistency.Filtered(a,false)

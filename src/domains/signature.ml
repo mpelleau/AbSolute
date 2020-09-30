@@ -18,7 +18,7 @@ module type AbstractCP = sig
   val add_var : t -> Csp.decl -> t
 
   (** removes an unconstrained variable from the environnement *)
-  val rem_var : t -> Csp.var -> t
+  val rm_var : t -> Csp.var -> t
 
   (** returns the variables annoted by their type *)
   val vars : t -> (Csp.annot * Csp.var) list
@@ -31,13 +31,17 @@ module type AbstractCP = sig
 
   (** {1 Measure} *)
 
+  (** computes the volume of an abstract element *)
+  val volume : t -> float
+
   (** tests if an abstract element is empty *)
   val is_empty : t -> bool
 
-  (** {1 OPERATIONS} *)
+  (** {1 Set-theoretic operations} *)
 
-  (** joins two abstract elements *)
-  val join: t -> t -> t
+  (** Joins two abstract elements. The boolean flag indicates if the
+     join was exact. It is always sound to return false *)
+  val join: t -> t -> t * bool
 
   (** meet two abstract elements, may raise bot_found *)
   val meet: t -> t -> t
@@ -52,11 +56,14 @@ module type AbstractCP = sig
   (** splits an abstract element *)
   val split : t -> Csp.ctrs -> t list
 
+  (** {1 Constraint management} *)
+
   (** filters an abstract element with respect to an arithmetic constraint,
       may raise bot found. *)
   val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t Consistency.t
 
-  (** returns the range of value of a given expression for an abstract element *)
+  (** computes the range of value of a given expression within an
+     abstract element *)
   val forward_eval : t -> Csp.expr -> (Q.t * Q.t)
 
   (** transforms an abstract element into constraints *)
@@ -65,19 +72,15 @@ module type AbstractCP = sig
   (** checks if a constraint is suited for this abstract domain *)
   val is_representable : Csp.bexpr -> Kleene.t
 
-  (** printing *)
-  val print : Format.formatter -> t -> unit
-
-  (** computes the volume of an abstract element *)
-  val volume : t -> float
-
-  (** concretization function. we call it a spawner.
-      useful to do tests, and to reuse the results.
-      values are generated randomly *)
+    (** Random concretization function. useful to do tests, and to reuse
+     the results.  values are generated uniformly when possible *)
   val spawn : t -> Csp.instance
 
   (** check if an abstract element is an abstraction of an instance *)
   val is_abstraction : t -> Csp.instance -> bool
+
+  (** printing *)
+  val print : Format.formatter -> t -> unit
 
   (** transforms an abstract element into a Picasso.Drawable.t for drawing *)
   val render : t -> Picasso.Drawable.t
