@@ -13,7 +13,7 @@ end
 module SyntaxTranslator (D:ADomain) = struct
   let man = D.manager_alloc ()
 
-  let expr_to_apron env (e:expr) : Texpr1.t =
+  let of_expr env (e:expr) : Texpr1.t =
     let rec aux = function
       | Funcall (name,args) ->
          (match name,args with
@@ -25,16 +25,16 @@ module SyntaxTranslator (D:ADomain) = struct
       | Neg e -> Texprext.neg (aux e)
       | Binary (o,e1,e2) ->
          (match o with
-         | ADD -> Texprext.add
-         | SUB -> Texprext.sub
-         | DIV -> Texprext.div
-         | MUL -> Texprext.mul
-         | POW -> Texprext.pow) (aux e1) (aux e2)
+          | ADD -> Texprext.add
+          | SUB -> Texprext.sub
+          | DIV -> Texprext.div
+          | MUL -> Texprext.mul
+          | POW -> Texprext.pow) (aux e1) (aux e2)
     in aux e
 
   let of_cmp_expr elem (op,e1,e2) =
     let env = Abstract1.env elem in
-    let e1 = expr_to_apron env e1 and e2 = expr_to_apron env e2 in
+    let e1 = of_expr env e1 and e2 = of_expr env e2 in
     match op with
     | EQ  -> Tconsext.eq e1 e2
     | NEQ -> Tconsext.diseq e1 e2
@@ -50,33 +50,24 @@ module SyntaxTranslator (D:ADomain) = struct
     let rvars = Array.map (fun v -> Var.to_string v) rv in
     (Array.to_list ivars, Array.to_list rvars)
 
-  let rec apron_to_expr texpr env =
-    match texpr with
+  let rec to_expr = function
     | Texpr1.Cst c -> Cst (Coeffext.to_mpqf c)
-    | Texpr1.Var v ->
-      let e = match (Environment.typ_of_var env v) with
-              | Environment.INT -> Var ((Var.to_string v)^"%")
-              | Environment.REAL -> Var (Var.to_string v)
-      in e
-    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
-       let e = apron_to_expr e env in
-       Funcall ("sqrt",[e])
-    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Neg (apron_to_expr e env)
+    | Texpr1.Var v -> Var (Var.to_string v)
+    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) -> Funcall ("sqrt",[to_expr e])
+    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Neg (to_expr e)
     | Texpr1.Unop (Texpr1.Cast, _, _, _) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
-      let o = match op with
-        | Texpr1.Add -> ADD
-        | Texpr1.Sub -> SUB
-        | Texpr1.Mul -> MUL
-        | Texpr1.Div -> DIV
-        | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
-        | _ -> failwith "operation not yet supported with AbSolute"
-      in
-      let e1 = apron_to_expr e1 env
-      and e2 = apron_to_expr e2 env in
-      Binary (o, e1, e2)
+       let o = match op with
+         | Texpr1.Add -> ADD
+         | Texpr1.Sub -> SUB
+         | Texpr1.Mul -> MUL
+         | Texpr1.Div -> DIV
+         | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
+         | _ -> failwith "operation not yet supported with AbSolute"
+       in
+       Binary (o, to_expr e1, to_expr e2)
 
-  let apron_to_bexpr tcons env =
+  let apron_to_bexpr tcons =
     let apron_to_cmp op =
       match op with
       | Tcons1.EQ  -> EQ
@@ -86,17 +77,16 @@ module SyntaxTranslator (D:ADomain) = struct
       | _ -> failwith "operation not yet supported with AbSolute"
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
-    let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
-    (exp, typ, Csp_helper.zero)
+    let exp = to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) in
+    Cmp(exp, typ, Csp_helper.zero)
 
-  let apron_to_bexpr abs =
-    let abscons = Abstract1.to_tcons_array man abs in
-    let earray = abscons.Tcons1.tcons0_array in
-    let tenv = abscons.Tcons1.array_env in
-    Array.map (fun t ->
-        apron_to_bexpr (Tcons1.{tcons0 = t; env = tenv}) tenv
-      ) earray
-    |> Array.to_list
+  let to_bexpr abs : Csp.bexpr =
+    let cons = Abstractext.to_tcons_array man abs in
+    let l = Tcons1.array_length cons in
+    let rec loop acc i =
+      if i = l then acc
+      else loop (Csp.And(acc, apron_to_bexpr (Tcons1.array_get cons i))) (i+1)
+    in loop (Tcons1.array_get cons 0 |> apron_to_bexpr) 1
 end
 
 
@@ -111,11 +101,7 @@ module MAKE(AP:ADomain) = struct
 
   type t = AP.t A.t
 
-  module T = SyntaxTranslator(AP)
-
-  let man = T.man
-
-  let to_bexpr = T.apron_to_bexpr
+  include SyntaxTranslator(AP)
 
   let empty = A.top man (E.empty)
 
@@ -151,8 +137,8 @@ module MAKE(AP:ADomain) = struct
     let (ivars, rvars) = E.vars (A.env abs) in
     let vars = (Array.to_list ivars)@(Array.to_list rvars) in
     let itvs = List.fold_left (fun l v ->
-      (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
-      ) [] vars in
+                   (Var.to_string v, itv_to_mpqf (A.bound_variable man abs v))::l
+                 ) [] vars in
     List.filter (fun (_, (l, u)) -> l = u) itvs
 
   let rm_var abs v =
@@ -169,7 +155,7 @@ module MAKE(AP:ADomain) = struct
   let prune = None
 
   let filter b (c,e1,e2) =
-    let c = T.of_cmp_expr b (e1,c,e2) in
+    let c = of_cmp_expr b (e1,c,e2) in
     let a =
       if Tconsext.get_typ c = Tconsext.DISEQ then
         let t1,t2 = Tconsext.splitdiseq c in
@@ -184,27 +170,24 @@ module MAKE(AP:ADomain) = struct
   let to_box abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
-    A.of_lincons_array (Box.manager_alloc ()) env
+      A.of_lincons_array (Box.manager_alloc ()) env
 
   (** computes the smallest enclosing octagon *)
   let to_oct abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
-    A.of_lincons_array (Oct.manager_alloc ()) env
+      A.of_lincons_array (Oct.manager_alloc ()) env
 
   (** computes the smallest enclosing polyhedron *)
   let to_poly abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
-    A.of_lincons_array (Polka.manager_alloc_strict ()) env
+      A.of_lincons_array (Polka.manager_alloc_strict ()) env
 
   (** interval evaluation of an expression within an abtract domain *)
   let forward_eval abs cons =
-    let ap_expr = T.expr_to_apron (A.env abs) cons in
-    let obj_itv = A.bound_texpr man abs ap_expr in
-    let obj_inf = obj_itv.Interval.inf
-    and obj_sup = obj_itv.Interval.sup in
-    (Scalarext.to_mpqf obj_inf, Scalarext.to_mpqf obj_sup)
+    let ap_expr = of_expr (A.env abs) cons in
+    A.bound_texpr man abs ap_expr |> itv_to_mpqf
 
   (* Given `largest abs = (v, i, d)`, `largest` extracts the variable
      `v` from `abs` * with the largest interval `i` = [l, u], and `d`
@@ -321,12 +304,12 @@ module MAKE(AP:ADomain) = struct
         ) (VarMap.empty,0) itvs
     in instance
 
-(** Takes an integer and compute a spawner function. The integer
- * corresponds to the number of tries allowed to proceed to the
- * generation. The bigger it is, the more uniform the spawner will be.  A
- * spawner returns a randomly uniformly chosen instanciation of the
- * variables.  if the polyhedron has a nul (or very small) volume, (e.g
- * equalities in the constraints) uniformity is not guaranteed *)
+  (** Takes an integer and compute a spawner function. The integer
+   * corresponds to the number of tries allowed to proceed to the
+   * generation. The bigger it is, the more uniform the spawner will be.  A
+   * spawner returns a randomly uniformly chosen instanciation of the
+   * variables.  if the polyhedron has a nul (or very small) volume, (e.g
+   * equalities in the constraints) uniformity is not guaranteed *)
   let spawner (nb_try:int) = fun poly ->
     let env = Abstract1.env poly in
     let rec retry poly n idx =

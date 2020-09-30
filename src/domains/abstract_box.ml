@@ -48,14 +48,6 @@ module Box (I:ITV) = struct
 
   let float_bounds a v = I.to_float_range (find v a)
 
-  let to_expr abs vars : (Csp.expr * Csp.cmpop * Csp.expr) list =
-    Env.fold (fun v x lexp ->
-        if List.exists (fun vn -> String.equal v vn) vars then
-          let ((cl, l), (ch, h)) = I.to_expr x in
-          (Csp.Var(v), cl, l)::(Csp.Var(v), ch, h)::lexp
-        else lexp
-      ) abs []
-
   (************************************************************************)
   (* SET-THEORETIC *)
   (************************************************************************)
@@ -269,20 +261,7 @@ module Box (I:ITV) = struct
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
     | Funcall (_, _) -> false (* check if sound *)
 
- let to_bexpr (a:t) : (expr * cmpop * expr) list =
-    Env.fold (fun v x acc ->
-        let ((op1, e1), (op2, e2)) = I.to_expr x in
-        match e1, e2 with
-        | Cst e1, Cst e2 ->
-           acc@[(Var(v), op1, Cst e1); (Var v, op2, Cst e2)]
-        | Cst e1, e2 ->
-           acc@[(Var(v), op1, Cst e1); (Var v, op2, e2)]
-        | e1, Cst e2 ->
-           acc@[(Var(v), op1, e1); (Var v, op2, Cst e2)]
-        | e1, e2 ->
-           acc@[(Var(v), op1, e1); (Var v, op2, e2)]
-      ) a []
-
+  let to_bexpr (_a:t) : Csp.bexpr = assert false
 
   (*********************************)
   (* Sanity and checking functions *)

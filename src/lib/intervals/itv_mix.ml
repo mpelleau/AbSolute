@@ -307,8 +307,8 @@ let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
 let filter_pow (i:t) (n:t) (r:t) : (t*t) bot =
   merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
 
-let to_expr (itv:t) =
-  dispatch I.to_expr R.to_expr itv
+let to_bexpr v (itv:t) =
+  dispatch (I.to_bexpr v) (R.to_bexpr v) itv
 
 (* returns the type annotation of the represented values *)
 let to_annot x =

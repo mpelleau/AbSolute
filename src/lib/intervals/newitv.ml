@@ -175,10 +175,11 @@ module Make(B:BOUND) = struct
 
   let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
 
-  let to_expr (((kl, l), (kh, h)):t) =
+  let to_bexpr v (((kl, l), (kh, h)):t) =
+    let v = Csp.Var v in
     let l_cst = Csp.Cst (B.to_rat l) and h_cst = Csp.Cst (B.to_rat h) in
-    ((match kl with | Strict -> Csp.GT | Large -> Csp.GEQ), l_cst),
-    ((match kh with | Strict -> Csp.LT | Large -> Csp.LEQ), h_cst)
+    Csp.(And(Cmp(v,(match kl with | Strict -> GT | Large -> GEQ), l_cst),
+        Cmp(v,(match kh with | Strict -> LT | Large -> LEQ), h_cst)))
 
   (************************************************************************)
   (* SET-THEORETIC *)

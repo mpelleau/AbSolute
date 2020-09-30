@@ -33,7 +33,7 @@ module type ITV = sig
   val to_annot : t -> Csp.annot
   val print: Format.formatter -> t -> unit
 
-  val to_expr: t -> (Csp.cmpop * Csp.expr) * (Csp.cmpop * Csp.expr)
+  val to_bexpr: Csp.var -> t -> Csp.bexpr
 
   (** {1 SET-THEORETIC } *)
 

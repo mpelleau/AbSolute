@@ -7,7 +7,8 @@ open Csp
 open Consistency
 
 (** Boolean expressions abstractions *)
-module Make (Abs:AbstractCP) = struct
+module Make (Abs:Numeric) : Domain = struct
+  include Abs
 
   let filter (num:Abs.t) c : Abs.t Consistency.t =
     let rec loop num c =
@@ -27,5 +28,4 @@ module Make (Abs:AbstractCP) = struct
       | And(b1,b2) -> Consistency.fold_and loop num [b1;b2]
       | Not _ -> assert false
     in loop num c
-
 end

@@ -4,7 +4,7 @@
 (** can be raised by split operations *)
 exception TooSmall
 
-module type AbstractCP = sig
+module type Numeric = sig
 
   (** the type of abstract elements *)
   type t
@@ -64,10 +64,10 @@ module type AbstractCP = sig
 
   (** computes the range of value of a given expression within an
      abstract element *)
-  val forward_eval : t -> Csp.expr -> (Q.t * Q.t)
+  val forward_eval : t -> Csp.expr -> Itv.ItvQ.t
 
   (** transforms an abstract element into constraints *)
-  val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list
+  val to_bexpr : t -> Csp.bexpr
 
   (** checks if a constraint is suited for this abstract domain *)
   val is_representable : Csp.bexpr -> Kleene.t
@@ -84,6 +84,13 @@ module type AbstractCP = sig
 
   (** transforms an abstract element into a Picasso.Drawable.t for drawing *)
   val render : t -> Picasso.Drawable.t
+end
+
+(** Abstract domain with full handling of boolean expressions instead
+   of only numeric comparisons *)
+module type Domain = sig
+  include Numeric
+  val filter : t -> Csp.bexpr -> t Consistency.t
 end
 
 (** An actual solvable unit *)

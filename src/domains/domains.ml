@@ -1,15 +1,13 @@
 open Tools
 open Signature
 
-type dom_list = (module AbstractCP) list
+type dom_list = (module Domain) list
 
-module type MK1 = sig module Make : functor (D:AbstractCP) -> AbstractCP end
+module type MK1 = sig module Make : functor (D:Domain) -> Domain end
 
-module type MK2 =
-  sig module Make :
-      functor(A:AbstractCP) ->
-      functor(B:AbstractCP) -> AbstractCP
-  end
+module type MK2 = sig
+  module Make : functor(A:Domain) -> functor(B:Domain) -> Domain
+end
 
 (* module maps *)
 let arity_0 = ref VarMap.empty
@@ -17,7 +15,7 @@ let arity_1 = ref VarMap.empty
 let arity_2 = ref VarMap.empty
 
 let get_all =
-  let aux m = fst @@ List.split @@ VarMap.bindings m in
+  let aux m = List.map fst @@ VarMap.bindings m in
   fun () ->
   (aux !arity_0)@(aux !arity_1)@(aux !arity_2)
 
@@ -28,7 +26,7 @@ let update name d = function
 
 (** registers an abstract domain into the list of available abstract
    domain *)
-let register0 name (d:(module AbstractCP)) =
+let register0 name (d:(module Domain)) =
   arity_0 := VarMap.update name (update name d) !arity_0
 
 (** registers an abstract domain combinator into the list of
@@ -61,7 +59,7 @@ let split_args (s:string) =
 
 (** builds the abstract domain corresponding to the name given in
    parameter *)
-let rec parse name : (module AbstractCP) =
+let rec parse name : (module Domain) =
   match String.index_opt name '(' with
   | None -> let (module M) = VarMap.find_fail name !arity_0 in
             (module M)
@@ -75,12 +73,12 @@ let rec parse name : (module AbstractCP) =
          (match args with
           | [arg] ->
              let (module Mk) = VarMap.find_fail s !arity_1 in
-             let (module Arg:AbstractCP) = parse arg in
+             let (module Arg:Domain) = parse arg in
              (module Mk.Make(Arg))
           | [arg1; arg2] ->
              let (module Mk) = VarMap.find_fail s !arity_2 in
-             let (module Arg1:AbstractCP) = parse arg1 in
-             let (module Arg2:AbstractCP) = parse arg2 in
+             let (module Arg1:Domain) = parse arg1 in
+             let (module Arg2:Domain) = parse arg2 in
              (module Mk.Make(Arg1)(Arg2))
           | _ -> failwith "max arity 2 for domain description"))
   | exception Not_found ->
@@ -91,7 +89,7 @@ let rec parse name : (module AbstractCP) =
 (* Registering the abstract domains *)
 
 let _ =
-  register0 "box"  (module Abstract_box.BoxF);
-  register0 "boxS" (module Abstract_box.BoxStrict);
-  register0 "poly" (module ADCP.PolyCP);
+  register0 "box"  (module Boolean.Make(Abstract_box.BoxF));
+  register0 "boxS" (module Boolean.Make(Abstract_box.BoxStrict));
+  register0 "poly" (module Boolean.Make(ADCP.PolyCP));
   register2 "product" (module Product);

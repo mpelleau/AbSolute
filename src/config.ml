@@ -7,7 +7,7 @@
 open Signature
 
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (N:AbstractCP) = struct
+module GoS (N:Domain) = struct
   module It = Iterator.Make(N)
   module Solv = Solver.Make(It)
   module Print = Out.Make(N)
@@ -48,13 +48,13 @@ end
 (*   domains   *)
 (***************)
 
-let set_domain : unit -> (module AbstractCP) = fun () ->
+let set_domain : unit -> (module Domain) = fun () ->
   Domains.parse !Constant.domain
 
 (** * Lifts the given abstract domain and its associated drawer into a
    runnable domain.  The results depends on the value of flags
    {!val:Constant.minimizing} *)
-let lift (module D : AbstractCP) (prob : Csp.prog) : unit =
+let lift (module D : Domain) (prob : Csp.prog) : unit =
   let module Solver = GoS (D) in
   if !Constant.witness then Solver.witness prob
   else Solver.coverage prob

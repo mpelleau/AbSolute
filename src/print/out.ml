@@ -1,7 +1,7 @@
 open Signature
 open Picasso
 
-module Make (D:AbstractCP) = struct
+module Make (D:Domain) = struct
 
   let print_list msg print l =
     Format.printf "%i %s"(List.length l) msg;
