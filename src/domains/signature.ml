@@ -55,12 +55,19 @@ module type Numeric = sig
 
   (** {1 Constraint management} *)
 
+  (** domain's internal representation of a comparison *)
+  type internal_constr
+
+  (** constraint conversion *)
+  val internalize : (Csp.expr * Csp.cmpop * Csp.expr) -> internal_constr
+  val externalize : internal_constr -> (Csp.expr * Csp.cmpop * Csp.expr)
+
   (** filters an abstract element with respect to an arithmetic constraint,
       may raise bot found. *)
-  val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t Consistency.t
+  val filter : t -> internal_constr -> t Consistency.t
 
   (** checks if a constraint is suited for this abstract domain *)
-  val is_representable : (Csp.expr * Csp.cmpop * Csp.expr) -> Kleene.t
+  val is_representable : internal_constr -> Kleene.t
 
   (** computes the range of value of a given expression within an
      abstract element *)
@@ -87,8 +94,18 @@ end
    of only numeric comparisons *)
 module type Domain = sig
   include Numeric
-  val filter : t -> Csp.bexpr -> t Consistency.t
-  val is_representable : Csp.bexpr -> Kleene.t
+
+  (** domain's internal representation of a constraint *)
+  type internal_constr
+
+  (** constraint conversion *)
+  val internalize : Csp.bexpr -> internal_constr
+  val externalize : internal_constr -> Csp.bexpr
+
+  (** redefinition of filter and is_representable using boolean
+     expression *)
+  val filter : t -> internal_constr -> t Consistency.t
+  val is_representable : internal_constr -> Kleene.t
 end
 
 (** An actual solvable unit *)

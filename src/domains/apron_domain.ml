@@ -11,6 +11,9 @@ end
 
 (* Translation functor for csp.prog to apron values*)
 module SyntaxTranslator (D:ADomain) = struct
+
+  type internal_constr = Tcons1.t
+
   let man = D.manager_alloc ()
 
   let of_expr env (e:expr) : Texpr1.t =
@@ -32,7 +35,7 @@ module SyntaxTranslator (D:ADomain) = struct
           | POW -> Texprext.pow) (aux e1) (aux e2)
     in aux e
 
-  let of_cmp_expr elem (op,e1,e2) =
+  let of_cmp_expr elem (e1,op,e2) =
     let env = Abstract1.env elem in
     let e1 = of_expr env e1 and e2 = of_expr env e2 in
     match op with
@@ -78,15 +81,15 @@ module SyntaxTranslator (D:ADomain) = struct
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) in
-    Cmp(exp, typ, Csp_helper.zero)
+    (exp, typ, Csp_helper.zero)
 
   let to_bexpr abs : Csp.bexpr =
     let cons = Abstractext.to_tcons_array man abs in
     let l = Tcons1.array_length cons in
     let rec loop acc i =
       if i = l then acc
-      else loop (Csp.And(acc, apron_to_bexpr (Tcons1.array_get cons i))) (i+1)
-    in loop (Tcons1.array_get cons 0 |> apron_to_bexpr) 1
+      else loop (Csp.And(acc, Cmp(apron_to_bexpr (Tcons1.array_get cons i)))) (i+1)
+    in loop (Csp.Cmp(Tcons1.array_get cons 0 |> apron_to_bexpr)) 1
 end
 
 
@@ -104,6 +107,9 @@ module MAKE(AP:ADomain) = struct
   include SyntaxTranslator(AP)
 
   let empty = A.top man (E.empty)
+
+  let internalize = of_cmp_expr empty
+  let externalize = apron_to_bexpr
 
   let vars abs =
     let iv, rv = E.vars (A.env abs) in
@@ -146,8 +152,7 @@ module MAKE(AP:ADomain) = struct
 
   let prune = None
 
-  let filter abs (c,e1,e2) =
-    let c = of_cmp_expr abs (e1,c,e2) in
+  let filter abs c =
     let a =
       if Tconsext.get_typ c = Tconsext.DISEQ then
         let t1,t2 = Tconsext.splitdiseq c in

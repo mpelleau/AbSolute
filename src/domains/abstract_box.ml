@@ -26,6 +26,11 @@ module Box (I:ITV) = struct
   (* maps each variable to a (non-empty) interval *)
   type t = i Env.t
 
+  (* this domain uses the same language than the one defined in Csp.ml *)
+  type internal_constr = Csp.comparison
+  let internalize = Fun.id
+  let externalize = Fun.id
+
   let find v (a:t) = VarMap.find_fail v a
 
   (* returns true if var is an integer in the given environment *)

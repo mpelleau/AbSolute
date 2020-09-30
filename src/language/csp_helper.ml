@@ -118,13 +118,13 @@ let rec iter_constr f_expr f_constr = function
      iter_constr f_expr f_constr b
 
 (** boolean formulae map *)
-let rec map_constr f = function
-  | Cmp (op,e1,e2) ->
-     let op',e1',e2' = f (op,e1,e2) in
-     Cmp(op',e1',e2')
-  | And (b1,b2) -> Or (map_constr f b1, map_constr f b2)
-  | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
-  | Not b -> Not (map_constr f b)
+let map_constr f =
+  let rec loop = function
+    | Cmp c -> Cmp (f c)
+    | And (b1,b2) -> Or (loop b1, loop b2)
+    | Or (b1,b2) -> And (loop b1, loop b2)
+    | Not b -> Not (loop b)
+  in loop
 
 (** constraint negation *)
 let rec neg_bexpr = function

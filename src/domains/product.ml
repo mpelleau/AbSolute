@@ -7,15 +7,20 @@ module Make (A:Domain) (B:Domain) = struct
 
   type t = A.t * B.t
 
-  let is_representable = B.is_representable
+  type internal_constr = A.internal_constr * B.internal_constr
+  let internalize c = A.internalize c, B.internalize c
+  let externalize (c,_) = A.externalize c
+
+  let is_representable (c1,c2) =
+    Kleene.or_kleene (A.is_representable c1) (B.is_representable c2)
 
   let to_bexpr (a, b) = Csp.And (A.to_bexpr a, B.to_bexpr b)
 
   let a_meet_b a b : B.t Consistency.t =
-    A.to_bexpr a |> B.filter b
+    A.to_bexpr a |> B.internalize |> B.filter b
 
   let b_meet_a a b : A.t Consistency.t =
-     B.to_bexpr b |>  A.filter a
+     B.to_bexpr b |> A.internalize |> A.filter a
 
   let reduced_product (a:A.t) (b:B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
@@ -61,11 +66,12 @@ module Make (A:Domain) (B:Domain) = struct
     | Unsat -> raise Bot.Bot_found
     | Filtered (x,_) -> x
 
-  let filter ((a, b):t) c : t Consistency.t =
+  let filter ((a, b):t) (c1,c2) : t Consistency.t =
     let open Kleene in
-    match B.is_representable c with
-    | True -> Consistency.map (fun b -> a,b) (B.filter b c)
-    | Unknown | False -> Consistency.map (fun a -> a,b) (A.filter a c)
+    match B.is_representable c2 with
+    | True -> Consistency.map (fun b -> a,b) (B.filter b c2)
+    | Unknown
+      | False -> Consistency.map (fun a -> a,b) (A.filter a c1)
 
   let forward_eval ((a, b):t) obj =
     let (l_a,u_a) = A.forward_eval a obj in

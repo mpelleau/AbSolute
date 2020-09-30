@@ -10,6 +10,11 @@ open Consistency
 module Make (Abs:Numeric) : Domain = struct
   include Abs
 
+  type internal_constr = Abs.internal_constr Csp.boolean
+
+  let internalize = Csp_helper.map_constr Abs.internalize
+  let externalize = Csp_helper.map_constr Abs.externalize
+
   let filter (num:Abs.t) c : Abs.t Consistency.t =
     let rec loop num c =
       match c with

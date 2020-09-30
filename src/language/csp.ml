@@ -28,11 +28,13 @@ type expr =
 type comparison = expr * cmpop * expr
 
 (* boolean expressions *)
-type bexpr =
-  | Cmp of comparison
-  | And of bexpr * bexpr
-  | Or  of bexpr * bexpr
-  | Not of bexpr
+type 'a boolean =
+  | Cmp of 'a
+  | And of 'a boolean * 'a boolean
+  | Or  of 'a boolean * 'a boolean
+  | Not of 'a boolean
+
+type bexpr = comparison boolean
 
 type dom = Finite of i * i   (* [a;b] *)
          | Minf   of i       (* [-oo; a] *)

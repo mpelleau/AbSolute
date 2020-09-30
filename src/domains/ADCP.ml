@@ -110,9 +110,7 @@ module OctCP = struct
 
   include Apron_domain.MAKE (Oct)
 
-  let is_representable (e1,op,e2) =
-    let open Csp_helper in
-    (is_linear e1 && is_linear e2 && op <> Csp.NEQ) |> Kleene.of_bool
+  let is_representable _ = Kleene.True
 
   let split octad =
     let env = Abstract1.env octad in
@@ -131,9 +129,7 @@ module PolyCP = struct
               let manager_alloc = Polka.manager_alloc_strict
             end)
 
-  let is_representable (e1,op,e2) =
-    let open Csp_helper in
-    (is_linear e1 && is_linear e2 && op <> Csp.NEQ) |> Kleene.of_bool
+  let is_representable _ = Kleene.True
 
   let split poly = split poly (get_expr poly)
 
