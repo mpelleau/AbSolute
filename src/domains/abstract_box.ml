@@ -239,11 +239,6 @@ module Box (I:ITV) = struct
     let itv = find var abs in
     I.to_rational_range itv
 
-  let bounds (abs:t) =
-    let b = Env.bindings abs in
-    let l = List.filter (fun (_, d) -> I.is_singleton d) b in
-    List.map (fun (v, d) -> (v, I.to_rational_range d)) l
-
   let rm_var abs var : t =
     Env.remove var abs
 
@@ -253,23 +248,23 @@ module Box (I:ITV) = struct
 
   let rec is_applicable (abs:t) (e:expr) : bool =
     match e with
-    | Var v ->
-       (try ignore (VarMap.find v abs); true
-       with Not_found -> false)
+    | Var v -> VarMap.mem v abs
     | Cst _ -> true
     | Neg e1 -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
     | Funcall (_, _) -> false (* check if sound *)
 
-  let to_bexpr (_a:t) : Csp.bexpr = assert false
+  let to_bexpr (a:t) : Csp.bexpr =
+    match VarMap.bindings a with
+    | [] -> assert false
+    | (v,i)::tl -> List.fold_left (fun acc (v,i) -> And(acc, I.to_bexpr v i))
+                     (I.to_bexpr v i) tl
 
-  (*********************************)
-  (* Sanity and checking functions *)
-  (*********************************)
+  (** {1 Sanity and checking functions } *)
 
   (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn (a:t) : instance =
-    VarMap.fold (fun k itv acc -> VarMap.add k (Mpqf.of_float (I.spawn itv)) acc) a VarMap.empty
+    VarMap.(fold (fun k itv -> add k (Q.of_float (I.spawn itv))) a empty)
 
   (* given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
@@ -284,20 +279,17 @@ module Box (I:ITV) = struct
   (* ----- *)
 
   let split_along (a:t) (v:var) : t list =
+    Tools.debug 3 "variable split : %s\n%!" v;
     let i = VarMap.find v a in
     let i_list = I.split i in
     List.fold_left (fun acc b ->
         (VarMap.add v b a)::acc
       ) [] i_list
 
-  let split (a:t) _ : t list =
+  let split (a:t) : t list =
     let (v,i) = max_range a in
     if I.float_size i < !Constant.precision then raise Signature.TooSmall
-    else
-      begin
-        Tools.debug 3 "variable split : %s\n%!" v;
-        split_along a v
-      end
+    else split_along a v
 
   let render x =
     let vars,values = VarMap.bindings x |> List.split in

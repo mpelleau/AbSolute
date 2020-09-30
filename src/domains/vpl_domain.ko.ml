@@ -17,9 +17,6 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let rem_var : t -> var -> t
         = fun _ _ -> fail ()
 
-    let bounds : t -> csts
-        = fun _ -> fail ()
-
     (* returns the bounds of a variable *)
     let var_bounds : t -> var -> (Mpqf.t * Mpqf.t)
         = fun _ _ -> fail ()
@@ -46,7 +43,7 @@ module VplCP (* : Domain_signature.AbstractCP *)= struct
     let prune : (t -> t -> t list) option
       = Some (fun _ _ -> fail ())
 
-    let split : t -> Csp.ctrs -> t list
+    let split : t -> t list
         = fun _ -> fail ()
 
     (* TODO: can we use this variable? *)

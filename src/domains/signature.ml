@@ -26,9 +26,6 @@ module type Numeric = sig
   (** returns the bounds of a variable *)
   val var_bounds : t -> Csp.var -> (Q.t * Q.t)
 
-  (** returns the bound variables *)
-  val bounds : t -> (Csp.var * (Q.t * Q.t)) list
-
   (** {1 Measure} *)
 
   (** computes the volume of an abstract element *)
@@ -54,7 +51,7 @@ module type Numeric = sig
   val prune : (t -> t -> t list) option
 
   (** splits an abstract element *)
-  val split : t -> Csp.ctrs -> t list
+  val split : t -> t list
 
   (** {1 Constraint management} *)
 
@@ -62,15 +59,15 @@ module type Numeric = sig
       may raise bot found. *)
   val filter : t -> (Csp.expr * Csp.cmpop * Csp.expr) -> t Consistency.t
 
+  (** checks if a constraint is suited for this abstract domain *)
+  val is_representable : (Csp.expr * Csp.cmpop * Csp.expr) -> Kleene.t
+
   (** computes the range of value of a given expression within an
      abstract element *)
   val forward_eval : t -> Csp.expr -> Itv.ItvQ.t
 
   (** transforms an abstract element into constraints *)
   val to_bexpr : t -> Csp.bexpr
-
-  (** checks if a constraint is suited for this abstract domain *)
-  val is_representable : Csp.bexpr -> Kleene.t
 
     (** Random concretization function. useful to do tests, and to reuse
      the results.  values are generated uniformly when possible *)
@@ -91,6 +88,7 @@ end
 module type Domain = sig
   include Numeric
   val filter : t -> Csp.bexpr -> t Consistency.t
+  val is_representable : Csp.bexpr -> Kleene.t
 end
 
 (** An actual solvable unit *)

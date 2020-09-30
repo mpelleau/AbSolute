@@ -49,14 +49,6 @@ type decls =  decl list
 (* statements *)
 type constrs = bexpr list
 
-(* jacobian *)
-type jacob = (var * expr) list
-
-type ctrs = (bexpr * jacob) list
-
-(* constants *)
-type csts = (var * (i*i)) list
-
 (* the instance type *)
 type instance = i VarMap.t
 
@@ -73,6 +65,5 @@ type prog = {
     init        : decls;
     objective   : expr;
     constraints : constrs;
-    jacobian    : ctrs;
     solutions   : solution_info (* extra information about the solutions of the problem *)
   }

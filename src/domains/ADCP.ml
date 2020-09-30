@@ -4,10 +4,11 @@ open Apron_utils
 
 (* build the pair of constraints var >= value and var <= value *)
 let complementary env var value =
+  let value = Coeff.Scalar value in
   let e1 = Linexpr1.make env in
-  Linexpr1.set_list e1 [Coeffext.minus_one, var] (Some (Coeff.Scalar value));
+  Linexpr1.set_list e1 [Coeffext.minus_one, var] (Some value);
   let e2 =  Linexpr1.make env in
-  Linexpr1.set_list e2 [Coeffext.one, var] (Some (Coeff.Scalar (Scalar.neg value)));
+  Linexpr1.set_list e2 [Coeffext.one, var] (Some (Coeff.neg value));
   e1,e2
 
 (** Module for the Box Abstract Domains for Constraint Programming. *)
@@ -16,18 +17,15 @@ module BoxCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split abs _jacobian =
+  let split abs =
     let env = Abstract1.env abs in
-    let (var, itv, _size) = largest abs in
-    let mid = Intervalext.mid itv in
-    let e1,e2 = complementary env var mid in
-    split abs (e1,e2)
+    let (var, itv, size) = largest abs in
+    if Mpqf.to_float size < !Constant.precision then raise Signature.TooSmall
+    else
+      let mid = Intervalext.mid itv in
+      let e1,e2 = complementary env var mid in
+      split abs (e1,e2)
 
-  let volume abs =
-    let b = Abstract1.to_box man abs in
-    b.Abstract1.interval_array
-    |> Array.fold_left (fun v i -> Q.mul v (Intervalext.range_mpqf i)) Q.one
-    |> Q.to_float
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
@@ -94,8 +92,6 @@ module OctMinMinCP = struct
     Linexpr1.set_list e2 [(Coeffext.minus_one, E.var_of_dim env i_max)] None;
     let l1, l2 = minmax_b 0 mmin mmax (Intervalext.mid tab.(i_max)) e1 e2 in
     split octad (l1,l2)
-
-  let volume _ = 0.
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
@@ -103,34 +99,29 @@ module OctMinMaxCP = struct
 
   include Apron_domain.MAKE (Oct)
 
-  let split octad _ =
+  let split octad =
     let env = Abstract1.env octad in
     let poly = to_poly octad env in
     split octad (get_expr poly)
-
-  let volume _ = 0.
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
-module OctBoxCP = struct
+module OctCP = struct
 
   include Apron_domain.MAKE (Oct)
 
-  let is_representable c = Csp_helper.is_cons_linear c |> Kleene.of_bool
+  let is_representable (e1,op,e2) =
+    let open Csp_helper in
+    (is_linear e1 && is_linear e2 && op <> Csp.NEQ) |> Kleene.of_bool
 
-  let is_small oct =
-    let (_, _,max) = largest oct in
-    let dim = Mpqf.to_float max in
-    (dim <= !Constant.precision)
-
-  let split octad _ =
+  let split octad =
     let env = Abstract1.env octad in
-    let (var, itv, _) = largest octad in
-    let mid = Intervalext.mid itv in
-    let e1,e2 = complementary env var mid in
-    split octad (e1, e2)
-
-  let volume _ = 0.
+    let (var, itv, size) = largest octad in
+    if Mpqf.to_float size < !Constant.precision then raise Signature.TooSmall
+    else
+      let mid = Intervalext.mid itv in
+      let e1,e2 = complementary env var mid in
+      split octad (e1, e2)
 end
 
 (** Module for the Polyhedron Abstract Domains for Constraint Programming. *)
@@ -140,13 +131,11 @@ module PolyCP = struct
               let manager_alloc = Polka.manager_alloc_strict
             end)
 
-  let rec is_representable = function
-    | Csp.And(a, b) -> Kleene.and_kleene (is_representable a) (is_representable b)
-    | Csp.Not(e) -> Kleene.not_kleene (is_representable e)
-    | Csp.Or (_)-> Kleene.False
-    | c -> Csp_helper.is_cons_linear c |> Kleene.of_bool
+  let is_representable (e1,op,e2) =
+    let open Csp_helper in
+    (is_linear e1 && is_linear e2 && op <> Csp.NEQ) |> Kleene.of_bool
 
-  let split poly _ = split poly (get_expr poly)
+  let split poly = split poly (get_expr poly)
 
   let prune a b =
     let work acc a c =
@@ -167,6 +156,4 @@ module PolyCP = struct
     in pruned
 
   let prune = Some prune
-
-  let volume _ = 0.
 end

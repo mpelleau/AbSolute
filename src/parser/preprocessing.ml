@@ -38,7 +38,6 @@ let replace_cst ctrs csts =
       else l
     ) ctrs csts
 
-
 let rec get_cst_value expr c =
   match expr with
   | Binary (ADD, e1, e2) ->
@@ -47,8 +46,7 @@ let rec get_cst_value expr c =
       | e1, e2 ->
          let (e1', c1) = get_cst_value e1 c in
          let (e2', c2) = get_cst_value e2 c in
-         (Binary (ADD, e1', e2'), Mpqf.add c1 c2)
-     )
+         (Binary (ADD, e1', e2'), Mpqf.add c1 c2))
   | Binary (SUB, e1, e2) ->
      (match e1, e2 with
       | Cst a, e -> Neg e, Mpqf.add c a
@@ -72,60 +70,6 @@ let rewrite_constraint = function
      let (e, _, negc) = rewrite_ctr (e1, op, e2) in
      Cmp (e, op, Cst negc)
   | _ as c -> c
-
-let filter_cstrs ctr_vars consts =
-  List.fold_left (fun (cstr, csts, b) (c, v) ->
-      if VarSet.cardinal v = 1 then
-        match c with
-        | Cmp (e1,EQ, e2) ->
-           (let (e, cst, negc) = rewrite_ctr (e1,EQ,e2) in
-            match e with
-            | Var var -> (cstr, (var, (negc, negc))::csts, true)
-            | Neg (Var var) -> (cstr, (var, (cst, cst))::csts,  true)
-            | Binary(MUL, Var var, Cst a)
-              | Binary(MUL, Cst a, Var var) -> (cstr, (var, (Mpqf.div negc a, Mpqf.div negc a))::csts, true)
-            | Neg (Binary(MUL, Var var, Cst a))
-              | Neg (Binary(MUL, Cst a, Var var)) -> (cstr, (var, (Mpqf.div cst a, Mpqf.div cst a))::csts, true)
-            | _ -> ((c, v)::cstr, csts, b))
-        | _ -> ((c, v)::cstr, csts, b)
-      else ((c, v)::cstr, csts, b)
-    ) ([], consts, false) ctr_vars
-
-
-let rec repeat ctr_vars csts =
-  let ctrs = replace_cst ctr_vars csts in
-  let (ctrs', csts', b) = filter_cstrs ctrs csts in
-  if b then
-    repeat ctrs' csts'
-  else
-    (ctrs', csts')
-
-let rec view e1 e2 =
-  match e1, e2 with
-  | Var v, _ -> (v, e2)
-  | _, Var v  -> (v, e1)
-  | Neg n, e -> view n (simplify_fp (Neg e))
-  | Binary (ADD, Var v, a), e
-    | Binary (ADD, a, Var v), e
-    -> (v, simplify_fp (Binary (SUB, e, a)))
-  | Binary (ADD, a1, a2), e when has_variable a1
-    -> view a1 (simplify_fp (Binary (SUB, e, a2)))
-  | Binary (ADD, a1, a2), e -> view a2 (simplify_fp (Binary (SUB, e, a1)))
-  | Binary (SUB, Var v, s), e
-    -> (v, simplify_fp (Binary (ADD, e, s)))
-  | Binary (SUB, s, Var v), e
-    -> (v, simplify_fp (Binary (SUB, s, e)))
-  | Binary (SUB, s1, s2), e when has_variable s1
-    -> view s1 (simplify_fp (Binary (ADD, e, s2)))
-  | Binary (SUB, s1, s2), e
-    -> view s2 (simplify_fp (Binary (SUB, s1, e)))
-  | Binary (MUL, m1, m2), e when has_variable m1
-    -> view m1 (simplify_fp (Binary (DIV, e, m2)))
-  | Binary (MUL, m1, m2), e -> view m2 (simplify_fp (Binary(DIV, e, m1)))
-  | Binary (DIV, d1, d2), e when has_variable d1
-    -> view d1 (simplify_fp (Binary(MUL, e, d2)))
-  | Binary (DIV, d1, d2), e -> view d2 (simplify_fp (Binary(MUL, e, d1)))
-  | _, _ -> ("NOPE", Binary(SUB, e1, e2))
 
 let rec replace_view_expr ((id, e) as view) expr =
   match expr with
@@ -158,51 +102,6 @@ let rep_view view views =
 
 let rep_in_view view views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) view views
-
-let replace_view_ctr ctr views =
-  let replaced = List.fold_left (fun c v -> replace_view_bexpr v c) ctr views in
-  match replaced with
-  | Cmp (_, e1', e2') -> e1',e2'
-  | _ -> assert false
-
-let rec aux_view ctrs views = function
-  | [] -> (ctrs, views)
-  | (Cmp (e1, EQ, e2) as c, v)::t when is_cons_linear c && VarSet.cardinal v = 2 ->
-     let (e, _, value) = rewrite_ctr (e1, EQ, e2) in
-     let new_view = rep_in_view (view e (Cst value)) views in
-     let views' = rep_view new_view views in
-     let t' = rep_view_ctr new_view t in
-     aux_view ctrs (new_view::views') t'
-  | (c, v)::t -> aux_view ((c, v)::ctrs) views t
-
-let get_views ctr_vars =
-  aux_view [] [] ctr_vars
-
-let rec find_all_views ctrs =
-  let (ctrs, vws) = get_views ctrs in
-  let views = List.map (fun (id, e) -> (id, e)) vws in
-  if List.length views > 0 then
-    let ctrs' = replace_view ctrs views in
-    let (v, c) = find_all_views ctrs' in
-    (views@v, c)
-  else
-    ([], ctrs)
-
-let to_domains (e, d) =
-  match d with
-  | Finite (l,h) -> [geq e (Cst l); leq e (Cst h)]
-  | Minf i -> [leq e (Cst i)]
-  | Inf i -> [geq e (Cst i)]
-  | _ -> []
-
-let is_cons_linear_eq = function
-  | Cmp (_, EQ, _) as c when is_cons_linear c -> true
-  | _ -> false
-
-let get_nb_eq csp =
-  let cpt = ref 0 in
-  List.iter (fun c -> if is_cons_linear c then incr cpt) csp.constraints;
-  !cpt
 
 (* let no_views csp =
  *   let p = get_csts csp in

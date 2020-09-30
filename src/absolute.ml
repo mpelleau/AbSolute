@@ -1,9 +1,8 @@
 open Config
 
 (* entry point *)
-
 let _ =
-  (* Initializing random with the seed : AbSolute converted to hexa *)
+  if !Constant.debug > 0 then Printexc.record_backtrace true;
   Random.init 0x4162536f6c757465;
   let open Constant in
   try

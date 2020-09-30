@@ -60,13 +60,6 @@ let rec is_linear = function
   | Var _ | Cst _ -> true
   | _ -> false
 
-(** checks if a constraints is linear *)
-let rec is_cons_linear = function
-  | Cmp (e1,_,e2) -> is_linear e1 && is_linear e2
-  | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
-  | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
-  | Not b -> is_cons_linear b
-
 let is_zero = Q.equal Q.zero
 let is_neg c = Q.compare Q.zero c > 0
 
@@ -315,7 +308,7 @@ let compute_jacobian csp =
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-let empty = {init = []; constraints= []; objective = zero; jacobian = []; solutions = Some []}
+let empty = {init = []; constraints= []; objective = zero; solutions = Some []}
 
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init
@@ -325,13 +318,7 @@ let add_real_var csp name inf sup =
   {csp with init = assign::csp.init}
 
 let add_constr csp c =
-  let jac = List.map (
-    fun (_, v, _) ->
-    let new_c = simplify_bexpr (derivative c v) in
-    let (_, expr) = left_hand new_c in
-    (v, expr)
-  ) csp.init in
-  {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
+  {csp with constraints = c::csp.constraints}
 
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)

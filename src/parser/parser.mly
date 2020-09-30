@@ -78,7 +78,6 @@ file:
   TOK_EOF
   {
     {
-      jacobian=[];
       init=$2;
       objective=$3;
       constraints=$4;

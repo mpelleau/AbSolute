@@ -1,5 +1,6 @@
 open Apron
 open Apronext
+open Tools
 
 (** {1 Conversion operators } *)
 
@@ -11,17 +12,6 @@ let scalar_mul_sqrt2 =
   let value = Scalarext.to_mpqf sca in
   let mult = Mpqf.mul value sqrt2_mpqf in
   Scalar.of_mpqf mult
-
-(* folder on all possible combinations of size 2 of an array *)
-let fold_on_combination_2 ?duplicate:(d=false) f acc arr =
-  let l = Array.length arr in
-  let rec aux res i1 i2 =
-    if i1 >= l then res
-    else if i2 = l then let n = i1+1 in aux res n n
-    else if i2 = i1 && (not d) then aux res i1 (i2+1)
-    else aux (f res arr.(i1) arr.(i2)) i1 (i2+1)
-  in
-  aux acc 0 0
 
 type point = float array
 

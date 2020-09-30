@@ -28,4 +28,10 @@ module Make (Abs:Numeric) : Domain = struct
       | And(b1,b2) -> Consistency.fold_and loop num [b1;b2]
       | Not _ -> assert false
     in loop num c
+
+  let rec is_representable = function
+    | And(a, b) -> Kleene.and_kleene (is_representable a) (is_representable b)
+    | Not(e) -> Kleene.not_kleene (is_representable e)
+    | Or (_)-> Kleene.False
+    | Cmp c -> Abs.is_representable c
 end

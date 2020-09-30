@@ -91,5 +91,7 @@ let rec parse name : (module Domain) =
 let _ =
   register0 "box"  (module Boolean.Make(Abstract_box.BoxF));
   register0 "boxS" (module Boolean.Make(Abstract_box.BoxStrict));
+  register0 "apronbox" (module Boolean.Make(ADCP.BoxCP));
   register0 "poly" (module Boolean.Make(ADCP.PolyCP));
+  register0 "oct" (module Boolean.Make(ADCP.OctCP));
   register2 "product" (module Product);

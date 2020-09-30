@@ -95,6 +95,4 @@ let parse (filename:string) : prog =
 let parse (fn:string) =
   let p = parse fn in
   check_ast p;
-  (* let p = if !Constant.rewrite then Preprocessing.preprocess p else Preprocessing.no_views p in *)
-  let j = Csp_helper.compute_jacobian p in
-  {p with jacobian = j}
+  p

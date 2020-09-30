@@ -115,9 +115,18 @@ let newline_sep fmt () = Format.fprintf fmt "\n"
 (** misc *)
 let swap_pair (a,b) = (b,a)
 
-(**********************)
+(** folder on all possible combinations of size 2 of an array *)
+let fold_on_combination_2 ?duplicate:(d=false) f acc arr =
+  let l = Array.length arr in
+  let rec aux res i1 i2 =
+    if i1 >= l then res
+    else if i2 = l then let n = i1+1 in aux res n n
+    else if i2 = i1 && (not d) then aux res i1 (i2+1)
+    else aux (f res arr.(i1) arr.(i2)) i1 (i2+1)
+  in
+  aux acc 0 0
+
 (** {1} Map instances *)
-(**********************)
 
 (** only one instanciation forall variable maps modules *)
 module VarMap = struct

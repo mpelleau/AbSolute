@@ -37,11 +37,6 @@ module Make (A:Domain) (B:Domain) = struct
 
   let rm_var (a,b) v = (A.rm_var a v),(B.rm_var b v)
 
-  let bounds (a,b) =
-    List.fold_left (fun acc (v,i) ->
-        (v, Bot.debot (Itv.ItvQ.meet i (B.var_bounds b v)))::acc
-      ) [] (A.bounds a)
-
   let vars (abs, abs') =
     let va = A.vars abs
     and vb = B.vars abs' in
@@ -51,9 +46,9 @@ module Make (A:Domain) (B:Domain) = struct
 
   let prune : (t -> t -> t list) option = None
 
-  let split ((abs, abs'):t) (jacobian : Csp.ctrs) =
-    let split_a = A.split abs jacobian in
-    List.map (fun x -> (x, abs')) split_a
+  let split ((a, b):t) =
+    let split_a = A.split a in
+    List.map (fun x -> (x, b)) split_a
 
   let join (a,b) (a',b') =
     let a,exact_a = A.join a a' in
