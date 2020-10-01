@@ -12,7 +12,7 @@ module Make (Abs:Numeric) : Domain = struct
 
   type internal_constr = Abs.internal_constr Csp.boolean
 
-  let internalize = Csp_helper.map_constr Abs.internalize
+  let internalize ?elem = Csp_helper.map_constr (Abs.internalize ?elem)
   let externalize = Csp_helper.map_constr Abs.externalize
 
   let filter (num:Abs.t) c : Abs.t Consistency.t =

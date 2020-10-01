@@ -53,14 +53,17 @@ module type Numeric = sig
   (** splits an abstract element *)
   val split : t -> t list
 
-  (** {1 Constraint management} *)
+  (** {2 constraint conversion } *)
 
   (** domain's internal representation of a comparison *)
   type internal_constr
 
-  (** constraint conversion *)
-  val internalize : (Csp.expr * Csp.cmpop * Csp.expr) -> internal_constr
+  (** may use a current abstract element to simplify the constaint *)
+  val internalize : ?elem:t -> (Csp.expr * Csp.cmpop * Csp.expr) -> internal_constr
   val externalize : internal_constr -> (Csp.expr * Csp.cmpop * Csp.expr)
+
+
+  (** {1 Constraint management} *)
 
   (** filters an abstract element with respect to an arithmetic constraint,
       may raise bot found. *)
@@ -99,7 +102,7 @@ module type Domain = sig
   type internal_constr
 
   (** constraint conversion *)
-  val internalize : Csp.bexpr -> internal_constr
+  val internalize : ?elem:t -> Csp.bexpr -> internal_constr
   val externalize : internal_constr -> Csp.bexpr
 
   (** redefinition of filter and is_representable using boolean

@@ -28,7 +28,9 @@ module Box (I:ITV) = struct
 
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Csp.comparison
-  let internalize = Fun.id
+
+
+  let[@warning "-27"] internalize ?elem = Fun.id
   let externalize = Fun.id
 
   let find v (a:t) = VarMap.find_fail v a

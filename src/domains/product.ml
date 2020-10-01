@@ -8,7 +8,11 @@ module Make (A:Domain) (B:Domain) = struct
   type t = A.t * B.t
 
   type internal_constr = A.internal_constr * B.internal_constr
-  let internalize c = A.internalize c, B.internalize c
+  let internalize ?elem c =
+    match elem with
+    | None -> A.internalize c, B.internalize c
+    | Some (a,b) -> A.internalize ~elem:a c, B.internalize ~elem:b c
+
   let externalize (c,_) = A.externalize c
 
   let is_representable (c1,c2) =

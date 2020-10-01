@@ -108,7 +108,12 @@ module MAKE(AP:ADomain) = struct
 
   let empty = A.top man (E.empty)
 
-  let internalize = of_cmp_expr empty
+  let internalize ?elem c =
+    match elem with
+    | None -> invalid_arg "apron constraint conversion requires an \
+                           abstract element to setup the environment"
+    | Some e -> of_cmp_expr e c
+
   let externalize = apron_to_bexpr
 
   let vars abs =
@@ -152,6 +157,21 @@ module MAKE(AP:ADomain) = struct
 
   let prune = None
 
+
+  (** in apronext, this gunction is buggy so we put it here
+     temporarily. constraints negation; e.g : a >= b -> a < b *)
+  let neg d =
+    let open Tcons1 in
+    let neg_typ = function
+      | EQ -> DISEQ
+      | SUP -> SUPEQ
+      | SUPEQ -> SUP
+      | DISEQ -> EQ
+      | _ -> assert false
+    in
+    let typ = get_typ d |> neg_typ in
+    Tcons1.(make (Texprext.neg (get_texpr1 d)) typ)
+
   let filter abs c =
     let a =
       if Tconsext.get_typ c = Tconsext.DISEQ then
@@ -161,7 +181,7 @@ module MAKE(AP:ADomain) = struct
     in
     if is_empty a then Consistency.Unsat
     else
-      let succ = A.sat_tcons man a c in
+      let succ = is_empty (A.filter_tcons man a (neg c)) in
       Consistency.Filtered(a,succ)
 
   let print = A.print
