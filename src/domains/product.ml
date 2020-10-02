@@ -41,9 +41,6 @@ module Make (A:Domain) (B:Domain) = struct
 
   let add_var (a,b) v = (A.add_var a v), (B.add_var b v)
 
-  let var_bounds (a,b) v =
-    Bot.debot (Itv.ItvQ.meet (A.var_bounds a v) (B.var_bounds b v))
-
   let rm_var (a,b) v = (A.rm_var a v),(B.rm_var b v)
 
   let vars (abs, abs') =

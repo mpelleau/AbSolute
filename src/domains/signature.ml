@@ -23,9 +23,6 @@ module type Numeric = sig
   (** returns the variables annoted by their type *)
   val vars : t -> (Csp.annot * Csp.var) list
 
-  (** returns the bounds of a variable *)
-  val var_bounds : t -> Csp.var -> (Q.t * Q.t)
-
   (** {1 Measure} *)
 
   (** computes the volume of an abstract element *)

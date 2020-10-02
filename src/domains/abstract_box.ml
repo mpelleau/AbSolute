@@ -3,33 +3,20 @@ open Bot
 open Itv_sig
 open Csp
 
-(*******************)
-(* GENERIC FUNCTOR *)
-(*******************)
-
+(* Generic functor for a parametrized Cartesian representation *)
 module Box (I:ITV) = struct
-
-
-  (************************************************************************)
-  (* TYPES *)
-  (************************************************************************)
-
-  (* interval and bound inheritance *)
-  module I = I
-  (* module B = I.B *)
-
-  type i = I.t
 
   (* maps from variables *)
   module Env = Tools.VarMap
 
   (* maps each variable to a (non-empty) interval *)
-  type t = i Env.t
+  type t = I.t Env.t
 
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Csp.comparison
 
-
+  (* elem is not used by required by the interface. disabling the
+     unused parameter warning to make merlin happy*)
   let[@warning "-27"] internalize ?elem = Fun.id
   let externalize = Fun.id
 
@@ -46,18 +33,12 @@ module Box (I:ITV) = struct
 
   let is_representable _ = Kleene.True
 
-  (************************************************************************)
-  (* PRINTING *)
-  (************************************************************************)
-
+  (* Printer *)
   let print fmt a =
     VarMap.iter (fun v i -> Format.fprintf fmt "%s:%a\n" v I.print i) a
 
-  let float_bounds a v = I.to_float_range (find v a)
+  (* Set-theoretic *)
 
-  (************************************************************************)
-  (* SET-THEORETIC *)
-  (************************************************************************)
   (* NOTE: all binary operations assume that both boxes are defined on
      the same set of variables;
      otherwise, an Invalid_argument exception will be raised *)
@@ -102,30 +83,27 @@ module Box (I:ITV) = struct
   let volume (a:t) : float =
     VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
 
-  (************************)
   (* splitting strategies *)
-  (************************)
 
   let choose a = mix_range a
 
   let prune =
     match I.prune with
     | None -> None
-    | Some itv_diff ->
+    | Some diff ->
        Some(fun (a:t) (b:t) ->
-           let rec aux a good = function
-             | [] -> good
+           let rec aux a acc = function
+             | [] -> acc
              | (v, i_b)::tl ->
 	              let add = fun i -> (Env.add v i a) in
 	              let i_a = Env.find v a in
-	              let sures = itv_diff i_a i_b in
+	              let d = diff i_a i_b in
                 let rest = I.meet i_a i_b in
                 match rest with
                 | Bot -> assert false
                 | Nb rest ->
-	                 aux (add rest) (List.rev_append (List.rev_map add sures) good) tl
+	                 aux (add rest) (List.rev_append (List.rev_map add d) acc) tl
            in aux a [] (Env.bindings b))
-
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)
@@ -137,9 +115,9 @@ module Box (I:ITV) = struct
     | BNeg     of bexpri
     | BBinary  of binop * bexpri * bexpri
     | BVar     of var
-    | BCst     of i
+    | BCst     of I.t
 
-  and bexpri = bexpr * i
+  and bexpri = bexpr * I.t
 
   (* First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
      For example: given `x + 3` with `x in [1..3]`, then it annotates `+` with `[4..6]`.
@@ -187,7 +165,7 @@ module Box (I:ITV) = struct
      the equality.  Note that we can call again `eval` to restrain
      further `+`, and then another round of `refine` will restrain `x`
      as well.  We raise `Bot_found` in case of unsatisfiability. *)
-  let rec refine (a:t) (e:bexpr) (x:i) : t =
+  let rec refine (a:t) (e:bexpr) (x:I.t) : t =
     (*Format.printf "%a\n" print_bexpri (e, x);*)
     match e with
     | BFuncall(name,args) ->
@@ -238,16 +216,10 @@ module Box (I:ITV) = struct
       (match typ,domain with
        | Int,Finite(l,u) -> I.of_rats l u
        | Real,Finite(l,u) -> I.of_rats l u
-       | _ -> failwith "cartesian.ml : add_var"
-      )
+       | _ -> failwith "cartesian.ml : add_var")
       abs
 
-  let var_bounds (abs:t) var =
-    let itv = find var abs in
-    I.to_rational_range itv
-
-  let rm_var abs var : t =
-    Env.remove var abs
+  let rm_var abs var : t = Env.remove var abs
 
   let forward_eval abs cons =
     let (_, bounds) = eval abs cons in
