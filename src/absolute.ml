@@ -9,7 +9,6 @@ let _ =
     parse_args ();
     Terminal.go();
     let prob = File_parser.parse !problem in
-    Format.printf "%a\n" Csp_printer.print prob;
     if !debug > 0 then Vpl_domain.enable_debug();
-    lift (set_domain ()) prob
+    run (Domains.parse !Constant.domain) prob
   with Error msg -> Terminal.error msg

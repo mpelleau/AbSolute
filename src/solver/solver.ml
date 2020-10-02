@@ -19,7 +19,7 @@ module Make(S : Solvable) = struct
     Mpz.mul_2exp p z1 (depth-1);
     progress := Mpqf.add !progress (Mpqf.inv (Mpqf.of_mpz p));
     if Mpqf.cmp !progress Q.one >= 0 then
-      Format.printf "%a\n%!" print "done."
+      Format.printf ".\n%!"
     else
       Q.mul !progress q100
       |> Q.to_float

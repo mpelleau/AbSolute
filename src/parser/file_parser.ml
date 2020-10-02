@@ -38,17 +38,13 @@ let check_ast p =
 	raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
       else Hashtbl.add h v true
     ) p.init
-  (* and check_csts () =
-   *   List.iter (fun (v,_) -> if Hashtbl.mem h v then
-   *     raise (IllFormedAST (Format.sprintf "two variables share the same name: %s" v))
-   *     else Hashtbl.add h v true
-   *   ) p.constants *)
-
   and check_dom () =
-    let aux (_, var, d) =
+    let aux (_, v, d) =
       match d with
-      | Finite (f1,f2) -> if f1 > f2 then
-	  raise (IllFormedAST (Format.sprintf "Illegal domain for var %s:[%s;%s]" var (Mpqf.to_string f1) (Mpqf.to_string f2)))
+      | Finite (f1,f2) ->
+         if f1 > f2 then
+	         raise (IllFormedAST (Format.sprintf "Illegal domain : %s in [%s;%s]"
+                                  v (Mpqf.to_string f1) (Mpqf.to_string f2)))
       | _ -> ()
     in List.iter aux p.init
   and check_constrs () =
@@ -93,6 +89,10 @@ let parse (filename:string) : prog =
   | Parsing.Parse_error -> failwith "Parse error"
 
 let parse (fn:string) =
+  Format.printf "parsing ... %!";
   let p = parse fn in
+  Format.printf "done.\nast check ... %!";
   check_ast p;
+  Format.printf "done.\n%!";
+  if !Constant.trace then Format.printf "\n@[<2>%a@]%!" Csp_printer.print p;
   p

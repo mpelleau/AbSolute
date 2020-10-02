@@ -119,13 +119,16 @@ module Box (I:ITV) = struct
 
   and bexpri = bexpr * I.t
 
-  (* First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
-     For example: given `x + 3` with `x in [1..3]`, then it annotates `+` with `[4..6]`.
-     It returns this new annotated expression tree, and the interval of the root node.
+  (* First step of the HC4-revise algorithm: it computes the intervals
+     for each node of the expression.  For example: given `x + 3` with
+     `x in [1..3]`, then it annotates `+` with `[4..6]`.  It returns
+     this new annotated expression tree, and the interval of the root
+     node.
 
-     This function is useful for testing transfer functions errors (e.g. division by zero).
-     - We raise Bot_found in case the expression only evaluates to error values.
-     - Otherwise, we return only the non-error values. *)
+     This function is useful for testing transfer functions errors
+     (e.g. division by zero).  - We raise Bot_found in case the
+     expression only evaluates to error values.  - Otherwise, we
+     return only the non-error values. *)
   let rec eval (a:t) (e:expr) : bexpri =
     match e with
     | Funcall(name,args) ->

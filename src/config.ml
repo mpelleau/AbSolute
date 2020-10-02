@@ -14,7 +14,7 @@ module GoS (N:Domain) = struct
   let time_stats prob solve =
     Tools.green_fprintf Format.std_formatter "\nSolving\n";
     Format.printf "domain: ";
-    (* Tools.cyan_fprintf Format.std_formatter "%s\n" N.name; *)
+    Tools.cyan_fprintf Format.std_formatter "%s\n" !Constant.domain;
     let time_start = Sys.time () in
     let csp = Solv.init prob in
     let res = solve csp in
@@ -44,23 +44,13 @@ end
  *     Print.out_min prob res
  * end *)
 
-(***************)
-(*   domains   *)
-(***************)
-
-let set_domain : unit -> (module Domain) = fun () ->
-  Domains.parse !Constant.domain
-
-(** * Lifts the given abstract domain and its associated drawer into a
-   runnable domain.  The results depends on the value of flags
-   {!val:Constant.minimizing} *)
-let lift (module D : Domain) (prob : Csp.prog) : unit =
+(** runs the solver according to the solving mode *)
+let run (module D : Domain) (prob : Csp.prog) : unit =
   let module Solver = GoS (D) in
   if !Constant.witness then Solver.witness prob
   else Solver.coverage prob
-(********************)
+
 (* OPTIONS HANDLING *)
-(********************)
 
 let speclist =
   let open Constant in
