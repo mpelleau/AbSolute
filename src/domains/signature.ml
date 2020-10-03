@@ -6,7 +6,7 @@ exception TooSmall
 
 module type Numeric = sig
 
-  (** the type of abstract elements *)
+  (** the type of (non-bottom) abstract elements *)
   type t
 
   (** returns an empty element *)
@@ -28,17 +28,14 @@ module type Numeric = sig
   (** computes the volume of an abstract element *)
   val volume : t -> float
 
-  (** tests if an abstract element is empty *)
-  val is_empty : t -> bool
-
   (** {1 Set-theoretic operations} *)
 
   (** Joins two abstract elements. The boolean flag indicates if the
      join was exact. It is always sound to return false *)
   val join: t -> t -> t * bool
 
-  (** meet two abstract elements, may raise bot_found *)
-  val meet: t -> t -> t
+  (** meet two abstract elements *)
+  val meet: t -> t -> t Bot.bot
 
   (** substracts the second abstract element from the first
      (difference operator) if an exact operator can not be defined

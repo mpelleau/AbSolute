@@ -153,7 +153,9 @@ module MAKE(AP:ADomain) = struct
 
   let join a b = (A.join man a b),false
 
-  let meet a b = A.meet man a b
+  let meet a b =
+    let m = A.meet man a b in
+    if is_empty m then Bot.Bot else Bot.Nb m
 
   let prune = None
 

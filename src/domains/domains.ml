@@ -94,4 +94,5 @@ let _ =
   register0 "apronbox" (module Boolean.Make(ADCP.BoxCP));
   register0 "poly" (module Boolean.Make(ADCP.PolyCP));
   register0 "oct" (module Boolean.Make(ADCP.OctCP));
+  register0 "boxunion" (module Uniontree.Make(Abstract_box.BoxF));
   register2 "product" (module Product);

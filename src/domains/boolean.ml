@@ -36,7 +36,6 @@ module Make (Abs:Numeric) : Domain = struct
 
   let rec is_representable = function
     | And(a, b) -> Kleene.and_kleene (is_representable a) (is_representable b)
-    | Not(e) -> Kleene.not_kleene (is_representable e)
-    | Or (_)-> Kleene.False
     | Cmp c -> Abs.is_representable c
+    | _ -> Kleene.False
 end

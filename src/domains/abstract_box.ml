@@ -51,14 +51,14 @@ module Box (I:ITV) = struct
     in
     (VarMap.merge (fun _ -> join_opt) a b),false
 
-  let meet (a:t) (b:t) : t =
+  let meet (a:t) (b:t) : t bot =
     let meet_opt a b =
       match a,b with
       | Some a, Some b -> Some (debot (I.meet a b))
       | _ -> raise Bot_found
     in
-    VarMap.merge (fun _ -> meet_opt) a b
-
+    try Nb (VarMap.merge (fun _ -> meet_opt) a b)
+    with Bot_found -> Bot
 
   (* predicates *)
   (* ---------- *)

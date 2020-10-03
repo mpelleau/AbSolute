@@ -39,8 +39,6 @@ module Make (D:Domain) = struct
 
   let spawn elm = D.spawn elm.space
 
-  (* merges an element into a result. inner indicates if the element
-     is a solution or not *)
   let to_result ~inner res elm =
     if inner then Result.add_inner res elm.space
     else Result.add_outer res elm.space
