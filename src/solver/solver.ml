@@ -6,7 +6,7 @@ open Consistency
 module Make(S : Solvable) = struct
 
   (* prints (in-place) the current approximated progression of the
-     solving: when a searchspace is processed (Sat, unsat or too
+     solving: when a searchspace is processed (Sat, Unsat or too
      small) at a given depth d, we increase the progress bar by
      1/(2^d). *)
   let loading =
@@ -19,7 +19,7 @@ module Make(S : Solvable) = struct
     Mpz.mul_2exp p z1 (depth-1);
     progress := Mpqf.add !progress (Mpqf.inv (Mpqf.of_mpz p));
     if Mpqf.cmp !progress Q.one >= 0 then
-      Format.printf ".\n%!"
+      Format.printf "%a\n%!" print "100.00%"
     else
       Q.mul !progress q100
       |> Q.to_float

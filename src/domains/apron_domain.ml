@@ -157,40 +157,21 @@ module MAKE(AP:ADomain) = struct
 
   let prune = None
 
-
-  (** in apronext, this gunction is buggy so we put it here
-     temporarily. constraints negation; e.g : a >= b -> a < b *)
-  let neg d =
-    let open Tcons1 in
-    let neg_typ = function
-      | EQ -> DISEQ
-      | SUP -> SUPEQ
-      | SUPEQ -> SUP
-      | DISEQ -> EQ
-      | _ -> assert false
-    in
-    let typ = get_typ d |> neg_typ in
-    Tcons1.(make (Texprext.neg (get_texpr1 d)) typ)
-
   let filter abs c =
-    let a =
-      if Tconsext.get_typ c = Tconsext.DISEQ then
-        let t1,t2 = Tconsext.splitdiseq c in
-        fst (join (A.filter_tcons man abs t1) (A.filter_tcons man abs t2))
-      else A.filter_tcons man abs c
-    in
+    let a = A.filter_tcons man abs c in
     if is_empty a then Consistency.Unsat
-    else
-      let succ = is_empty (A.filter_tcons man a (neg c)) in
-      Consistency.Filtered(a,succ)
+    else let succ = is_empty (A.filter_tcons man a (Tconsext.neg c)) in
+         Consistency.Filtered(a,succ)
 
   let print = A.print
+
+  let pman = Polka.manager_alloc_strict ()
 
   (** computes the smallest enclosing polyhedron *)
   let to_poly abs env =
     let abs' = A.change_environment man abs env false in
     A.to_lincons_array man abs' |>
-      A.of_lincons_array (Polka.manager_alloc_strict ()) env
+      A.of_lincons_array pman env
 
   (** interval evaluation of an expression within an abtract domain *)
   let forward_eval abs cons =
@@ -259,9 +240,7 @@ module MAKE(AP:ADomain) = struct
     |> Q.to_float
 
   (* Polyhedric version of some operations *)
-  let get_expr =
-    let pman = Polka.manager_alloc_strict () in
-    fun (polyad:Polka.strict Polka.t A.t) ->
+  let get_expr (polyad:Polka.strict Polka.t A.t) =
     let poly = A.to_generator_array pman polyad in
     let env = poly.Generator1.array_env in
     let (p1,p2,dist) = Generatorext.to_float_array poly |> most_distant_pair in
