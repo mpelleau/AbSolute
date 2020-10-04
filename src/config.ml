@@ -59,7 +59,8 @@ let speclist =
     ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
     ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
     ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
-    ("-domain"       , Set_string domain    , default_string "Changes the domain used for the solving" domain);
+    ("-domain"       , Set_string domain    , default_string "Sets the numeric domain" domain);
+    ("-boolean"      , Set_string boolean   , default_string "Sets the boolean domain" domain);
     ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
     ("-iter"         , Set iter             , "Enables the loop for the propagation");
     ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
@@ -83,6 +84,7 @@ let aliases =
   [
     ("-p", "-precision");
     ("-d", "-domain");
+    ("-b", "-boolean");
     ("-m", "-minimize");
     ("-i", "-iter");
     ("-pi","-pruning_iter");

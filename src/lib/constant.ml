@@ -7,6 +7,7 @@ let max_depth       = ref 100000000
 let max_sol         = ref 10000000
 let problem         = ref ""
 let domain          = ref "box"
+let boolean         = ref "boolean"
 let product         = ref false
 let witness         = ref false
 let split           = ref "default"

@@ -121,8 +121,8 @@ let rec iter_constr f_expr f_constr = function
 let map_constr f =
   let rec loop = function
     | Cmp c -> Cmp (f c)
-    | And (b1,b2) -> Or (loop b1, loop b2)
-    | Or (b1,b2) -> And (loop b1, loop b2)
+    | And (b1,b2) -> And (loop b1, loop b2)
+    | Or (b1,b2) -> Or (loop b1, loop b2)
     | Not b -> Not (loop b)
   in loop
 
@@ -132,6 +132,13 @@ let rec neg_bexpr = function
   | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
   | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
   | Not b -> b
+
+(** rewrites a constraint into an equivalent constraint without 'Not' *)
+let rec remove_not = function
+  | Not b -> remove_not (neg_bexpr b)
+  | And (b1,b2) -> And(remove_not b1, remove_not b2)
+  | Or (b1,b2) -> Or(remove_not b1, remove_not b2)
+  | x -> x
 
 let apply f e1 e2 b op =
   let (e1', b1) = f e1 b in

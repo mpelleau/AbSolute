@@ -10,5 +10,5 @@ let _ =
     Terminal.go();
     let prob = File_parser.parse !problem in
     if !debug > 0 then Vpl_domain.enable_debug();
-    run (Domains.parse !Constant.domain) prob
+    run (Domains.parse !Constant.domain !Constant.boolean) prob
   with Error msg -> Terminal.error msg

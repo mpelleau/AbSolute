@@ -105,13 +105,13 @@ module Make (D:Numeric) : Domain = struct
          (match loop num b1 with
           | Sat -> Sat
           | Unsat -> loop num b2
-          | Filtered (n1,_) as x ->
+          | Filtered (n1,sat1) as x ->
              (match loop num b2 with
               | Sat -> Sat
               | Unsat -> x
-              | Filtered (n2,_) ->
+              | Filtered (n2,sat2) ->
                  let union,exact = join n1 n2 in
-                 Filtered ((union,exact))))
+                 Filtered ((union,exact && sat1 && sat2))))
       | And(b1,b2) -> Consistency.fold_and loop num [b1;b2]
       | Not _ -> assert false
     in loop num c
