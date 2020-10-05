@@ -19,8 +19,7 @@ module Make (Abs:Numeric) : Domain = struct
   let externalize = Csp_helper.map_constr Abs.externalize
 
   let filter (num:Abs.t) c : Abs.t Consistency.t =
-    let rec loop num c =
-      match c with
+    let rec loop num = function
       | Cmp a -> Abs.filter num a
       | Or (b1,b2) ->
          (match loop num b1 with

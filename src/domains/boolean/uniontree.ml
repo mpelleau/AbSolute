@@ -6,7 +6,6 @@ open Csp
 (* This module implements the tree abstract domain described in
    Abstract Domains for Constraint Programming with Differential Equations *)
 
-(* lifts a numeric domain to a boolean one *)
 module Make (D:Numeric) : Domain = struct
 
   type t = Leaf of D.t
@@ -14,9 +13,11 @@ module Make (D:Numeric) : Domain = struct
 
   type internal_constr = D.internal_constr Csp.boolean
 
-  let internalize ?elem x =
+  let internalize ?elem c =
     match elem with
-    | Some(Leaf n) -> Csp_helper.map_constr (D.internalize ~elem:n) x
+    | Some(Leaf n) ->
+       let c' = Csp_helper.remove_not c in
+       Csp_helper.map_constr (D.internalize ~elem:n) c'
     | _ -> failwith "of_comparison should be called on a leaf"
 
   let externalize = Csp_helper.map_constr D.externalize
@@ -27,7 +28,9 @@ module Make (D:Numeric) : Domain = struct
     | Not(e) -> is_representable e
     | Cmp c -> D.is_representable c
 
-  let forward_eval _ = failwith "uniontree.fwd_eval"
+  let forward_eval = function
+    | Leaf n -> D.forward_eval n
+    | Union {envelopp;_} -> D.forward_eval envelopp
 
   (* helper that folds over tree *)
   let fold f acc =
@@ -36,13 +39,15 @@ module Make (D:Numeric) : Domain = struct
       | Union {sons=l,r; _ } -> fold (fold acc l) r
     in fold acc
 
-  let print _ = failwith "print tree"
+  let rec print fmt = function
+    | Leaf d -> D.print fmt d
+    | Union {sons=l,r;_} -> Format.fprintf fmt "(%a || %a)" print l print r
 
   let map f t =
     let rec loop = function
       | Leaf l -> Leaf (f l)
       | Union {envelopp;sons=l,r} ->
-         Union {envelopp=f envelopp; sons= loop l,loop r}
+         Union {envelopp=f envelopp; sons=loop l,loop r}
     in
     loop t
 
@@ -63,44 +68,53 @@ module Make (D:Numeric) : Domain = struct
 
   (* constructors *)
   let leaf x = Leaf x
-  let union e a b = Union {envelopp=e; sons = a,b}
 
   (* TODO: improve when exact join is met *)
   let join a b =
-    Union {envelopp=fst (D.join (bounding a) (bounding b)); sons=a,b}, true
+    Union {envelopp=fst (D.join (bounding a) (bounding b)); sons=a,b}
 
    let rec meet q1 q2 =
-    match q1,q2 with
-    | Leaf e1, Leaf e2 -> Bot.lift_bot (fun x -> Leaf x) (D.meet e1 e2)
+     Format.printf "meet\n%!";
+     match q1,q2 with
+    | Leaf e1, Leaf e2 -> Bot.lift_bot leaf (D.meet e1 e2)
     | Union {envelopp; sons=l,r}, b | b, Union {envelopp; sons=l,r}->
        (match D.meet envelopp (bounding b) with
         | Bot -> Bot
-        | Nb _ -> Bot.join_bot2 (fun a b -> join a b |> fst) (meet b l) (meet b r))
+        | Nb _ -> Bot.join_bot2 join (meet b l) (meet b r))
 
-  let meet_env hull = function
-    | Leaf e ->  Bot.lift_bot (fun x -> Leaf x) (D.meet e hull)
-    | Union ({envelopp;_} as u) ->
-       match D.meet envelopp hull with
-       | Bot -> Bot
-       | Nb b' -> Nb (Union {u with envelopp=b'})
-
-  (* computes the list of succesfully filtered element and the rest *)
-  let filter (q:t) a : t Consistency.t =
-    match q with
-    | Leaf e -> Consistency.map leaf (D.filter e a)
+  (* filter for numeric predicates *)
+  let filter_cmp (t:t) cmp : t Consistency.t =
+    Format.printf "filter numeric on:\n%a and %a\n%!"
+      print t Csp_printer.print_cmp (D.externalize cmp);
+    let rec loop = function
+    | Leaf e -> Consistency.map leaf (D.filter e cmp)
     | Union {envelopp; sons=l,r} ->
-       match D.filter envelopp a with
-       | Unsat -> Unsat
-       | Sat -> Sat
-       | Filtered (e',x) ->
-          (match Bot.join_bot2 (union e') (meet_env e' l) (meet_env e' r) with
-           | Bot -> Unsat
-           | Nb e -> Filtered (e,x))
+       Consistency.bind (fun _ _->
+           match loop l with
+           | Unsat -> loop r
+           | Sat ->
+              (match loop r with
+               | Unsat -> Filtered(l,true)
+               | Sat -> Sat
+               | Filtered (r',sat) -> Filtered ((join l r'),sat))
+           | Filtered(l',satl) as left ->
+              (match loop r with
+               | Unsat -> left
+               | Sat -> Filtered ((join l' r),satl)
+               | Filtered (r',satr) -> Filtered ((join l' r'),satl && satr))
+         ) (D.filter envelopp cmp)
+    in
+    let res = loop t in
+    (match res with
+    | Sat -> Format.printf "result: sat \n\n";
+    | Unsat -> Format.printf "result: unsat \n\n";
+    | Filtered (x,s) ->  Format.printf "result: %a. sat:%b\n\n%!" print x s);
+    res
 
+  (* filter for boolean expressions *)
   let filter (num:t) c : t Consistency.t =
-    let rec loop num c =
-      match c with
-      | Cmp a -> filter num a
+    let rec loop num = function
+      | Cmp a -> filter_cmp num a
       | Or (b1,b2) ->
          (match loop num b1 with
           | Sat -> Sat
@@ -110,14 +124,17 @@ module Make (D:Numeric) : Domain = struct
               | Sat -> Sat
               | Unsat -> x
               | Filtered (n2,sat2) ->
-                 let union,exact = join n1 n2 in
-                 Filtered ((union,exact && sat1 && sat2))))
-      | And(b1,b2) -> Consistency.fold_and loop num [b1;b2]
+                 Filtered (( join n1 n2,sat1 && sat2))))
+      | And(b1,b2) ->
+         Format.printf "filtering and\n%!";
+         Consistency.fold_and loop num [b1;b2]
       | Not _ -> assert false
     in loop num c
 
+  let join a b = join a b, true
+
   let split = function
-    | Leaf x -> List.map (fun x -> Leaf x) (D.split x)
+    | Leaf x -> List.map leaf (D.split x)
     | Union {sons=l,r;_} -> [l;r]
 
   let is_abstraction t i =

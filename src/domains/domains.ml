@@ -104,7 +104,7 @@ let parse name boolean =
   with Not_found ->
     fail_fmt "domain unknown %s. Possible domains are %a"
       name (Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ")
-                      (fun f -> fprintf f "%s"))) (get_all())
+                      pp_print_string)) (get_all())
 
 (* Registering the abstract domains *)
 let _ =
@@ -114,9 +114,8 @@ let _ =
   register_numeric "apronbox"  (module ADCP.BoxCP);
   register_numeric "poly"      (module ADCP.PolyCP);
   register_numeric "oct"       (module ADCP.OctCP);
-  register_numeric "boxunion"  (module Abstract_box.BoxF);
   (* boolean *)
   register_boolean "boolean"   (module Boolean);
   register_boolean "uniontree" (module Uniontree);
   (* combinators *)
-  register2 "product"   (module Product);
+  register2 "product"          (module Product);
