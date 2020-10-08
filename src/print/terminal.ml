@@ -4,15 +4,6 @@ let error x = Tools.red_fprintf Format.std_formatter x
 
 let warning x = Tools.yellow_fprintf Format.std_formatter x
 
-(** checking that the options specified by the user are coherent *)
-let check_options () =
-  if !pruning then
-    (match !domain with
-    | "box" | "boxQ" | "oct" ->
-       warning
-         "\n-pruning option is not available with %s domain. You can use instead 'boxS', 'boxQS' or 'poly' domains\n" !domain;
-    | _ -> ())
-
 (** launching the terminal interface *)
 let go () =
   Format.printf "%a\n" Tools.green_fprintf "----------------------------------";
@@ -28,7 +19,6 @@ let go () =
     else
       "VPL library not found on your system.","You can try to install it to use the VPL's polyhedra inside AbSolute."
   in
-  check_options ();
   Format.printf "%s\n" l1;
   Format.printf "%s\n" l2;
   Format.printf "%s\n" l3;

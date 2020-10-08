@@ -529,20 +529,22 @@ module Make(B:BOUND) = struct
   (************************************************************************)
 
   let filter_leq
-        (((_,vl1) as l1, ((_,vh1) as h1)):t)
-        (((_,vl2) as l2, ((_,vh2) as h2)):t) : (t * t) Consistency.t =
+        (((_,vl1) as l1, ((_,vh1) as h1)) as i1:t)
+        (((_,vl2) as l2, ((_,vh2) as h2)) as i2:t) : (t * t) Consistency.t =
     let open Consistency in
     if B.leq vh1 vl2 then Sat
     else if B.gt vl1 vh2 then Unsat
-    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),false)
+    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),
+                   is_singleton i1 || is_singleton i2)
 
   let filter_lt
-        (((_,vl1) as l1, ((kh1,vh1) as h1)):t)
-        (((kl2,vl2) as l2, ((_,vh2) as h2)):t) : (t * t) Consistency.t =
+        (((_,vl1) as l1, ((kh1,vh1) as h1)) as i1:t)
+        (((kl2,vl2) as l2, ((_,vh2) as h2)) as i2:t) : (t * t) Consistency.t =
     let open Consistency in
     if B.lt vh1 vl2 || (B.equal vh1 vl2 && (kh1 = Strict || kl2 = Strict)) then Sat
     else if B.geq vl1 vh2 then Unsat
-    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),false)
+    else Filtered (((l1, min_up h1 h2),(max_low l1 l2, h2)),
+                   is_singleton i1 || is_singleton i2)
 
   let filter_eq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : t Consistency.t =
     let open Consistency in
@@ -685,7 +687,6 @@ module Make(B:BOUND) = struct
     let r = Random.float 1. in
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
-
 end
 
 module Test = Make(Bound_float)

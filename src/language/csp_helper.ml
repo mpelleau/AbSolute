@@ -315,7 +315,7 @@ let compute_jacobian csp =
 (*        USEFUL FUNCTION ON AST         *)
 (*****************************************)
 
-let empty = {init = []; constraints= []; objective = zero; solutions = Some []}
+let empty = {init = []; constraints= []; objective = zero; solutions = None}
 
 let get_vars p =
   List.map (fun (_,v,_) -> v) p.init

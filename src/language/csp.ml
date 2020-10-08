@@ -54,18 +54,16 @@ type constrs = bexpr list
 (* the instance type *)
 type instance = i VarMap.t
 
-(* we can annotate a problem with information on the resolution,
-   to check the soundness of the solver *)
-(* A solution_info is either Some (l), where l is instance list,
-   of known solution and known no goods *)
-(* or None, when the problem is infeasible *)
+(* annotations to test the validity of the solver *)
 type solution_info =
-  (instance * bool) list option
+  | Exact of instance list
+  | Unfeasible
+  | Known of (instance * bool) list
 
 (* program *)
 type prog = {
     init        : decls;
     objective   : expr;
     constraints : constrs;
-    solutions   : solution_info (* extra information about the solutions of the problem *)
+    solutions   : solution_info option (* extra information about feasbility *)
   }

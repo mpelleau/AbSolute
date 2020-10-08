@@ -27,8 +27,7 @@ let fresh_name =
    for example:
    2*x^2 + cos(x) + (cos(x))^2=y
    is rewritten into :
-   2*x^2 + %reserved_1 + %reserved_1^2 = y
-*)
+   2*x^2 + %reserved_1 + %reserved_1^2 = y *)
 let rec simplify env expr : (PI.t * string CoEnv.t) =
   let check_var e env =
     try
@@ -116,20 +115,14 @@ and polynom_to_expr (p:PI.t) (fake_vars: string CoEnv.t) : Csp.expr =
 let rewrite (e1,cmp,e2) : comparison =
   (* we move e2 to left side to perform potentially more simplifications *)
   let e1', e2' = (Csp_helper.expand e1, Csp_helper.expand e2) in
-  (* Format.printf "---------- %a = %a@." print_expr e1' print_expr e2'; *)
   let p1, env1 = simplify CoEnv.empty e1' in
   let p2, env2 = simplify env1 e2' in
-  (* Format.printf "********** %a = %a@." print_expr (polynom_to_expr p1 env1) print_expr (polynom_to_expr p2 env2); *)
   let polynom = PI.clean (PI.sub p1 p2) in
   let simplified_left = polynom_to_expr polynom env2 in
-  (* Format.printf "$$$$$$$$$$ %a = 0@." print_expr simplified_left; *)
   let simp_left = Csp_helper.simplify_fp simplified_left in
-  (* Format.printf "&&&&&&&&&& %a = 0@." print_expr simp_left; *)
   let e2 = Csp_helper.zero in
   (simp_left,cmp,e2)
 
-
-(* rewriting main function *)
 let rewrite_csp (p:Csp.prog) : Csp.prog =
   let res = List.map (Csp_helper.map_constr rewrite) p.constraints in
   {p with constraints = res}

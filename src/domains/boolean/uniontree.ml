@@ -58,7 +58,7 @@ module Make (D:Numeric) : Domain = struct
   (* all elements defined on the same set of variables *)
   let vars = function
     | Leaf e
-    | Union {envelopp = e;_} -> D.vars e
+      | Union {envelopp = e;_} -> D.vars e
 
   let empty = Leaf D.empty
 
@@ -73,9 +73,8 @@ module Make (D:Numeric) : Domain = struct
   let join a b =
     Union {envelopp=fst (D.join (bounding a) (bounding b)); sons=a,b}
 
-   let rec meet q1 q2 =
-     Format.printf "meet\n%!";
-     match q1,q2 with
+  let rec meet q1 q2 =
+    match q1,q2 with
     | Leaf e1, Leaf e2 -> Bot.lift_bot leaf (D.meet e1 e2)
     | Union {envelopp; sons=l,r}, b | b, Union {envelopp; sons=l,r}->
        (match D.meet envelopp (bounding b) with
@@ -84,58 +83,65 @@ module Make (D:Numeric) : Domain = struct
 
   (* filter for numeric predicates *)
   let filter_cmp (t:t) cmp : t Consistency.t =
-    Format.printf "filter numeric on:\n%a and %a\n%!"
-      print t Csp_printer.print_cmp (D.externalize cmp);
     let rec loop = function
-    | Leaf e -> Consistency.map leaf (D.filter e cmp)
-    | Union {envelopp; sons=l,r} ->
-       Consistency.bind (fun _ _->
-           match loop l with
-           | Unsat -> loop r
-           | Sat ->
-              (match loop r with
-               | Unsat -> Filtered(l,true)
-               | Sat -> Sat
-               | Filtered (r',sat) -> Filtered ((join l r'),sat))
-           | Filtered(l',satl) as left ->
-              (match loop r with
-               | Unsat -> left
-               | Sat -> Filtered ((join l' r),satl)
-               | Filtered (r',satr) -> Filtered ((join l' r'),satl && satr))
-         ) (D.filter envelopp cmp)
+      | Leaf e -> Consistency.map leaf (D.filter e cmp)
+      | Union {envelopp; sons=l,r} ->
+         match (D.filter envelopp cmp) with
+         | Sat -> Sat
+         | Unsat -> Unsat
+         | _ ->
+            (match loop l with
+             | Unsat -> loop r
+             | Sat ->
+                (match loop r with
+                 | Unsat -> Filtered(l,true)
+                 | Sat -> Sat
+                 | Filtered (r',sat) -> Filtered ((join l r'),sat))
+             | Filtered(l',satl) as left ->
+                (match loop r with
+                 | Unsat -> left
+                 | Sat -> Filtered ((join l' r),satl)
+                 | Filtered (r',satr) -> Filtered ((join l' r'),satl && satr)))
     in
-    let res = loop t in
-    (match res with
-    | Sat -> Format.printf "result: sat \n\n";
-    | Unsat -> Format.printf "result: unsat \n\n";
-    | Filtered (x,s) ->  Format.printf "result: %a. sat:%b\n\n%!" print x s);
-    res
+    let res = loop t in res
 
   (* filter for boolean expressions *)
-  let filter (num:t) c : t Consistency.t =
-    let rec loop num = function
-      | Cmp a -> filter_cmp num a
+  let filter (n:t) c : t Consistency.t =
+    Format.printf "\nfilter on:\n%a and %a\n%!"
+      print n Csp_printer.print_bexpr (externalize c);
+    let rec loop e = function
+      | Cmp a -> filter_cmp e a
       | Or (b1,b2) ->
-         (match loop num b1 with
+         (match loop e b1 with
           | Sat -> Sat
-          | Unsat -> loop num b2
+          | Unsat -> loop e b2
           | Filtered (n1,sat1) as x ->
-             (match loop num b2 with
+             (match loop e b2 with
               | Sat -> Sat
               | Unsat -> x
               | Filtered (n2,sat2) ->
-                 Filtered (( join n1 n2,sat1 && sat2))))
-      | And(b1,b2) ->
-         Format.printf "filtering and\n%!";
-         Consistency.fold_and loop num [b1;b2]
+                 Filtered ((join n1 n2,sat1 && sat2))))
+      | And(b1,b2) -> Consistency.fold_and loop e [b1;b2]
       | Not _ -> assert false
-    in loop num c
-
+    in
+    let res = loop n c in
+    (match res with
+     | Sat -> Format.printf "result: sat \n\n";
+     | Unsat -> Format.printf "result: unsat \n\n";
+     | Filtered (x,s) ->  Format.printf "result: %a. sat:%b\n\n%!" print x s);
+    res
   let join a b = join a b, true
 
   let split = function
-    | Leaf x -> List.map leaf (D.split x)
+    | Leaf x -> List.rev_map leaf (D.split x)
     | Union {sons=l,r;_} -> [l;r]
+
+  let split x =
+    Format.printf "splitting\n %a\n into:\n" print x;
+    let res = split x in
+    Format.printf "%a" (Format.pp_print_list ~pp_sep:Tools.newline_sep
+                          (fun fmt -> Format.fprintf fmt "%a\n" print)) res;
+    res
 
   let is_abstraction t i =
     try

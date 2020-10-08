@@ -7,10 +7,10 @@
 open Signature
 
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (N:Domain) = struct
-  module It = Iterator.Make(N)
+module GoS (D:Domain) = struct
+  module It = Iterator.Make(D)
   module Solv = Solver.Make(It)
-  module Print = Out.Make(N)
+  module Print = Out.Make(D)
   let time_stats prob solve =
     Tools.green_fprintf Format.std_formatter "\nSolving\n";
     Format.printf "domain: ";
@@ -59,6 +59,7 @@ let speclist =
     ("-precision"    , Float set_prec       , default_float "Sets the precision" precision);
     ("-max_sol"      , Int set_max_sol      , default_int "Sets the maximum number of solutions" max_sol);
     ("-max_iter"     , Int set_max_iter     , default_int "Sets the maximum number of iterations" max_iter);
+    ("-max_depth"    , Int set_max_depth    , default_int "Sets the maximum depth of the search tree" max_iter);
     ("-domain"       , Set_string domain    , default_string "Sets the numeric domain" domain);
     ("-boolean"      , Set_string boolean   , default_string "Sets the boolean domain" domain);
     ("-minimize"     , Set minimizing       , "Specify that the problem is a minimization problem");
@@ -66,7 +67,7 @@ let speclist =
     ("-pruning"      , Set pruning          , "Enables the \"pruning\" during the solving process");
     ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
     ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
-    ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
+    ("-lin"          , String Vpl_domain.set_lin, "Sets the linearization algorithm of the VPL");
     ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
     ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
     ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");

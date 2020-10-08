@@ -96,9 +96,9 @@ constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
 
 solutions:
- | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Some $3}
- | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {None}
- | {Some []}
+ | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Some (Known $3)}
+ | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {Some Unfeasible}
+ | {None}
 
 instances:
  | TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $2),true)::$5}
