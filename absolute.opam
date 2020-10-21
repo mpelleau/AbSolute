@@ -1,7 +1,5 @@
-url {
-  src: "https://github.com/mpelleau/AbSolute/archive/v0.0.1.tar.gz"
-}
 opam-version: "2.0"
+version:"0.1"
 maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
 authors: [
   "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
