@@ -1,0 +1,7 @@
+init{
+  real x = [0; 100];
+  real y = [0; 100];
+}
+constraints{
+  x notin [40;60] ||  x in [48;52];
+}
