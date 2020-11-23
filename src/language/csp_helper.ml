@@ -34,10 +34,22 @@ let neq e1 e2 = Cmp (e1,NEQ,e2)
 let assign var value =
   eq (Var var) (of_mpqf value)
 
-(** constraint for 'v \in [low;high]' *)
+
+(** constraint for 'e \in [low;high]' *)
 let inside v low high =
-  let v = Var v in
-  And ((geq v (of_mpqf low)), (leq v (of_mpqf high)))
+  And ((geq v low), (leq v high))
+
+(** constraint for 'not (v \in [low;high])' *)
+let outside v low high =
+  Or ((lt v low), (gt v high))
+
+(** same as inside but with constants instead of expressions' *)
+let inside_cst v low high =
+  inside (Var v) (of_mpqf low) (of_mpqf high)
+
+(** constraint for 'not (v \in [low;high])' *)
+let outside_cst v low high =
+  outside (Var v) (of_mpqf low) (of_mpqf high)
 
 (** {1 Predicates} *)
 
@@ -87,7 +99,7 @@ let neg = function
 (* TODO: use type *)
 let domain_to_constraints ((_,v,d):decl) : bexpr =
   match d with
-  | Finite (l,h) -> inside v l h
+  | Finite (l,h) -> inside_cst v l h
   | Minf i -> leq (Var v) (Cst i)
   | Inf i -> geq (Var v) (Cst i)
   | Set (h::tl) ->

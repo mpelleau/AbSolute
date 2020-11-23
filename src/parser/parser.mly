@@ -16,15 +16,18 @@ open Csp_helper
 %token TOK_NONE          /* none */
 %token TOK_MINF          /* -oo */
 %token TOK_INF           /* oo */
+%token TOK_IN            /* in */
+%token TOK_NOTIN         /* notin */
 
-/* Operators */
+/* Delimiters */
 %token TOK_LBRACE        /* { */
 %token TOK_RBRACE        /* } */
 %token TOK_LBRACKET      /* [ */
 %token TOK_RBRACKET      /* ] */
 %token TOK_LPAREN        /* ( */
 %token TOK_RPAREN        /* ) */
-%token TOK_PIPE          /* | */
+
+/* Operators */
 %token TOK_COMMA         /* , */
 %token TOK_SEMICOLON     /* ; */
 %token TOK_COLON         /* : */
@@ -169,12 +172,13 @@ const:
   | TOK_MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpr:
-  | expr cmp expr                       {Cmp ($1, $2, $3)}
-  | bexpr TOK_OR bexpr                  {Or ($1,$3)}
-  | bexpr TOK_AND bexpr                 {And ($1,$3)}
-  | TOK_NOT bexpr                       {Not ($2)}
-  | TOK_LPAREN bexpr TOK_RPAREN         { $2 }
-
+  | expr cmp expr                                    {Cmp ($1, $2, $3)}
+  | bexpr TOK_OR bexpr                               {Or ($1,$3)}
+  | bexpr TOK_AND bexpr                              {And ($1,$3)}
+  | TOK_NOT bexpr                                    {Not ($2)}
+  | expr TOK_IN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET    {inside $1 $4 $6 }
+  | expr TOK_NOTIN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET {outside $1 $4 $6 }
+  | TOK_LPAREN bexpr TOK_RPAREN                      { $2 }
 
 expr:
   | TOK_id TOK_LPAREN args TOK_RPAREN   { Funcall ($1,$3) }

@@ -220,7 +220,7 @@ let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
     (if contains_float r 0. && contains_float i1 0. then Nb i2
      else strict_bot (meet i2) (div r i1))
 
-let to_bexpr v ((l,h):t) = Csp_helper.inside v (Mpqf.of_int l) (Mpqf.of_int h)
+let to_bexpr v ((l,h):t) = Csp_helper.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)
 
 (* returns the type annotation of the represented values *)
 let to_annot _ = Csp.Int

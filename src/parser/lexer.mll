@@ -18,8 +18,10 @@ let _ =
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;
-      "-oo",            TOK_MINF
-   ]
+      "-oo",            TOK_MINF;
+      "in",             TOK_IN;
+      "notin",          TOK_NOTIN
+    ]
 
 (* (exact) parsing of decimal constants *)
 let parse_const c =
@@ -74,7 +76,6 @@ rule token = parse
 | "="    { TOK_ASSIGN }
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
-| "|"    { TOK_PIPE }
 | "!"    { TOK_NOT }
 | ":"    { TOK_COLON }
 (* literals *)
