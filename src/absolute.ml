@@ -2,6 +2,7 @@ open Config
 
 (* entry point *)
 let _ =
+  Printexc.record_backtrace true;
   Random.init 0x4162536f6c757465;
   try
     parse_args ();

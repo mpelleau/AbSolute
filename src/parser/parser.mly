@@ -30,7 +30,6 @@ open Csp_helper
 /* Operators */
 %token TOK_COMMA         /* , */
 %token TOK_SEMICOLON     /* ; */
-%token TOK_COLON         /* : */
 %token TOK_PLUS          /* + */
 %token TOK_MINUS         /* - */
 %token TOK_MULTIPLY      /* * */
@@ -40,7 +39,6 @@ open Csp_helper
 %token TOK_GREATER       /* > */
 %token TOK_LESS_EQUAL    /* <= */
 %token TOK_GREATER_EQUAL /* >= */
-%token TOK_EQUAL_EQUAL   /* == */
 %token TOK_NOT_EQUAL     /* != */
 %token TOK_ASSIGN        /* = */
 %token TOK_AND           /* && */
@@ -58,9 +56,6 @@ open Csp_helper
 %left TOK_PLUS TOK_MINUS
 %left TOK_MULTIPLY  TOK_DIVIDE
 %nonassoc unary_minus
-%nonassoc TOK_COS TOK_SIN TOK_TAN TOK_COT
-%nonassoc TOK_ASIN TOK_ACOS TOK_ATAN TOK_ACOT
-%nonassoc TOK_LN TOK_LOG TOK_EXP TOK_NROOT TOK_SQRT TOK_POW
 
 %type <annot> typ
 %type <dom> init
@@ -71,17 +66,45 @@ open Csp_helper
 %start file
 
 %%
+/* useful parametrized rules */
+/*****************************/
+
+// {x}
+%public brace(YOURSELF):
+  | TOK_LBRACE content=YOURSELF TOK_RBRACE { content }
+
+// [x]
+%public bracket(X):
+  | TOK_LBRACKET content=X TOK_RBRACKET { content }
+
+// [x;y]
+%public itv(X,Y):
+  | TOK_LBRACKET X TOK_SEMICOLON Y TOK_RBRACKET { content }
+
+// separated_list with optional separator at the end
+%public separated_optend(sep,X):
+  | X {[$1]}
+  | x=X; sep; xs=separated_optend(sep,X) {x::xs}
+  | {[]}
+
+// bloc of the form  NAME{CONTENT}
+%public bloc(NAME,CONTENT):
+  | NAME content=brace(CONTENT) {content}
+
+// bloc of the form : NAME{CONTENT;CONTENT ...} with optional ';' at the end
+%public bloc_list(NAME,CONTENT):
+  | NAME content=brace(separated_optend(TOK_SEMICOLON,CONTENT)) {content}
 
 file:
   constants
-  domains
+  domains=bloc_list(TOK_INIT,domains)
   objective
   constraints
   solutions
   TOK_EOF
   {
     {
-      init=$2;
+      init=domains;
       objective=$3;
       constraints=$4;
       solutions=$5;
@@ -89,7 +112,7 @@ file:
   }
 
 domains:
- | TOK_INIT TOK_LBRACE decls TOK_RBRACE {$3}
+  | typ TOK_id TOK_ASSIGN init {($1, $2, $4)}
 
 objective:
  | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
@@ -131,15 +154,6 @@ value:
 rational:
   | const TOK_DIVIDE const {Mpqf.div $1 $3}
   | const {$1}
-
-varlist:
-  | TOK_id varlist {$1::$2}
-  | {[]}
-
-decls:
-  | typ TOK_id TOK_ASSIGN init TOK_SEMICOLON decls {($1,$2,$4)::$6}
-  | typ TOK_id TOK_ASSIGN init {[($1, $2, $4)]}
-  | {[]}
 
 bexprs:
   | bexpr TOK_SEMICOLON bexprs {$1::$3}

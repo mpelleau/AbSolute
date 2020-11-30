@@ -19,6 +19,7 @@ depends: [
   "apron"
   "apronext" {>= "1.0.2"}
   "picasso"
+  "menhir"
 ]
 depopts: [
   "vpl-core"

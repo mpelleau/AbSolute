@@ -24,17 +24,42 @@ let _ =
     ]
 
 (* (exact) parsing of decimal constants *)
-let parse_const c =
-  let mpqf10 = Mpqf.of_int 10 in
-  let rec div10 x n =
-    if n <= 0 then x else div10 (Mpqf.div x mpqf10) (n-1)
+let parse_const s =
+  (* splits a (non-empty) string into a sign and the rest of the string *)
+  let split_sign s =
+    match s.[0] with
+    | ('-' | '+') as c -> c,(String.sub s 1 (String.length s-1))
+    | _ -> '+',s
   in
-  try
-    let p = String.index c '.' in
-    let p' = String.length c - p - 1 in
-    let x = (String.sub c 0 p)^(String.sub c (p+1) p') in
-    div10 (Mpqf.of_string x) p'
-  with Not_found -> Mpqf.of_string c
+  let of_decimal_point s shift =
+    try
+      let i =  String.index s '.' in
+      let size_dec = String.length s-i-1 in
+      let rmv_dot = (String.sub s 0 i)^(String.sub s (i+1) size_dec) in
+      if size_dec > shift then
+        Mpqf.div
+          (Mpqf.of_string rmv_dot)
+          (Mpqf.of_string ("1"^(String.make (size_dec-shift)) '0'))
+      else
+        Mpqf.of_string (rmv_dot^(String.make (shift-size_dec) '0'))
+    with Not_found -> Mpqf.of_string (s^String.make shift '0')
+  in
+  let of_scientific_notation s =
+    let sign,s = split_sign s in
+    let i = ref 0 in
+    try
+      String.iter (fun c -> incr i; match c with 'e' | 'E' -> raise Exit | _ -> ()) s;
+      (* not a scientific notation *)
+      if sign='+' then of_decimal_point s 0 else of_decimal_point ("-"^s) 0
+    with
+    | Exit ->
+       let m = String.sub s 0 (!i-1) in
+       let e = int_of_string (String.sub s !i (String.length s- !i)) in
+       if sign='+' then of_decimal_point m e
+       else of_decimal_point ("-"^m) e
+  in
+  of_scientific_notation s
+
 }
 
 
@@ -71,13 +96,11 @@ rule token = parse
 | ">"    { TOK_GREATER }
 | "<="   { TOK_LESS_EQUAL }
 | ">="   { TOK_GREATER_EQUAL }
-| "=="   { TOK_EQUAL_EQUAL }
 | "!="   { TOK_NOT_EQUAL }
 | "="    { TOK_ASSIGN }
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
 | "!"    { TOK_NOT }
-| ":"    { TOK_COLON }
 (* literals *)
 | const as c { TOK_const (parse_const c) }
 
