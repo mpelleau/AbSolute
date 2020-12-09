@@ -10,7 +10,6 @@
 %token RBRACKET
 %token LPAREN
 %token RPAREN
-%token PIPE
 %token COMMA
 %token SEMICOLON
 %token COLON
@@ -24,19 +23,15 @@
 %token GT
 %token LTE
 %token GTE
-%token EQUAL_EQUAL
 %token NOT_EQUAL
 %token ASSIGN
 %token COLONEQUAL
 %token AND
 %token OR
 %token NOT
-%token OBJ
 %token CONSTR
 %token PARAM
 %token VAR
-%token MINF
-%token INF
 
 %token <string> ID
 %token <float> FLOAT
