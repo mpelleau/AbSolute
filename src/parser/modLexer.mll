@@ -13,23 +13,6 @@ let _ =
       "var",            VAR;
       "objective", 	OBJ;
       "constraints",    CONSTR;
-      "sqrt",           SQRT;
-      "cos",            COS;
-      "sin",            SIN;
-      "tan",            TAN;
-      "cot",            COT;
-      "acos",           ACOS;
-      "asin",           ASIN;
-      "atan",           ATAN;
-      "acot",           ACOT;
-      "ln",             LN;
-      "log",            LOG;
-      "exp",            EXP;
-      "nroot",          NROOT;
-      "max",            MAX;
-      "min",            MIN;
-      "int",            INT;
-      "real",           REAL;
       "oo",             INF;
       "-oo",            MINF
    ]
@@ -85,12 +68,10 @@ rule token = parse
 | ">"    { GT }
 | "<="   { LTE }
 | ">="   { GTE }
-| "=="   { EQUAL_EQUAL }
 | "!="   { NOT_EQUAL }
 | "="    { ASSIGN }
 | "&&"   { AND }
 | "||"   { OR }
-| "|"    { PIPE }
 | "!"    { NOT }
 | ":"    { COLON }
 | ":="   { COLONEQUAL }

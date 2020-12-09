@@ -31,28 +31,9 @@
 %token AND
 %token OR
 %token NOT
-%token INT
-%token REAL
-%token COS
-%token SIN
-%token TAN
-%token COT
-%token ASIN
-%token ACOS
-%token ATAN
-%token ACOT
-%token LN
-%token LOG
-%token EXP
-%token NROOT
-%token MIN
-%token MAX
-%token SQRT
-%token INIT
 %token OBJ
 %token CONSTR
 %token PARAM
-%token SUBJECT_TO
 %token VAR
 %token MINF
 %token INF
@@ -68,9 +49,6 @@
 %left PLUS MINUS
 %left MULTIPLY  DIVIDE
 %nonassoc unary_minus
-%nonassoc COS SIN TAN COT
-%nonassoc ASIN ACOS ATAN ACOT
-%nonassoc LN LOG EXP NROOT SQRT POW
 
 %type <bexpr> bexpr
 %type <ModCsp.modstmt> stmt
@@ -82,8 +60,7 @@
 %%
 
 stmts:
-  | stmt SEMICOLON stmts {$1::$3}
-  | {[]}
+  | l=separated_list(stmt,SEMICOLON) { l }
 
 stmt:
   | VAR ID GTE expr COMMA LTE expr                 { Var ($2,$4,$7) }
@@ -92,13 +69,8 @@ stmt:
   | ID COLON bexpr                                 { SubjectTo ($1,$3) }
 
 
-set :
+set:
   | LBRACE expr PPOINT expr RBRACE                 { ($2,$4) }
-
-
-const:
-  | FLOAT {$1}
-  | MINUS FLOAT {(-.$2)}
 
 bexpr:
   | expr cmp expr                   {Cmp ($1, $2, $3)}
