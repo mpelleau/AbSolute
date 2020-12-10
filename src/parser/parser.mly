@@ -14,7 +14,6 @@ open Csp_helper
 %token TOK_CONSTR        /* constraints */
 %token TOK_SOL           /* solutions */
 %token TOK_NONE          /* none */
-%token TOK_MINF          /* -oo */
 %token TOK_INF           /* oo */
 %token TOK_IN            /* in */
 %token TOK_NOTIN         /* notin */
@@ -112,7 +111,7 @@ file:
   }
 
 domains:
-  | typ TOK_id TOK_ASSIGN init {($1, $2, $4)}
+  | typ TOK_id TOK_ASSIGN d=bracket(init) {($1, $2, d)}
 
 objective:
  | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
@@ -165,21 +164,10 @@ typ:
   | TOK_REAL      {Real}
 
 init:
-  | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Top}
-  | TOK_LBRACKET TOK_MINUS TOK_INF TOK_SEMICOLON TOK_INF TOK_RBRACKET          {Top}
-  | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET          {Top}
-  | TOK_LBRACKET TOK_MINUS TOK_INF TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET {Top}
-  | TOK_LBRACKET TOK_MINF TOK_SEMICOLON rational TOK_RBRACKET                  {Minf ($4)}
-  | TOK_LBRACKET TOK_MINUS TOK_INF TOK_SEMICOLON rational TOK_RBRACKET         {Minf ($5)}
-  | TOK_LBRACKET rational TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Inf ($2)}
-  | TOK_LBRACKET rational TOK_SEMICOLON TOK_PLUS TOK_INF TOK_RBRACKET          {Inf ($2)}
-  | TOK_LBRACKET rational TOK_SEMICOLON rational TOK_RBRACKET                  {Finite($2,$4)}
-  | TOK_LBRACE consts TOK_RBRACE                                               {Set($2)}
-
-consts:
-  | rational TOK_SEMICOLON consts {$1::$3}
-  | rational {[$1]}
-  | {[]}
+  | TOK_MINUS TOK_INF TOK_SEMICOLON option(TOK_PLUS) TOK_INF {Top}
+  | TOK_MINUS TOK_INF TOK_SEMICOLON rational          {Minf ($4)}
+  | rational TOK_SEMICOLON option(TOK_PLUS) TOK_INF   {Inf ($1)}
+  | rational TOK_SEMICOLON rational                   {Finite($1,$3)}
 
 const:
   | TOK_const {$1}
@@ -202,8 +190,7 @@ expr:
   | leaf                                { $1 }
 
 args:
-  | expr                {[$1]}
-  | expr TOK_COMMA args {$1::$3}
+  | e=separated_list(TOK_COMMA,expr) {e}
 
 leaf:
   | TOK_const                           { Cst $1 }

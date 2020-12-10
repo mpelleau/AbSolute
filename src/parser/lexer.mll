@@ -18,7 +18,6 @@ let _ =
       "int",            TOK_INT;
       "real",           TOK_REAL;
       "oo",             TOK_INF;
-      "-oo",            TOK_MINF;
       "in",             TOK_IN;
       "notin",          TOK_NOTIN
     ]
