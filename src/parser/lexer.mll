@@ -58,10 +58,7 @@ let parse_const s =
        else of_decimal_point ("-"^m) e
   in
   of_scientific_notation s
-
 }
-
-
 
 (* character classes *)
 let space = [' ' '\t' '\r']+

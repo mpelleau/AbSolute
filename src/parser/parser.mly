@@ -55,6 +55,7 @@ open Csp_helper
 %left TOK_PLUS TOK_MINUS
 %left TOK_MULTIPLY  TOK_DIVIDE
 %nonassoc unary_minus
+%nonassoc TOK_POW
 
 %type <annot> typ
 %type <dom> init
@@ -99,14 +100,14 @@ file:
   domains=bloc_list(TOK_INIT,domains)
   objective
   constraints
-  solutions
+  s=option(solutions)
   TOK_EOF
   {
     {
       init=domains;
       objective=$3;
       constraints=$4;
-      solutions=$5;
+      solutions=s;
     }
   }
 
@@ -121,9 +122,8 @@ constraints:
  | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
 
 solutions:
- | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Some (Known $3)}
- | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {Some Unfeasible}
- | {None}
+ | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Known $3}
+ | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {Unfeasible}
 
 instances:
  | TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $2),true)::$5}
@@ -177,7 +177,7 @@ bexpr:
   | expr cmp expr                                    {Cmp ($1, $2, $3)}
   | bexpr TOK_OR bexpr                               {Or ($1,$3)}
   | bexpr TOK_AND bexpr                              {And ($1,$3)}
-  | TOK_NOT bexpr                                    {Not ($2)}
+  | TOK_NOT bexpr                                    {Not $2}
   | expr TOK_IN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET    {inside $1 $4 $6 }
   | expr TOK_NOTIN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET {outside $1 $4 $6 }
   | TOK_LPAREN bexpr TOK_RPAREN                      { $2 }
@@ -197,22 +197,16 @@ leaf:
   | TOK_id                              { Var $1 }
 
 binop_expr:
-  | expr TOK_POW expr  {Binary (POW,$1,$3)}
-  | binop_expr2        {$1}
-
-binop_expr2:
-  | expr TOK_DIVIDE   expr  {Binary(DIV,$1,$3)}
-  | expr TOK_MULTIPLY expr  {Binary(MUL,$1,$3)}
-  | binop_expr3             {$1}
-
-binop_expr3:
-  | expr TOK_PLUS  expr {Binary(ADD,$1,$3)}
-  | expr TOK_MINUS expr {Binary(SUB,$1,$3)}
+  | expr TOK_POW expr      {Binary(POW,$1,$3)}
+  | expr TOK_DIVIDE expr   {Binary(DIV,$1,$3)}
+  | expr TOK_MULTIPLY expr {Binary(MUL,$1,$3)}
+  | expr TOK_PLUS expr     {Binary(ADD,$1,$3)}
+  | expr TOK_MINUS expr    {Binary(SUB,$1,$3)}
 
 cmp:
-  | TOK_LESS                    { LT }
-  | TOK_GREATER                 { GT }
-  | TOK_LESS_EQUAL              { LEQ }
-  | TOK_GREATER_EQUAL           { GEQ }
-  | TOK_ASSIGN                  { EQ }
-  | TOK_NOT_EQUAL               { NEQ }
+  | TOK_LESS          { LT }
+  | TOK_GREATER       { GT }
+  | TOK_LESS_EQUAL    { LEQ }
+  | TOK_GREATER_EQUAL { GEQ }
+  | TOK_ASSIGN        { EQ }
+  | TOK_NOT_EQUAL     { NEQ }

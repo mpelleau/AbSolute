@@ -292,9 +292,9 @@ module Itv(B:BOUND) = struct
       | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
       | x when x > 1 && B.even l ->
         if B.leq il B.zero && B.geq ih B.zero then
-	  (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+	        (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
         else if B.geq il B.zero then
-	  (B.pow_down il p, B.pow_up ih p)
+	        (B.pow_down il p, B.pow_up ih p)
         else (B.pow_down ih p, B.pow_up il p)
       | _ -> failwith "cant handle negatives powers"
     else failwith  "cant handle non_singleton powers"
