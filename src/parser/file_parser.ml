@@ -69,12 +69,21 @@ let check_ast p =
   check_dom ();
   check_constrs ()
 
+let get_line fname number =
+  let ic = open_in fname in
+  let rec loop cur =
+    let cur_line = input_line ic in
+    if cur = number then
+      (close_in ic;
+      cur_line)
+    else loop (cur+1)
+  in
+  loop 1
+
 let show_error fname line col =
-  let ic = Unix.open_process_in ("sed -n "^string_of_int line ^"p "^fname) in
-  let err = input_line ic in
-  close_in ic;
+  let line = get_line fname line in
   let col = String.make (col-1) ' ' in
-  Format.asprintf "%s\n%s^" err col
+  Format.asprintf "%s\n%s^" line col
 
 let print_pos ppf lex =
   let p = lex.lex_curr_p in

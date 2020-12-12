@@ -1,5 +1,4 @@
 /* a simple 3d example */
-
 init {
   real x = [0;50];
   real y = [0;50];
