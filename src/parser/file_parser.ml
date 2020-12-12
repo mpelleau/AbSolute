@@ -25,9 +25,9 @@ let runtime = [
 let illegal_funcall func arity =
   if List.exists (fun (name,_) -> name = func) runtime then
     Format.sprintf "Illegal funcall: %s expects %d arguments but was given %d"
-                   func
-                   (List.assoc func runtime)
-                   arity
+      func
+      (List.assoc func runtime)
+      arity
   else Format.sprintf "Illegal funcall: unknown function %s" func
 
 
@@ -69,6 +69,19 @@ let check_ast p =
   check_dom ();
   check_constrs ()
 
+let show_error fname line col =
+  let ic = Unix.open_process_in ("sed -n "^string_of_int line ^"p "^fname) in
+  let err = input_line ic in
+  close_in ic;
+  let col = String.make (col-1) ' ' in
+  Format.asprintf "%s\n%s^" err col
+
+let print_pos ppf lex =
+  let p = lex.lex_curr_p in
+  let col = p.pos_cnum - p.pos_bol in
+  Format.fprintf ppf "file %s, Line %d, Column %d\n%s"
+    p.pos_fname p.pos_lnum col (show_error p.pos_fname p.pos_lnum col)
+
 (* open a file and parse it *)
 let parse (filename:string) : prog =
   if !Constant.debug > 0 then Format.printf "parsing\n%!";
@@ -86,7 +99,11 @@ let parse (filename:string) : prog =
     fileparser lex
   with
   | IllFormedAST s -> failwith s
-  | Parsing.Parse_error -> failwith "Parse error"
+  | _ ->
+     Format.printf "\n";
+     Format.printf "Syntax Error in %a\n" print_pos lex;
+     close_in f;
+     exit 0
 
 let parse (fn:string) =
   Format.printf "parsing ... %!";
