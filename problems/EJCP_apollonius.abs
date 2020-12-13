@@ -1,28 +1,28 @@
-/*************************************************
+// Problem of Apollonius circles: given 3 circles, find the circles
+// which are simultaneously tangent to the 3 circles. There are two such
+// circles, thus the core constraints should have two solutions.
 
-Problem of Apollonius circles: given 3 circles, find the circles which are simultaneously tangent to the 3 circles. There are two such circles, thus the core constraints should have two solutions.
+// The initial circles are determined by their centers (c1x, c1y),
+// (c2x, c2y), (c3x, c3y), and their radius r1, r2, r3.
 
-The initial circles are determined by their centers (c1x, c1y), (c2x, c2y), (c3x, c3y), and their radius r1, r2, r3.
+// The variables of the problem are the center and radius of the circle we search for: cx, cy, r.
 
-The variables of the problem are the center and radius of the circle we search for: cx, cy, r.
+// To obtain nice drawings with AbSolute -v option, uncomment the x,y
+// variables and the constraints accordingly: (i) to draw the initial
+// circle, (ii) to draw the unknown circle and (iii) for all of them.
 
-To obtain nice drawings with AbSolute -v option, uncomment the x,y variables and the constraints accordingly: (i) to draw the initial circle, (ii) to draw the unknown circle and (iii) for all of them.
+/* constants {
+/* 	c1x = 3;
+/* 	c1y = 1;
+/* 	r1 = 3;
+/* 	c2x = -2 ;
+/* 	c2y = 1;
+/* 	r2 = 2;
+/* 	c3x = -0.3;
+/* 	c3y = -1.9;
+/* 	r3 = 1.4;
 
-
-*************************************************/
-
-constants {
-	c1x = 3;
-	c1y = 1;
-	r1 = 3;
-	c2x = -2 ;
-	c2y = 1;
-	r2 = 2;
-	c3x = -0.3;
-	c3y = -1.9;
-	r3 = 1.4;
-
-}
+/* }*/
 
 init {
 /////// Fake variables - uncomment to have nice drawings. This will slow down the solving process.
@@ -31,14 +31,15 @@ init {
 /////// Parameter of the unknown circle
 	real cx = [-10 ; 10];
 	real cy = [-10 ; 10];
-	real r = [-10 ; 10];
+	real r = [-10 ; 10]
 }
 
 constraints{
-/////// The unknown circle must be tangent to the initial circles
-	(cx-c1x)^2+(cy-c1y)^2=(r1+r)^2;
-	(cx-c2x)^2+(cy-c2y)^2=(r2+r)^2;
-	(cx-c3x)^2+(cy-c3y)^2=(r3+r)^2;
+  cx <= 2;
+// /////// The unknown circle must be tangent to the initial circles
+// 	(cx-c1x)^2+(cy-c1y)^2=(r1+r)^2;
+// 	(cx-c2x)^2+(cy-c2y)^2=(r2+r)^2;
+// 	(cx-c3x)^2+(cy-c3y)^2=(r3+r)^2;
 
 /////// (i) Uncomment to draw the initial circles (as disks)
 //	(x-c1x)^2+(y-c1y)^2<=r1^2 || (x-c2x)^2+(y-c2y)^2<=r2^2
@@ -50,4 +51,6 @@ constraints{
 /////// (iii) Uncomment to draw all the circles
 //	(x-c1x)^2+(y-c1y)^2<=r1^2 || (x-c2x)^2+(y-c2y)^2<=r2^2 ||
 //	(x-c3x)^2+(y-c3y)^2<=r3^2 || (x-cx)^2+(y-cy)^2=r^2;
+
+cy =1;
 }

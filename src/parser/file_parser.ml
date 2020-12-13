@@ -2,12 +2,14 @@ open Csp
 open Lexing
 
 exception IllFormedAST of string
+exception Syntax_error of string
 
 let illegal_constraint spec =
   Format.sprintf "Illegal constraint: %s" spec
 
 (* allowed functions and their arity *)
 let runtime = [
+    ("abs",1);
     ("sqrt",1);
     ("exp",1);
     ("ln",1);
@@ -107,12 +109,10 @@ let parse (filename:string) : prog =
     lex.lex_curr_p <- { lex.lex_curr_p with pos_fname = filename; };
     fileparser lex
   with
-  | IllFormedAST s -> failwith s
   | _ ->
-     Format.printf "\n";
-     Format.printf "Syntax Error in %a\n" print_pos lex;
+     let msg = Format.asprintf "Syntax Error in %a\n" print_pos lex in
      close_in f;
-     exit 0
+     raise (Syntax_error msg)
 
 let parse (fn:string) =
   Format.printf "parsing ... %!";

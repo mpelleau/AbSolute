@@ -1,0 +1,3 @@
+(tests
+(names testparsers)
+(libraries libabsolute))

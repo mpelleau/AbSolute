@@ -1,0 +1,13 @@
+init {
+  real x = [-100;100];
+  int y = [0;10]
+}
+
+constraints {
+  sqrt(x) = y;
+}
+
+solutions {
+  {x=1; y=1};
+  {x=4; y=2};
+}

@@ -1,0 +1,13 @@
+init{
+  int x  = [-10;10];
+  real y = [-10;10];
+}
+
+constraints {
+  y*y = 1;
+  x*2 = y;
+}
+
+solutions{
+  none
+}

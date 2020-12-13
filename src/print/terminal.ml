@@ -1,6 +1,9 @@
 open Constant
 
-let error x = Tools.red_fprintf Format.std_formatter x
+let error x =
+  (* in case of non terminated print we skip a line *)
+  Format.printf "\n";
+  Tools.red_fprintf Format.std_formatter x
 
 let warning x = Tools.yellow_fprintf Format.std_formatter x
 

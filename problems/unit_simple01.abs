@@ -1,0 +1,16 @@
+/* simple top test */
+
+init {
+  real x = [0;100];
+  real y = [0;100];
+}
+
+constraints {
+  y = y;
+}
+
+solutions{
+  {y=10; x=10};
+  {y=90; x=90};
+  {y=100; x=0};
+}
