@@ -11,7 +11,6 @@ let _ =
     [
       "param",          PARAM;
       "var",            VAR;
-      "constraints",    CONSTR;
    ]
 
 (* (exact) parsing of decimal constants constants *)

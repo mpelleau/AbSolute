@@ -29,7 +29,6 @@
 %token AND
 %token OR
 %token NOT
-%token CONSTR
 %token PARAM
 %token VAR
 
@@ -55,7 +54,7 @@
 %%
 
 stmts:
-  | l=separated_list(stmt,SEMICOLON) { l }
+  | l=separated_list(SEMICOLON,stmt) EOF { l }
 
 stmt:
   | VAR ID GTE expr COMMA LTE expr                 { Var ($2,$4,$7) }
