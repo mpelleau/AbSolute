@@ -27,7 +27,7 @@ module Make(S : Solvable) = struct
       |> Format.printf "%a%!" print
 
   (* increases the loading bar by d and returns the value v *)
-  let return _d v = (* loading d; *) v
+  let return d v = loading d; v
 
   (* coverage of the solution space*)
   let coverage searchspace : S.space Result.t =

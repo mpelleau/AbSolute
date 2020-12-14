@@ -103,12 +103,10 @@ module Make (D:Numeric) : Domain = struct
                  | Sat -> Filtered ((join l' r),satl)
                  | Filtered (r',satr) -> Filtered ((join l' r'),satl && satr)))
     in
-    let res = loop t in res
+    loop t
 
   (* filter for boolean expressions *)
   let filter (n:t) c : t Consistency.t =
-    Format.printf "\nfilter on:\n%a and %a\n%!"
-      print n Csp_printer.print_bexpr (externalize c);
     let rec loop e = function
       | Cmp a -> filter_cmp e a
       | Or (b1,b2) ->
@@ -124,24 +122,15 @@ module Make (D:Numeric) : Domain = struct
       | And(b1,b2) -> Consistency.fold_and loop e [b1;b2]
       | Not _ -> assert false
     in
-    let res = loop n c in
-    (match res with
-     | Sat -> Format.printf "result: sat \n\n";
-     | Unsat -> Format.printf "result: unsat \n\n";
-     | Filtered (x,s) ->  Format.printf "result: %a. sat:%b\n\n%!" print x s);
-    res
+    loop n c
+
   let join a b = join a b, true
 
   let split = function
     | Leaf x -> List.rev_map leaf (D.split x)
     | Union {sons=l,r;_} -> [l;r]
 
-  let split x =
-    Format.printf "splitting\n %a\n into:\n" print x;
-    let res = split x in
-    Format.printf "%a" (Format.pp_print_list ~pp_sep:Tools.newline_sep
-                          (fun fmt -> Format.fprintf fmt "%a\n" print)) res;
-    res
+  let split x = split x
 
   let is_abstraction t i =
     try
