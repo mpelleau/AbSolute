@@ -43,6 +43,7 @@
 %left PLUS MINUS
 %left MULTIPLY  DIVIDE
 %nonassoc unary_minus
+%nonassoc POW
 
 %type <bexpr> bexpr
 %type <ModCsp.modstmt> stmt
