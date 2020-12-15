@@ -1,4 +1,2 @@
 (ocamllex lexer modLexer)
-(menhir
-  (modules parser modParser)
-  (flags --explain))
+(menhir (modules parser modParser))

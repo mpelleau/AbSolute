@@ -43,7 +43,6 @@
 %left PLUS MINUS
 %left MULTIPLY  DIVIDE
 %nonassoc unary_minus
-%nonassoc POW
 
 %type <bexpr> bexpr
 %type <ModCsp.modstmt> stmt
@@ -54,13 +53,8 @@
 
 %%
 
-// separated_list with optional separator at the end
-%public separated_optend(sep,X):
-  | sep? {[]}
-  | x=X sep xs=separated_optend(sep,X) {x::xs}
-
 stmts:
-  | l=separated_optend(SEMICOLON,stmt) EOF { l }
+  | l=separated_list(SEMICOLON,stmt) EOF { l }
 
 stmt:
   | VAR ID GTE expr COMMA LTE expr                 { Var ($2,$4,$7) }
@@ -92,8 +86,14 @@ leaf:
 
 binop_expr:
   | expr POW expr  {Binary (Csp.POW,$1,$3)}
+  | binop_expr2    {$1}
+
+binop_expr2:
   | expr DIVIDE   expr  {Binary(Csp.DIV,$1,$3)}
   | expr MULTIPLY expr  {Binary(Csp.MUL,$1,$3)}
+  | binop_expr3         {$1}
+
+binop_expr3:
   | expr PLUS  expr   {Binary(Csp.ADD,$1,$3)}
   | expr MINUS expr   {Binary(Csp.SUB,$1,$3)}
 
