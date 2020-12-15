@@ -83,9 +83,8 @@ open Csp_helper
 
 // separated_list with optional separator at the end
 %public separated_optend(sep,X):
-  | X {[$1]}
-  | x=X; sep; xs=separated_optend(sep,X) {x::xs}
-  | {[]}
+  | sep? {[]}
+  | x=X sep xs=separated_optend(sep,X) {x::xs}
 
 // bloc of the form  NAME{CONTENT}
 %public bloc(NAME,CONTENT):
