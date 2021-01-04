@@ -82,7 +82,7 @@ rule token = parse
 | "["    { LBRACKET }
 | "]"    { RBRACKET }
 | ","    { COMMA }
-| ";"    { SEMICOLON }
+| ";"    { SCOLON }
 | "+"    { PLUS }
 | "-"    { MINUS }
 | "*"    { MULTIPLY }

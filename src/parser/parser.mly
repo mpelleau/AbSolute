@@ -28,7 +28,7 @@ open Csp_helper
 
 /* Operators */
 %token COMMA         /* , */
-%token SEMICOLON     /* ; */
+%token SCOLON        /* ; */
 %token PLUS          /* + */
 %token MINUS         /* - */
 %token MULTIPLY      /* * */
@@ -79,12 +79,12 @@ open Csp_helper
 
 // [x;y]
 %inline itv(X,Y):
-  | LBRACKET X SEMICOLON Y RBRACKET { content }
+  | LBRACKET X SCOLON Y RBRACKET { content }
 
 // separated_list with optional separator at the end
-%public separated_optend(sep,X):
+%public optend(sep,X):
   | X {[$1]}
-  | x=X; sep; xs=separated_optend(sep,X) {x::xs}
+  | x=X; sep; xs=optend(sep,X) {x::xs}
   | {[]}
 
 // bloc of the form  NAME{CONTENT}
@@ -93,7 +93,7 @@ open Csp_helper
 
 // bloc of the form : NAME{CONTENT;CONTENT ...} with optional ';' at the end
 %public bloc_list(NAME,CONTENT):
-  | NAME content=brace(separated_optend(SEMICOLON,CONTENT)) {content}
+  | NAME content=brace(optend(SCOLON,CONTENT)) {content}
 
 file:
   constants
@@ -122,30 +122,21 @@ constraints:
  | CONSTR LBRACE bexprs RBRACE {$3}
 
 solutions:
- | SOL i=brace(instances) {Known i}
+ | SOL i=brace(optend(SCOLON,sols)) {Known i}
  | SOL brace(NONE) {Unfeasible}
 
-instances:
- | b=boption(NOT) i=brace(sols) SEMICOLON tl=instances {((VarMap.of_list i), not b)::tl}
- | b=boption(NOT) i=brace(sols) {[(VarMap.of_list i),not b]}
- | {[]}
-
 sols:
- | TOK_id ASSIGN const SEMICOLON sols {($1,$3)::$5}
- | TOK_id ASSIGN const {[($1,$3)]}
- | {[]}
+  | b=boption(NOT) i=brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,const))) {VarMap.of_list i,b}
 
 constants:
   | CST c=brace(csts) {c}
   | {[]}
 
 csts:
-  | TOK_id ASSIGN value SEMICOLON csts {($1, $3)::$5}
-  | TOK_id ASSIGN value {[($1, $3)]}
-  | {[]}
+  | optend(SCOLON,separated_pair(TOK_id,ASSIGN,value)) {$1}
 
 value:
-  | LBRACKET rational SEMICOLON rational RBRACKET {($2, $4)}
+  | LBRACKET rational SCOLON rational RBRACKET {($2, $4)}
   | rational {($1, $1)}
 
 rational:
@@ -153,19 +144,17 @@ rational:
   | const {$1}
 
 bexprs:
-  | bexpr SEMICOLON bexprs {$1::$3}
-  | bexpr {[$1]}
-  | {[]}
+  | optend(SCOLON, bexpr) {$1}
 
 typ:
   | INT       {Int}
   | REAL      {Real}
 
 init:
-  | MINUS INF SEMICOLON option(PLUS) INF {Top}
-  | MINUS INF SEMICOLON rational          {Minf ($4)}
-  | rational SEMICOLON option(PLUS) INF   {Inf ($1)}
-  | rational SEMICOLON rational                   {Finite($1,$3)}
+  | MINUS INF SCOLON option(PLUS) INF {Top}
+  | MINUS INF SCOLON rational          {Minf ($4)}
+  | rational SCOLON option(PLUS) INF   {Inf ($1)}
+  | rational SCOLON rational                   {Finite($1,$3)}
 
 const:
   | TOK_const {$1}
@@ -176,8 +165,8 @@ bexpr:
   | bexpr OR bexpr                               {Or ($1,$3)}
   | bexpr AND bexpr                              {And ($1,$3)}
   | NOT bexpr                                    {Not $2}
-  | expr IN LBRACKET expr SEMICOLON expr RBRACKET    {inside $1 $4 $6 }
-  | expr NOTIN LBRACKET expr SEMICOLON expr RBRACKET {outside $1 $4 $6 }
+  | expr IN LBRACKET expr SCOLON expr RBRACKET    {inside $1 $4 $6 }
+  | expr NOTIN LBRACKET expr SCOLON expr RBRACKET {outside $1 $4 $6 }
   | LPAREN bexpr RPAREN                      { $2 }
 
 expr:
