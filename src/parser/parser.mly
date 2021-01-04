@@ -98,14 +98,14 @@ open Csp_helper
 file:
   constants
   domains=bloc_list(INIT,domains)
-  objective
+  o=option(objective)
   constraints
   s=option(solutions)
   EOF
   {
     {
       init=domains;
-      objective=$3;
+      objective=o;
       constraints=$4;
       solutions=s;
     }
@@ -115,8 +115,7 @@ domains:
   | typ TOK_id ASSIGN d=bracket(init) {($1, $2, d)}
 
 objective:
- | OBJ LBRACE expr RBRACE {$3}
- | {zero}
+ | OBJ o=brace(expr) {o}
 
 constraints:
  | CONSTR LBRACE bexprs RBRACE {$3}
@@ -152,22 +151,22 @@ typ:
 
 init:
   | MINUS INF SCOLON option(PLUS) INF {Top}
-  | MINUS INF SCOLON rational          {Minf ($4)}
-  | rational SCOLON option(PLUS) INF   {Inf ($1)}
-  | rational SCOLON rational                   {Finite($1,$3)}
+  | MINUS INF SCOLON rational         {Minf ($4)}
+  | rational SCOLON option(PLUS) INF  {Inf ($1)}
+  | rational SCOLON rational          {Finite($1,$3)}
 
 const:
   | TOK_const {$1}
   | MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpr:
-  | expr cmp expr                                    {Cmp ($1, $2, $3)}
-  | bexpr OR bexpr                               {Or ($1,$3)}
-  | bexpr AND bexpr                              {And ($1,$3)}
-  | NOT bexpr                                    {Not $2}
-  | expr IN LBRACKET expr SCOLON expr RBRACKET    {inside $1 $4 $6 }
-  | expr NOTIN LBRACKET expr SCOLON expr RBRACKET {outside $1 $4 $6 }
-  | LPAREN bexpr RPAREN                      { $2 }
+  | expr cmp expr                                 { Cmp ($1, $2, $3) }
+  | bexpr OR bexpr                                { Or ($1,$3) }
+  | bexpr AND bexpr                               { And ($1,$3) }
+  | NOT bexpr                                     { Not $2}
+  | expr IN LBRACKET expr SCOLON expr RBRACKET    { inside $1 $4 $6 }
+  | expr NOTIN LBRACKET expr SCOLON expr RBRACKET { outside $1 $4 $6 }
+  | LPAREN bexpr RPAREN                           { $2 }
 
 expr:
   | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Funcall (i,a) }

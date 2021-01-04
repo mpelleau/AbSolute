@@ -63,7 +63,7 @@ type solution_info =
 (* program *)
 type prog = {
     init        : decls;
-    objective   : expr;
+    objective   : expr option;
     constraints : constrs;
     solutions   : solution_info option (* extra information about feasbility *)
   }
