@@ -6,56 +6,56 @@ open Csp_helper
 
 
 /* Keywords */
-%token TOK_INT           /* int */
-%token TOK_REAL          /* real */
-%token TOK_CST           /* constants */
-%token TOK_INIT          /* init */
-%token TOK_OBJ           /* objective */
-%token TOK_CONSTR        /* constraints */
-%token TOK_SOL           /* solutions */
-%token TOK_NONE          /* none */
-%token TOK_INF           /* oo */
-%token TOK_IN            /* in */
-%token TOK_NOTIN         /* notin */
+%token INT           /* int */
+%token REAL          /* real */
+%token CST           /* constants */
+%token INIT          /* init */
+%token OBJ           /* objective */
+%token CONSTR        /* constraints */
+%token SOL           /* solutions */
+%token NONE          /* none */
+%token INF           /* oo */
+%token IN            /* in */
+%token NOTIN         /* notin */
 
 /* Delimiters */
-%token TOK_LBRACE        /* { */
-%token TOK_RBRACE        /* } */
-%token TOK_LBRACKET      /* [ */
-%token TOK_RBRACKET      /* ] */
-%token TOK_LPAREN        /* ( */
-%token TOK_RPAREN        /* ) */
+%token LBRACE        /* { */
+%token RBRACE        /* } */
+%token LBRACKET      /* [ */
+%token RBRACKET      /* ] */
+%token LPAREN        /* ( */
+%token RPAREN        /* ) */
 
 /* Operators */
-%token TOK_COMMA         /* , */
-%token TOK_SEMICOLON     /* ; */
-%token TOK_PLUS          /* + */
-%token TOK_MINUS         /* - */
-%token TOK_MULTIPLY      /* * */
-%token TOK_DIVIDE        /* / */
-%token TOK_POW           /* ^ */
-%token TOK_LESS          /* < */
-%token TOK_GREATER       /* > */
-%token TOK_LESS_EQUAL    /* <= */
-%token TOK_GREATER_EQUAL /* >= */
-%token TOK_NOT_EQUAL     /* != */
-%token TOK_ASSIGN        /* = */
-%token TOK_AND           /* && */
-%token TOK_OR            /* || */
-%token TOK_NOT           /* ! */
+%token COMMA         /* , */
+%token SEMICOLON     /* ; */
+%token PLUS          /* + */
+%token MINUS         /* - */
+%token MULTIPLY      /* * */
+%token DIVIDE        /* / */
+%token POW           /* ^ */
+%token LESS          /* < */
+%token GREATER       /* > */
+%token LESS_EQUAL    /* <= */
+%token GREATER_EQUAL /* >= */
+%token NOT_EQUAL     /* != */
+%token ASSIGN        /* = */
+%token AND           /* && */
+%token OR            /* || */
+%token NOT           /* ! */
 
 %token <string> TOK_id
 %token <Mpqf.t> TOK_const
 
-%token TOK_EOF
+%token EOF
 
 /* priorities */
-%left TOK_OR TOK_AND
-%nonassoc TOK_NOT
-%left TOK_PLUS TOK_MINUS
-%left TOK_MULTIPLY  TOK_DIVIDE
+%left OR AND
+%nonassoc NOT
+%left PLUS MINUS
+%left MULTIPLY  DIVIDE
 %nonassoc unary_minus
-%nonassoc TOK_POW
+%nonassoc POW
 
 %type <annot> typ
 %type <dom> init
@@ -71,15 +71,15 @@ open Csp_helper
 
 // {x}
 %public brace(YOURSELF):
-  | TOK_LBRACE content=YOURSELF TOK_RBRACE { content }
+  | LBRACE content=YOURSELF RBRACE { content }
 
 // [x]
 %public bracket(X):
-  | TOK_LBRACKET content=X TOK_RBRACKET { content }
+  | LBRACKET content=X RBRACKET { content }
 
 // [x;y]
 %public itv(X,Y):
-  | TOK_LBRACKET X TOK_SEMICOLON Y TOK_RBRACKET { content }
+  | LBRACKET X SEMICOLON Y RBRACKET { content }
 
 // separated_list with optional separator at the end
 %public separated_optend(sep,X):
@@ -93,15 +93,15 @@ open Csp_helper
 
 // bloc of the form : NAME{CONTENT;CONTENT ...} with optional ';' at the end
 %public bloc_list(NAME,CONTENT):
-  | NAME content=brace(separated_optend(TOK_SEMICOLON,CONTENT)) {content}
+  | NAME content=brace(separated_optend(SEMICOLON,CONTENT)) {content}
 
 file:
   constants
-  domains=bloc_list(TOK_INIT,domains)
+  domains=bloc_list(INIT,domains)
   objective
   constraints
   s=option(solutions)
-  TOK_EOF
+  EOF
   {
     {
       init=domains;
@@ -112,101 +112,95 @@ file:
   }
 
 domains:
-  | typ TOK_id TOK_ASSIGN d=bracket(init) {($1, $2, d)}
+  | typ TOK_id ASSIGN d=bracket(init) {($1, $2, d)}
 
 objective:
- | TOK_OBJ TOK_LBRACE expr TOK_RBRACE {$3}
+ | OBJ LBRACE expr RBRACE {$3}
  | {zero}
 
 constraints:
- | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
+ | CONSTR LBRACE bexprs RBRACE {$3}
 
 solutions:
- | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Known $3}
- | TOK_SOL TOK_LBRACE TOK_NONE TOK_RBRACE {Unfeasible}
+ | SOL LBRACE instances RBRACE {Known $3}
+ | SOL LBRACE NONE RBRACE {Unfeasible}
 
 instances:
- | TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $2),true)::$5}
- | TOK_LBRACE sols TOK_RBRACE {[(VarMap.of_list $2),true]}
- | TOK_NOT TOK_LBRACE sols TOK_RBRACE TOK_SEMICOLON instances {((VarMap.of_list $3),false)::$6}
- | TOK_NOT TOK_LBRACE sols TOK_RBRACE {[(VarMap.of_list $3),false]}
+ | LBRACE sols RBRACE SEMICOLON instances {((VarMap.of_list $2),true)::$5}
+ | LBRACE sols RBRACE {[(VarMap.of_list $2),true]}
+ | NOT LBRACE sols RBRACE SEMICOLON instances {((VarMap.of_list $3),false)::$6}
+ | NOT LBRACE sols RBRACE {[(VarMap.of_list $3),false]}
  | {[]}
 
 sols:
- | TOK_id TOK_ASSIGN const TOK_SEMICOLON sols {($1,$3)::$5}
- | TOK_id TOK_ASSIGN const {[($1,$3)]}
+ | TOK_id ASSIGN const SEMICOLON sols {($1,$3)::$5}
+ | TOK_id ASSIGN const {[($1,$3)]}
  | {[]}
 
 constants:
-  | TOK_CST TOK_LBRACE csts TOK_RBRACE {$3}
+  | CST LBRACE csts RBRACE {$3}
   | {[]}
 
 csts:
-  | TOK_id TOK_ASSIGN value TOK_SEMICOLON csts {($1, $3)::$5}
-  | TOK_id TOK_ASSIGN value {[($1, $3)]}
+  | TOK_id ASSIGN value SEMICOLON csts {($1, $3)::$5}
+  | TOK_id ASSIGN value {[($1, $3)]}
   | {[]}
 
 value:
-  | TOK_LBRACKET rational TOK_SEMICOLON rational TOK_RBRACKET {($2, $4)}
+  | LBRACKET rational SEMICOLON rational RBRACKET {($2, $4)}
   | rational {($1, $1)}
 
 rational:
-  | const TOK_DIVIDE const {Mpqf.div $1 $3}
+  | const DIVIDE const {Mpqf.div $1 $3}
   | const {$1}
 
 bexprs:
-  | bexpr TOK_SEMICOLON bexprs {$1::$3}
+  | bexpr SEMICOLON bexprs {$1::$3}
   | bexpr {[$1]}
   | {[]}
 
 typ:
-  | TOK_INT       {Int}
-  | TOK_REAL      {Real}
+  | INT       {Int}
+  | REAL      {Real}
 
 init:
-  | TOK_MINUS TOK_INF TOK_SEMICOLON option(TOK_PLUS) TOK_INF {Top}
-  | TOK_MINUS TOK_INF TOK_SEMICOLON rational          {Minf ($4)}
-  | rational TOK_SEMICOLON option(TOK_PLUS) TOK_INF   {Inf ($1)}
-  | rational TOK_SEMICOLON rational                   {Finite($1,$3)}
+  | MINUS INF SEMICOLON option(PLUS) INF {Top}
+  | MINUS INF SEMICOLON rational          {Minf ($4)}
+  | rational SEMICOLON option(PLUS) INF   {Inf ($1)}
+  | rational SEMICOLON rational                   {Finite($1,$3)}
 
 const:
   | TOK_const {$1}
-  | TOK_MINUS TOK_const {(Mpqf.neg $2)}
+  | MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpr:
   | expr cmp expr                                    {Cmp ($1, $2, $3)}
-  | bexpr TOK_OR bexpr                               {Or ($1,$3)}
-  | bexpr TOK_AND bexpr                              {And ($1,$3)}
-  | TOK_NOT bexpr                                    {Not $2}
-  | expr TOK_IN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET    {inside $1 $4 $6 }
-  | expr TOK_NOTIN TOK_LBRACKET expr TOK_SEMICOLON expr TOK_RBRACKET {outside $1 $4 $6 }
-  | TOK_LPAREN bexpr TOK_RPAREN                      { $2 }
+  | bexpr OR bexpr                               {Or ($1,$3)}
+  | bexpr AND bexpr                              {And ($1,$3)}
+  | NOT bexpr                                    {Not $2}
+  | expr IN LBRACKET expr SEMICOLON expr RBRACKET    {inside $1 $4 $6 }
+  | expr NOTIN LBRACKET expr SEMICOLON expr RBRACKET {outside $1 $4 $6 }
+  | LPAREN bexpr RPAREN                      { $2 }
 
 expr:
-  | TOK_id TOK_LPAREN args TOK_RPAREN   { Funcall ($1,$3) }
-  | TOK_LPAREN expr TOK_RPAREN          { $2 }
-  | binop_expr                          { $1 }
-  | TOK_MINUS expr %prec unary_minus    { Neg $2 }
-  | leaf                                { $1 }
-
-args:
-  | e=separated_list(TOK_COMMA,expr) {e}
-
-leaf:
-  | TOK_const                           { Cst $1 }
-  | TOK_id                              { Var $1 }
+  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Funcall (i,a) }
+  | LPAREN expr RPAREN           { $2 }
+  | binop_expr                   { $1 }
+  | MINUS expr %prec unary_minus { Neg $2 }
+  | TOK_const                    { Cst $1 }
+  | TOK_id                       { Var $1 }
 
 binop_expr:
-  | expr TOK_POW expr      {Binary(POW,$1,$3)}
-  | expr TOK_DIVIDE expr   {Binary(DIV,$1,$3)}
-  | expr TOK_MULTIPLY expr {Binary(MUL,$1,$3)}
-  | expr TOK_PLUS expr     {Binary(ADD,$1,$3)}
-  | expr TOK_MINUS expr    {Binary(SUB,$1,$3)}
+  | expr POW expr      {Binary(POW,$1,$3)}
+  | expr DIVIDE expr   {Binary(DIV,$1,$3)}
+  | expr MULTIPLY expr {Binary(MUL,$1,$3)}
+  | expr PLUS expr     {Binary(ADD,$1,$3)}
+  | expr MINUS expr    {Binary(SUB,$1,$3)}
 
 cmp:
-  | TOK_LESS          { LT }
-  | TOK_GREATER       { GT }
-  | TOK_LESS_EQUAL    { LEQ }
-  | TOK_GREATER_EQUAL { GEQ }
-  | TOK_ASSIGN        { EQ }
-  | TOK_NOT_EQUAL     { NEQ }
+  | LESS          { LT }
+  | GREATER       { GT }
+  | LESS_EQUAL    { LEQ }
+  | GREATER_EQUAL { GEQ }
+  | ASSIGN        { EQ }
+  | NOT_EQUAL     { NEQ }

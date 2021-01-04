@@ -9,17 +9,17 @@ let kwd_table = Hashtbl.create 10
 let _ =
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
-      "init",           TOK_INIT;
-      "objective", 	    TOK_OBJ;
-      "constraints",    TOK_CONSTR;
-      "constants",      TOK_CST;
-      "solutions",      TOK_SOL;
-      "none",           TOK_NONE;
-      "int",            TOK_INT;
-      "real",           TOK_REAL;
-      "oo",             TOK_INF;
-      "in",             TOK_IN;
-      "notin",          TOK_NOTIN
+      "init",           INIT;
+      "objective", 	    OBJ;
+      "constraints",    CONSTR;
+      "constants",      CST;
+      "solutions",      SOL;
+      "none",           NONE;
+      "int",            INT;
+      "real",           REAL;
+      "oo",             INF;
+      "in",             IN;
+      "notin",          NOTIN
     ]
 
 (* (exact) parsing of decimal constants *)
@@ -75,28 +75,28 @@ rule token = parse
 
 
 (* symbols *)
-| "("    { TOK_LPAREN }
-| ")"    { TOK_RPAREN }
-| "{"    { TOK_LBRACE }
-| "}"    { TOK_RBRACE }
-| "["    { TOK_LBRACKET }
-| "]"    { TOK_RBRACKET }
-| ","    { TOK_COMMA }
-| ";"    { TOK_SEMICOLON }
-| "+"    { TOK_PLUS }
-| "-"    { TOK_MINUS }
-| "*"    { TOK_MULTIPLY }
-| "/"    { TOK_DIVIDE }
-| "^"    { TOK_POW }
-| "<"    { TOK_LESS }
-| ">"    { TOK_GREATER }
-| "<="   { TOK_LESS_EQUAL }
-| ">="   { TOK_GREATER_EQUAL }
-| "!="   { TOK_NOT_EQUAL }
-| "="    { TOK_ASSIGN }
-| "&&"   { TOK_AND }
-| "||"   { TOK_OR }
-| "!"    { TOK_NOT }
+| "("    { LPAREN }
+| ")"    { RPAREN }
+| "{"    { LBRACE }
+| "}"    { RBRACE }
+| "["    { LBRACKET }
+| "]"    { RBRACKET }
+| ","    { COMMA }
+| ";"    { SEMICOLON }
+| "+"    { PLUS }
+| "-"    { MINUS }
+| "*"    { MULTIPLY }
+| "/"    { DIVIDE }
+| "^"    { POW }
+| "<"    { LESS }
+| ">"    { GREATER }
+| "<="   { LESS_EQUAL }
+| ">="   { GREATER_EQUAL }
+| "!="   { NOT_EQUAL }
+| "="    { ASSIGN }
+| "&&"   { AND }
+| "||"   { OR }
+| "!"    { NOT }
 (* literals *)
 | const as c { TOK_const (parse_const c) }
 
@@ -107,7 +107,7 @@ rule token = parse
 | space { token lexbuf }
 
 (* end of file *)
-| eof { TOK_EOF }
+| eof { EOF }
 
 (* nested comments (handled recursively)  *)
 and comment = parse
