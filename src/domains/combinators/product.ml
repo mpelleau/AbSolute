@@ -49,7 +49,7 @@ module Make (A:Domain) (B:Domain) = struct
     and vb = B.vars abs' in
     List.sort_uniq (compare) (va@vb)
 
-  let prune : (t -> t -> t list) option = None
+  let diff : (t -> t -> t list) option = None
 
   let split ((a, b):t) =
     let split_a = A.split a in

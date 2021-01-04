@@ -42,7 +42,7 @@ module type Numeric = sig
      (None), the solver doesn't use the pruning features.
      precondition: the two abstract elements must be defined onto the
      same set of variables. *)
-  val prune : (t -> t -> t list) option
+  val diff : (t -> t -> t list) option
 
   (** splits an abstract element *)
   val split : t -> t list

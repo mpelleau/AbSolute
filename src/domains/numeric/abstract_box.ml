@@ -16,11 +16,12 @@ module Box (I:ITV) = struct
   type internal_constr = Csp.comparison
 
   (* elem is not used by required by the interface. disabling the
-     unused parameter warning to make merlin happy*)
+     unused parameter warning to make merlin happy *)
   let[@warning "-27"] internalize ?elem = Fun.id
   let externalize = Fun.id
 
-  let find v (a:t) = VarMap.find_fail v a
+  (* same as find but prints the key befor failing *)
+  let find = VarMap.find_fail
 
   (* returns true if var is an integer in the given environment *)
   let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
@@ -34,8 +35,8 @@ module Box (I:ITV) = struct
   let is_representable _ = Kleene.True
 
   (* Printer *)
-  let print fmt a =
-    VarMap.iter (fun v i -> Format.fprintf fmt "%s:%a\n" v I.print i) a
+  let print fmt =
+    VarMap.iter (fun v -> Format.fprintf fmt "%s:%a\n" v I.print)
 
   (* Set-theoretic *)
 
@@ -60,9 +61,6 @@ module Box (I:ITV) = struct
     try Nb (VarMap.merge (fun _ -> meet_opt) a b)
     with Bot_found -> Bot
 
-  (* predicates *)
-  (* ---------- *)
-
   (* mesure *)
   (* ------ *)
 
@@ -80,14 +78,7 @@ module Box (I:ITV) = struct
         if (I.score i) > (I.score io) then v,i else vo,io
       ) a (VarMap.min_binding a)
 
-  let volume (a:t) : float =
-    VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
-
-  (* splitting strategies *)
-
-  let choose a = mix_range a
-
-  let prune =
+  let diff =
     match I.prune with
     | None -> None
     | Some diff ->
@@ -104,6 +95,14 @@ module Box (I:ITV) = struct
                 | Nb rest ->
 	                 aux (add rest) (List.rev_append (List.rev_map add d) acc) tl
            in aux a [] (Env.bindings b))
+
+
+  let volume (a:t) : float =
+    VarMap.fold (fun _ x v -> (I.float_size x) *. v) a 1.
+
+  (* splitting strategies *)
+
+  let choose a = mix_range a
 
   (************************************************************************)
   (* ABSTRACT OPERATIONS *)

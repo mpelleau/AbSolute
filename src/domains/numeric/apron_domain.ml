@@ -157,7 +157,7 @@ module MAKE(AP:ADomain) = struct
     let m = A.meet man a b in
     if is_empty m then Bot.Bot else Bot.Nb m
 
-  let prune = None
+  let diff = None
 
   let filter abs c =
     let a = A.filter_tcons man abs c in

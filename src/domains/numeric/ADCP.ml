@@ -133,7 +133,7 @@ module PolyCP = struct
 
   let split poly = split poly (get_expr poly)
 
-  let prune a b =
+  let diff =
     let work acc a c =
       let neg_c = Linconsext.neg c in
       let a' = A.filter_lincons man a c
@@ -141,15 +141,15 @@ module PolyCP = struct
       if is_empty s then a,acc
       else a',(s::acc)
     in
-    let _,pruned = Linconsext.array_fold
-                     (fun (_,acc) c ->
-                       if Linconsext.get_typ c = Lincons1.EQ then
-                         let c1,c2 = Linconsext.spliteq c in
-                         let a',acc' = work acc a c1 in
-                         work acc' a' c2
-                       else work acc a c
-                     ) (a,[]) (A.to_lincons_array man b)
-    in pruned
-
-  let prune = Some prune
+    Some (fun a b ->
+        let _,pruned = Linconsext.array_fold
+                         (fun (_,acc) c ->
+                           if Linconsext.get_typ c = Lincons1.EQ then
+                             let c1,c2 = Linconsext.spliteq c in
+                             let a',acc' = work acc a c1 in
+                             work acc' a' c2
+                           else work acc a c
+                         ) (a,[]) (A.to_lincons_array man b)
+        in pruned
+      )
 end

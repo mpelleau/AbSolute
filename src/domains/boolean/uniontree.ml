@@ -146,7 +146,7 @@ module Make (D:Numeric) : Domain = struct
     | Leaf l -> D.spawn l
     | Union {sons=l,_; _} -> spawn l
 
-  let prune = None
+  let diff = None
 
   let rec to_bexpr = function
     | Leaf d -> D.to_bexpr d
