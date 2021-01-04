@@ -70,15 +70,15 @@ open Csp_helper
 /*****************************/
 
 // {x}
-%public brace(YOURSELF):
+%inline brace(YOURSELF):
   | LBRACE content=YOURSELF RBRACE { content }
 
 // [x]
-%public bracket(X):
+%inline bracket(X):
   | LBRACKET content=X RBRACKET { content }
 
 // [x;y]
-%public itv(X,Y):
+%inline itv(X,Y):
   | LBRACKET X SEMICOLON Y RBRACKET { content }
 
 // separated_list with optional separator at the end
@@ -122,14 +122,12 @@ constraints:
  | CONSTR LBRACE bexprs RBRACE {$3}
 
 solutions:
- | SOL LBRACE instances RBRACE {Known $3}
- | SOL LBRACE NONE RBRACE {Unfeasible}
+ | SOL i=brace(instances) {Known i}
+ | SOL brace(NONE) {Unfeasible}
 
 instances:
- | LBRACE sols RBRACE SEMICOLON instances {((VarMap.of_list $2),true)::$5}
- | LBRACE sols RBRACE {[(VarMap.of_list $2),true]}
- | NOT LBRACE sols RBRACE SEMICOLON instances {((VarMap.of_list $3),false)::$6}
- | NOT LBRACE sols RBRACE {[(VarMap.of_list $3),false]}
+ | b=boption(NOT) i=brace(sols) SEMICOLON tl=instances {((VarMap.of_list i), not b)::tl}
+ | b=boption(NOT) i=brace(sols) {[(VarMap.of_list i),not b]}
  | {[]}
 
 sols:
@@ -138,7 +136,7 @@ sols:
  | {[]}
 
 constants:
-  | CST LBRACE csts RBRACE {$3}
+  | CST c=brace(csts) {c}
   | {[]}
 
 csts:
