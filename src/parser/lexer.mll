@@ -1,8 +1,6 @@
-
 {
  open Lexing
  open Parser
-
 
 (* keyword table *)
 let kwd_table = Hashtbl.create 10
@@ -64,7 +62,7 @@ let parse_const s =
 let space = [' ' '\t' '\r']+
 let newline = "\n" | "\r" | "\r\n"
 let digit = ['0'-'9']
-let cst = ( digit+ | "." digit+ | digit+ "." digit*)
+let cst = (digit+ | "." digit+ | digit+ "." digit*)
 let const = (cst | cst "e" digit+ | cst "e+" digit+ | cst "e-" digit+)
 
 rule token = parse
@@ -72,7 +70,6 @@ rule token = parse
 (* identifier or reserved keyword *)
 | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']* '%'? as id
 { try Hashtbl.find kwd_table id with Not_found -> TOK_id id }
-
 
 (* symbols *)
 | "("    { LPAREN }

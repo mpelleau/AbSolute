@@ -34,7 +34,6 @@ let neq e1 e2 = Cmp (e1,NEQ,e2)
 let assign var value =
   eq (Var var) (of_mpqf value)
 
-
 (** constraint for 'e \in [low;high]' *)
 let inside v low high =
   And ((geq v low), (leq v high))
@@ -234,7 +233,6 @@ let rec simplify_expr expr change =
         | _, _ -> apply simplify_expr e1 e2 change DIV
        )
      | POW -> apply simplify_expr e1 e2 change POW
-
     )
 
 (** calls simplify until it reaches a fixpoint *)
@@ -321,7 +319,6 @@ let compute_jacobian csp =
   List.fold_left (
     fun l c -> (c, ctr_jacobian c csp.init)::l
   ) [] csp.constraints
-
 
 (*****************************************)
 (*        USEFUL FUNCTION ON AST         *)

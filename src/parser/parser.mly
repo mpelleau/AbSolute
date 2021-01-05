@@ -96,29 +96,29 @@ open Csp_helper
   | NAME content=brace(optend(SCOLON,CONTENT)) {content}
 
 file:
-  constants
+  loption(constants)
   domains=bloc_list(INIT,domains)
   o=option(objective)
-  constraints
+  constr=constraints
   s=option(solutions)
   EOF
   {
     {
       init=domains;
       objective=o;
-      constraints=$4;
+      constraints=constr;
       solutions=s;
     }
   }
 
 domains:
-  | typ TOK_id ASSIGN d=bracket(init) {($1, $2, d)}
+ | typ TOK_id ASSIGN d=bracket(init) {($1, $2, d)}
 
 objective:
  | OBJ o=brace(expr) {o}
 
 constraints:
- | CONSTR LBRACE bexprs RBRACE {$3}
+ | CONSTR b=brace(optend(SCOLON, bexpr)) {b}
 
 solutions:
  | SOL i=brace(optend(SCOLON,sols)) {Known i}
@@ -128,11 +128,7 @@ sols:
   | b=boption(NOT) i=brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,const))) {VarMap.of_list i,b}
 
 constants:
-  | CST c=brace(csts) {c}
-  | {[]}
-
-csts:
-  | optend(SCOLON,separated_pair(TOK_id,ASSIGN,value)) {$1}
+  | CST c=brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,value))) {c}
 
 value:
   | LBRACKET rational SCOLON rational RBRACKET {($2, $4)}
@@ -142,12 +138,7 @@ rational:
   | const DIVIDE const {Mpqf.div $1 $3}
   | const {$1}
 
-bexprs:
-  | optend(SCOLON, bexpr) {$1}
-
-typ:
-  | INT       {Int}
-  | REAL      {Real}
+typ: INT {Int} | REAL {Real}
 
 init:
   | MINUS INF SCOLON option(PLUS) INF {Top}

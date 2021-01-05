@@ -15,15 +15,15 @@ module Box (I:ITV) = struct
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Csp.comparison
 
-  (* elem is not used by required by the interface. disabling the
+  (* elem is not used but required by the interface. disabling the
      unused parameter warning to make merlin happy *)
   let[@warning "-27"] internalize ?elem = Fun.id
   let externalize = Fun.id
 
-  (* same as find but prints the key befor failing *)
+  (* same as find but prints the key before failing *)
   let find = VarMap.find_fail
 
-  (* returns true if var is an integer in the given environment *)
+  (* true if 'var' is an integer in the given environment *)
   let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
 
   let vars abs =
@@ -40,9 +40,9 @@ module Box (I:ITV) = struct
 
   (* Set-theoretic *)
 
-  (* NOTE: all binary operations assume that both boxes are defined on
-     the same set of variables;
-     otherwise, an Invalid_argument exception will be raised *)
+  (* NOTE: all binary operations assume that both elements are defined
+     on the same set of variables; otherwise, an Invalid_argument
+     exception will be raised *)
 
   let join (a:t) (b:t) : t * bool =
     let join_opt a b =
@@ -55,7 +55,7 @@ module Box (I:ITV) = struct
   let meet (a:t) (b:t) : t bot =
     let meet_opt a b =
       match a,b with
-      | Some a, Some b -> Some (debot (I.meet a b))
+      | Some a, Some b -> Some (Option.get (I.meet a b))
       | _ -> raise Bot_found
     in
     try Nb (VarMap.merge (fun _ -> meet_opt) a b)
@@ -79,22 +79,18 @@ module Box (I:ITV) = struct
       ) a (VarMap.min_binding a)
 
   let diff =
+    let rec aux diff a acc = function
+      | [] -> acc
+      | (v, i_b)::tl ->
+	       let add = fun i -> (Env.add v i a) in
+	       let i_a = Env.find v a in
+	       let d = diff i_a i_b in
+         let rest = I.meet i_a i_b |> Option.get in
+         aux diff (add rest) (List.rev_append (List.rev_map add d) acc) tl
+    in
     match I.prune with
     | None -> None
-    | Some diff ->
-       Some(fun (a:t) (b:t) ->
-           let rec aux a acc = function
-             | [] -> acc
-             | (v, i_b)::tl ->
-	              let add = fun i -> (Env.add v i a) in
-	              let i_a = Env.find v a in
-	              let d = diff i_a i_b in
-                let rest = I.meet i_a i_b in
-                match rest with
-                | Bot -> assert false
-                | Nb rest ->
-	                 aux (add rest) (List.rev_append (List.rev_map add d) acc) tl
-           in aux a [] (Env.bindings b))
+    | Some diff -> Some(fun a b -> aux diff a [] (Env.bindings b))
 
 
   let volume (a:t) : float =
@@ -133,7 +129,7 @@ module Box (I:ITV) = struct
     | Funcall(name,args) ->
        let bargs = List.map (eval a) args in
        let iargs = List.map snd bargs in
-       let r = debot (I.eval_fun name iargs) in
+       let r = Option.get (I.eval_fun name iargs) in
        BFuncall(name, bargs),r
     | Var v ->
        let r = find v a in
@@ -150,7 +146,7 @@ module Box (I:ITV) = struct
        let r = match o with
          | ADD -> I.add i1 i2
          | SUB -> I.sub i1 i2
-         | DIV -> debot (I.div i1 i2)
+         | DIV -> Option.get (I.div i1 i2)
          | MUL ->
             let r = I.mul i1 i2 in
             if e1=e2 then
@@ -174,10 +170,10 @@ module Box (I:ITV) = struct
        let bexpr,itv = List.split args in
        let res = I.filter_fun name itv x in
        List.fold_left2 (fun acc e1 e2 ->
-           refine acc e2 e1) a (debot res) bexpr
-    | BVar v -> Env.add v (debot (I.meet x (find v a))) a
-    | BCst i -> ignore (debot (I.meet x i)); a
-    | BNeg (e1,i1) -> refine a e1 (debot  (I.filter_neg i1 x))
+           refine acc e2 e1) a (Option.get res) bexpr
+    | BVar v -> Env.add v (Option.get (I.meet x (find v a))) a
+    | BCst i -> ignore (Option.get (I.meet x i)); a
+    | BNeg (e1,i1) -> refine a e1 (Option.get  (I.filter_neg i1 x))
     | BBinary (o,(e1,i1),(e2,i2)) ->
        let j = match o with
          | ADD -> I.filter_add i1 i2 x
@@ -186,7 +182,7 @@ module Box (I:ITV) = struct
          | DIV -> I.filter_div i1 i2 x
 	       | POW -> I.filter_pow i1 i2 x
        in
-       let j1,j2 = debot j in
+       let j1,j2 = Option.get j in
        refine (refine a e1 j1) e2 j2
 
   (* test transfer function.  Apply the evaluation followed by the

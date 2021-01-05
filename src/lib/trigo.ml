@@ -1,8 +1,8 @@
+open Tools
+
 (* This modules defines sound operators for trogonometrical functions
    It uses floating point precision It plugs itself over a interval
    arithmetic module. The interface is functional.  *)
-
-open Bot
 module F = Bound_float
 
 module Make (I:Itv_sig.ITV) = struct
@@ -65,24 +65,24 @@ module Make (I:Itv_sig.ITV) = struct
   (************************)
 
   let acos_up r =
-    if -1. <= r && r <= 1. then Nb (acos r)
-    else Bot
+    if -1. <= r && r <= 1. then Some (acos r)
+    else None
 
   let acos_down r =
-    if -1. <= r && r <= 1. then Nb (-. (acos (-.r)))
-    else Bot
+    if -1. <= r && r <= 1. then Some (-. (acos (-.r)))
+    else None
 
   (************************)
   (* ARCSIN APPROXIMATION *)
   (************************)
 
   let asin_up r =
-    if -1. <= r && r <= 1. then Nb (asin r)
-    else Bot
+    if -1. <= r && r <= 1. then Some (asin r)
+    else None
 
   let asin_down r =
-    if -1. <= r && r <= 1. then Nb (-. (asin (-.r)))
-    else Bot
+    if -1. <= r && r <= 1. then Some (-. (asin (-.r)))
+    else None
 
   (****************************************************)
   (*               INTERVAL COMPUTATION               *)
@@ -192,18 +192,18 @@ module Make (I:Itv_sig.ITV) = struct
   (* interval acos *)
   let acos_itv i =
     let (l,u) = I.to_float_range i in
-    if 1. < l ||  u < -1. then Bot
+    if 1. < l ||  u < -1. then None
     else
-      let l' = if 1. < u then 0. else debot (acos_down u)
-      and u' =  if l < -1. then pi_up else debot (acos_up l)
-      in Nb(I.of_floats l' u')
+      let l' = if 1. < u then 0. else Option.get (acos_down u)
+      and u' =  if l < -1. then pi_up else Option.get (acos_up l)
+      in Some (I.of_floats l' u')
 
   (* sinus of an interval *)
   let sin_itv i =
     cos_itv (I.sub i pihalf_itv)
 
   (* interval asin (arcos + arcsin = pi/2) *)
-  let asin_itv i = lift_bot (I.sub pihalf_itv) (acos_itv i)
+  let asin_itv i = Option.map (I.sub pihalf_itv) (acos_itv i)
 
   (* tangent of an interval *)
   let tan_itv i = (I.div (sin_itv i) (cos_itv i))
@@ -215,12 +215,12 @@ module Make (I:Itv_sig.ITV) = struct
 
   (* we augment the function evaluator to add to it the trigonometrical stuff *)
   let eval_fun name args =
-    let arity_1 (f: I.t -> I.t) : I.t bot =
+    let arity_1 (f: I.t -> I.t) : I.t option =
       match args with
-      | [i] -> Nb (f i)
+      | [i] -> Some (f i)
       | _ -> Tools.fail_fmt "%s expect one argument" name
     in
-    let arity_1_bot (f: I.t -> I.t bot) : I.t bot =
+    let arity_1_bot (f: I.t -> I.t option) : I.t option =
       match args with
       | [i] -> f i
       | _ -> Tools.fail_fmt "%s expect one argument" name
@@ -257,11 +257,11 @@ module Make (I:Itv_sig.ITV) = struct
     fun itv result ->
     (* handling of the symetry *)
     match (I.meet itv return_range),(I.meet itv other) with
-    | Bot,Bot -> Bot
-    | Nb _,Bot  -> fun_itv result
-    | Bot,Nb _  -> lift_bot (I.add pi_itv) (fun_itv (I.neg result))
-    | Nb _,Nb _   ->
-       lift_bot (I.add pi_itv) (fun_itv (I.neg result))
+    | None,None -> None
+    | Some _,None  -> fun_itv result
+    | None,Some _  -> Option.map (I.add pi_itv) (fun_itv (I.neg result))
+    | Some _, Some _   ->
+       Option.map (I.add pi_itv) (fun_itv (I.neg result))
        |> join_bot2 I.join (fun_itv result)
 
   (* 0 < x < 2pi && cos(x) = r <=> x = arcos r || x = arcos(-r)+pi *)
@@ -273,24 +273,24 @@ module Make (I:Itv_sig.ITV) = struct
   (* general function for both filter_sin and filter_cos *)
   let filter domain_range fun_itv =
     let other = I.add twopi_itv domain_range in
-    fun (i:I.t) (r:I.t) : I.t bot ->
+    fun (i:I.t) (r:I.t) : I.t option ->
     try
       let i',delta  = normalize 0. twopiup i in
       let first_part =
         match (I.meet i' domain_range) with
-        | Bot -> Bot
-        | Nb i' -> lift_bot (I.add delta) (fun_itv i' r)
+        | None -> None
+        | Some i' -> Option.map (I.add delta) (fun_itv i' r)
       in
       let second_part =
         match (I.meet i' other) with
-        | Nb x ->
+        | Some x ->
            let x' = I.sub x twopi_itv in
-           lift_bot (I.add (I.add delta twopi_itv)) (fun_itv x' r)
-        | Bot -> Bot
+           Option.map (I.add (I.add delta twopi_itv)) (fun_itv x' r)
+        | None -> None
       in
       join_bot2 I.join first_part second_part
     with
-    | Exit -> Nb i
+    | Exit -> Some i
 
   (* r = cos i => i mod 2pi = arccos r *)
   let filter_cos =
@@ -302,15 +302,15 @@ module Make (I:Itv_sig.ITV) = struct
 
   (* -pi/2 < x < 3pi/2 && tan(x) = r <=> x = arctan r *)
   let arctan_mpih_pih =
-    arc (I.sub (I.of_floats 0. pi_up) pihalf_itv) (fun i -> Nb (atan_itv i))
+    arc (I.sub (I.of_floats 0. pi_up) pihalf_itv) (fun i -> Some (atan_itv i))
 
   (* r = tan i => i = artan r) => *)
-  let filter_tan (i:I.t) (r:I.t) : I.t bot =
+  let filter_tan (i:I.t) (r:I.t) : I.t option =
     try
       let i',delta = normalize (-. pihalf_up) pi_up i in
-      lift_bot (I.add delta) (I.meet i' (atan_itv r))
+      Option.map (I.add delta) (I.meet i' (atan_itv r))
     with
-    | Exit -> Nb i
+    | Exit -> Some i
 
   (* r = asin i => i = sin r *)
   let filter_asin i r =
@@ -325,13 +325,10 @@ module Make (I:Itv_sig.ITV) = struct
     I.meet i (atan_itv r)
 
   (* we augment the function filterer to add to it the trigonometrical stuff *)
-  let filter_fun name args r : (I.t list) bot =
-    let arity_1 (f: I.t -> I.t -> I.t bot) : (I.t list) bot =
+  let filter_fun name args r : (I.t list) option =
+    let arity_1 (f: I.t -> I.t -> I.t option) : (I.t list) option =
       match args with
-      | [i] ->
-         (match f i r with
-         | Bot -> Bot
-         | Nb i -> Nb [i])
+      | [i] -> f i r |> Option.map (fun i -> [i])
       | _ -> Tools.fail_fmt "%s expect one argument" name
     in
     match name with

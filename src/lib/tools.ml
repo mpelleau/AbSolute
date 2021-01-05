@@ -126,6 +126,20 @@ let fold_on_combination_2 ?duplicate:(d=false) f acc arr =
   in
   aux acc 0 0
 
+(** meet on options *)
+let meet_bot f x y =
+  Option.map (fun x -> (Option.map (fun y -> f x y) y)) x
+
+(** merge on options *)
+let merge_bot x y =
+  Option.bind x (fun x -> (Option.map (fun y -> (x,y)) y))
+
+(** join on options *)
+let join_bot2 f x y =
+  match x,y with
+  | None,a | a,None -> a
+  | Some a,Some b -> Some (f a b)
+
 (** {1} Map instances *)
 
 (** only one instanciation forall variable maps modules *)

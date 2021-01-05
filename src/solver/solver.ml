@@ -30,7 +30,7 @@ module Make(S : Solvable) = struct
   let return d v = loading d; v
 
   (* coverage of the solution space*)
-  let coverage searchspace : S.space Result.t =
+  let coverage max_depth searchspace : S.space Result.t =
     Format.printf "coverage ... %!";
     let rec aux depth res abs =
       match S.propagate abs with
@@ -38,7 +38,7 @@ module Make(S : Solvable) = struct
       | Sat -> return depth (S.to_result ~inner:true res abs)
       | Filtered (abs',true) -> return depth (S.to_result ~inner:true res abs')
       | Filtered (abs',false) ->
-         if depth >= !Constant.max_depth
+         if depth >= max_depth
          then return depth (S.to_result ~inner:false res abs')
          else
            try S.split abs' |> List.fold_left (aux (depth+1)) res
@@ -47,7 +47,7 @@ module Make(S : Solvable) = struct
     aux 1 Result.empty searchspace
 
   (* satisfiability check *)
-  let satisfiability searchspace : Kleene.t =
+  let satisfiability max_depth searchspace : Kleene.t =
     Format.printf "satisfiability ... %!";
     let rec aux depth abs =
       match S.propagate abs with
@@ -55,7 +55,7 @@ module Make(S : Solvable) = struct
       | Filtered (_,true) ->  loading 1; raise Exit
       | Unsat -> Kleene.False
       | Filtered (a,false) ->
-         if depth >= !Constant.max_depth then return depth Kleene.Unknown
+         if depth >= max_depth then return depth Kleene.Unknown
          else
            try (S.split a) |>
                  List.fold_left (fun acc elem ->
@@ -67,7 +67,7 @@ module Make(S : Solvable) = struct
     with Exit -> Kleene.True
 
   (* satisfiability check, with witness *)
-  let witness (searchspace:S.t) : Kleene.t * Csp.instance option =
+  let witness max_depth searchspace : Kleene.t * Csp.instance option =
     Format.printf "witness ... %!";
     let exception Found of Csp.instance in
     let rec aux depth abs =
@@ -75,7 +75,7 @@ module Make(S : Solvable) = struct
       | Sat -> loading 1; raise (Found (S.spawn abs))
       | Filtered (a,true) -> loading 1; raise (Found (S.spawn a))
       | Filtered (a,false) ->
-         if depth >= !Constant.max_depth then return depth Kleene.Unknown
+         if depth >= max_depth then return depth Kleene.Unknown
          else
            (try S.split a |>
                  List.fold_left (fun acc elem ->
@@ -86,6 +86,4 @@ module Make(S : Solvable) = struct
     in
     try aux 1 searchspace, None
     with Found i -> Kleene.True, Some i
-
-  let init prob = S.init prob
 end

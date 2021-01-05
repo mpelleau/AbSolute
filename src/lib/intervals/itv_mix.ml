@@ -1,5 +1,3 @@
-open Bot
-
 module I = Itv_int
 module R = Newitv.Test
 
@@ -23,7 +21,7 @@ let to_float (i:I.t) =
 (* real itv conversion to integer itv.
    the biggest inner element is returned.
    may be bottom *)
-let to_int (r:R.t) : I.t bot =
+let to_int (r:R.t) : I.t option =
   let (a,b) = R.to_float_range r in
   match classify_float a, classify_float b with
   | (FP_normal | FP_zero), (FP_normal | FP_zero) -> I.of_floats a b
@@ -66,10 +64,10 @@ let of_rat (m1:Mpqf.t) : t =
   of_rats m1 m1
 
 (* maps empty intervals to explicit bottom *)
-let check_bot (x:t) : t bot =
+let check_bot (x:t) : t option =
   match x with
-  | Int x -> lift_bot int (I.check_bot x)
-  | Real x -> lift_bot real (R.check_bot x)
+  | Int x -> Option.map int (I.check_bot x)
+  | Real x -> Option.map real (R.check_bot x)
 
 (* unbounded interval constructor *)
 let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
@@ -105,13 +103,13 @@ let join (x1:t) (x2:t) : t =
   | Real x1, Real x2 -> Real (R.join x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 -> Real (R.join (to_float x1) x2)
 
-let meet (x1:t) (x2:t) : t bot =
+let meet (x1:t) (x2:t) : t option =
   match x1,x2 with
-  | Int x1, Int x2 -> lift_bot int (I.meet x1 x2)
-  | Real x1, Real x2 -> lift_bot real (R.meet x1 x2)
+  | Int x1, Int x2 -> Option.map int (I.meet x1 x2)
+  | Real x1, Real x2 -> Option.map real (R.meet x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 ->
      let x1 = to_float x1 in
-     lift_bot int (strict_bot to_int (R.meet x1 x2))
+     Option.map int (Option.bind (R.meet x1 x2) to_int)
 
 (* predicates *)
 (* ---------- *)
@@ -139,8 +137,8 @@ let intersect (x1:t) (x2:t) : bool =
   | Real x1, Real x2 -> R.intersect x1 x2
   | Int x1, Real x2 | Real x2, Int x1 ->
      match to_int x2 with
-     | Bot -> false
-     | Nb x2 -> I.intersect x1 x2
+     | None -> false
+     | Some x2 -> I.intersect x1 x2
 
 let is_singleton (itv:t) : bool =
   dispatch I.is_singleton R.is_singleton itv
@@ -197,17 +195,17 @@ let mul (x1:t) (x2:t) : t =
   | Int x1, Real x2 | Real x2, Int x1 -> Real (R.mul (to_float x1) x2)
 
 (* return valid values (possibly Bot) *)
-let div (x1:t) (x2:t) : t bot =
+let div (x1:t) (x2:t) : t option =
   let x1 = force_real x1 in
   match x2 with
   | Int x2 ->
      if I.contains_float x2 0. then
        let pos = I.meet I.positive x2 and neg = I.meet I.negative x2 in
-       let divpos = strict_bot (fun x -> R.div x1 (to_float x)) pos
-       and divneg = strict_bot (fun x -> R.div x1 (to_float x)) neg
-       in lift_bot real (join_bot2 R.join divpos divneg)
-     else lift_bot real (R.div x1 (to_float x2))
-  | Real x2 -> lift_bot real (R.div x1 x2)
+       let divpos = Option.bind pos (fun x -> R.div x1 (to_float x))
+       and divneg = Option.bind neg (fun x -> R.div x1 (to_float x))
+       in Option.map real (Tools.join_bot2 R.join divpos divneg)
+     else Option.map real (R.div x1 (to_float x2))
+  | Real x2 -> Option.map real (R.div x1 x2)
 
 (* returns valid value when the exponant is a singleton positive integer.
      fails otherwise *)
@@ -222,14 +220,14 @@ let pow (x1:t) (x2:t) : t =
 let n_root (i1:t) (i2:t) =
   (*TODO: maybe improve precision on perfect nth roots *)
   let i1,i2 = (force_real i1),(force_real i2) in
-  lift_bot real (R.n_root i1 i2)
+  Option.map real (R.n_root i1 i2)
 
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,
    it returns a possibly bottom result *)
-let eval_fun (name:string) (args:t list) : t bot =
+let eval_fun (name:string) (args:t list) : t option =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
-  lift_bot real (R.eval_fun name args)
+  Option.map real (R.eval_fun name args)
 
 (************************************************************************)
 (* FILTERING (TEST TRANSRER RUNCTIONS) *)
@@ -242,12 +240,12 @@ let filter i_f r_f (x1:t) (x2:t) : (t * t) Consistency.t =
   | Real x1, Real x2 -> Consistency.map real2 (r_f x1 x2)
   | Int x1, Real x2 ->
      let x1 = to_float x1 in
-     (try Consistency.map (fun (x1,x2) -> Int (debot (to_int x1)), Real x2) (r_f x1 x2)
-     with Bot_found -> Unsat)
+     (try Consistency.map (fun (x1,x2) -> Int (Option.get (to_int x1)), Real x2) (r_f x1 x2)
+     with _ -> Unsat)
   | Real x1, Int x2 ->
      let x2 = to_float x2 in
-     (try Consistency.map (fun (x1,x2) -> Real x1, Int (debot (to_int x2))) (r_f x1 x2)
-      with Bot_found -> Unsat)
+     (try Consistency.map (fun (x1,x2) -> Real x1, Int (Option.get (to_int x2))) (r_f x1 x2)
+      with _ -> Unsat)
 
 let filter_leq = filter I.filter_leq R.filter_leq
 
@@ -258,8 +256,8 @@ let filter_eq i1 i2 =
   if is_singleton i1 && i1 = i2 then Sat
   else
     match meet i1 i2 with
-    | Nb i -> Filtered (i,is_singleton i)
-    | Bot ->  Unsat
+    | Some i -> Filtered (i,is_singleton i)
+    | None ->  Unsat
 
 let filter_neq = filter I.filter_neq R.filter_neq
 
@@ -267,45 +265,45 @@ let filter_neq = filter I.filter_neq R.filter_neq
    a numeric operation, returns a refined interval argument(s) where
    points that cannot contribute to a value in the result are
    removed;
-   may also return Bot if no point in an argument can lead to a
+   may also return option if no point in an argument can lead to a
    point in the result *)
-let filter_neg (i:t) (r:t) : t bot = meet i (neg r)
+let filter_neg (i:t) (r:t) : t option = meet i (neg r)
 
-let filter_abs (i:t) (r:t) : t bot =
+let filter_abs (i:t) (r:t) : t option =
   if is_positive i then meet i r
   else if is_negative i then meet i (neg r)
   else meet i (join (neg r) r)
 
-let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
+let filter_add (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
 
 (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
-let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+let filter_sub (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
 
 (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
-let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
+let filter_mul (i1:t) (i2:t) (r:t) : (t*t) option =
   (* Format.printf "filter_mul : %a * %a = %a => " print i1 print i2 print r;
    * let res = *)
-  merge_bot2
-    (if contains_float r 0. && contains_float i2 0. then Nb i1
-     else match div r i2 with Bot -> Bot | Nb x -> meet i1 x)
-    (if contains_float r 0. && contains_float i1 0. then Nb i2
-     else match div r i1 with Bot -> Bot | Nb x -> meet i2 x)
+  Tools.merge_bot
+    (if contains_float r 0. && contains_float i2 0. then Some i1
+     else Option.bind (div r i2)  (meet i1))
+    (if contains_float r 0. && contains_float i1 0. then Some i2
+     else Option.bind (div r i1) (meet i2))
   (* in
    * match res with
    * | Nb (r1,r2) -> Format.printf "%a, %a \n%!" print r1 print r2; res
-   * | Bot -> Format.printf "bottom\n%!"; res *)
+   * | option -> Format.printf "bottom\n%!"; res *)
 
 (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
-let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2
+let filter_div (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot
     (meet i1 (mul i2 r))
-    (if contains_float r 0. && contains_float i1 0. then Nb i2
-     else match (div i1 r) with Bot -> Bot | Nb x -> meet i2 x)
+    (if contains_float r 0. && contains_float i1 0. then Some i2
+     else Option.bind (div i1 r) (meet i2))
 
-let filter_pow (i:t) (n:t) (r:t) : (t*t) bot =
-  merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
+let filter_pow (i:t) (n:t) (r:t) : (t*t) option =
+  Tools.(merge_bot (Option.bind (n_root r n) (meet i)) (Some n))
 
 let to_bexpr v (itv:t) =
   dispatch (I.to_bexpr v) (R.to_bexpr v) itv
@@ -318,10 +316,10 @@ let to_annot x =
    given a function name, a list of argument, and a result,
    it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
    it returns a possibly bottom result *)
-let filter_fun (name:string) (args:t list) (res:t) : (t list) bot =
+let filter_fun (name:string) (args:t list) (res:t) : (t list) option =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
   let float_res = match res with Real x -> x | Int x -> to_float x in
-  lift_bot (List.map real) (R.filter_fun name args float_res)
+  Option.map (List.map real) (R.filter_fun name args float_res)
 
 (* generate a random float within the given interval *)
 let spawn (x:t) : float =

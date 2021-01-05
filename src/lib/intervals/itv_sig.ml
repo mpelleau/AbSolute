@@ -1,7 +1,5 @@
 (** Generic signature for intervals. The interface is functional.*)
 
-open Bot
-
 module type ITV = sig
 
   (** {1 TYPES} *)
@@ -40,7 +38,7 @@ module type ITV = sig
   (** operations *)
 
   val join: t -> t -> t
-  val meet: t -> t -> t bot
+  val meet: t -> t -> t option
 
   (** predicates *)
   val contains_float: t -> float -> bool
@@ -69,7 +67,7 @@ module type ITV = sig
   val mul: t -> t -> t
 
   (** return valid values (possibly Bot, if dividend is nul) *)
-  val div: t -> t -> t bot
+  val div: t -> t -> t option
 
   (** returns valid value when the exponant is a singleton positive
      integer. fails otherwise*)
@@ -78,7 +76,7 @@ module type ITV = sig
   (** function calls (sqrt, exp, ln ...) are handled here :
      given a function name and and a list of argument,
      it returns a possibly bottom result *)
-  val eval_fun : string -> t list -> t bot
+  val eval_fun : string -> t list -> t option
 
   (** {1 FILTERING (TEST TRANSFER FUNCTIONS)} *)
 
@@ -96,21 +94,21 @@ module type ITV = sig
      where points that cannot contribute to a value in the result are
      removed; may also return Bot if no point in an argument can lead
      to a point in the result *)
-  val filter_neg: t -> t -> t bot
-  val filter_abs: t -> t -> t bot
+  val filter_neg: t -> t -> t option
+  val filter_abs: t -> t -> t option
 
-  val filter_add: t -> t -> t -> (t*t) bot
-  val filter_sub: t -> t -> t -> (t*t) bot
-  val filter_mul: t -> t -> t -> (t*t) bot
-  val filter_div: t -> t -> t -> (t*t) bot
+  val filter_add: t -> t -> t -> (t*t) option
+  val filter_sub: t -> t -> t -> (t*t) option
+  val filter_mul: t -> t -> t -> (t*t) option
+  val filter_div: t -> t -> t -> (t*t) option
 
-  val filter_pow: t -> t -> t -> (t*t) bot
+  val filter_pow: t -> t -> t -> (t*t) option
 
   (** filtering function calls like (sqrt, exp, ln ...) is done here :
      given a function name, a list of argument, and a result,
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
      it returns a possibly bottom result *)
-  val filter_fun: string -> t list -> t -> (t list) bot
+  val filter_fun: string -> t list -> t -> (t list) option
 
   (** generate a random float within the given interval *)
   val spawn : t -> float

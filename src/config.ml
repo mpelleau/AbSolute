@@ -16,8 +16,8 @@ module GoS (D:Domain) = struct
     Format.printf "domain: ";
     Tools.cyan_fprintf Format.std_formatter "%s\n" !Constant.domain;
     let time_start = Sys.time () in
-    let csp = Solv.init prob in
-    let res = solve csp in
+    let csp = It.init prob in
+    let res = solve !Constant.max_depth csp in
     let time_end = Sys.time () -. time_start in
     Format.printf "solving time %f\n\n%!" time_end;
     res

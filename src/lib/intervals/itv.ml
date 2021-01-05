@@ -3,7 +3,6 @@
    the upper bound.  Therefore it does not handle "holes" in the
    domain.  *)
 
-open Bot
 open Bound_sig
 
 module Itv(B:BOUND) = struct
@@ -31,13 +30,12 @@ module Itv(B:BOUND) = struct
     | _ -> l,h
 
   (* maps empty intervals to explicit bottom *)
-  let check_bot ((l,h):t) : t bot =
-    if B.leq l h then Nb (l,h) else Bot
+  let check_bot ((l,h):t) : t option =
+    if B.leq l h then Some (l,h) else None
 
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
-
 
   let of_bound (x:B.t) : t = validate (x,x)
 
@@ -107,15 +105,15 @@ module Itv(B:BOUND) = struct
   let join ((l1,h1):t) ((l2,h2):t) : t =
     B.min l1 l2, B.max h1 h2
 
-  let meet ((l1,h1):t) ((l2,h2):t) : t bot =
+  let meet ((l1,h1):t) ((l2,h2):t) : t option =
     check_bot (B.max l1 l2, B.min h1 h2)
 
-  let negative_part ((l1,h1):t) : t bot =
-    if B.geq l1 B.zero then Bot else
+  let negative_part ((l1,h1):t) : t option =
+    if B.geq l1 B.zero then None else
       check_bot (l1,(B.min h1 B.zero))
 
-  let positive_part ((l1,h1):t) : t bot =
-    if B.leq h1 B.zero then Bot else
+  let positive_part ((l1,h1):t) : t option =
+    if B.leq h1 B.zero then None else
       check_bot ((B.max l1 B.zero),h1)
 
   (* predicates *)
@@ -245,18 +243,18 @@ module Itv(B:BOUND) = struct
     mix4 bound_div_up bound_div_down i1 i2
 
   (* return valid values (possibly Bot) + possible division by zero *)
-  let div (i1:t) (i2:t) : t bot =
+  let div (i1:t) (i2:t) : t option =
     (* split into positive and negative dividends *)
-    let pos = (lift_bot (div_sign i1)) (positive_part i2)
-    and neg = (lift_bot (div_sign i1)) (negative_part i2) in
+    let pos = (Option.map (div_sign i1)) (positive_part i2)
+    and neg = (Option.map (div_sign i1)) (negative_part i2) in
     (* joins the result*)
-    join_bot2 join pos neg
+    Tools.join_bot2 join pos neg
 
   (* interval square root *)
-  let sqrt ((l,h):t) : t bot =
-    if B.sign h < 0 then Bot else
+  let sqrt ((l,h):t) : t option =
+    if B.sign h < 0 then None else
     let l = B.max l B.zero in
-   Nb (B.sqrt_down l, B.sqrt_up h)
+    Some (B.sqrt_down l, B.sqrt_up h)
 
   (* useful operators on intervals *)
   let ( +@ ) = add
@@ -271,16 +269,12 @@ module Itv(B:BOUND) = struct
 
   (* interval ln *)
   let ln (l,h) =
-    if B.leq h B.zero then Bot
-    else if B.leq l B.zero then Nb (B.minus_inf,B.ln_up h)
-    else Nb (B.ln_down l,B.ln_up h)
+    if B.leq h B.zero then None
+    else if B.leq l B.zero then Some (B.minus_inf,B.ln_up h)
+    else Some (B.ln_down l,B.ln_up h)
 
   (* interval log *)
-  let log itv =
-    let itv' = ln itv in
-    match itv' with
-    | Bot -> Bot
-    | Nb (l', h') -> div (l',h') (of_bound ln10)
+  let log itv = Option.bind (ln itv) (fun x -> div x (of_bound ln10))
 
   (* powers *)
   let pow ((il,ih):t) ((l,h):t) =
@@ -304,14 +298,14 @@ module Itv(B:BOUND) = struct
     if B.equal l h && B.floor l = l then
       let p = B.to_float_down l |> int_of_float in
       match p with
-      | 1 -> Nb (il, ih)
+      | 1 -> Some (il, ih)
       | x when x > 1 && B.odd l ->
-	Nb (B.root_down il p, B.root_up ih p)
+	       Some (B.root_down il p, B.root_up ih p)
       | x when x > 1 && B.even l ->
-        if B.lt ih B.zero then Bot
-        else if B.leq il B.zero then Nb (B.neg (B.root_up ih p), B.root_up ih p)
+        if B.lt ih B.zero then None
+        else if B.leq il B.zero then Some (B.neg (B.root_up ih p), B.root_up ih p)
         else
-          Nb (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
+          Some (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
 
@@ -325,31 +319,25 @@ module Itv(B:BOUND) = struct
     validate (B.max l1 l2, B.max u1 u2)
 
   (** runtime functions **)
-  let eval_fun name args : t bot =
-    let arity_1 (f: t -> t) : t bot =
+  let eval_fun name args : t option =
+    let arity_1 (f: t -> t) : t option =
       match args with
-      | [i] -> Nb (f i)
+      | [i] -> Some (f i)
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
-    let arity_1_bot (f: t -> t bot) : t bot =
+    let arity_1_bot (f: t -> t option) : t option =
       match args with
-      | [i] ->
-         (match f i with
-          | Bot -> Bot
-          | Nb i -> Nb i)
+      | [i] -> f i
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
-    let arity_2 (f: t -> t -> t) : t bot  =
+    let arity_2 (f: t -> t -> t) : t option  =
       match args with
-      | [i1;i2] -> Nb (f i1 i2)
+      | [i1;i2] -> Some (f i1 i2)
       | _ -> failwith (Format.sprintf "%s expect two arguments" name)
     in
-    let arity_2_bot (f: t -> t -> t bot) : t bot  =
+    let arity_2_bot (f: t -> t -> t option) : t option  =
       match args with
-      | [i1;i2] ->
-         (match f i1 i2 with
-          | Bot -> Bot
-          | Nb i -> Nb i)
+      | [i1;i2] -> f i1 i2
       | _ -> failwith (Format.sprintf "%s expect two arguments" name)
     in
     match name with
@@ -403,84 +391,78 @@ module Itv(B:BOUND) = struct
   (* ---------- *)
 
   (* r = -i => i = -r *)
-  let filter_neg (i:t) (r:t) : t bot =
+  let filter_neg (i:t) (r:t) : t option =
     meet i (neg r)
 
-  let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t bot =
+  let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t option =
     if B.sign il >= 0 then meet i r
     else if B.sign ih <= 0 then meet i (neg r)
     else meet i (B.neg rh, rh)
 
   (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
-  let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
+  let filter_add (i1:t) (i2:t) (r:t) : (t*t) option =
+    Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
 
   (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
-  let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+  let filter_sub (i1:t) (i2:t) (r:t) : (t*t) option =
+    Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
 
   (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
-  let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2
-      (if contains r B.zero && contains i2 B.zero then Nb i1
-      else strict_bot (meet i1) (div r i2))
-      (if contains r B.zero && contains i1 B.zero then Nb i2
-      else strict_bot (meet i2) (div r i1))
+  let filter_mul (i1:t) (i2:t) (r:t) : (t*t) option =
+    Tools.merge_bot
+      (if contains r B.zero && contains i2 B.zero then Some i1
+      else Option.bind (div r i2) (meet i1))
+      (if contains r B.zero && contains i1 B.zero then Some i2
+      else Option.bind (div r i1) (meet i2))
 
   (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
-  let filter_div (i1:t) (i2:t) (r:t) : (t*t) bot =
-    merge_bot2
+  let filter_div (i1:t) (i2:t) (r:t) : (t*t) option =
+    Tools.merge_bot
       (meet i1 (mul i2 r))
-      (if contains r B.zero && contains i1 B.zero then Nb i2
-      else strict_bot (meet i2) (div i1 r))
+      (if contains r B.zero && contains i1 B.zero then Some i2
+      else Option.bind (div i1 r) (meet i2))
 
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt ((il,_) as i:t) ((rl,rh):t) : t bot =
+  let filter_sqrt ((il,_) as i:t) ((rl,rh):t) : t option =
     let rr = B.mul_down rl rl, B.mul_up rh rh in
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
 
   (* r = exp i => i = ln r *)
-  let filter_exp i r = meet_bot meet i (ln r)
+  let filter_exp (i:t) (r:t) : t option = Option.bind (ln r) (meet i)
 
   (* r = ln i => i = exp r *)
-  let filter_ln i r = meet i (exp r)
+  let filter_ln (i:t) (r:t) : t option = meet i (exp r)
 
   (* r = log i => i = *)
   let filter_log _ = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
-    merge_bot2 (meet_bot meet i (n_root r n)) (Nb n)
+    Tools.(merge_bot (Option.bind (n_root r n) (meet i)) (Some n))
 
   (* r = nroot i => i = r ** n *)
   let filter_root i r n =
-     merge_bot2 (meet i (pow r n)) (Nb n)
+     Tools.(merge_bot (meet i (pow r n)) (Some n))
 
   (* r = min (i1, i2) *)
   let filter_min (l1, u1) (l2, u2) (lr, ur) =
-    merge_bot2 (check_bot ((B.max l1 lr), (B.max u1 ur))) (check_bot ((B.max l2 lr), (B.max u2 ur)))
+    Tools.merge_bot (check_bot ((B.max l1 lr), (B.max u1 ur))) (check_bot ((B.max l2 lr), (B.max u2 ur)))
 
   (* r = max (i1, i2) *)
   let filter_max (l1, u1) (l2, u2) (lr, ur) =
-    merge_bot2 (check_bot ((B.min l1 lr), (B.min u1 ur))) (check_bot ((B.min l2 lr), (B.min u2 ur)))
+    Tools.merge_bot (check_bot ((B.min l1 lr), (B.min u1 ur))) (check_bot ((B.min l2 lr), (B.min u2 ur)))
 
   (* r = f(x0,x1,...,xn) *)
-  let filter_fun name args r : (t list) bot =
-    let arity_1 (f: t -> t -> t bot) : (t list) bot =
+  let filter_fun name args r : (t list) option =
+    let arity_1 (f: t -> t -> t option) : (t list) option =
       match args with
-      | [i] ->
-         (match f i r with
-         | Bot -> Bot
-         | Nb i -> Nb [i])
+      | [i] -> f i r |> Option.map (fun x -> [x])
       | _ -> failwith (Format.sprintf "%s expect one argument" name)
     in
-    let arity_2 (f: t -> t -> t -> (t*t) bot) : (t list) bot  =
+    let arity_2 (f: t -> t -> t -> (t*t) option) : (t list) option  =
       match args with
-      | [i1;i2] ->
-         (match f i1 i2 r with
-          | Bot -> Bot
-          | Nb(i1,i2) -> Nb[i1;i2])
+      | [i1;i2] -> f i1 i2 r |> Option.map (fun (i1,i2) -> [i1;i2])
       | _ -> failwith (Format.sprintf "%s expect two arguments" name)
     in
     match name with

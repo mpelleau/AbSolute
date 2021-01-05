@@ -1,5 +1,3 @@
-open Bot
-
 type bound = int
 
 type t = bound * bound
@@ -10,8 +8,8 @@ let validate ((l,h):t) : t =
   else l,h
 
 (* maps empty intervals to explicit bottom *)
-let check_bot ((l,h):t) : t bot =
-  if l <= h then Nb (l,h) else Bot
+let check_bot ((l,h):t) : t option =
+  if l <= h then Some (l,h) else None
 
 (************************************************************************)
 (* CONSTRUCTORS AND CONSTANTS *)
@@ -26,13 +24,13 @@ let of_ints = of_bounds
 (* of_floats (x,y) returns the biggest integer interval [n,m] s.t
    n >= x and m <= y, and n <= m
    maybe bottom if no such interval exists *)
-let of_floats a b : t bot =
+let of_floats a b : t option =
   check_bot ((int_of_float (ceil a)), (int_of_float (floor b)))
 
 let of_int = of_bound
 
 (*No integer interval can exactly abstract a single float *)
-let of_float = Bot
+let of_float = None
 
 let positive : t = (1,max_int)
 let negative : t = (min_int,-1)
@@ -58,7 +56,7 @@ let print (fmt:Format.formatter) ((a,b):t) =
 (* operations *)
 (* ---------- *)
 let join (l1,h1:t) (l2,h2:t) : t = (min l1 l2), (max h1 h2)
-let meet (l1,h1:t) (l2,h2:t) : t bot = check_bot ((max l1 l2), (min h1 h2))
+let meet (l1,h1:t) (l2,h2:t) : t option = check_bot ((max l1 l2), (min h1 h2))
 
 (* predicates *)
 (* ---------- *)
@@ -129,13 +127,13 @@ let mul (l1,h1:t) (l2,h2:t) : t =
 let div_sign (l1,h1) (l2,h2)  = mix4 ( / ) l1 h1 l2 h2
 
 (* return valid values (possibly Bot) *)
-let div (i1:t) (i2:t) : t bot =
+let div (i1:t) (i2:t) : t option =
   Format.printf "\n\n Integer division : %a / %a\n%!" print i1 print i2;
   (* split into positive and negative dividends *)
-  let pos = (lift_bot (div_sign i1)) (meet i2 positive)
-  and neg = (lift_bot (div_sign i1)) (meet i2 negative) in
+  let pos = (Option.map (div_sign i1)) (meet i2 positive)
+  and neg = (Option.map (div_sign i1)) (meet i2 negative) in
   (* joins the result *)
-  join_bot2 join pos neg
+  Tools.join_bot2 join pos neg
 
 (* returns valid value when the exponant is a singleton positive integer.
    fails otherwise *)
@@ -162,7 +160,7 @@ let pow =
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,
    it returns a possibly bottom result *)
-let eval_fun (_:string) (_:t list) : t bot =
+let eval_fun (_:string) (_:t list) : t option =
   (*TODO: replace "assert false" with your own code *)
   assert false
 
@@ -199,26 +197,26 @@ let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t * t) Consistency.t =
 (* --------- *)
 
 (* r = -i => i = -r *)
-let filter_neg (i:t) (r:t) : t bot =
+let filter_neg (i:t) (r:t) : t option =
   meet i (neg r)
 
-let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t bot =
+let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t option =
   if il >= 0 then meet i r
   else if ih <= 0 then meet i (neg r)
   else meet i (-rh, rh)
 
-let filter_add (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2 (meet i1 (sub r i2)) (meet i2 (sub r i1))
+let filter_add (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
 
-let filter_sub (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2 (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+let filter_sub (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
 
-let filter_mul (i1:t) (i2:t) (r:t) : (t*t) bot =
-  merge_bot2
-    (if contains_float r 0. && contains_float i2 0. then Nb i1
-     else strict_bot (meet i1) (div r i2))
-    (if contains_float r 0. && contains_float i1 0. then Nb i2
-     else strict_bot (meet i2) (div r i1))
+let filter_mul (i1:t) (i2:t) (r:t) : (t*t) option =
+  Tools.merge_bot
+    (if contains_float r 0. && contains_float i2 0. then Some i1
+     else Option.bind (div r i2) (meet i1))
+    (if contains_float r 0. && contains_float i1 0. then Some i2
+     else Option.bind (div r i1) (meet i2))
 
 let to_bexpr v ((l,h):t) = Csp_helper.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)
 
@@ -229,7 +227,7 @@ let to_annot _ = Csp.Int
      given a function name, a list of argument, and a result,
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
      it returns a possibly bottom result *)
-let filter_fun (_:string) (_:t list) (_:t) : (t list) bot =
+let filter_fun (_:string) (_:t list) (_:t) : (t list) option =
   (*TODO: replace "assert false" with your own code *)
   assert false
 
