@@ -5,13 +5,7 @@
 
 open Bound_sig
 
-module Itv(B:BOUND) = struct
-
-  (************************************************************************)
-  (* TYPES *)
-  (************************************************************************)
-
-
+module Eval(B:BOUND) = struct
   (* interval bound (possibly -oo or +oo *)
   module B = B
   type bound = B.t
@@ -76,9 +70,7 @@ module Itv(B:BOUND) = struct
 
   let hull (x:B.t) (y:B.t) = B.min x y, B.max x y
 
-  (************************************************************************)
   (* PRINTING *)
-  (************************************************************************)
 
   let pp_print_bound fmt (b:B.t) =
     if B.ceil b = b then
@@ -94,13 +86,7 @@ module Itv(B:BOUND) = struct
 
   let to_bexpr v ((l, h):t) = Csp_helper.inside_cst v (B.to_rat l) (B.to_rat h)
 
-  (************************************************************************)
   (* SET-THEORETIC *)
-  (************************************************************************)
-
-
-  (* operations *)
-  (* ---------- *)
 
   let join ((l1,h1):t) ((l2,h2):t) : t =
     B.min l1 l2, B.max h1 h2
@@ -118,7 +104,6 @@ module Itv(B:BOUND) = struct
 
   (* predicates *)
   (* ---------- *)
-
 
   let equal ((l1,h1):t) ((l2,h2):t) : bool =
     B.equal l1 l2 && B.equal h1 h2
@@ -143,6 +128,27 @@ module Itv(B:BOUND) = struct
 
   let contains_float ((l,h):t) (x:float) : bool =
     B.leq l (B.of_float_down x) && B.leq (B.of_float_up x) h
+
+  let is_positive (l,_) =
+    B.geq l B.zero
+
+  let is_negative (_,h) =
+    B.leq h B.zero
+
+  let to_float_range (l,h) =
+    (B.to_float_down l),(B.to_float_up h)
+
+  let to_rational_range (l, h) =
+    (B.to_rat l), (B.to_rat h)
+
+  (* returns the type annotation of the represented values *)
+  let to_annot _ = Csp.Real
+
+  (* generate a random float between l and h *)
+  let spawn (l,h) =
+    let r = Random.float 1. in
+    let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
+    B.to_float_up res
 
   (* mesure *)
   (* ------ *)
@@ -309,14 +315,11 @@ module Itv(B:BOUND) = struct
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
 
-
   (* interval min *)
-  let min ((l1, u1):t) ((l2, u2):t) =
-    validate (B.min l1 l2, B.min u1 u2)
+  let min ((l1, u1):t) ((l2, u2):t) = B.min l1 l2, B.min u1 u2
 
   (* interval max *)
-  let max ((l1, u1):t) ((l2, u2):t) =
-    validate (B.max l1 l2, B.max u1 u2)
+  let max ((l1, u1):t) ((l2, u2):t) = B.max l1 l2, B.max u1 u2
 
   (** runtime functions **)
   let eval_fun name args : t option =
@@ -352,9 +355,12 @@ module Itv(B:BOUND) = struct
     | "min"   -> arity_2 min
     | s -> failwith (Format.sprintf "unknown eval function : %s" s)
 
-  (************************************************************************)
-  (* FILTERING (TEST TRANSFER FUNCTIONS) *)
-  (************************************************************************)
+end
+module Itv(B:BOUND) = struct
+
+  module E = Eval(B)
+  include E
+  include Filter.Make(E)
 
   (* tests *)
   (* ----- *)
@@ -387,108 +393,6 @@ module Itv(B:BOUND) = struct
       if B.leq l u then Filtered ((i1,i2),false)
       else Sat
 
-  (* arithmetic *)
-  (* ---------- *)
-
-  (* r = -i => i = -r *)
-  let filter_neg (i:t) (r:t) : t option =
-    meet i (neg r)
-
-  let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t option =
-    if B.sign il >= 0 then meet i r
-    else if B.sign ih <= 0 then meet i (neg r)
-    else meet i (B.neg rh, rh)
-
-  (* r = i1+i2 => i1 = r-i2 /\ i2 = r-i1 *)
-  let filter_add (i1:t) (i2:t) (r:t) : (t*t) option =
-    Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
-
-  (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
-  let filter_sub (i1:t) (i2:t) (r:t) : (t*t) option =
-    Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
-
-  (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
-  let filter_mul (i1:t) (i2:t) (r:t) : (t*t) option =
-    Tools.merge_bot
-      (if contains r B.zero && contains i2 B.zero then Some i1
-      else Option.bind (div r i2) (meet i1))
-      (if contains r B.zero && contains i1 B.zero then Some i2
-      else Option.bind (div r i1) (meet i2))
-
-  (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
-  let filter_div (i1:t) (i2:t) (r:t) : (t*t) option =
-    Tools.merge_bot
-      (meet i1 (mul i2 r))
-      (if contains r B.zero && contains i1 B.zero then Some i2
-      else Option.bind (div i1 r) (meet i2))
-
-  (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt ((il,_) as i:t) ((rl,rh):t) : t option =
-    let rr = B.mul_down rl rl, B.mul_up rh rh in
-    if B.sign il >= 0 then meet i rr
-    else meet i (B.minus_inf, snd rr)
-
-  (* r = exp i => i = ln r *)
-  let filter_exp (i:t) (r:t) : t option = Option.bind (ln r) (meet i)
-
-  (* r = ln i => i = exp r *)
-  let filter_ln (i:t) (r:t) : t option = meet i (exp r)
-
-  (* r = log i => i = *)
-  let filter_log _ = failwith "todo filter_log"
-
-  (* r = i ** n => i = nroot r *)
-  let filter_pow (i:t) n (r:t) =
-    Tools.(merge_bot (Option.bind (n_root r n) (meet i)) (Some n))
-
-  (* r = nroot i => i = r ** n *)
-  let filter_root i r n =
-     Tools.(merge_bot (meet i (pow r n)) (Some n))
-
-  (* r = min (i1, i2) *)
-  let filter_min (l1, u1) (l2, u2) (lr, ur) =
-    Tools.merge_bot (check_bot ((B.max l1 lr), (B.max u1 ur))) (check_bot ((B.max l2 lr), (B.max u2 ur)))
-
-  (* r = max (i1, i2) *)
-  let filter_max (l1, u1) (l2, u2) (lr, ur) =
-    Tools.merge_bot (check_bot ((B.min l1 lr), (B.min u1 ur))) (check_bot ((B.min l2 lr), (B.min u2 ur)))
-
-  (* r = f(x0,x1,...,xn) *)
-  let filter_fun name args r : (t list) option =
-    let arity_1 (f: t -> t -> t option) : (t list) option =
-      match args with
-      | [i] -> f i r |> Option.map (fun x -> [x])
-      | _ -> failwith (Format.sprintf "%s expect one argument" name)
-    in
-    let arity_2 (f: t -> t -> t -> (t*t) option) : (t list) option  =
-      match args with
-      | [i1;i2] -> f i1 i2 r |> Option.map (fun (i1,i2) -> [i1;i2])
-      | _ -> failwith (Format.sprintf "%s expect two arguments" name)
-    in
-    match name with
-    | "sqrt" -> arity_1 filter_sqrt
-    | "exp"  -> arity_1 filter_exp
-    | "ln"   -> arity_1 filter_ln
-    | "max"  -> arity_2 filter_max
-    | "min"  -> arity_2 filter_min
-    | s -> failwith (Format.sprintf "unknown filter function : %s" s)
-
-  let filter_bounds (l,h) = check_bot (B.ceil l, B.floor h)
-
-  let to_float_range (l,h) =
-    (B.to_float_down l),(B.to_float_up h)
-
-  let to_rational_range (l, h) =
-    (B.to_rat l), (B.to_rat h)
-
-  (* returns the type annotation of the represented values *)
-  let to_annot _ = Csp.Real
-
-  (* generate a random float between l and h *)
-  let spawn (l,h) =
-    let r = Random.float 1. in
-    let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
-    B.to_float_up res
 end
 
 module ItvF = Itv(Bound_float)
