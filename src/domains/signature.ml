@@ -35,7 +35,7 @@ module type Numeric = sig
   val join: t -> t -> t * bool
 
   (** meet two abstract elements *)
-  val meet: t -> t -> t Bot.bot
+  val meet: t -> t -> t option
 
   (** substracts the second abstract element from the first
      (difference operator) if an exact operator can not be defined

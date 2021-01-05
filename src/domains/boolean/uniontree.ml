@@ -1,5 +1,4 @@
 open Signature
-open Bot
 open Consistency
 open Csp
 
@@ -75,11 +74,11 @@ module Make (D:Numeric) : Domain = struct
 
   let rec meet q1 q2 =
     match q1,q2 with
-    | Leaf e1, Leaf e2 -> Bot.lift_bot leaf (D.meet e1 e2)
+    | Leaf e1, Leaf e2 -> Option.map leaf (D.meet e1 e2)
     | Union {envelopp; sons=l,r}, b | b, Union {envelopp; sons=l,r}->
        (match D.meet envelopp (bounding b) with
-        | Bot -> Bot
-        | Nb _ -> Bot.join_bot2 join (meet b l) (meet b r))
+        | None -> None
+        | Some _ -> Tools.join_bot2 join (meet b l) (meet b r))
 
   (* filter for numeric predicates *)
   let filter_cmp (t:t) cmp : t Consistency.t =

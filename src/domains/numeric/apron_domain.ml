@@ -155,7 +155,7 @@ module MAKE(AP:ADomain) = struct
 
   let meet a b =
     let m = A.meet man a b in
-    if is_empty m then Bot.Bot else Bot.Nb m
+    if is_empty m then None else Some m
 
   let diff = None
 

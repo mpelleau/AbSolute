@@ -128,7 +128,7 @@ let fold_on_combination_2 ?duplicate:(d=false) f acc arr =
 
 (** meet on options *)
 let meet_bot f x y =
-  Option.map (fun x -> (Option.map (fun y -> f x y) y)) x
+  Option.bind x (fun x -> (Option.map (fun y -> f x y) y))
 
 (** merge on options *)
 let merge_bot x y =

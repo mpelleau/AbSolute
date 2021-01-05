@@ -1,5 +1,4 @@
 open Tools
-open Bot
 open Itv_sig
 open Csp
 
@@ -52,14 +51,14 @@ module Box (I:ITV) = struct
     in
     (VarMap.merge (fun _ -> join_opt) a b),false
 
-  let meet (a:t) (b:t) : t bot =
+  let meet (a:t) (b:t) : t option =
     let meet_opt a b =
       match a,b with
       | Some a, Some b -> Some (Option.get (I.meet a b))
-      | _ -> raise Bot_found
+      | _ -> raise Exit
     in
-    try Nb (VarMap.merge (fun _ -> meet_opt) a b)
-    with Bot_found -> Bot
+    try Some (VarMap.merge (fun _ -> meet_opt) a b)
+    with Exit -> None
 
   (* mesure *)
   (* ------ *)
@@ -203,7 +202,7 @@ module Box (I:ITV) = struct
 
   let filter (a:t) (e1,binop,e2) : t Consistency.t =
     try test a e1 binop e2
-    with Bot_found -> Consistency.Unsat
+    with Invalid_argument _ -> Consistency.Unsat
 
   let empty : t = Env.empty
 

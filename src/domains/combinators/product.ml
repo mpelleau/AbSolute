@@ -2,7 +2,6 @@
 
 open Signature
 open Consistency
-open Bot
 
 module Make (A:Domain) (B:Domain) = struct
 
@@ -61,18 +60,15 @@ module Make (A:Domain) (B:Domain) = struct
     (a,b),(exact_a && exact_b)
 
   let meet (a,b) (a',b') =
-    match A.meet a a' with
-    | Bot -> Bot
-    | Nb a ->
-       (match B.meet b b' with
-        | Bot -> Bot
-        | Nb b ->
-           match reduced_product a b with
-           | Sat -> Nb (a,b)
-           | Unsat -> Bot
-           | Filtered (x,_) -> Nb x
-       )
-
+    try
+      Tools.meet_bot (fun a b ->
+          match reduced_product a b with
+          | Sat -> (a,b)
+          | Unsat -> raise Exit
+          | Filtered (x,_) -> x
+        )
+        (A.meet a a') (B.meet b b')
+    with Exit -> None
 
   let filter ((a, b):t) (c1,c2) : t Consistency.t =
     let open Kleene in
