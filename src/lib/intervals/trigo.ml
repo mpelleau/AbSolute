@@ -26,7 +26,7 @@ module Make (I:Itv_sig.ITV) = struct
   (* under-approximation of sin x *)
   let sin_down x =
     let a = sin (x+.pi_up) and b =  sin (x+.pi_down) in
-    -. (max a b)
+    -. (Float.max a b)
 
   (*********************)
   (* COS APPROXIMATION *)
@@ -38,7 +38,7 @@ module Make (I:Itv_sig.ITV) = struct
   (* under-approximation of cos x *)
   let cos_down x =
     let a = cos (x+.pi_up) and b =  cos (x+.pi_down) in
-    -. (max a b)
+    -. (Float.max a b)
 
   (*********************)
   (* TAN APPROXIMATION *)
@@ -132,17 +132,17 @@ module Make (I:Itv_sig.ITV) = struct
 
   (* given an interval i, and a function f and its monotony,
    return the image of i by f *)
-  let itv monotony f_down f_up (a,b) =
+  let itv monotony f_down f_up (a,b) : float * float =
     match monotony with
     | Incr     -> (f_down a),(f_up b)
     | Decr     -> (f_down b),(f_up a)
     | Change i ->
        if i then
          let a' = f_down a and b'= f_down b in
-         (min a' b',1.)
+         (Float.min a' b',1.)
        else
          let a' = f_up a and b'= f_up b in
-         (-1.),(max a' b')
+         (-1.),(Float.max a' b')
 
   (***************************************************)
   (* INTERVAL EVALUTATION OF TRIGONOMETRIC FUNCTIONS *)

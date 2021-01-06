@@ -1,4 +1,5 @@
-(* This modules defines sound bwd operators intervals *)
+(* This modules defines sound backward operators intervals given a
+   forward evaluation semantics *)
 
 module Make (I:Itv_sig.ITV_EVAL) = struct
 
@@ -83,5 +84,4 @@ module Make (I:Itv_sig.ITV_EVAL) = struct
     | "max"  -> arity_2 filter_max
     | "min"  -> arity_2 filter_min
     | s -> failwith (Format.sprintf "unknown filter function : %s" s)
-
 end

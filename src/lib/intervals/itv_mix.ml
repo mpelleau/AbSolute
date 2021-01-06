@@ -222,6 +222,12 @@ let n_root (i1:t) (i2:t) =
   let i1,i2 = (force_real i1),(force_real i2) in
   Option.map real (R.n_root i1 i2)
 
+let log _ = failwith "log"
+let ln _ = failwith "ln"
+let max _ _ = failwith "max"
+let min _ _ = failwith "min"
+let exp _ = failwith "exp"
+
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,
    it returns a possibly bottom result *)
@@ -241,7 +247,7 @@ let filter i_f r_f (x1:t) (x2:t) : (t * t) Consistency.t =
   | Int x1, Real x2 ->
      let x1 = to_float x1 in
      (try Consistency.map (fun (x1,x2) -> Int (Option.get (to_int x1)), Real x2) (r_f x1 x2)
-     with _ -> Unsat)
+      with _ -> Unsat)
   | Real x1, Int x2 ->
      let x2 = to_float x2 in
      (try Consistency.map (fun (x1,x2) -> Real x1, Int (Option.get (to_int x2))) (r_f x1 x2)
@@ -283,17 +289,11 @@ let filter_sub (i1:t) (i2:t) (r:t) : (t*t) option =
 
 (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
 let filter_mul (i1:t) (i2:t) (r:t) : (t*t) option =
-  (* Format.printf "filter_mul : %a * %a = %a => " print i1 print i2 print r;
-   * let res = *)
   Tools.merge_bot
     (if contains_float r 0. && contains_float i2 0. then Some i1
      else Option.bind (div r i2)  (meet i1))
     (if contains_float r 0. && contains_float i1 0. then Some i2
      else Option.bind (div r i1) (meet i2))
-  (* in
-   * match res with
-   * | Nb (r1,r2) -> Format.printf "%a, %a \n%!" print r1 print r2; res
-   * | option -> Format.printf "bottom\n%!"; res *)
 
 (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
 let filter_div (i1:t) (i2:t) (r:t) : (t*t) option =

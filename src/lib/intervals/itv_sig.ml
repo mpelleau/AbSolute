@@ -1,23 +1,17 @@
 (** Generic signature for intervals. The interface is functional.*)
 
 module type ITV_EVAL = sig
-  (** {1 TYPES} *)
-
-  (** an interval is a pair of bounds (lower,upper);
-     intervals are always non-empty: lower <= upper;
-     functions that can return an empty interval return it as Bot *)
   type t
 
-  (** {1 CONSTRUCTORS AND CONSTANTS} *)
-
-  (** default value for unconstrained variables *)
   val top_int : t
   val top_real : t
 
+  (** constructors *)
   val of_ints: int -> int -> t
   val of_rats: Q.t -> Q.t -> t
   val of_floats: float -> float -> t
 
+  (** singletons *)
   val of_int: int -> t
   val of_rat: Q.t -> t
   val of_float: float -> t
@@ -30,14 +24,20 @@ module type ITV_EVAL = sig
   val to_annot : t -> Csp.annot
   val print: Format.formatter -> t -> unit
 
+  (** converts the interval to a boolean constraint *)
   val to_bexpr: Csp.var -> t -> Csp.bexpr
+
+  (** measure *)
+  val float_size : t -> float
+  val score : t -> float
 
   (** {1 SET-THEORETIC } *)
 
   (** operations *)
-
   val join: t -> t -> t
   val meet: t -> t -> t option
+  val split: t -> t list
+  val prune : (t -> t -> t list) option
 
   (** predicates *)
   val contains_float: t -> float -> bool
@@ -45,16 +45,9 @@ module type ITV_EVAL = sig
   val is_negative: t -> bool
   val is_singleton: t -> bool
 
-  val split: t -> t list
-
-  (** pruning *)
-  val prune : (t -> t -> t list) option
-
   (** {1 INTERVAL ARITHMETICS (FORWARD EVALUATION)} *)
-
   val neg: t -> t
   val abs: t -> t
-
   val add: t -> t -> t
   val sub: t -> t -> t
   val mul: t -> t -> t
@@ -62,103 +55,29 @@ module type ITV_EVAL = sig
   (** return valid values (possibly Bot, if dividend is nul) *)
   val div: t -> t -> t option
 
+  (** min and max over intervals *)
+  val min : t -> t -> t
+  val max : t -> t -> t
+
   (** returns valid value when the exponant is a singleton positive
-     integer. fails otherwise*)
+      integer. fails otherwise*)
   val pow: t -> t -> t
   val n_root : t -> t -> t option
   val exp: t -> t
   val ln: t -> t option
   val log: t -> t option
 
-  val min : t -> t -> t
-  val max : t -> t -> t
-
-
-  (** generate a random float within the given interval *)
-  val spawn : t -> float
-
-end
-
-module type ITV = sig
-
-  (** {1 TYPES} *)
-
-  (** an interval is a pair of bounds (lower,upper);
-     intervals are always non-empty: lower <= upper;
-     functions that can return an empty interval return it as Bot *)
-  type t
-
-  (** {1 CONSTRUCTORS AND CONSTANTS} *)
-
-  (** default value for unconstrained variables *)
-  val top_int : t
-  val top_real : t
-
-  val of_ints: int -> int -> t
-  val of_rats: Q.t -> Q.t -> t
-  val of_floats: float -> float -> t
-
-  val of_int: int -> t
-  val of_rat: Q.t -> t
-  val of_float: float -> t
-
-  (** {1 PRINTING and CONVERSIONS } *)
-  val to_float_range : t -> float * float
-  val to_rational_range : t -> Q.t * Q.t
-
-  (** returns the type annotation of the represented values *)
-  val to_annot : t -> Csp.annot
-  val print: Format.formatter -> t -> unit
-
-  val to_bexpr: Csp.var -> t -> Csp.bexpr
-
-  (** {1 SET-THEORETIC } *)
-
-  (** operations *)
-
-  val join: t -> t -> t
-  val meet: t -> t -> t option
-
-  (** predicates *)
-  val contains_float: t -> float -> bool
-  val is_singleton: t -> bool
-  val is_positive: t -> bool
-  val is_negative: t -> bool
-
-  (** mesure *)
-  val float_size: t -> float
-
-  (** split *)
-
-  (** returns a split priority. The higher the better *)
-  val score : t -> float
-
-  val split: t -> t list
-
-  (** pruning *)
-  val prune : (t -> t -> t list) option
-
-  (** {1 INTERVAL ARITHMETICS (FORWARD EVALUATION)} *)
-
-  val neg: t -> t
-  val abs: t -> t
-
-  val add: t -> t -> t
-  val sub: t -> t -> t
-  val mul: t -> t -> t
-
-  (** return valid values (possibly Bot, if dividend is nul) *)
-  val div: t -> t -> t option
-
-  (** returns valid value when the exponant is a singleton positive
-     integer. fails otherwise*)
-  val pow: t -> t -> t
-
   (** function calls (sqrt, exp, ln ...) are handled here :
      given a function name and and a list of argument,
      it returns a possibly bottom result *)
   val eval_fun : string -> t list -> t option
 
+  (** generate a random float within the given interval *)
+  val spawn : t -> float
+end
+
+module type ITV = sig
+  include ITV_EVAL
   (** {1 FILTERING (TEST TRANSFER FUNCTIONS)} *)
 
   (** given two interval arguments, return a filtered subset of each
@@ -190,7 +109,4 @@ module type ITV = sig
      it remove points that cannot satisfy the relation : f(arg1,..,argn) = r;
      it returns a possibly bottom result *)
   val filter_fun: string -> t list -> t -> (t list) option
-
-  (** generate a random float within the given interval *)
-  val spawn : t -> float
 end
