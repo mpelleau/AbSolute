@@ -88,6 +88,9 @@ Then, verify everything is working well on an example:
 ./absolute problems/booth.abs
 ```
 
+##### Coding style
+Functionnal is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
+
 ### Troubleshooting
 
 1. For some reason, having both packages `libapron` and `libapron-dev` installed will make the building of AbSolute fail.
