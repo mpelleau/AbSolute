@@ -296,7 +296,7 @@ module Eval (B:BOUND) = struct
   let mon_decr (f_down,f_up) ((kl,low),(kh,high)) =
     (kh,(f_down high)),(kl,(f_up low))
 
-  (* when f changes its monotony in "c";
+  (* when f changes its monotony once in "c";
      - if f ↗↘ then f [a;b] = [f(a);f(c)] U [f(b);f(c)]
      - if f ↘↗ then f [a;b] = [f(c);f(a)] U [f(c);f(b)] *)
   let mon_2 f c ((a,b) as itv) first =
@@ -340,56 +340,41 @@ module Eval (B:BOUND) = struct
     let neg = (Option.map (div_sgn i1)) (meet i2 negative) in
     Tools.join_bot2 join pos neg
 
-
   let sqrt (itv:t) : t option =
     meet itv positive |> Option.map (mon_incr (B.sqrt_down,B.sqrt_up))
 
-  let pow (itv:t) ((l,h):t) =
-    let is_int (l,x) = l=Large && B.floor x=x in
-    if l=h && is_int l then
-      let i = B.to_float_down (snd l) |> int_of_float in
-      let f_down_up = ((fun b -> B.pow_down b i),(fun b -> B.pow_up b i)) in
-      let pow_odd x : t = mon_incr f_down_up x
-      and pow_even x : t = mon_2 f_down_up B.zero x false in
-      match i with
-      | 0 -> one
-      | 1 -> itv
-      | x when x > 1 && i mod 2 = 1 -> pow_odd itv
-      | x when x > 1 -> pow_even itv
-      | _ -> failwith "cant handle negatives powers"
-    else failwith  "cant handle non_singleton powers"
+  let force_int ((sl,l),(sh,h)) =
+    if sl=Large && B.floor l=l && sh = sl && h=l then
+      B.to_float_down l |> int_of_float
+    else failwith "should be a singleton integer"
+
+  let pow (itv:t) (exp:t) =
+    let i = force_int exp in
+    let f_down_up = ((fun b -> B.pow_down b i),(fun b -> B.pow_up b i)) in
+    let pow_odd x : t = mon_incr f_down_up x
+    and pow_even x : t = mon_2 f_down_up B.zero x false in
+    match i with
+    | 0 -> one
+    | 1 -> itv
+    | x when x > 1 && i mod 2 = 1 -> pow_odd itv
+    | x when x > 1 -> pow_even itv
+    | _ -> failwith "cant handle negatives powers"
 
   (* nth-root *)
-  let n_root (itv:t) ((l,h):t) : t option =
-    let is_int (l,x) = l=Large && B.floor x = x in
-    if l=h && is_int l then
-      let i = B.to_float_down (snd l) |> int_of_float in
-      let f_down_up = ((fun b -> B.root_down b i),(fun b -> B.root_up b i)) in
-      let root_odd x : t = mon_incr (f_down_up) x
-      and root_even x : t option =
-        meet x positive |> Option.map (fun x ->
-           let pos_part = mon_incr (f_down_up) x in
-           (join pos_part (neg pos_part)))
-      in
-      match i with
-      | 1 -> Some itv
-      | x when x > 1 && i mod 2 = 1 -> Some(root_odd itv)
-      | x when x > 1 -> root_even itv
-      | _ -> failwith "can only handle stricly positive roots"
-    else failwith  "cant handle non_singleton roots"
-
-  let bfg f g (k1, v1) (k2, v2) =
-    let v1' = g v1
-    and v2' = g v2 in
-    if B.equal (f v1' v2') v1' then (k1, v1')
-    else (k2, v2')
-
-  let bf f (k1, v1) (k2, v2) =
-    if B.equal (f v1 v2) v1 then (k1, v1)
-    else (k2, v2)
-
-  let uf f (k, v) =
-    (k, f v)
+  let n_root (itv:t) (exp:t) : t option =
+    let i = force_int exp in
+    let f_down_up = ((fun b -> B.root_down b i),(fun b -> B.root_up b i)) in
+    let root_odd x : t = mon_incr (f_down_up) x
+    and root_even x : t option =
+      meet x positive |> Option.map (fun x ->
+                             let pos_part = mon_incr (f_down_up) x in
+                             (join pos_part (neg pos_part)))
+    in
+    match i with
+    | 1 -> Some itv
+    | x when x > 1 && i mod 2 = 1 -> Some(root_odd itv)
+    | x when x > 1 -> root_even itv
+    | _ -> failwith "can only handle stricly positive roots"
 
   let ln (i:t) : t option = meet i positive |> Option.map  (mon_incr (B.ln_down,B.ln_up))
 
@@ -478,8 +463,6 @@ module Eval (B:BOUND) = struct
     let r = Random.float 1. in
     let res = B.add_up l (B.mul_up (B.sub_up h l) (B.of_float_up r)) in
     B.to_float_up res
-
-
 end
 
 module Make(B:BOUND) = struct
@@ -488,10 +471,7 @@ module Make(B:BOUND) = struct
   include E
   include Filter.Make(E)
 
-
-  (************************************************************************)
   (* FILTERING (TEST TRANSFER FUNCTIONS) *)
-  (************************************************************************)
 
   let filter_leq
         (((_,vl1) as l1, ((_,vh1) as h1)) as i1:t)

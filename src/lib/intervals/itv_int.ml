@@ -135,13 +135,16 @@ let div (i1:t) (i2:t) : t option =
   (* joins the result *)
   Tools.join_bot2 join pos neg
 
+let force_int (l,h) =
+  if h=l then l
+  else failwith "should be a singleton integer"
+
 (* returns valid value when the exponant is a singleton positive integer.
    fails otherwise *)
 let pow =
   let pow_aux i exp = int_of_float ((float i) ** (float exp)) in
-  fun (l1,u1 as itv:t) (l2,u2:t) ->
-  if l2=u2 then
-    let exp = l2 in
+  fun (l1,u1 as itv:t) (exp:t) ->
+  let exp = force_int exp in
     match exp with
     | 0 -> (1,1)
     | 1 -> itv
@@ -155,7 +158,6 @@ let pow =
          else
            0,max (pow_aux l1 exp) (pow_aux u1 exp)
     | _ -> failwith "cant handle negatives powers"
-  else failwith  "itv_int.ml cant handle non_singleton powers"
 
 (* function calls (sqrt, exp, ln ...) are handled here :
    given a function name and and a list of argument,

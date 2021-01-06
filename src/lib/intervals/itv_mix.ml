@@ -235,9 +235,7 @@ let eval_fun (name:string) (args:t list) : t option =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
   Option.map real (R.eval_fun name args)
 
-(************************************************************************)
 (* FILTERING (TEST TRANSRER RUNCTIONS) *)
-(************************************************************************)
 
 let filter i_f r_f (x1:t) (x2:t) : (t * t) Consistency.t =
   let open Consistency in

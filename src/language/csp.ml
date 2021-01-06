@@ -55,7 +55,7 @@ type constrs = bexpr list
 type instance = i VarMap.t
 
 (* annotations to test the validity of the solver *)
-type solution_info =
+type info =
   | Exact of instance list
   | Unfeasible
   | Known of (instance * bool) list
@@ -63,7 +63,7 @@ type solution_info =
 (* program *)
 type prog = {
     init        : decls;
-    objective   : expr option;
     constraints : constrs;
-    solutions   : solution_info option (* extra information about feasbility *)
+    objective   : expr option;
+    solutions   : info option (* extra information about feasbility *)
   }

@@ -282,38 +282,38 @@ module Eval(B:BOUND) = struct
   (* interval log *)
   let log itv = Option.bind (ln itv) (fun x -> div x (of_bound ln10))
 
+  let force_int (l,h) =
+    if B.floor l=l && h=l then
+      B.to_float_down l |> int_of_float
+    else failwith "should be a singleton integer"
+
   (* powers *)
-  let pow ((il,ih):t) ((l,h):t) =
-    if l=h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      match p with
-      | 0 -> one
-      | 1 -> (il, ih)
-      | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
-      | x when x > 1 && B.even l ->
-        if B.leq il B.zero && B.geq ih B.zero then
-	        (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
-        else if B.geq il B.zero then
-	        (B.pow_down il p, B.pow_up ih p)
-        else (B.pow_down ih p, B.pow_up il p)
-      | _ -> failwith "cant handle negatives powers"
-    else failwith  "cant handle non_singleton powers"
+  let pow ((il,ih):t) (exp:t) =
+    let p = force_int exp in
+    match p with
+    | 0 -> one
+    | 1 -> (il, ih)
+    | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
+    | x when x > 1 ->
+       if B.leq il B.zero && B.geq ih B.zero then
+	       (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+       else if B.geq il B.zero then
+	       (B.pow_down il p, B.pow_up ih p)
+       else (B.pow_down ih p, B.pow_up il p)
+    | _ -> failwith "cant handle negatives powers"
 
   (* nth-root *)
-  let n_root ((il,ih):t) ((l,h):t) =
-    if B.equal l h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      match p with
-      | 1 -> Some (il, ih)
-      | x when x > 1 && B.odd l ->
-	       Some (B.root_down il p, B.root_up ih p)
-      | x when x > 1 && B.even l ->
-        if B.lt ih B.zero then None
-        else if B.leq il B.zero then Some (B.neg (B.root_up ih p), B.root_up ih p)
-        else
-          Some (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
-      | _ -> failwith "can only handle stricly positive roots"
-    else failwith  "cant handle non_singleton roots"
+  let n_root ((il,ih):t) (exp:t) =
+    let p = force_int exp in
+    match p with
+    | 1 -> Some (il, ih)
+    | x when x > 1 && p mod 2 = 1 -> Some (B.root_down il p, B.root_up ih p)
+    | x when x > 1  ->
+       if B.lt ih B.zero then None
+       else if B.leq il B.zero then Some (B.neg (B.root_up ih p), B.root_up ih p)
+       else
+         Some (B.min (B.neg (B.root_down il p)) (B.neg (B.root_down ih p)), B.max (B.root_up il p) (B.root_up ih p))
+    | _ -> failwith "can only handle stricly positive roots"
 
   (* interval min *)
   let min ((l1, u1):t) ((l2, u2):t) = B.min l1 l2, B.min u1 u2
