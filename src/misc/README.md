@@ -1,0 +1,1 @@
+This directory contains some stuff that should ot be part of the AbSolutelib 
