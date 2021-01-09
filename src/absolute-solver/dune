@@ -1,0 +1,4 @@
+(executable
+ (name absolute)
+ (public_name absolute)
+ (libraries libabsolute))
