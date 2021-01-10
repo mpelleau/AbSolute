@@ -13,19 +13,20 @@ module GoS (D : Domain) = struct
   module Print = Out.Make (D)
 
   let time_stats prob solve =
-    Tools.green_fprintf Format.std_formatter "\nSolving\n" ;
+    Tools.green_fprintf "\nSolving\n" ;
     Format.printf "domain: " ;
-    Tools.cyan_fprintf Format.std_formatter "%s\n" !Constant.domain ;
+    Tools.cyan_fprintf "%s\n" !Constant.domain ;
     let time_start = Sys.time () in
     let csp = It.init prob in
     let res = solve !Constant.max_depth csp in
     let time_end = Sys.time () -. time_start in
     Format.printf "solving time %f\n\n%!" time_end ;
+    Tools.green_fprintf "Results:\n" ;
     res
 
   let coverage prob =
     let res = time_stats prob Solv.coverage in
-    Print.results prob res
+    Print.results ~t:!Constant.trace prob res
 
   let satisfiability prob =
     let res = time_stats prob Solv.satisfiability in

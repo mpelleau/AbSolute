@@ -7,20 +7,20 @@ let fail_fmt fmt = Format.kasprintf failwith fmt
 
 (** terminal output with a color given in parameter restoring default color
     after use *)
-let color_printf fmt col x =
-  Format.kasprintf (fun s -> Format.fprintf fmt "%s%s%s" col s "\027[0m") x
+let color_printf col x =
+  Format.kasprintf (fun s -> Format.printf "%s%s%s" col s "\027[0m") x
 
 (** red terminal output *)
-let red_fprintf fmt x = color_printf fmt "\027[31m" x
+let red_fprintf x = color_printf "\027[31m" x
 
 (** blue terminal output *)
-let cyan_fprintf fmt x = color_printf fmt "\027[36m" x
+let cyan_fprintf x = color_printf "\027[36m" x
 
 (** green terminal output *)
-let green_fprintf fmt x = color_printf fmt "\027[32m" x
+let green_fprintf x = color_printf "\027[32m" x
 
 (** yellow terminal output *)
-let yellow_fprintf fmt x = color_printf fmt "\027[33m" x
+let yellow_fprintf x = color_printf "\027[33m" x
 
 (** printing that erases previous output. should not be intertwined with orher
     prints *)
