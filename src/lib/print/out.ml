@@ -54,7 +54,7 @@ module Make (D : Domain) = struct
     | True -> Format.printf "problem satisfiable.\n"
 
   let vars2D prob =
-    let vars = Csp_helper.get_vars prob |> Array.of_list in
+    let vars = Csp.get_var_names prob |> Array.of_list in
     let size = Array.length vars in
     (vars.(0), vars.(1 mod size))
 
@@ -65,6 +65,6 @@ module Make (D : Domain) = struct
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name" ;
-      if !obj then failwith "picasso 3d" ;
+      if !obj then failwith "3d not implemented" ;
       if !visualization then in_gtk_canvas render )
 end

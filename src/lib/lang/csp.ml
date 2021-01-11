@@ -67,6 +67,29 @@ type problem =
   ; objective: expr option
   ; solutions: info option (* extra information about feasbility *) }
 
+(** {1 Accessors} *)
+
+(** computes the list of all variable names *)
+let get_var_names p = List.map (fun (_, v, _) -> v) p.init
+
+(** {1 Constructors}*)
+
+(** empty problem, with no variables and no constraints *)
+let empty = {init= []; constraints= []; objective= None; solutions= None}
+
 (** initalizes and unconstrained CSP *)
 let initialize (variables : (typ * var * dom) list) : problem =
   {init= variables; constraints= []; objective= None; solutions= None}
+
+(** adds a real bounded variable in the csp *)
+let add_real_var csp name inf sup =
+  let assign = (Real, name, Finite (inf, sup)) in
+  {csp with init= assign :: csp.init}
+
+(** adds an integer bounded variable in the csp *)
+let add_int_var csp name inf sup =
+  let assign = (Int, name, Finite (inf, sup)) in
+  {csp with init= assign :: csp.init}
+
+(** adds a constraint to the csp *)
+let add_constr csp c = {csp with constraints= c :: csp.constraints}

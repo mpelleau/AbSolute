@@ -332,20 +332,6 @@ let compute_jacobian csp =
     [] csp.constraints
 
 (*****************************************)
-(*        USEFUL FUNCTION ON AST         *)
-(*****************************************)
-
-let empty = {init= []; constraints= []; objective= None; solutions= None}
-
-let get_vars p = List.map (fun (_, v, _) -> v) p.init
-
-let add_real_var csp name inf sup =
-  let assign = (Real, name, Finite (inf, sup)) in
-  {csp with init= assign :: csp.init}
-
-let add_constr csp c = {csp with constraints= c :: csp.constraints}
-
-(*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
 (*****************************************)
 

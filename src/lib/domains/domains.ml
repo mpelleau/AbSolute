@@ -45,12 +45,10 @@ let register_numeric name (d : (module Numeric)) =
 let register_boolean name (d : (module B)) =
   booleans := VarMap.update name (update name d) !booleans
 
-(** registers a domain combinator into the list of combinators of arity 1 *)
-let register1 name (d : (module D1)) =
+let register_1 name (d : (module D1)) =
   arity_1 := VarMap.update name (update name d) !arity_1
 
-(** registers a domain combinator into the list of combinators of arity 2 *)
-let register2 name (d : (module D2)) =
+let register_2 name (d : (module D2)) =
   arity_2 := VarMap.update name (update name d) !arity_2
 
 (* splits a string into a list of args. ignores the nested calls *)
@@ -108,14 +106,14 @@ let parse name boolean =
 
 (* Registering the abstract domains *)
 let () =
-  (* numeric *)
+  (* numerics *)
   register_numeric "box" (module Cartesian.BoxF) ;
   register_numeric "boxS" (module Cartesian.BoxStrict) ;
-  register_numeric "apronbox" (module ADCP.BoxCP) ;
-  register_numeric "poly" (module ADCP.PolyCP) ;
-  register_numeric "oct" (module ADCP.OctCP) ;
-  (* boolean *)
+  register_numeric "apronbox" (module Relational.BoxCP) ;
+  register_numeric "poly" (module Relational.PolyCP) ;
+  register_numeric "oct" (module Relational.OctCP) ;
+  (* booleans *)
   register_boolean "boolean" (module Boolean) ;
   register_boolean "uniontree" (module Uniontree) ;
   (* combinators *)
-  register2 "product" (module Product)
+  register_2 "product" (module Product)
