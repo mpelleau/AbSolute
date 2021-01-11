@@ -1,0 +1,32 @@
+opam-version: "2.0"
+version:"0.1"
+maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
+authors: [
+  "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
+  "Ghiles Ziat <ghiles.ziat@lip6.fr>"
+]
+homepage: "https://github.com/mpelleau/AbSolute"
+bug-reports: "https://github.com/mpelleau/AbSolute/issues"
+dev-repo: "git+https://github.com/mpelleau/AbSolute"
+license: "LGPL"
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "dune" {>= "1.1"}
+  "ocaml" {>= "4.08"}
+  "apron"
+  "apronext" {>= "1.0.2"}
+  "picasso"
+  "menhir"
+]
+depopts: [
+  "vpl-core"
+]
+conflicts: [
+  "vpl-core" {< "0.4.2"}
+]
+
+synopsis: "LibAbsolute"
+description: "Lib AbSolute is a constraint solving library based on abstract domains from the theory of abstract interpretation, it used and distributed with the AbSolute Constraint Solver."
