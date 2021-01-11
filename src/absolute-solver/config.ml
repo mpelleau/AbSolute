@@ -41,7 +41,7 @@ end
  * end *)
 
 (** runs the solver according to the solving mode *)
-let run (module D : Domain) (prob : Csp.prog) : unit =
+let run (module D : Domain) (prob : Csp.problem) : unit =
   let module Solver = GoS (D) in
   if !Constant.witness then Solver.witness prob else Solver.coverage prob
 

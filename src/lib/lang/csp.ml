@@ -6,7 +6,7 @@ type var = string
 (* constants are rationals (the domain of the variable *)
 type i = Mpqf.t
 
-type annot = Int | Real
+type typ = Int | Real
 
 (* binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
@@ -43,7 +43,7 @@ type dom =
   | Top  (** [-oo; +oo] *)
 
 (* declaration *)
-type decl = annot * var * dom
+type decl = typ * var * dom
 
 (* declarations *)
 type decls = decl list
@@ -60,9 +60,13 @@ type info =
   | Unfeasible
   | Known of (instance * bool) list
 
-(* program *)
-type prog =
+(* problem *)
+type problem =
   { init: decls
   ; constraints: constrs
   ; objective: expr option
   ; solutions: info option (* extra information about feasbility *) }
+
+(** initalizes and unconstrained CSP *)
+let initialize (variables : (typ * var * dom) list) : problem =
+  {init= variables; constraints= []; objective= None; solutions= None}

@@ -19,7 +19,7 @@ module type Numeric = sig
   val rm_var : t -> Csp.var -> t
   (** removes an unconstrained variable from the environnement *)
 
-  val vars : t -> (Csp.annot * Csp.var) list
+  val vars : t -> (Csp.typ * Csp.var) list
   (** returns the variables annoted by their type *)
 
   (** {1 Measure} *)
@@ -115,7 +115,7 @@ module type Solvable = sig
 
   val spawn : t -> Csp.instance
 
-  val init : Csp.prog -> t
+  val init : Csp.problem -> t
 
   type space (* internal representation of a search space *)
 

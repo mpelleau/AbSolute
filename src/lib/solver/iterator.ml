@@ -8,7 +8,7 @@ module Make (D : Domain) = struct
 
   type t = {space: space; constr: D.internal_constr list}
 
-  let init (p : Csp.prog) : t =
+  let init (p : Csp.problem) : t =
     Format.printf "variable declaration ...%!" ;
     let space = List.fold_left D.add_var D.empty p.Csp.init in
     Format.printf " done.\n" ;
@@ -30,7 +30,7 @@ module Make (D : Domain) = struct
     in
     loop true [] space constr
 
-  let split elm = List.map (fun e -> {elm with space= e}) (D.split elm.space)
+  let split e = List.rev_map (fun space -> {e with space}) (D.split e.space)
 
   let spawn elm = D.spawn elm.space
 

@@ -1,8 +1,6 @@
 open Tools
 open Signature
 
-type dom_list = (module Domain) list
-
 (* lifts a numeric domain to a boolean one *)
 module type B = sig
   module Make : functor (N : Numeric) -> Domain
@@ -29,7 +27,7 @@ let arity_1 = ref VarMap.empty
 
 let arity_2 = ref VarMap.empty
 
-(* collect all domain names *)
+(** collect all domain names *)
 let get_all =
   let aux m = List.map fst @@ VarMap.bindings m in
   fun () -> aux !numeric @ aux !arity_1 @ aux !arity_2
@@ -39,7 +37,7 @@ let update name d = function
   | None -> Some d
   | Some _ -> failwith ("name clash between abstract domains: " ^ name)
 
-(* registers a domain into the list of available abstract domains *)
+(** registers a domain into the list of available abstract domains *)
 let register_numeric name (d : (module Numeric)) =
   numeric := VarMap.update name (update name d) !numeric
 
@@ -47,11 +45,11 @@ let register_numeric name (d : (module Numeric)) =
 let register_boolean name (d : (module B)) =
   booleans := VarMap.update name (update name d) !booleans
 
-(* registers a domain combinator into the list of combinators of arity 1 *)
+(** registers a domain combinator into the list of combinators of arity 1 *)
 let register1 name (d : (module D1)) =
   arity_1 := VarMap.update name (update name d) !arity_1
 
-(* registers a domain combinator into the list of combinators of arity 2 *)
+(** registers a domain combinator into the list of combinators of arity 2 *)
 let register2 name (d : (module D2)) =
   arity_2 := VarMap.update name (update name d) !arity_2
 
@@ -75,8 +73,6 @@ let split_args (s : string) =
   in
   loop [] 0 0 0
 
-(* builds the abstract domain corresponding to the name of the numeric
-   representaion and boolean representation given in parameter *)
 let parse name boolean =
   let rec loop name : (module Domain) =
     match String.index_opt name '(' with
@@ -111,10 +107,10 @@ let parse name boolean =
       (get_all ())
 
 (* Registering the abstract domains *)
-let _ =
+let () =
   (* numeric *)
-  register_numeric "box" (module Abstract_box.BoxF) ;
-  register_numeric "boxS" (module Abstract_box.BoxStrict) ;
+  register_numeric "box" (module Cartesian.BoxF) ;
+  register_numeric "boxS" (module Cartesian.BoxStrict) ;
   register_numeric "apronbox" (module ADCP.BoxCP) ;
   register_numeric "poly" (module ADCP.PolyCP) ;
   register_numeric "oct" (module ADCP.OctCP) ;

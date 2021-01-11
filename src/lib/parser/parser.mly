@@ -57,10 +57,10 @@ open Csp_helper
 %nonassoc unary_minus
 %nonassoc POW
 
-%type <annot> typ
+%type <typ> typ
 %type <dom> init
 %type <bexpr> bexpr
-%type <Csp.prog> file
+%type <Csp.problem> file
 
 /* entry point */
 %start file
