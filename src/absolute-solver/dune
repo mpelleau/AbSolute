@@ -1,4 +1,5 @@
 (executable
- (name absolute)
- (public_name absolute)
- (libraries libabsolute))
+  (package absolute)
+  (name absolute)
+  (public_name absolute)
+  (libraries libabsolute))

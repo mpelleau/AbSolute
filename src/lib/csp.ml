@@ -39,7 +39,7 @@ type dom =
   | Finite of i * i  (** [a;b] *)
   | Minf of i  (** [-oo; a] *)
   | Inf of i  (** [a; +oo] *)
-  | Set of i list  (** {x1; x2; ...; xn} *)
+  | Set of i list  (** [x1; x2; ...; xn] *)
   | Top  (** [-oo; +oo] *)
 
 (* declaration *)

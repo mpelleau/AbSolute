@@ -9,32 +9,26 @@ open Signature
 (** Solve a CSP with the abstract domain Abs *)
 module GoS (D : Domain) = struct
   module It = Iterator.Make (D)
-  module Solv = Solver.Make (It)
-  module Print = Out.Make (D)
+  module Sol = Solver.Make (It)
+  module Show = Out.Make (D)
 
-  let time_stats prob solve =
-    Tools.green_fprintf "\nSolving\n" ;
+  let time prob solve =
+    Terminal.green_fprintf "\nSolving\n" ;
     Format.printf "domain: " ;
-    Tools.cyan_fprintf "%s\n" !Constant.domain ;
+    Terminal.cyan_fprintf "%s\n" !Constant.domain ;
     let time_start = Sys.time () in
     let csp = It.init prob in
     let res = solve !Constant.max_depth csp in
     let time_end = Sys.time () -. time_start in
     Format.printf "solving time %f\n\n%!" time_end ;
-    Tools.green_fprintf "Results:\n" ;
+    Terminal.green_fprintf "Results:\n" ;
     res
 
-  let coverage prob =
-    let res = time_stats prob Solv.coverage in
-    Print.results ~t:!Constant.trace prob res
+  let coverage p = time p Sol.coverage |> Show.results ~t:!Constant.trace p
 
-  let satisfiability prob =
-    let res = time_stats prob Solv.satisfiability in
-    Print.satisfiability res
+  let satisfiability p = time p Sol.satisfiability |> Show.satisfiability
 
-  let witness prob =
-    let res = time_stats prob Solv.witness in
-    Print.witness res
+  let witness p = time p Sol.witness |> Show.witness
 end
 
 (* (\** Solve and minimize a CSP with the abstract domain Abs *\)

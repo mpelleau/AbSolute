@@ -2,7 +2,12 @@
 
 .PHONY: default build install uninstall test clean
 
-default: build
+default: build doc
+
+doc:
+	dune build @doc
+	mkdir -p "docs"
+	cp -r _build/default/_doc/_html/* docs/
 
 build:
 	dune build
