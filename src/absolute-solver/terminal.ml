@@ -1,3 +1,5 @@
+open Libabsolute
+
 (** terminal output with a color given in parameter restoring default color
     after use *)
 let color_printf col x =

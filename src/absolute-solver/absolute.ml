@@ -1,6 +1,7 @@
 open Config
+open Libabsolute
 open Constant
-open File_parser
+open Parser
 
 (* entry point *)
 let _ =
