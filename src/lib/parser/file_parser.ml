@@ -95,7 +95,9 @@ let print_pos ppf lex =
     col
     (show_error p.pos_fname p.pos_lnum col)
 
-let constr = Parser.bexpreof
+let constr (str : string) =
+  let lexb = Lexing.from_string str in
+  (Parser.bexpreof Lexer.token) lexb
 
 (* open a file and parse it *)
 let parse (filename : string) : problem =

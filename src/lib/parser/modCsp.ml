@@ -117,7 +117,7 @@ let toCsp m =
     | Param (v, e) -> (set_param env v e, csp)
     | Var (v, e1, e2) ->
         let e1' = evaluate env e1 and e2' = evaluate env e2 in
-        (env, Csp.add_real_var csp v e1' e2')
+        (env, Csp.add_real_var v e1' e2' csp)
     | ParamList (_v, (_lower, _upper), _e1, _e2) ->
         (* let l = evaluate env lower |> int_of_float *)
         (* and u = evaluate env upper |> int_of_float in *)
@@ -140,14 +140,14 @@ let toCsp m =
             if i > u then csp
             else
               let name = name v i in
-              let csp = Csp.add_real_var csp name inf sup in
+              let csp = Csp.add_real_var name inf sup csp in
               loop (i + 1) csp
           in
           (env, loop l csp)
         else failwith ("vars with inf index greater than sup index : " ^ v)
     | SubjectTo (_, constr) ->
         let constr' = substitute_constr env constr in
-        (env, Csp.add_constr csp (to_csp_constr constr'))
+        (env, Csp.add_constr (to_csp_constr constr') csp)
     | Ignore -> (env, csp)
   in
   let empty_csp = Csp.empty in

@@ -3,7 +3,9 @@ open Consistency
 
 (** This module builds different resolution scheme according to a solvable
     module **)
-module Make (S : Solvable) = struct
+module Make (D : Domain) = struct
+  module S = Iterator.Make (D)
+
   (* prints (in-place) the current approximated progression of the solving: when
      a searchspace is processed (Sat, Unsat or too small) at a given depth d, we
      increase the progress bar by 1/(2^d). *)
@@ -26,7 +28,7 @@ module Make (S : Solvable) = struct
   let return d v = loading d ; v
 
   (** coverage of the solution space*)
-  let coverage prec max_depth searchspace : S.space Result.t =
+  let coverage prec max_depth prob : S.space Result.t =
     Format.printf "coverage ... %!" ;
     let rec aux depth res abs =
       match S.propagate abs with
@@ -40,10 +42,10 @@ module Make (S : Solvable) = struct
             try S.split prec abs' |> List.fold_left (aux (depth + 1)) res
             with TooSmall -> return depth (S.to_result ~inner:false res abs') )
     in
-    aux 1 Result.empty searchspace
+    aux 1 Result.empty (S.init prob)
 
   (** satisfiability check *)
-  let satisfiability prec max_depth searchspace : Kleene.t =
+  let satisfiability prec max_depth prob : Kleene.t =
     Format.printf "satisfiability ... %!" ;
     let rec aux depth abs =
       match S.propagate abs with
@@ -60,10 +62,10 @@ module Make (S : Solvable) = struct
                    Kleene.False
             with TooSmall -> return depth Kleene.Unknown )
     in
-    try aux 1 searchspace with Exit -> Kleene.True
+    try aux 1 (S.init prob) with Exit -> Kleene.True
 
   (** satisfiability check, with witness *)
-  let witness prec max_depth searchspace : Kleene.t * Csp.instance option =
+  let witness prec max_depth prob : Kleene.t * Csp.instance option =
     Format.printf "witness ... %!" ;
     let exception Found of Csp.instance in
     let rec aux depth abs =
@@ -85,5 +87,5 @@ module Make (S : Solvable) = struct
             with TooSmall -> return depth Kleene.Unknown )
       | Unsat -> loading depth ; Kleene.False
     in
-    try (aux 1 searchspace, None) with Found i -> (Kleene.True, Some i)
+    try (aux 1 (S.init prob), None) with Found i -> (Kleene.True, Some i)
 end

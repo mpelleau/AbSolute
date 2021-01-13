@@ -104,27 +104,3 @@ module type Domain = sig
 
   val is_representable : internal_constr -> Kleene.t
 end
-
-(** Solvable units. Constraints are internalized *)
-module type Solvable = sig
-  (** internal representation of a solving state *)
-  type t
-
-  (** internal representation of a search space *)
-  type space
-
-  val propagate : t -> t Consistency.t
-  (** filtering function *)
-
-  val split : float -> t -> t list
-  (** given a float precision [p] metric and an abstract element, splits the
-      element or raises too small if it is smaller than [p] *)
-
-  val spawn : t -> Csp.instance
-  (** given an abstract element [e] returns an arbitrary value in \gamma(e) *)
-
-  val init : Csp.problem -> t
-  (** initalizes a solving state from a csp *)
-
-  val to_result : inner:bool -> space Result.t -> t -> space Result.t
-end

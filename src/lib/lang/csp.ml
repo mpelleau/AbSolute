@@ -86,15 +86,21 @@ let empty = {init= []; constraints= []; objective= None; solutions= None}
 let initialize (variables : (typ * var * dom) list) : problem =
   {init= variables; constraints= []; objective= None; solutions= None}
 
-(** adds a real bounded variable in the csp *)
-let add_real_var csp name inf sup =
+(** adds a real variable in the csp *)
+let add_real_var name inf sup csp =
   let assign = (Real, name, Finite (inf, sup)) in
   {csp with init= assign :: csp.init}
 
-(** adds an integer bounded variable in the csp *)
-let add_int_var csp name inf sup =
+(** adds a real variable in the csp, with float bounds *)
+let add_real_var_f s l h = add_real_var s (Mpqf.of_float l) (Mpqf.of_float h)
+
+(** adds an integer variable in the csp *)
+let add_int_var name inf sup csp =
   let assign = (Int, name, Finite (inf, sup)) in
   {csp with init= assign :: csp.init}
 
+(** adds an integer variable in the csp with integer bounds *)
+let add_int_var_i s l h = add_int_var s (Mpqf.of_int l) (Mpqf.of_int h)
+
 (** adds a constraint to the csp *)
-let add_constr csp c = {csp with constraints= c :: csp.constraints}
+let add_constr c csp = {csp with constraints= c :: csp.constraints}

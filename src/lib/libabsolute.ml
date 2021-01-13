@@ -32,3 +32,4 @@ module Result = Result
 module Constant = Constant
 module Domains = Domains
 module Kleene = Kleene
+module Consistency = Consistency

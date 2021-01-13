@@ -8,8 +8,7 @@ open Signature
 
 (** Solve a CSP with the abstract domain Abs *)
 module GoS (D : Domain) = struct
-  module It = Iterator.Make (D)
-  module Sol = Solver.Make (It)
+  module Sol = Solver.Make (D)
   module Show = Out.Make (D)
 
   let time prob solve =
@@ -17,8 +16,7 @@ module GoS (D : Domain) = struct
     Format.printf "domain: " ;
     Terminal.cyan_fprintf "%s\n" !Constant.domain ;
     let time_start = Sys.time () in
-    let csp = It.init prob in
-    let res = solve !Constant.precision !Constant.max_depth csp in
+    let res = solve !Constant.precision !Constant.max_depth prob in
     let time_end = Sys.time () -. time_start in
     Format.printf "solving time %f\n\n%!" time_end ;
     Terminal.green_fprintf "Results:\n" ;
