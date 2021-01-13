@@ -59,8 +59,10 @@ open Csp_helper
 
 %type <typ> typ
 %type <dom> init
-%type <bexpr> bexpr
+%type <Csp.bexpr> bexpr
 %type <Csp.problem> file
+
+%start <Csp.bexpr> bexpreof
 
 /* entry point */
 %start file
@@ -149,6 +151,9 @@ init:
 const:
   | TOK_const {$1}
   | MINUS TOK_const {(Mpqf.neg $2)}
+
+bexpreof:
+  | bexpr EOF {$1}
 
 bexpr:
   | expr cmp expr                                 { Cmp ($1, $2, $3) }

@@ -1,6 +1,6 @@
 (** This module handle the domain environment, already equipped with some basic
-    domains. You can add your own using the [register_*] functions, or the
-    already defined ones. *)
+    domains. You can add your own using the [register_*] functions, and combine
+    them with the already defined ones. *)
 
 open Signature
 
@@ -19,6 +19,14 @@ module type D2 = sig
   module Make : functor (A : Domain) (B : Domain) -> Domain
 end
 
+(** {1 Domain environment management} *)
+
+(* val get_numeric : unit -> string list
+ * (\** collect the list of registered numeric domains *\)
+ *
+ * val get_boolean : unit -> string list
+ * (\** collect the list of registered boolean domains *\) *)
+
 val get_all : unit -> string list
 (** collect the list of all registered domain names *)
 
@@ -36,4 +44,40 @@ val register_2 : string -> (module D2) -> unit
 
 val parse : string -> string -> (module Domain)
 (** builds the abstract domain corresponding to the name of the numeric
-    representaion and boolean representation given in parameter *)
+    representaion and boolean representation given in parameter. Domain
+    application follows the syntax : ["combinator(domain1,domain2)"] where
+    [combinator] has to be registered with the [register_2] function (or be one
+    of the predefined comibnator), and both [domain1] and [domain2] has to be
+    registered. Useful to build a domain from a command line description *)
+
+(** {1 Predefined Abstract Domains} *)
+
+(** {2 Numeric domains} *)
+
+(** Boxes with floatting point included bounds *)
+module BoxF : Numeric
+
+(** Boxes with floatting point included or excluded bounds *)
+module BoxS : Numeric
+
+(** Apron Boxes *)
+module ApronBox : Numeric
+
+(** Apron Polyhedra *)
+module Poly : Numeric
+
+(** Apron Octagons *)
+module Oct : Numeric
+
+(** {2 Boolean domains} *)
+
+(** Lfts a numerical domain to a boolean one *)
+module Boolean : B
+
+(** Disjunctive form with fast-precomputation for meets *)
+module Utree : B
+
+(** {2 Combinators} *)
+
+(** Reduced product *)
+module Product : D2

@@ -1,3 +1,5 @@
+open Libabsolute
+
 let iter_directory f dir =
   if Sys.is_directory dir then
     Sys.readdir dir |> Array.map ((^) (dir^"/")) |> Array.iter f
@@ -5,6 +7,6 @@ let iter_directory f dir =
 
 let _ =
   iter_directory
-    (fun f -> Format.printf "Parsing %s\n" f; Libabsolute.Parser.parse f |> ignore)
+    (fun f -> Format.printf "Parsing %s\n" f; Parser.file f |> ignore)
     (* tests are run from _/build/default/tests/*)
     "../../../problems"

@@ -1,5 +1,13 @@
 open Tools
 open Signature
+module BoxF = Cartesian.BoxF
+module BoxS = Cartesian.BoxStrict
+module ApronBox = Relational.BoxCP
+module Poly = Relational.PolyCP
+module Oct = Relational.OctCP
+module Product = Product
+module Boolean = Boolean
+module Utree = Uniontree
 
 (* lifts a numeric domain to a boolean one *)
 module type B = sig
@@ -107,10 +115,10 @@ let parse name boolean =
 (* Registering the abstract domains *)
 let () =
   (* numerics *)
-  register_numeric "box" (module Cartesian.BoxF) ;
+  register_numeric "box" (module BoxF) ;
   register_numeric "boxS" (module Cartesian.BoxStrict) ;
   register_numeric "apronbox" (module Relational.BoxCP) ;
-  register_numeric "poly" (module Relational.PolyCP) ;
+  register_numeric "poly" (module Poly) ;
   register_numeric "oct" (module Relational.OctCP) ;
   (* booleans *)
   register_boolean "boolean" (module Boolean) ;

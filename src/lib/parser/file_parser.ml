@@ -1,7 +1,7 @@
 open Csp
 open Lexing
 
-exception IllFormedAST of string
+exception Semantic_error of string
 
 exception Syntax_error of string
 
@@ -36,7 +36,7 @@ let check_ast p =
       (fun (_, v, _) ->
         if Hashtbl.mem h v then
           raise
-            (IllFormedAST
+            (Semantic_error
                (Format.sprintf "two variables share the same name: %s" v))
         else Hashtbl.add h v true)
       p.init
@@ -46,7 +46,7 @@ let check_ast p =
       | Finite (f1, f2) ->
           if f1 > f2 then
             raise
-              (IllFormedAST
+              (Semantic_error
                  (Format.sprintf "Illegal domain : %s in [%s;%s]" v
                     (Mpqf.to_string f1) (Mpqf.to_string f2)))
       | _ -> ()
@@ -58,7 +58,7 @@ let check_ast p =
           if not (Hashtbl.mem h v) then (
             let msg = illegal_constraint ("non-declared variable " ^ v) in
             Hashtbl.iter (fun a _ -> Format.printf "%s\n" a) h ;
-            raise (IllFormedAST msg) )
+            raise (Semantic_error msg) )
       | Funcall (name, args) ->
           let nb_args = List.length args in
           if
@@ -68,7 +68,7 @@ let check_ast p =
                  runtime)
           then
             let msg = illegal_funcall name nb_args in
-            raise (IllFormedAST msg)
+            raise (Semantic_error msg)
       | _ -> ()
     in
     List.iter (Csp_helper.iter_constr check_v (fun _ -> ())) p.constraints
@@ -95,29 +95,17 @@ let print_pos ppf lex =
     col
     (show_error p.pos_fname p.pos_lnum col)
 
+let constr = Parser.bexpreof
+
 (* open a file and parse it *)
 let parse (filename : string) : problem =
   if !Constant.debug > 0 then Format.printf "parsing\n%!" ;
   let f = open_in filename in
   let lex = from_channel f in
-  let fileparser =
-    let len = String.length filename in
-    if len >= 4 && String.sub filename (len - 4) 4 = ".mod" then fun lex ->
-      ModParser.stmts ModLexer.token lex |> ModCsp.toCsp
-    else Parser.file Lexer.token
-  in
+  let fileparser = Parser.file Lexer.token in
   try
     lex.lex_curr_p <- {lex.lex_curr_p with pos_fname= filename} ;
     fileparser lex
   with _ ->
     let msg = Format.asprintf "Syntax Error in %a\n" print_pos lex in
     close_in f ; raise (Syntax_error msg)
-
-let parse (fn : string) =
-  Format.printf "parsing ... %!" ;
-  let p = parse fn in
-  Format.printf "done.\nast check ... %!" ;
-  check_ast p ;
-  Format.printf "done.\n%!" ;
-  if !Constant.trace then Format.printf "\n@[<2>%a@]%!" Csp_printer.print p ;
-  p
