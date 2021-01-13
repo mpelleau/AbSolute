@@ -17,7 +17,7 @@ module type Numeric = sig
   (** adds an unconstrained variable to the environnement *)
 
   val rm_var : t -> Csp.var -> t
-  (** removes an unconstrained variable from the environnement *)
+  (** removes a variable from the environnement *)
 
   val vars : t -> (Csp.typ * Csp.var) list
   (** returns the variables annoted by their type *)
@@ -42,7 +42,7 @@ module type Numeric = sig
       doesn't use the pruning features. precondition: the two abstract elements
       must be defined onto the same set of variables. *)
 
-  val split : t -> t list
+  val split : float -> t -> t list
   (** splits an abstract element *)
 
   (** {2 constraint conversion} *)
@@ -105,19 +105,26 @@ module type Domain = sig
   val is_representable : internal_constr -> Kleene.t
 end
 
-(** An actual solvable unit *)
+(** Solvable units. Constraints are internalized *)
 module type Solvable = sig
-  type t (* internal representation of a solving state *)
+  (** internal representation of a solving state *)
+  type t
+
+  (** internal representation of a search space *)
+  type space
 
   val propagate : t -> t Consistency.t
+  (** filtering function *)
 
-  val split : t -> t list
+  val split : float -> t -> t list
+  (** given a float precision [p] metric and an abstract element, splits the
+      element or raises too small if it is smaller than [p] *)
 
   val spawn : t -> Csp.instance
+  (** given an abstract element [e] returns an arbitrary value in \gamma(e) *)
 
   val init : Csp.problem -> t
-
-  type space (* internal representation of a search space *)
+  (** initalizes a solving state from a csp *)
 
   val to_result : inner:bool -> space Result.t -> t -> space Result.t
 end

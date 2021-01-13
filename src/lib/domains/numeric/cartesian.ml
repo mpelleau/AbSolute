@@ -262,10 +262,9 @@ module Box (I : ITV) = struct
     let i_list = I.split i in
     List.fold_left (fun acc b -> VarMap.add v b a :: acc) [] i_list
 
-  let split (a : t) : t list =
+  let split prec (a : t) : t list =
     let v, i = max_range a in
-    if I.float_size i < !Constant.precision then raise Signature.TooSmall
-    else split_along a v
+    if I.float_size i < prec then raise Signature.TooSmall else split_along a v
 
   let render x =
     let vars, values = VarMap.bindings x |> List.split in

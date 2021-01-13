@@ -3,6 +3,8 @@
 AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation.
 It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
+This repository provides code for two packages: the AbSolute solver and the libabsolute library. You can use the later from you OCaml programs.
+
 AbSolute is still in developpement, and have not been fully tested.
 Feel free to fill an [issue](https://github.com/mpelleau/AbSolute/issues) or contact any member of the developpement team if you want to report a bug or suggest a feature.
 
@@ -45,11 +47,12 @@ The following is a list of the dependencies to build AbSolute; note that we expl
 - An ANSI C compiler
 - OCaml >= 4.03 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
+- dune
 
 ### Installation
 
 We install OCaml and AbSolute through the OCaml package manager [opam](http://opam.ocaml.org/).
-First, [install opam](http://opam.ocaml.org/doc/Install.html) with your package manager and initialize it:
+You will have to [install it](http://opam.ocaml.org/doc/Install.html) if you do not have it. For example:
 ```sh
 apt-get install opam # on Debian, see opam documentation for other distributions.
 opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.1
@@ -75,8 +78,7 @@ absolute --help
 Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
 
 ```sh
-opam install dune
-opam install apron
+opam install dune apron apronext picasso
 git clone https://github.com/mpelleau/AbSolute
 cd AbSolute
 make

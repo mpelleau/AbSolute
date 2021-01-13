@@ -18,7 +18,7 @@ module GoS (D : Domain) = struct
     Terminal.cyan_fprintf "%s\n" !Constant.domain ;
     let time_start = Sys.time () in
     let csp = It.init prob in
-    let res = solve !Constant.max_depth csp in
+    let res = solve !Constant.precision !Constant.max_depth csp in
     let time_end = Sys.time () -. time_start in
     Format.printf "solving time %f\n\n%!" time_end ;
     Terminal.green_fprintf "Results:\n" ;
@@ -80,9 +80,6 @@ let speclist =
     , String set_split
     , options "Changes the splitting strategy used for the solving"
         "default, maxSmear, smear" )
-  ; ( "-lin"
-    , String Vpl_domain.set_lin
-    , "Sets the linearization algorithm of the VPL" )
   ; ( "-no-rewrite"
     , Clear rewrite
     , default_bool "Disables the constraint rewriting" rewrite )

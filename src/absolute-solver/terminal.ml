@@ -1,5 +1,3 @@
-open Libabsolute
-
 (** terminal output with a color given in parameter restoring default color
     after use *)
 let color_printf col x =
@@ -29,15 +27,8 @@ let go problem =
   Format.printf "\n" ;
   let l1 = "AbSolute is a constraint solver based on abstract domains." in
   let l2 = "For more info, check out https://github.com/mpelleau/AbSolute" in
-  let l3, l4 =
-    if Vpl_domain.available then
-      ("VPL library has been successfully loaded.\n", "")
-    else
-      ( "VPL library not found on your system."
-      , "You can install it to use the VPL's polyhedra inside AbSolute." )
-  in
-  Format.printf "%s\n%s\n%s\n%s\n" l1 l2 l3 l4 ;
-  Format.printf "%s\n" String.(make (max (length l3) (length l4)) '-') ;
+  Format.printf "%s\n%s\n" l1 l2 ;
+  Format.printf "%s\n" String.(make 80 '-') ;
   green_fprintf "\nProblem building\n" ;
   Format.printf "problem: " ;
   cyan_fprintf "%s\n" problem

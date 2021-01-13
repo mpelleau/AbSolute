@@ -26,7 +26,7 @@ module Make (S : Solvable) = struct
   let return d v = loading d ; v
 
   (** coverage of the solution space*)
-  let coverage max_depth searchspace : S.space Result.t =
+  let coverage prec max_depth searchspace : S.space Result.t =
     Format.printf "coverage ... %!" ;
     let rec aux depth res abs =
       match S.propagate abs with
@@ -37,13 +37,13 @@ module Make (S : Solvable) = struct
           if depth >= max_depth then
             return depth (S.to_result ~inner:false res abs')
           else
-            try S.split abs' |> List.fold_left (aux (depth + 1)) res
+            try S.split prec abs' |> List.fold_left (aux (depth + 1)) res
             with TooSmall -> return depth (S.to_result ~inner:false res abs') )
     in
     aux 1 Result.empty searchspace
 
   (** satisfiability check *)
-  let satisfiability max_depth searchspace : Kleene.t =
+  let satisfiability prec max_depth searchspace : Kleene.t =
     Format.printf "satisfiability ... %!" ;
     let rec aux depth abs =
       match S.propagate abs with
@@ -54,7 +54,7 @@ module Make (S : Solvable) = struct
           if depth >= max_depth then return depth Kleene.Unknown
           else
             try
-              S.split a
+              S.split prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_kleene acc (aux (depth + 1) elem))
                    Kleene.False
@@ -63,7 +63,7 @@ module Make (S : Solvable) = struct
     try aux 1 searchspace with Exit -> Kleene.True
 
   (** satisfiability check, with witness *)
-  let witness max_depth searchspace : Kleene.t * Csp.instance option =
+  let witness prec max_depth searchspace : Kleene.t * Csp.instance option =
     Format.printf "witness ... %!" ;
     let exception Found of Csp.instance in
     let rec aux depth abs =
@@ -78,7 +78,7 @@ module Make (S : Solvable) = struct
           if depth >= max_depth then return depth Kleene.Unknown
           else
             try
-              S.split a
+              S.split prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_kleene acc (aux (depth + 1) elem))
                    Kleene.False

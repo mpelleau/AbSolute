@@ -5,6 +5,6 @@ let iter_directory f dir =
 
 let _ =
   iter_directory
-    (fun f -> Format.printf "Parsing %s\n" f; File_parser.parse f |> ignore)
+    (fun f -> Format.printf "Parsing %s\n" f; Libabsolute.Parser.parse f |> ignore)
     (* tests are run from _/build/default/tests/*)
     "../../../problems"

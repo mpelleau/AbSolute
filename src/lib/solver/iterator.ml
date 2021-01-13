@@ -30,7 +30,7 @@ module Make (D : Domain) = struct
     in
     loop true [] space constr
 
-  let split e = List.rev_map (fun space -> {e with space}) (D.split e.space)
+  let split f e = List.rev_map (fun space -> {e with space}) (D.split f e.space)
 
   let spawn elm = D.spawn elm.space
 

@@ -17,10 +17,10 @@ module BoxCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split abs =
+  let split prec abs =
     let env = Abstract1.env abs in
     let var, itv, size = largest abs in
-    if Mpqf.to_float size < !Constant.precision then raise Signature.TooSmall
+    if Mpqf.to_float size < prec then raise Signature.TooSmall
     else
       let mid = Intervalext.mid itv in
       let e1, e2 = complementary env var mid in
@@ -99,10 +99,10 @@ end
 module OctMinMaxCP = struct
   include Apron_domain.MAKE (Oct)
 
-  let split octad =
+  let split prec octad =
     let env = Abstract1.env octad in
     let poly = to_poly octad env in
-    split octad (get_expr poly)
+    split octad (get_expr prec poly)
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
@@ -111,10 +111,10 @@ module OctCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split octad =
+  let split prec octad =
     let env = Abstract1.env octad in
     let var, itv, size = largest octad in
-    if Mpqf.to_float size < !Constant.precision then raise Signature.TooSmall
+    if Mpqf.to_float size < prec then raise Signature.TooSmall
     else
       let mid = Intervalext.mid itv in
       let e1, e2 = complementary env var mid in
@@ -131,7 +131,7 @@ module PolyCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split poly = split poly (get_expr poly)
+  let split prec poly = split poly (get_expr prec poly)
 
   let diff =
     let work acc a c =

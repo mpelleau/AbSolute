@@ -275,11 +275,11 @@ module MAKE (AP : ADomain) = struct
     |> Q.to_float
 
   (* Polyhedric version of some operations *)
-  let get_expr (polyad : Polka.strict Polka.t A.t) =
+  let get_expr prec (polyad : Polka.strict Polka.t A.t) =
     let poly = A.to_generator_array pman polyad in
     let env = poly.Generator1.array_env in
     let p1, p2, dist = Generatorext.to_float_array poly |> most_distant_pair in
-    if dist <= !Constant.precision then raise Signature.TooSmall
+    if dist <= prec then raise Signature.TooSmall
     else
       let list1, list2, cst = generate_linexpr env p1 p2 in
       let linexp = Linexpr1.make env in

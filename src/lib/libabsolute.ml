@@ -1,7 +1,6 @@
 module Csp = Csp
 module Csp_printer = Csp_printer
 module Parser = File_parser
-module Vpl_domain = Vpl_domain
 module Signature = Signature
 module Iterator = Iterator
 module Solver = Solver
