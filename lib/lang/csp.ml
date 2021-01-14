@@ -53,9 +53,6 @@ type dom =
 (** declaration *)
 type decl = typ * var * dom
 
-(** constraints *)
-type constrs = bexpr list
-
 (** the instance type *)
 type instance = i VarMap.t
 
@@ -68,7 +65,7 @@ type info =
 (** type of constraint satisfaction problems *)
 type problem =
   { init: decl list
-  ; constraints: constrs
+  ; constraints: bexpr list
   ; objective: expr option
   ; solutions: info option (* extra information about feasbility *) }
 
