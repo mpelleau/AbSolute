@@ -1,5 +1,3 @@
-(** A small set of useful utilities *)
-
 (** {1 Printing stuff} *)
 
 (** same as failwith but uses a format instead *)
@@ -10,9 +8,13 @@ let fail_fmt fmt = Format.kasprintf failwith fmt
 let inplace_print () =
   let size_last = ref 0 in
   fun fmt s ->
-    let erase = String.make !size_last '\b' in
-    size_last := String.length s ;
-    Format.fprintf fmt "%s%s" erase s
+    let back = String.make !size_last '\b' in
+    let cur_s = String.length s in
+    size_last := max !size_last cur_s ;
+    let s =
+      String.init !size_last (fun i -> if i >= cur_s then ' ' else s.[i])
+    in
+    Format.fprintf fmt "%s%s" back s
 
 (** 2D table print indentation *)
 let matrix_print_indent fmt mat =

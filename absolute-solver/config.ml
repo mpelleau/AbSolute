@@ -22,11 +22,13 @@ module GoS (D : Domain) = struct
     Terminal.green_fprintf "Results:\n" ;
     res
 
-  let coverage p = time p Sol.coverage |> Show.results ~t:!Constant.trace p
+  let coverage p =
+    time p (Sol.coverage ~verbose:true) |> Show.results ~t:!Constant.trace p
 
-  let satisfiability p = time p Sol.satisfiability |> Show.satisfiability
+  let satisfiability p =
+    time p (Sol.satisfiability ~verbose:true) |> Show.satisfiability
 
-  let witness p = time p Sol.witness |> Show.witness
+  let witness p = time p (Sol.witness ~verbose:true) |> Show.witness
 end
 
 (* (\** Solve and minimize a CSP with the abstract domain Abs *\)

@@ -8,13 +8,13 @@ module Make (D : Domain) = struct
 
   type t = {space: space; constr: D.internal_constr list}
 
-  let init (p : Csp.problem) : t =
-    Format.printf "variable declaration ...%!" ;
+  let init ?(verbose = false) (p : Csp.problem) : t =
+    if verbose then Format.printf "variable declaration ...%!" ;
     let space = List.fold_left D.add_var D.empty p.Csp.init in
-    Format.printf " done.\n" ;
-    Format.printf "constraint conversion ...%!" ;
+    if verbose then Format.printf " done.\n" ;
+    if verbose then Format.printf "constraint conversion ...%!" ;
     let constraints = List.map (D.internalize ~elem:space) p.Csp.constraints in
-    Format.printf " done.\n%!" ;
+    if verbose then Format.printf " done.\n%!" ;
     {space; constr= constraints}
 
   (* filtering constraints in turn only once *)
