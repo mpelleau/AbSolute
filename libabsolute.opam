@@ -21,12 +21,5 @@ depends: [
   "picasso"
   "menhir"
 ]
-depopts: [
-  "vpl-core"
-]
-conflicts: [
-  "vpl-core" {< "0.4.2"}
-]
-
-synopsis: "LibAbsolute"
-description: "Lib AbSolute is a constraint solving library based on abstract domains from the theory of abstract interpretation, it used and distributed with the AbSolute Constraint Solver."
+synopsis: "libabsolute"
+description: "Libabsolute is a constraint solving library based on abstract domains from the theory of abstract interpretation, it used and distributed with the AbSolute constraint solver."

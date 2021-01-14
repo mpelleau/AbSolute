@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version:"0.1"
+version:"0.2"
 maintainer: "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
 authors: [
   "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
@@ -20,14 +20,7 @@ depends: [
   "apronext" {>= "1.0.2"}
   "picasso"
   "menhir"
-  "liabsolute"
+  "libabsolute"
 ]
-depopts: [
-  "vpl-core"
-]
-conflicts: [
-  "vpl-core" {< "0.4.2"}
-]
-
 synopsis: "AbSolute solver"
 description: "AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation."
