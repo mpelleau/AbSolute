@@ -1,6 +1,5 @@
 open Signature
 open Consistency
-open Csp
 
 (* This module implements the tree abstract domain described in Abstract Domains
    for Constraint Programming with Differential Equations *)
@@ -8,7 +7,7 @@ open Csp
 module Make (D : Numeric) : Domain = struct
   type t = Leaf of D.t | Union of {envelopp: D.t; sons: t * t}
 
-  type internal_constr = D.internal_constr Csp.boolean
+  type internal_constr = D.internal_constr Constraint.boolean
 
   let internalize ?elem c =
     match elem with
@@ -20,10 +19,10 @@ module Make (D : Numeric) : Domain = struct
   let externalize = Csp_helper.map_constr D.externalize
 
   let rec is_representable = function
-    | And (a, b) | Or (a, b) ->
+    | Constraint.And (a, b) | Or (a, b) ->
         Kleene.and_kleene (is_representable a) (is_representable b)
-    | Not e -> is_representable e
-    | Cmp c -> D.is_representable c
+    | Constraint.Not e -> is_representable e
+    | Constraint.Cmp c -> D.is_representable c
 
   let forward_eval = function
     | Leaf n -> D.forward_eval n
@@ -101,6 +100,7 @@ module Make (D : Numeric) : Domain = struct
 
   (* filter for boolean expressions *)
   let filter (n : t) c : t Consistency.t =
+    let open Constraint in
     let rec loop e = function
       | Cmp a -> filter_cmp e a
       | Or (b1, b2) -> (
@@ -142,7 +142,7 @@ module Make (D : Numeric) : Domain = struct
 
   let rec to_bexpr = function
     | Leaf d -> D.to_bexpr d
-    | Union {sons= l, r; _} -> Csp.Or (to_bexpr l, to_bexpr r)
+    | Union {sons= l, r; _} -> Constraint.Or (to_bexpr l, to_bexpr r)
 
   let render t =
     match fold (fun acc e -> e :: acc) [] t with

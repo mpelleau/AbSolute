@@ -11,7 +11,7 @@ module Box (I : ITV) = struct
   type t = I.t Env.t
 
   (* this domain uses the same language than the one defined in Csp.ml *)
-  type internal_constr = Csp.comparison
+  type internal_constr = Constraint.comparison
 
   (* elem is not used but required by the interface. disabling the unused
      parameter warning to make merlin happy *)
@@ -61,14 +61,14 @@ module Box (I : ITV) = struct
   (* ------ *)
 
   (* variable with maximal range *)
-  let max_range (a : t) : var * I.t =
+  let max_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) ->
         if I.float_size i > I.float_size io then (v, i) else (vo, io))
       a (VarMap.min_binding a)
 
   (* variable with maximal range if real or with minimal if integer *)
-  let mix_range (a : t) : var * I.t =
+  let mix_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) -> if I.score i > I.score io then (v, i) else (vo, io))
       a (VarMap.min_binding a)
@@ -102,8 +102,8 @@ module Box (I : ITV) = struct
   type bexpr =
     | BFuncall of string * bexpri list
     | BNeg of bexpri
-    | BBinary of binop * bexpri * bexpri
-    | BVar of var
+    | BBinary of Constraint.binop * bexpri * bexpri
+    | BVar of string
     | BCst of I.t
 
   and bexpri = bexpr * I.t
@@ -117,7 +117,7 @@ module Box (I : ITV) = struct
      division by zero). - We raise Bot_found in case the expression only
      evaluates to error values. - Otherwise, we return only the non-error
      values. *)
-  let rec eval (a : t) (e : expr) : bexpri =
+  let rec eval (a : t) (e : Constraint.expr) : bexpri =
     match e with
     | Funcall (name, args) ->
         let bargs = List.map (eval a) args in
@@ -185,7 +185,8 @@ module Box (I : ITV) = struct
   (* test transfer function. Apply the evaluation followed by the refine step of
      the HC4-revise algorithm. It prunes the domain of the variables in `a`
      according to the constraint `e1 o e2`. *)
-  let test (a : t) (e1 : expr) (o : cmpop) (e2 : expr) : t Consistency.t =
+  let test (a : t) (e1 : Constraint.expr) (o : Constraint.cmpop)
+      (e2 : Constraint.expr) : t Consistency.t =
     let (b1, i1), (b2, i2) = (eval a e1, eval a e2) in
     let res =
       match o with
@@ -220,7 +221,7 @@ module Box (I : ITV) = struct
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
 
-  let rec is_applicable (abs : t) (e : expr) : bool =
+  let rec is_applicable (abs : t) (e : Constraint.expr) : bool =
     match e with
     | Var v -> VarMap.mem v abs
     | Cst _ -> true
@@ -230,12 +231,12 @@ module Box (I : ITV) = struct
 
   (* check if sound *)
 
-  let to_bexpr (a : t) : Csp.bexpr =
+  let to_bexpr (a : t) : Constraint.t =
     match VarMap.bindings a with
     | [] -> assert false
     | (v, i) :: tl ->
         List.fold_left
-          (fun acc (v, i) -> And (acc, I.to_bexpr v i))
+          (fun acc (v, i) -> Constraint.And (acc, I.to_bexpr v i))
           (I.to_bexpr v i) tl
 
   (** {1 Sanity and checking functions} *)
@@ -257,7 +258,7 @@ module Box (I : ITV) = struct
   (* split *)
   (* ----- *)
 
-  let split_along (a : t) (v : var) : t list =
+  let split_along (a : t) (v : string) : t list =
     let i = VarMap.find v a in
     let i_list = I.split i in
     List.fold_left (fun acc b -> VarMap.add v b a :: acc) [] i_list

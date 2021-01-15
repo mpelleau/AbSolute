@@ -1,4 +1,5 @@
 open Csp
+open Constraint
 open Lexing
 
 exception Semantic_error of string

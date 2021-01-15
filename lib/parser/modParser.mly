@@ -86,22 +86,16 @@ leaf:
   | ID LBRACKET FLOAT RBRACKET      { Array($1,(int_of_float $3)) }
 
 binop_expr:
-  | expr POW expr  {Binary (Csp.POW,$1,$3)}
-  | binop_expr2    {$1}
-
-binop_expr2:
-  | expr DIVIDE   expr  {Binary(Csp.DIV,$1,$3)}
-  | expr MULTIPLY expr  {Binary(Csp.MUL,$1,$3)}
-  | binop_expr3         {$1}
-
-binop_expr3:
-  | expr PLUS  expr   {Binary(Csp.ADD,$1,$3)}
-  | expr MINUS expr   {Binary(Csp.SUB,$1,$3)}
+  | expr POW      expr  {Binary(Constraint.POW,$1,$3)}
+  | expr DIVIDE   expr  {Binary(Constraint.DIV,$1,$3)}
+  | expr MULTIPLY expr  {Binary(Constraint.MUL,$1,$3)}
+  | expr PLUS     expr  {Binary(Constraint.ADD,$1,$3)}
+  | expr MINUS    expr  {Binary(Constraint.SUB,$1,$3)}
 
 cmp:
-  | LT                      { Csp.LT }
-  | GT                      { Csp.GT }
-  | LTE                     { Csp.LEQ }
-  | GTE                     { Csp.GEQ }
-  | ASSIGN                  { Csp.EQ }
-  | NOT_EQUAL               { Csp.NEQ }
+  | LT                      { Constraint.LT }
+  | GT                      { Constraint.GT }
+  | LTE                     { Constraint.LEQ }
+  | GTE                     { Constraint.GEQ }
+  | ASSIGN                  { Constraint.EQ }
+  | NOT_EQUAL               { Constraint.NEQ }

@@ -3,14 +3,14 @@ open Tools
 (* numeric expressions *)
 type expr =
   | Neg of expr
-  | Binary of Csp.binop * expr * expr
-  | Var of Csp.var
-  | Array of Csp.var * int
-  | Cst of Csp.i
+  | Binary of Constraint.binop * expr * expr
+  | Var of string
+  | Array of string * int
+  | Cst of Q.t
 
 (* boolean expressions *)
 type bexpr =
-  | Cmp of expr * Csp.cmpop * expr
+  | Cmp of expr * Constraint.cmpop * expr
   | And of bexpr * bexpr
   | Or of bexpr * bexpr
   | Not of bexpr
@@ -56,10 +56,10 @@ let substitute_constr env =
 (* force evaluation of some expressions *)
 let evaluate env expr =
   let binary = function
-    | Csp.ADD -> Mpqf.add
-    | Csp.SUB -> Mpqf.sub
-    | Csp.DIV -> Mpqf.div
-    | Csp.MUL -> Mpqf.mul
+    | Constraint.ADD -> Mpqf.add
+    | Constraint.SUB -> Mpqf.sub
+    | Constraint.DIV -> Mpqf.div
+    | Constraint.MUL -> Mpqf.mul
     | x ->
         Format.printf "cant evaluate binary operator:%a\n" Csp_printer.binop x ;
         failwith "evaluation error"
@@ -77,30 +77,30 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Neg (Cst i) -> Csp.Cst (Mpqf.neg i)
-  | Neg e -> Csp.Neg (to_csp e)
+  | Neg (Cst i) -> Constraint.Cst (Mpqf.neg i)
+  | Neg e -> Constraint.Neg (to_csp e)
   | Binary (b, e1, e2) ->
       let e1' = to_csp e1 and e2' = to_csp e2 in
-      Csp.Binary (b, e1', e2')
-  | Var v -> Csp.Var v
-  | Cst i -> Csp.Cst i
+      Constraint.Binary (b, e1', e2')
+  | Var v -> Constraint.Var v
+  | Cst i -> Constraint.Cst i
   | Array (v, i) -> failwith ("can't convert " ^ v ^ "[" ^ string_of_int i ^ "]")
 
 (* to csp expr conversion *)
 let rec to_csp_constr = function
-  | Cmp (e1, c, e2) -> Csp.Cmp (to_csp e1, c, to_csp e2)
-  | And (b1, b2) -> Csp.And (to_csp_constr b1, to_csp_constr b2)
-  | Or (b1, b2) -> Csp.Or (to_csp_constr b1, to_csp_constr b2)
-  | Not b -> Csp.Not (to_csp_constr b)
+  | Cmp (e1, c, e2) -> Constraint.Cmp (to_csp e1, c, to_csp e2)
+  | And (b1, b2) -> Constraint.And (to_csp_constr b1, to_csp_constr b2)
+  | Or (b1, b2) -> Constraint.Or (to_csp_constr b1, to_csp_constr b2)
+  | Not b -> Constraint.Not (to_csp_constr b)
 
 type modstmt =
-  | Param of Csp.var * expr
-  | Var of Csp.var * expr * expr
-  | ParamList of Csp.var * set * expr * expr
+  | Param of string * expr
+  | Var of string * expr * expr
+  | ParamList of string * set * expr * expr
   (* p from e1 to e2 *)
-  | VarList of Csp.var * set * expr * expr
+  | VarList of string * set * expr * expr
   (* v from e1 to e2 such that e3 <= v <= e4 ex: var x{1..4} >= 0.0, <= 5.0;*)
-  | SubjectTo of Csp.var * bexpr
+  | SubjectTo of string * bexpr
   | Ignore
 
 and set = expr * expr

@@ -18,7 +18,7 @@ module Make (A : Domain) (B : Domain) = struct
   let is_representable (c1, c2) =
     Kleene.or_kleene (A.is_representable c1) (B.is_representable c2)
 
-  let to_bexpr (a, b) = Csp.And (A.to_bexpr a, B.to_bexpr b)
+  let to_bexpr (a, b) = Constraint.And (A.to_bexpr a, B.to_bexpr b)
 
   let a_meet_b a b : B.t Consistency.t =
     A.to_bexpr a |> B.internalize |> B.filter b

@@ -5,56 +5,22 @@ open Tools
 
 (** {1 Types} *)
 
-(** variables are identified by a string *)
-type var = string
-
-(** constants are rationals (the domain of the variable *)
-type i = Mpqf.t
-
 (** Types of variables *)
 type typ = Int | Real
 
-(** binary arithmetic operators *)
-type binop = ADD | SUB | MUL | DIV | POW
-
-(** arithmetic comparison operators *)
-type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
-
-(** numeric expressions (function call, unary negation, binary operations,
-    variables and constants)*)
-type expr =
-  | Funcall of var * expr list
-  | Neg of expr
-  | Binary of binop * expr * expr
-  | Var of var
-  | Cst of i
-
-(** boolean comparison : e1 <> e2 *)
-type comparison = expr * cmpop * expr
-
-(** boolean expressions *)
-type 'a boolean =
-  | Cmp of 'a
-  | And of 'a boolean * 'a boolean
-  | Or of 'a boolean * 'a boolean
-  | Not of 'a boolean
-
-(** type for constraints *)
-type bexpr = comparison boolean
-
 (** domains of variables *)
 type dom =
-  | Finite of i * i  (** \[a;b\] *)
-  | Minf of i  (** \]-oo; a\] *)
-  | Inf of i  (** \[a; +oo\[ *)
-  | Set of i list  (** \{x1; x2; ...; xn\} *)
+  | Finite of Q.t * Q.t  (** \[a;b\] *)
+  | Minf of Q.t  (** \]-oo; a\] *)
+  | Inf of Q.t  (** \[a; +oo\[ *)
+  | Set of Q.t list  (** \{x1; x2; ...; xn\} *)
   | Top  (** \]-oo; +oo\[ *)
 
 (** declaration *)
-type decl = typ * var * dom
+type decl = typ * string * dom
 
 (** the instance type *)
-type instance = i VarMap.t
+type instance = Q.t VarMap.t
 
 (** annotations to test the validity of the solver *)
 type info =
@@ -65,8 +31,8 @@ type info =
 (** type of constraint satisfaction problems *)
 type problem =
   { init: decl list
-  ; constraints: bexpr list
-  ; objective: expr option
+  ; constraints: Constraint.t list
+  ; objective: Constraint.expr option
   ; solutions: info option (* extra information about feasbility *) }
 
 (** {1 Accessors} *)
@@ -80,7 +46,7 @@ let get_var_names p = List.map (fun (_, v, _) -> v) p.init
 let empty = {init= []; constraints= []; objective= None; solutions= None}
 
 (** initalizes and unconstrained CSP *)
-let initialize (variables : (typ * var * dom) list) : problem =
+let initialize (variables : (typ * string * dom) list) : problem =
   {init= variables; constraints= []; objective= None; solutions= None}
 
 (** adds a real variable in the csp *)

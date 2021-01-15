@@ -16,10 +16,10 @@ module type Numeric = sig
   val add_var : t -> Csp.decl -> t
   (** adds an unconstrained variable to the environnement *)
 
-  val rm_var : t -> Csp.var -> t
+  val rm_var : t -> string -> t
   (** removes a variable from the environnement *)
 
-  val vars : t -> (Csp.typ * Csp.var) list
+  val vars : t -> (Csp.typ * string) list
   (** returns the variables annoted by their type *)
 
   (** {1 Measure} *)
@@ -51,10 +51,13 @@ module type Numeric = sig
   type internal_constr
 
   val internalize :
-    ?elem:t -> Csp.expr * Csp.cmpop * Csp.expr -> internal_constr
+       ?elem:t
+    -> Constraint.expr * Constraint.cmpop * Constraint.expr
+    -> internal_constr
   (** may use a current abstract element to simplify the constaint *)
 
-  val externalize : internal_constr -> Csp.expr * Csp.cmpop * Csp.expr
+  val externalize :
+    internal_constr -> Constraint.expr * Constraint.cmpop * Constraint.expr
 
   (** {1 Constraint management} *)
 
@@ -65,11 +68,11 @@ module type Numeric = sig
   val is_representable : internal_constr -> Kleene.t
   (** checks if a constraint is suited for this abstract domain *)
 
-  val forward_eval : t -> Csp.expr -> Itv.ItvQ.t
+  val forward_eval : t -> Constraint.expr -> Itv.ItvQ.t
   (** computes the range of value of a given expression within an abstract
       element *)
 
-  val to_bexpr : t -> Csp.bexpr
+  val to_bexpr : t -> Constraint.t
   (** transforms an abstract element into constraints *)
 
   val spawn : t -> Csp.instance
@@ -94,10 +97,10 @@ module type Domain = sig
   (** domain's internal representation of a constraint *)
   type internal_constr
 
-  val internalize : ?elem:t -> Csp.bexpr -> internal_constr
+  val internalize : ?elem:t -> Constraint.t -> internal_constr
   (** constraint conversion *)
 
-  val externalize : internal_constr -> Csp.bexpr
+  val externalize : internal_constr -> Constraint.t
 
   val filter : t -> internal_constr -> t Consistency.t
   (** redefinition of filter and is_representable using boolean expression *)

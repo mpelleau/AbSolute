@@ -83,7 +83,7 @@ module Eval (B : BOUND) = struct
     else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
 
   let to_bexpr v ((l, h) : t) =
-    Csp_helper.inside_cst v (B.to_rat l) (B.to_rat h)
+    Constraint.inside_cst v (B.to_rat l) (B.to_rat h)
 
   (* SET-THEORETIC *)
 

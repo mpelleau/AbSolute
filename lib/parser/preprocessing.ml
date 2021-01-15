@@ -1,7 +1,6 @@
 (* This module provides preprocessing utilities. It finds the constants in the
    CSP and the views in order to make the CSP easier to solve. *)
 
-open Csp
 open Csp_helper
 open Rewrite
 open Tools
@@ -36,6 +35,7 @@ let replace_cst ctrs csts =
     ctrs csts
 
 let rec get_cst_value expr c =
+  let open Constraint in
   match expr with
   | Binary (ADD, e1, e2) -> (
     match (e1, e2) with
@@ -61,12 +61,13 @@ let rewrite_ctr (e1, op, e2) =
   (e, cst, neg_cst)
 
 let rewrite_constraint = function
-  | Cmp (e1, op, e2) ->
+  | Constraint.Cmp (e1, op, e2) ->
       let e, _, negc = rewrite_ctr (e1, op, e2) in
-      Cmp (e, op, Cst negc)
+      Constraint.Cmp (e, op, Constraint.Cst negc)
   | _ as c -> c
 
 let rec replace_view_expr ((id, e) as view) expr =
+  let open Constraint in
   match expr with
   | Var v when v = id -> e
   | Neg u -> Neg (replace_view_expr view u)
@@ -75,7 +76,9 @@ let rec replace_view_expr ((id, e) as view) expr =
   | Funcall (f, l) -> Funcall (f, List.map (replace_view_expr view) l)
   | _ as expr -> expr
 
-let rec replace_view_bexpr view = function
+let rec replace_view_bexpr view =
+  let open Constraint in
+  function
   | Cmp (e1, op, e2) ->
       Cmp (replace_view_expr view e1, op, replace_view_expr view e2)
   | And (b1, b2) -> And (replace_view_bexpr view b1, replace_view_bexpr view b2)

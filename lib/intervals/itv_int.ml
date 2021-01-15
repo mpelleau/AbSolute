@@ -211,7 +211,7 @@ let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
     else Option.bind (div r i1) (meet i2) )
 
 let to_bexpr v ((l, h) : t) =
-  Csp_helper.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)
+  Constraint.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)
 
 (* returns the type annotation of the represented values *)
 let to_annot _ = Csp.Int

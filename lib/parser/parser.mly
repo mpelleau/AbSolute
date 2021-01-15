@@ -1,7 +1,7 @@
 %{
 open Tools
 open Csp
-open Csp_helper
+open Constraint
 %}
 
 
@@ -59,10 +59,10 @@ open Csp_helper
 
 %type <typ> typ
 %type <dom> init
-%type <Csp.bexpr> bexpr
+%type <Constraint.t> bexpr
 %type <Csp.problem> file
 
-%start <Csp.bexpr> bexpreof
+%start <Constraint.t> bexpreof
 
 /* entry point */
 %start file

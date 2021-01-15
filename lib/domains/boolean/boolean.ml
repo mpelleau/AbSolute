@@ -2,14 +2,14 @@
     arithmetical predicates (e1 < e2) to boolean formulas of the form (p1 \/ p2) *)
 
 open Signature
-open Csp
 open Consistency
+open Constraint
 
 (** Boolean expressions abstractions *)
 module Make (Abs : Numeric) : Domain = struct
   include Abs
 
-  type internal_constr = Abs.internal_constr Csp.boolean
+  type internal_constr = Abs.internal_constr Constraint.boolean
 
   let internalize ?elem c =
     let c' = Csp_helper.remove_not c in

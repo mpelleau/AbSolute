@@ -1,56 +1,6 @@
 open Csp
 open Tools
-
-(** {1 Constants}*)
-let one = Cst Q.one
-
-let zero = Cst Q.zero
-
-let two = Cst Q.two
-
-(** {1 Expression Constructors} *)
-
-(** builds an expression from an integer *)
-let of_int n = Cst (Q.of_int n)
-
-(** builds an expression from an float *)
-let of_float f = Cst (Q.of_float f)
-
-(** builds an expression from an Mpqf.t *)
-let of_mpqf m = Cst m
-
-(** given an expression [e] builds the expresspion for [e*e]*)
-let square expr = Binary (POW, expr, two)
-
-(** {1 Constraint constructor} *)
-
-(** {2 comparisons} *)
-let leq e1 e2 = Cmp (e1, LEQ, e2)
-
-let lt e1 e2 = Cmp (e1, LT, e2)
-
-let geq e1 e2 = Cmp (e1, GEQ, e2)
-
-let gt e1 e2 = Cmp (e1, GT, e2)
-
-let eq e1 e2 = Cmp (e1, EQ, e2)
-
-let neq e1 e2 = Cmp (e1, NEQ, e2)
-
-(** constraint for variable assignment by a constant *)
-let assign var value = eq (Var var) (of_mpqf value)
-
-(** constraint for 'e \in [low;high]' *)
-let inside v low high = And (geq v low, leq v high)
-
-(** constraint for 'not (v \in [low;high])' *)
-let outside v low high = Or (lt v low, gt v high)
-
-(** same as inside but with constants instead of expressions' *)
-let inside_cst v low high = inside (Var v) (of_mpqf low) (of_mpqf high)
-
-(** constraint for 'not (v \in [low;high])' *)
-let outside_cst v low high = outside (Var v) (of_mpqf low) (of_mpqf high)
+open Constraint
 
 (** {1 Predicates} *)
 
@@ -76,30 +26,10 @@ let is_zero = Q.equal Q.zero
 
 let is_neg c = Q.compare Q.zero c > 0
 
-(** {1 Operations} *)
-
-(** cmp operator inversion *)
-let inv = function
-  | EQ -> EQ
-  | LEQ -> GEQ
-  | GEQ -> LEQ
-  | NEQ -> NEQ
-  | GT -> LT
-  | LT -> GT
-
-(** comparison operator negation *)
-let neg = function
-  | EQ -> NEQ
-  | LEQ -> GT
-  | GEQ -> LT
-  | NEQ -> EQ
-  | GT -> LEQ
-  | LT -> GEQ
-
 (* TODO: use type *)
 
 (** converts a domain representation to a constraint *)
-let domain_to_constraints ((_, v, d) : decl) : bexpr =
+let domain_to_constraints ((_, v, d) : decl) : Constraint.t =
   match d with
   | Finite (l, h) -> inside_cst v l h
   | Minf i -> leq (Var v) (Cst i)

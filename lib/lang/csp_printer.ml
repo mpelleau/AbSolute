@@ -1,5 +1,6 @@
 open Tools
 open Csp
+open Constraint
 
 let binop fmt = function
   | ADD -> Format.fprintf fmt "+"
@@ -57,7 +58,7 @@ let rec expr fmt = function
 let comparison fmt ((e1, c, e2) : comparison) =
   Format.fprintf fmt "%a %a %a" expr e1 cmpop c expr e2
 
-let rec bexpr fmt : bexpr -> unit = function
+let rec bexpr fmt : Constraint.t -> unit = function
   | Cmp c -> comparison fmt c
   | And (b1, b2) -> Format.fprintf fmt "%a && %a" bexpr b1 bexpr b2
   | Or (b1, b2) -> Format.fprintf fmt "%a || %a" bexpr b1 bexpr b2

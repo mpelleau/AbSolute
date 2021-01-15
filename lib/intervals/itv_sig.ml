@@ -31,7 +31,7 @@ module type ITV_EVAL = sig
 
   val print : Format.formatter -> t -> unit
 
-  val to_bexpr : Csp.var -> t -> Csp.bexpr
+  val to_bexpr : string -> t -> Constraint.t
   (** converts the interval to a boolean constraint *)
 
   val float_size : t -> float

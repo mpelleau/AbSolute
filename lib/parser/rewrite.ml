@@ -5,14 +5,14 @@ open Csp
 open Tools
 
 module CoEnv = Map.Make (struct
-  type t = expr
+  type t = Constraint.expr
 
   let compare = compare
 end)
 
 module PI = Polynom.Rational
 
-let reverse_map (m1 : string CoEnv.t) : expr VarMap.t =
+let reverse_map (m1 : string CoEnv.t) : Constraint.expr VarMap.t =
   CoEnv.fold (fun k v env -> VarMap.add v k env) m1 VarMap.empty
 
 exception Empty
@@ -39,6 +39,7 @@ let rec simplify env expr : PI.t * string CoEnv.t =
       (PI.of_var new_var, newenv)
   in
   let p, env =
+    let open Constraint in
     match expr with
     | Var v -> (PI.of_var v, env)
     | Cst c -> (PI.of_rational c, env)
@@ -92,38 +93,40 @@ let rec simplify env expr : PI.t * string CoEnv.t =
   (PI.clean p, env)
 
 (* polynom to expression conversion *)
-and polynom_to_expr (p : PI.t) (fake_vars : string CoEnv.t) : Csp.expr =
+and polynom_to_expr (p : PI.t) (fake_vars : string CoEnv.t) : Constraint.expr =
   let fake_vars = reverse_map fake_vars in
   let of_id id = try VarMap.find id fake_vars with Not_found -> Var id in
-  let var_to_expr ((id, exp) : PI.var) : expr =
+  let var_to_expr ((id, exp) : PI.var) : Constraint.expr =
     let rec iter acc = function
       | 0 -> acc
-      | n -> iter (Binary (MUL, acc, of_id id)) (n - 1)
+      | n -> iter (Constraint.Binary (MUL, acc, of_id id)) (n - 1)
     in
-    match exp with 0 -> Csp_helper.one | n -> iter (of_id id) (n - 1)
+    match exp with 0 -> Constraint.one | n -> iter (of_id id) (n - 1)
   in
   let cell_to_expr ((c, v) as m) =
     let c = PI.to_rational c in
-    if PI.is_monom_constant m then Cst c
+    if PI.is_monom_constant m then Constraint.Cst c
     else if Mpqf.equal c (Mpqf.of_int 1) then
       match v with
       | h :: tl ->
           List.fold_left
-            (fun acc e -> Binary (MUL, acc, var_to_expr e))
+            (fun acc e -> Constraint.Binary (MUL, acc, var_to_expr e))
             (var_to_expr h) tl
       | _ -> assert false
     else
-      List.fold_left (fun acc e -> Binary (MUL, acc, var_to_expr e)) (Cst c) v
+      List.fold_left
+        (fun acc e -> Constraint.Binary (MUL, acc, var_to_expr e))
+        (Cst c) v
   in
   match p with
-  | [] -> Csp_helper.zero
+  | [] -> Constraint.zero
   | h :: tl ->
       List.fold_left
-        (fun acc c -> Binary (ADD, acc, cell_to_expr c))
+        (fun acc c -> Constraint.Binary (ADD, acc, cell_to_expr c))
         (cell_to_expr h) tl
 
 (* simplify the polynomial part of a constraint *)
-let rewrite (e1, cmp, e2) : comparison =
+let rewrite (e1, cmp, e2) : Constraint.comparison =
   (* we move e2 to left side to perform potentially more simplifications *)
   let e1', e2' = (Csp_helper.expand e1, Csp_helper.expand e2) in
   let p1, env1 = simplify CoEnv.empty e1' in
@@ -131,7 +134,7 @@ let rewrite (e1, cmp, e2) : comparison =
   let polynom = PI.clean (PI.sub p1 p2) in
   let simplified_left = polynom_to_expr polynom env2 in
   let simp_left = Csp_helper.simplify_fp simplified_left in
-  let e2 = Csp_helper.zero in
+  let e2 = Constraint.zero in
   (simp_left, cmp, e2)
 
 let rewrite_csp (p : Csp.problem) : Csp.problem =

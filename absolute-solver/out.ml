@@ -43,7 +43,7 @@ module Make (D : Domain) = struct
         Format.printf "no solution found, but the problem maybe admits some.\n"
     | True, Some i ->
         Format.printf "problem satisfiable.\nwitness value:\n%a\n"
-          Csp_printer.instance i
+          Print.instance i
     | _ -> assert false
 
   let satisfiability w =

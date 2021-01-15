@@ -42,7 +42,8 @@ module SyntaxTranslator (D : ADomain) = struct
 
   let man = D.manager_alloc ()
 
-  let of_expr env (e : expr) : Texpr1.t =
+  let of_expr env (e : Constraint.expr) : Texpr1.t =
+    let open Constraint in
     let rec aux = function
       | Funcall (name, args) -> (
         match (name, args) with
@@ -64,6 +65,7 @@ module SyntaxTranslator (D : ADomain) = struct
 
   let of_cmp_expr elem (e1, op, e2) =
     let env = Abstract1.env elem in
+    let open Constraint in
     let e1 = of_expr env e1 and e2 = of_expr env e2 in
     match op with
     | EQ -> Tconsext.eq e1 e2
@@ -81,18 +83,19 @@ module SyntaxTranslator (D : ADomain) = struct
     (Array.to_list ivars, Array.to_list rvars)
 
   let rec to_expr = function
-    | Texpr1.Cst c -> Cst (Coeffext.to_mpqf c)
-    | Texpr1.Var v -> Var (Var.to_string v)
-    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) -> Funcall ("sqrt", [to_expr e])
-    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Neg (to_expr e)
+    | Texpr1.Cst c -> Constraint.Cst (Coeffext.to_mpqf c)
+    | Texpr1.Var v -> Constraint.Var (Var.to_string v)
+    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
+        Constraint.Funcall ("sqrt", [to_expr e])
+    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Constraint.Neg (to_expr e)
     | Texpr1.Unop (Texpr1.Cast, _, _, _) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
         let o =
           match op with
-          | Texpr1.Add -> ADD
-          | Texpr1.Sub -> SUB
-          | Texpr1.Mul -> MUL
-          | Texpr1.Div -> DIV
+          | Texpr1.Add -> Constraint.ADD
+          | Texpr1.Sub -> Constraint.SUB
+          | Texpr1.Mul -> Constraint.MUL
+          | Texpr1.Div -> Constraint.DIV
           | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
           | _ -> failwith "operation not yet supported with AbSolute"
         in
@@ -101,27 +104,27 @@ module SyntaxTranslator (D : ADomain) = struct
   let apron_to_bexpr tcons =
     let apron_to_cmp op =
       match op with
-      | Tcons1.EQ -> EQ
-      | Tcons1.DISEQ -> NEQ
-      | Tcons1.SUPEQ -> GEQ
-      | Tcons1.SUP -> GT
+      | Tcons1.EQ -> Constraint.EQ
+      | Tcons1.DISEQ -> Constraint.NEQ
+      | Tcons1.SUPEQ -> Constraint.GEQ
+      | Tcons1.SUP -> Constraint.GT
       | _ -> failwith "operation not yet supported with AbSolute"
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) in
-    (exp, typ, Csp_helper.zero)
+    (exp, typ, Constraint.zero)
 
-  let to_bexpr abs : Csp.bexpr =
+  let to_bexpr abs : Constraint.t =
     let cons = Abstractext.to_tcons_array man abs in
     let l = Tcons1.array_length cons in
     let rec loop acc i =
       if i = l then acc
       else
         loop
-          (Csp.And (acc, Cmp (apron_to_bexpr (Tcons1.array_get cons i))))
+          (Constraint.And (acc, Cmp (apron_to_bexpr (Tcons1.array_get cons i))))
           (i + 1)
     in
-    loop (Csp.Cmp (Tcons1.array_get cons 0 |> apron_to_bexpr)) 1
+    loop (Constraint.Cmp (Tcons1.array_get cons 0 |> apron_to_bexpr)) 1
 end
 
 (*****************************************************************)
