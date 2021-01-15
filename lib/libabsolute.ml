@@ -1,5 +1,6 @@
 module Csp = Csp
 module Constraint = Constraint
+module Expr = Expr
 
 module Parser = struct
   exception Syntax_error = File_parser.Syntax_error
@@ -25,6 +26,9 @@ module Parser = struct
     p
 end
 
+module Q = Q
+module F = F
+module I = I
 module Signature = Signature
 module Iterator = Iterator
 module Solver = Solver
