@@ -102,7 +102,7 @@ module Box (I : ITV) = struct
   type bexpr =
     | BFuncall of string * bexpri list
     | BNeg of bexpri
-    | BBinary of Constraint.binop * bexpri * bexpri
+    | BBinary of Expr.binop * bexpri * bexpri
     | BVar of string
     | BCst of I.t
 
@@ -117,7 +117,7 @@ module Box (I : ITV) = struct
      division by zero). - We raise Bot_found in case the expression only
      evaluates to error values. - Otherwise, we return only the non-error
      values. *)
-  let rec eval (a : t) (e : Constraint.expr) : bexpri =
+  let rec eval (a : t) (e : Expr.t) : bexpri =
     match e with
     | Funcall (name, args) ->
         let bargs = List.map (eval a) args in
@@ -185,8 +185,8 @@ module Box (I : ITV) = struct
   (* test transfer function. Apply the evaluation followed by the refine step of
      the HC4-revise algorithm. It prunes the domain of the variables in `a`
      according to the constraint `e1 o e2`. *)
-  let test (a : t) (e1 : Constraint.expr) (o : Constraint.cmpop)
-      (e2 : Constraint.expr) : t Consistency.t =
+  let test (a : t) (e1 : Expr.t) (o : Constraint.cmpop) (e2 : Expr.t) :
+      t Consistency.t =
     let (b1, i1), (b2, i2) = (eval a e1, eval a e2) in
     let res =
       match o with
@@ -221,7 +221,7 @@ module Box (I : ITV) = struct
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
 
-  let rec is_applicable (abs : t) (e : Constraint.expr) : bool =
+  let rec is_applicable (abs : t) (e : Expr.t) : bool =
     match e with
     | Var v -> VarMap.mem v abs
     | Cst _ -> true

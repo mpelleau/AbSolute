@@ -86,11 +86,11 @@ leaf:
   | ID LBRACKET FLOAT RBRACKET      { Array($1,(int_of_float $3)) }
 
 binop_expr:
-  | expr POW      expr  {Binary(Constraint.POW,$1,$3)}
-  | expr DIVIDE   expr  {Binary(Constraint.DIV,$1,$3)}
-  | expr MULTIPLY expr  {Binary(Constraint.MUL,$1,$3)}
-  | expr PLUS     expr  {Binary(Constraint.ADD,$1,$3)}
-  | expr MINUS    expr  {Binary(Constraint.SUB,$1,$3)}
+  | expr POW      expr  {Binary(Expr.POW,$1,$3)}
+  | expr DIVIDE   expr  {Binary(Expr.DIV,$1,$3)}
+  | expr MULTIPLY expr  {Binary(Expr.MUL,$1,$3)}
+  | expr PLUS     expr  {Binary(Expr.ADD,$1,$3)}
+  | expr MINUS    expr  {Binary(Expr.SUB,$1,$3)}
 
 cmp:
   | LT                      { Constraint.LT }

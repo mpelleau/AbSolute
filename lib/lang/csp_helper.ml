@@ -3,6 +3,7 @@ open Tools
 open Constraint
 
 (** {1 Predicates} *)
+open Expr
 
 (** checks if an expression contains a variable *)
 let rec has_variable = function

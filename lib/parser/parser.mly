@@ -165,7 +165,7 @@ bexpr:
   | LPAREN bexpr RPAREN                           { $2 }
 
 expr:
-  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Funcall (i,a) }
+  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Expr.Funcall (i,a) }
   | LPAREN expr RPAREN           { $2 }
   | binop_expr                   { $1 }
   | MINUS expr %prec unary_minus { Neg $2 }

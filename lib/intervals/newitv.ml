@@ -163,9 +163,9 @@ module Eval (B : BOUND) = struct
   let print fmt (x : t) = Format.fprintf fmt "%s" (to_string x)
 
   let to_bexpr v (((kl, l), (kh, h)) : t) =
-    let v = Constraint.Var v in
-    let l_cst = Constraint.Cst (B.to_rat l)
-    and h_cst = Constraint.Cst (B.to_rat h) in
+    let v = Expr.var v in
+    let l_cst = Expr.of_mpqf (B.to_rat l)
+    and h_cst = Expr.of_mpqf (B.to_rat h) in
     Constraint.(
       And
         ( Cmp (v, (match kl with Strict -> GT | Large -> GEQ), l_cst)

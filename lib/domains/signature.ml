@@ -51,13 +51,10 @@ module type Numeric = sig
   type internal_constr
 
   val internalize :
-       ?elem:t
-    -> Constraint.expr * Constraint.cmpop * Constraint.expr
-    -> internal_constr
+    ?elem:t -> Expr.t * Constraint.cmpop * Expr.t -> internal_constr
   (** may use a current abstract element to simplify the constaint *)
 
-  val externalize :
-    internal_constr -> Constraint.expr * Constraint.cmpop * Constraint.expr
+  val externalize : internal_constr -> Expr.t * Constraint.cmpop * Expr.t
 
   (** {1 Constraint management} *)
 
@@ -68,7 +65,7 @@ module type Numeric = sig
   val is_representable : internal_constr -> Kleene.t
   (** checks if a constraint is suited for this abstract domain *)
 
-  val forward_eval : t -> Constraint.expr -> Itv.ItvQ.t
+  val forward_eval : t -> Expr.t -> Itv.ItvQ.t
   (** computes the range of value of a given expression within an abstract
       element *)
 

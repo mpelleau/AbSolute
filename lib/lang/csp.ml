@@ -32,7 +32,7 @@ type info =
 type problem =
   { init: decl list
   ; constraints: Constraint.t list
-  ; objective: Constraint.expr option
+  ; objective: Expr.t option
   ; solutions: info option (* extra information about feasbility *) }
 
 (** {1 Accessors} *)

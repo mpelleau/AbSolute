@@ -42,8 +42,8 @@ module SyntaxTranslator (D : ADomain) = struct
 
   let man = D.manager_alloc ()
 
-  let of_expr env (e : Constraint.expr) : Texpr1.t =
-    let open Constraint in
+  let of_expr env (e : Expr.t) : Texpr1.t =
+    let open Expr in
     let rec aux = function
       | Funcall (name, args) -> (
         match (name, args) with
@@ -83,19 +83,18 @@ module SyntaxTranslator (D : ADomain) = struct
     (Array.to_list ivars, Array.to_list rvars)
 
   let rec to_expr = function
-    | Texpr1.Cst c -> Constraint.Cst (Coeffext.to_mpqf c)
-    | Texpr1.Var v -> Constraint.Var (Var.to_string v)
-    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
-        Constraint.Funcall ("sqrt", [to_expr e])
-    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Constraint.Neg (to_expr e)
+    | Texpr1.Cst c -> Expr.of_mpqf (Coeffext.to_mpqf c)
+    | Texpr1.Var v -> Expr.var (Var.to_string v)
+    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) -> Expr.Funcall ("sqrt", [to_expr e])
+    | Texpr1.Unop (Texpr1.Neg, e, _, _) -> Expr.Neg (to_expr e)
     | Texpr1.Unop (Texpr1.Cast, _, _, _) -> failwith "cast should not occur"
     | Texpr1.Binop (op, e1, e2, _, _) ->
         let o =
           match op with
-          | Texpr1.Add -> Constraint.ADD
-          | Texpr1.Sub -> Constraint.SUB
-          | Texpr1.Mul -> Constraint.MUL
-          | Texpr1.Div -> Constraint.DIV
+          | Texpr1.Add -> Expr.ADD
+          | Texpr1.Sub -> Expr.SUB
+          | Texpr1.Mul -> Expr.MUL
+          | Texpr1.Div -> Expr.DIV
           | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
           | _ -> failwith "operation not yet supported with AbSolute"
         in
@@ -112,7 +111,7 @@ module SyntaxTranslator (D : ADomain) = struct
     in
     let typ = apron_to_cmp (Tcons1.get_typ tcons) in
     let exp = to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) in
-    (exp, typ, Constraint.zero)
+    (exp, typ, Expr.zero)
 
   let to_bexpr abs : Constraint.t =
     let cons = Abstractext.to_tcons_array man abs in

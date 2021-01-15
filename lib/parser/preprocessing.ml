@@ -35,7 +35,7 @@ let replace_cst ctrs csts =
     ctrs csts
 
 let rec get_cst_value expr c =
-  let open Constraint in
+  let open Expr in
   match expr with
   | Binary (ADD, e1, e2) -> (
     match (e1, e2) with
@@ -63,11 +63,11 @@ let rewrite_ctr (e1, op, e2) =
 let rewrite_constraint = function
   | Constraint.Cmp (e1, op, e2) ->
       let e, _, negc = rewrite_ctr (e1, op, e2) in
-      Constraint.Cmp (e, op, Constraint.Cst negc)
+      Constraint.Cmp (e, op, Expr.Cst negc)
   | _ as c -> c
 
 let rec replace_view_expr ((id, e) as view) expr =
-  let open Constraint in
+  let open Expr in
   match expr with
   | Var v when v = id -> e
   | Neg u -> Neg (replace_view_expr view u)

@@ -3,7 +3,7 @@ open Tools
 (* numeric expressions *)
 type expr =
   | Neg of expr
-  | Binary of Constraint.binop * expr * expr
+  | Binary of Expr.binop * expr * expr
   | Var of string
   | Array of string * int
   | Cst of Q.t
@@ -56,10 +56,10 @@ let substitute_constr env =
 (* force evaluation of some expressions *)
 let evaluate env expr =
   let binary = function
-    | Constraint.ADD -> Mpqf.add
-    | Constraint.SUB -> Mpqf.sub
-    | Constraint.DIV -> Mpqf.div
-    | Constraint.MUL -> Mpqf.mul
+    | Expr.ADD -> Mpqf.add
+    | Expr.SUB -> Mpqf.sub
+    | Expr.DIV -> Mpqf.div
+    | Expr.MUL -> Mpqf.mul
     | x ->
         Format.printf "cant evaluate binary operator:%a\n" Csp_printer.binop x ;
         failwith "evaluation error"
@@ -77,13 +77,13 @@ let evaluate env expr =
 
 (* to csp expr conversion *)
 let rec to_csp = function
-  | Neg (Cst i) -> Constraint.Cst (Mpqf.neg i)
-  | Neg e -> Constraint.Neg (to_csp e)
+  | Neg (Cst i) -> Expr.of_mpqf (Mpqf.neg i)
+  | Neg e -> Expr.Neg (to_csp e)
   | Binary (b, e1, e2) ->
       let e1' = to_csp e1 and e2' = to_csp e2 in
-      Constraint.Binary (b, e1', e2')
-  | Var v -> Constraint.Var v
-  | Cst i -> Constraint.Cst i
+      Expr.Binary (b, e1', e2')
+  | Var v -> Expr.var v
+  | Cst i -> Expr.of_mpqf i
   | Array (v, i) -> failwith ("can't convert " ^ v ^ "[" ^ string_of_int i ^ "]")
 
 (* to csp expr conversion *)

@@ -1,6 +1,7 @@
 open Tools
 open Csp
 open Constraint
+open Expr
 
 let binop fmt = function
   | ADD -> Format.fprintf fmt "+"
