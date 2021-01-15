@@ -5,20 +5,6 @@ open Csp_helper
 open Rewrite
 open Tools
 
-(* let get_csts csp =
- *   let (csts, vars) = List.partition
- *     (fun (_, _v, d) -> match d with
- *        | Finite (a, b) -> a=b
- *        | _ -> false
- *     ) csp.init in
- *   let cst = List.map
- *               (fun (_, v, d) ->
- *                 match d with
- *                 | Finite (a, b) when a=b -> (v, (a, b))
- *                 | _ -> assert false
- *               ) csts in
- *   {csp with init = vars} *)
-
 let get_vars_cstrs cstrs = List.map (fun c -> (c, get_vars_set_bexpr c)) cstrs
 
 let replace_cst_cstrs (id, cst) cstrs =

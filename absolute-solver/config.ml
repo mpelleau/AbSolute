@@ -43,7 +43,7 @@ end
 (* runs the solver according to the solving mode *)
 let run (module D : Domain) (p : Csp.problem) : unit =
   let module Solver = GoS (D) in
-  if !Constant.trace then Format.printf "\n@[<2>%a@]%!" Print.prob p ;
+  if !Constant.trace then Format.printf "\n@[<2>%a@]%!" Csp.print p ;
   if !Constant.witness then Solver.witness p else Solver.coverage p
 
 (* OPTIONS HANDLING *)

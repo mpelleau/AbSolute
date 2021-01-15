@@ -61,3 +61,23 @@ let neg = function
   | NEQ -> EQ
   | GT -> LEQ
   | LT -> GEQ
+
+(** {1 Printing} *)
+
+(** comparison operator printer *)
+let pp_cmpop fmt = function
+  | EQ -> Format.fprintf fmt "="
+  | LEQ -> Format.fprintf fmt "<="
+  | GEQ -> Format.fprintf fmt ">="
+  | NEQ -> Format.fprintf fmt "<>"
+  | GT -> Format.fprintf fmt ">"
+  | LT -> Format.fprintf fmt "<"
+
+let pp_comparison fmt ((e1, c, e2) : comparison) =
+  Format.fprintf fmt "%a %a %a" Expr.print e1 pp_cmpop c Expr.print e2
+
+let rec print fmt : t -> unit = function
+  | Cmp c -> pp_comparison fmt c
+  | And (b1, b2) -> Format.fprintf fmt "%a && %a" print b1 print b2
+  | Or (b1, b2) -> Format.fprintf fmt "%a || %a" print b1 print b2
+  | Not b -> Format.fprintf fmt "not %a" print b

@@ -1,6 +1,5 @@
 module Csp = Csp
 module Constraint = Constraint
-module Print = Print
 
 module Parser = struct
   exception Syntax_error = File_parser.Syntax_error

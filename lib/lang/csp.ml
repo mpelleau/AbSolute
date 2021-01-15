@@ -67,3 +67,39 @@ let add_int_var_i s l h = add_int_var s (Mpqf.of_int l) (Mpqf.of_int h)
 
 (** adds a constraint to the csp *)
 let add_constr c csp = {csp with constraints= c :: csp.constraints}
+
+(** {1 Printing} *)
+
+let pp_typ fmt = function
+  | Int -> Format.fprintf fmt "int"
+  | Real -> Format.fprintf fmt "real"
+
+let pp_dom fmt = function
+  | Finite (a, b) -> Format.fprintf fmt "[%a; %a]" Q.print a Q.print b
+  | Minf i -> Format.fprintf fmt "[-oo; %a]" Q.print i
+  | Inf i -> Format.fprintf fmt "[%a; +oo]" Q.print i
+  | Set l ->
+      let print_set =
+        Format.pp_print_list
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+          Q.print
+      in
+      Format.fprintf fmt "{%a}" print_set l
+  | Top -> Format.fprintf fmt "[-oo; +oo]"
+
+let pp_declarations fmt =
+  List.iter (fun (a, b, c) ->
+      Format.fprintf fmt "%a %s in %a\n" pp_typ a b pp_dom c)
+
+let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
+
+let pp_instance fmt instance =
+  let bind fmt (var, value) =
+    Format.fprintf fmt "%s : %a" var Q.pp_print value
+  in
+  VarMap.bindings instance
+  |> Format.fprintf fmt "{%a}" (Format.pp_print_list ~pp_sep:newline_sep bind)
+
+let print fmt p =
+  Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations p.init
+    pp_constraints p.constraints
