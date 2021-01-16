@@ -1,3 +1,6 @@
+(** This module defines the numerical language, and some basic operations over
+    it*)
+
 (** binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
 

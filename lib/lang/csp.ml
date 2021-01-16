@@ -1,7 +1,7 @@
-open Tools
-
 (** This module defines the main types used for the constraint language of
     AbSolute, along with the type of problems, and instance.*)
+
+open Tools
 
 (** {1 Types} *)
 

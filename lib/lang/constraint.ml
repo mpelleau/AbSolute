@@ -1,3 +1,6 @@
+(** This module defines the constraint language, and some basic operations over
+    it*)
+
 (** arithmetic comparison operators *)
 type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
 

@@ -1,21 +1,34 @@
-module Csp = Csp
+(** Libabsolute is a constraint solving library based on abstract domains *)
 
+(** {1 Core constraint language}*)
+
+module Csp = Csp
+module Constraint = Constraint
+module Expr = Expr
+
+(** This module defines several parsing utilities *)
 module Parser = struct
+  (** Exception raised by parse functions when the input is syntactically
+      invalid.*)
   exception Syntax_error = File_parser.Syntax_error
 
+  (** Exception raised by check functions when the input is semantically invalid *)
   exception Semantic_error = File_parser.Semantic_error
 
   (** Check that no unbound variables appear, that domains are valid and
-      function calls respect the arity. Raises [Semantic_error] if one of the
-      above conditions is violated *)
+      function calls respect the arity.
+
+      @raise [Semantic_error] if one of the above conditions is violated *)
   let semantic_check p = File_parser.check_ast p
 
-  (** Parses a string representation of a numeric expression. Raises
-      [Syntax_error] when the input is syntactically invalid *)
+  (** Parses a string representation of a numeric expression.
+
+      @raise [Syntax_error] when the input is syntactically invalid *)
   let expr = File_parser.expr
 
-  (** Parses a string representation of a constraint. Raises [Syntax_error] when
-      the input is syntacti cally invalid *)
+  (** Parses a string representation of a constraint.
+
+      @raise [Syntax_error] when the input is syntactically invalid *)
   let constr = File_parser.constr
 
   (** parses a [.abs] file and builds the corresponding problem. Raises
@@ -28,16 +41,18 @@ module Parser = struct
     p
 end
 
-module Constraint = Constraint
-module Expr = Expr
+(** {1 Solver parametrization} *)
+
+module Signature = Signature
+module Domains = Domains
+module Solver = Solver
+module Kleene = Kleene
+module Consistency = Consistency
+module Result = Result
+module Constant = Constant
+
+(** {1 Arithmetic modules} *)
+
 module Q = Q
 module F = F
 module I = I
-module Signature = Signature
-module Iterator = Iterator
-module Solver = Solver
-module Result = Result
-module Constant = Constant
-module Domains = Domains
-module Kleene = Kleene
-module Consistency = Consistency

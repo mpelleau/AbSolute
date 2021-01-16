@@ -1,7 +1,7 @@
 (** This module provides types and operations for handling consistencies. A
     consitency is a property obtained after a filtering operation f(s,p): given
     an abstract value s, and a predicate p, it computes a set s' \subseteq s
-    such that : \forall x \in s, p(x) \implies x \in s' *)
+    such that : forall x in s, p(x) => x in s *)
 
 type 'a t =
   | Sat  (** when s' = s *)

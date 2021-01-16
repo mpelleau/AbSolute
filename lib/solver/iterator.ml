@@ -1,8 +1,9 @@
+(** This module internalizes the constraints into an internal state and then
+    handles the order of propagations *)
+
 open Signature
 open Consistency
 
-(** this wrapper internalizes the constraints into an internal state and then
-    handles the order of propagations *)
 module Make (D : Domain) = struct
   type space = D.t
 

@@ -1,4 +1,4 @@
-(** Integer rings *)
+(** Integer arithmetic module *)
 
 type t = int
 

@@ -1,8 +1,9 @@
+(** This module provides a functor that builds different resolution scheme from
+    an abstract domain **)
+
 open Signature
 open Consistency
 
-(** This module builds different resolution scheme according to a solvable
-    module **)
 module Make (D : Domain) = struct
   module S = Iterator.Make (D)
 

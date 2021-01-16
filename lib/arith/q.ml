@@ -1,3 +1,5 @@
+(** Rational arithmetic module *)
+
 type t = Mpqf.t
 
 (** {1 Constructors} *)

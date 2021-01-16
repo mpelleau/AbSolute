@@ -1,3 +1,5 @@
+(** Float arithmetic module *)
+
 type t = float
 
 (** {1 Constructors} *)

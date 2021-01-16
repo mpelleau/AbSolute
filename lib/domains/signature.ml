@@ -1,5 +1,5 @@
-(** Module for Abstract Domains for Constraint Programming (ADCP) they must
-    feature consistency, split and precision operators. *)
+(** Module signature for Abstract Domains for Constraint Programming (ADCP) they
+    must feature consistency, split and precision operators. *)
 
 (** can be raised by split operations *)
 exception TooSmall
