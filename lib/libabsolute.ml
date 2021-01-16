@@ -1,20 +1,22 @@
 module Csp = Csp
-module Constraint = Constraint
-module Expr = Expr
 
 module Parser = struct
   exception Syntax_error = File_parser.Syntax_error
 
   exception Semantic_error = File_parser.Semantic_error
 
-  (** Parses a string representation of a constraint. Raises [Syntax_error] when
-      the input is syntactically invalid *)
-  let constr = File_parser.constr
-
   (** Check that no unbound variables appear, that domains are valid and
       function calls respect the arity. Raises [Semantic_error] if one of the
       above conditions is violated *)
   let semantic_check p = File_parser.check_ast p
+
+  (** Parses a string representation of a numeric expression. Raises
+      [Syntax_error] when the input is syntactically invalid *)
+  let expr = File_parser.expr
+
+  (** Parses a string representation of a constraint. Raises [Syntax_error] when
+      the input is syntacti cally invalid *)
+  let constr = File_parser.constr
 
   (** parses a [.abs] file and builds the corresponding problem. Raises
       [Syntax_error] when the input is syntactically invalid and
@@ -26,6 +28,8 @@ module Parser = struct
     p
 end
 
+module Constraint = Constraint
+module Expr = Expr
 module Q = Q
 module F = F
 module I = I

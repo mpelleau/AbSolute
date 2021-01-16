@@ -59,12 +59,13 @@ open Constraint
 
 %type <typ> typ
 %type <dom> init
+%type <Expr.t> expr
 %type <Constraint.t> bexpr
 %type <Csp.problem> file
 
+/* entry points */
 %start <Constraint.t> bexpreof
-
-/* entry point */
+%start <Expr.t> expreof
 %start file
 
 %%
@@ -163,6 +164,9 @@ bexpr:
   | expr IN LBRACKET expr SCOLON expr RBRACKET    { inside $1 $4 $6 }
   | expr NOTIN LBRACKET expr SCOLON expr RBRACKET { outside $1 $4 $6 }
   | LPAREN bexpr RPAREN                           { $2 }
+
+expreof:
+  | expr EOF {$1}
 
 expr:
   | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Expr.Funcall (i,a) }

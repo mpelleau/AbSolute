@@ -100,6 +100,10 @@ let constr (str : string) =
   let lexb = Lexing.from_string str in
   (Parser.bexpreof Lexer.token) lexb
 
+let expr (str : string) =
+  let lexb = Lexing.from_string str in
+  (Parser.expreof Lexer.token) lexb
+
 (* open a file and parse it *)
 let parse (filename : string) : problem =
   if !Constant.debug > 0 then Format.printf "parsing\n%!" ;
