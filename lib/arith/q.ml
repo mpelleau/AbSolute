@@ -4,53 +4,54 @@ type t = Mpqf.t
 
 (** {1 Constructors} *)
 
-let zero = Mpqf.of_int 0
+let zero : t = Mpqf.of_int 0
 
-let one = Mpqf.of_int 1
+let one : t = Mpqf.of_int 1
 
-let two = Mpqf.of_int 2
+let two : t = Mpqf.of_int 2
 
-let minus_one = Mpqf.of_int (-1)
+let minus_one : t = Mpqf.of_int (-1)
 
 (** {1 Operators} *)
 
-let add = Mpqf.add
+let add : t -> t -> t = Mpqf.add
 
-let mul = Mpqf.mul
+let mul : t -> t -> t = Mpqf.mul
 
-let div x y = if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
+let div (x : t) (y : t) : t option =
+  if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
 
-let neg x = Mpqf.neg x
+let neg (x : t) : t = Mpqf.neg x
 
-let ceil x = x |> Mpqf.to_float |> ceil |> int_of_float
+let ceil (x : t) = x |> Mpqf.to_float |> ceil |> int_of_float
 
-let floor x = x |> Mpqf.to_float |> floor |> int_of_float
+let floor (x : t) = x |> Mpqf.to_float |> floor |> int_of_float
 
 (** {1 Conversions} *)
-let to_int x =
+let to_int (x : t) =
   let xi = int_of_float (Mpqf.to_float x) in
   if Mpqf.equal x (Mpqf.of_int xi) then Some xi else None
 
-let to_float = Mpqf.to_float
+let to_float : t -> float = Mpqf.to_float
 
 let to_rational : t -> t = Fun.id
 
-let of_int = Mpqf.of_int
+let of_int : int -> t = Mpqf.of_int
 
-let of_float = Mpqf.of_float
+let of_float : float -> t = Mpqf.of_float
 
 let of_rational = Fun.id
 
 (** {1 Comparisons} *)
 
-let equal = Mpqf.equal
+let equal : t -> t -> bool = Mpqf.equal
 
-let compare = Mpqf.cmp
+let compare : t -> t -> int = Mpqf.cmp
 
 (** {1 Printing} *)
 
 (** Mpqf human understandable printing when denominator is a power of ten *)
-let pp_print_size_of_0_suffix =
+let pp_print_size_of_0_suffix : t -> string =
   let bump_0 str n =
     let ls = String.length str in
     if ls > n then
@@ -80,11 +81,11 @@ let pp_print_size_of_0_suffix =
   retry
 
 (** Mpqf light printing when convertible to a float *)
-let pp_print fmt (m : Mpqf.t) =
+let pp_print fmt (m : t) =
   let f = Mpqf.to_float m in
   if Mpqf.of_float f = m then F.pp_print fmt f
   else Format.fprintf fmt "%s" (pp_print_size_of_0_suffix m)
 
 let print = pp_print
 
-let to_string = Mpqf.to_string
+let to_string : t -> string = Format.asprintf "%a" pp_print

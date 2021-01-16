@@ -1,27 +1,7 @@
 open Csp
 open Tools
 open Constraint
-
-(** {1 Predicates} *)
 open Expr
-
-(** checks if an expression contains a variable *)
-let rec has_variable = function
-  | Funcall (_, args) -> List.exists has_variable args
-  | Neg e -> has_variable e
-  | Binary (_, e1, e2) -> has_variable e1 || has_variable e2
-  | Var _ -> true
-  | Cst _ -> false
-
-(** checks if an expression is linear *)
-let rec is_linear = function
-  | Neg e -> is_linear e
-  | Binary (MUL, e1, e2) | Binary (DIV, e1, e2) ->
-      (not (has_variable e1 && has_variable e2)) && is_linear e1 && is_linear e2
-  | Binary (POW, e1, e2) -> not (has_variable e1 || has_variable e2)
-  | Binary (_, e1, e2) -> is_linear e1 && is_linear e2
-  | Var _ | Cst _ -> true
-  | _ -> false
 
 let is_zero = Q.equal Q.zero
 

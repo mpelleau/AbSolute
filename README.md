@@ -11,6 +11,8 @@ Feel free to fill an [issue](https://github.com/mpelleau/AbSolute/issues) or con
 Contributors: Marie Pelleau, Ghiles Ziat, Alexandre Marechal, Pierre Talbot, Antoine Miné, Charlotte Truchet.
 Supported by ANR CoVerif.
 
+# The AbSolute Solver
+
 ## Quick introductory example
 
 In AbSolute, you first declare your variables in the `init` section, and then the constraints on these variables in the `constraints` section:
