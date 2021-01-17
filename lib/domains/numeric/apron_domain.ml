@@ -113,7 +113,7 @@ module SyntaxTranslator (D : ADomain) = struct
     let exp = to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) in
     (exp, typ, Expr.zero)
 
-  let to_bexpr abs : Constraint.t =
+  let to_constraint abs : Constraint.t =
     let cons = Abstractext.to_tcons_array man abs in
     let l = Tcons1.array_length cons in
     let rec loop acc i =

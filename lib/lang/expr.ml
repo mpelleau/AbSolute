@@ -1,6 +1,8 @@
 (** This module defines the numerical language, and some basic operations over
     it*)
 
+open Tools
+
 (** binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
 
@@ -86,3 +88,17 @@ let rec is_linear = function
   | Binary (_, e1, e2) -> is_linear e1 && is_linear e2
   | Var _ | Cst _ -> true
   | _ -> false
+
+(** {1 Operations} *)
+
+(** Returns all the variables appearing in an expression as a map where to each
+    variable is associated the (integer) number of its occurences *)
+let rec collect_vars =
+  let merge = VarMap.union (fun _v i1 i2 -> Some (i1 + i2)) in
+  function
+  | Neg e -> collect_vars e
+  | Binary (_, e1, e2) -> merge (collect_vars e1) (collect_vars e2)
+  | Cst _ -> VarMap.empty
+  | Funcall (_, a) ->
+      List.map collect_vars a |> List.fold_left merge VarMap.empty
+  | Var v -> VarMap.singleton v 1

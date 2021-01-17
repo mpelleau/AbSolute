@@ -77,7 +77,7 @@ let rep_view_ctr ((id, e) as view) ctrs =
       if VarSet.mem id vars then
         ( replace_view_bexpr view c
         , VarSet.union (VarSet.remove id vars)
-            (VarSet.of_list (get_vars_expr e)) )
+            (VarSet.of_list (Expr.collect_vars e |> VarMap.keys)) )
       else (c, vars))
     ctrs
 

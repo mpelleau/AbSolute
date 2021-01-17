@@ -231,13 +231,13 @@ module Box (I : ITV) = struct
 
   (* check if sound *)
 
-  let to_bexpr (a : t) : Constraint.t =
+  let to_constraint (a : t) : Constraint.t =
     match VarMap.bindings a with
     | [] -> assert false
     | (v, i) :: tl ->
         List.fold_left
-          (fun acc (v, i) -> Constraint.And (acc, I.to_bexpr v i))
-          (I.to_bexpr v i) tl
+          (fun acc (v, i) -> Constraint.And (acc, I.to_constraint v i))
+          (I.to_constraint v i) tl
 
   (** {1 Sanity and checking functions} *)
 

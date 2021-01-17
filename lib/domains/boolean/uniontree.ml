@@ -12,7 +12,7 @@ module Make (D : Numeric) : Domain = struct
   let internalize ?elem c =
     match elem with
     | Some (Leaf n) ->
-        let c' = Csp_helper.remove_not c in
+        let c' = Constraint.remove_not c in
         Csp_helper.map_constr (D.internalize ~elem:n) c'
     | _ -> failwith "of_comparison should be called on a leaf"
 
@@ -140,9 +140,9 @@ module Make (D : Numeric) : Domain = struct
 
   let diff = None
 
-  let rec to_bexpr = function
-    | Leaf d -> D.to_bexpr d
-    | Union {sons= l, r; _} -> Constraint.Or (to_bexpr l, to_bexpr r)
+  let rec to_constraint = function
+    | Leaf d -> D.to_constraint d
+    | Union {sons= l, r; _} -> Constraint.Or (to_constraint l, to_constraint r)
 
   let render t =
     match fold (fun acc e -> e :: acc) [] t with

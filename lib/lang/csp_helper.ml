@@ -47,20 +47,6 @@ let map_constr f =
   in
   loop
 
-(** constraint negation *)
-let rec neg_bexpr = function
-  | Cmp (e1, op, e2) -> Cmp (e1, neg op, e2)
-  | And (b1, b2) -> Or (neg_bexpr b1, neg_bexpr b2)
-  | Or (b1, b2) -> And (neg_bexpr b1, neg_bexpr b2)
-  | Not b -> b
-
-(** rewrites a constraint into an equivalent constraint without 'Not' *)
-let rec remove_not = function
-  | Not b -> remove_not (neg_bexpr b)
-  | And (b1, b2) -> And (remove_not b1, remove_not b2)
-  | Or (b1, b2) -> Or (remove_not b1, remove_not b2)
-  | x -> x
-
 let apply f e1 e2 b op =
   let e1', b1 = f e1 b in
   let e2', b2 = f e2 b in
@@ -159,7 +145,7 @@ let rec simplify_bexpr = function
 
 let left_hand_side (e1, op, e2) =
   match (e1, e2) with
-  | Cst c, _ when is_zero c -> (inv op, e2)
+  | Cst c, _ when is_zero c -> (inv_cmp op, e2)
   | _, Cst c when is_zero c -> (op, e1)
   | _, _ -> (op, simplify_fp (Binary (SUB, e1, e2)))
 
@@ -262,22 +248,10 @@ let rec replace_cst_bexpr cst = function
   | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
   | Not b -> Not (replace_cst_bexpr cst b)
 
-let rec get_vars_expr = function
-  | Cst _ -> []
-  | Var v -> [v]
-  | Neg e -> get_vars_expr e
-  | Binary (_, e1, e2) -> List.rev_append (get_vars_expr e1) (get_vars_expr e2)
-  | Funcall (_, args) -> List.concat (List.map get_vars_expr args)
+let get_vars_set_expr e = VarSet.of_list (Expr.collect_vars e |> VarMap.keys)
 
-let get_vars_set_expr expr = VarSet.of_list (get_vars_expr expr)
-
-let rec get_vars_bexpr = function
-  | Cmp (e1, _, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
-  | And (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
-  | Or (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
-  | Not b -> get_vars_bexpr b
-
-let get_vars_set_bexpr bexpr = VarSet.of_list (get_vars_bexpr bexpr)
+let get_vars_set_bexpr c =
+  VarSet.of_list (Constraint.collect_vars c |> VarMap.keys)
 
 let get_vars_jacob jacob =
   List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob

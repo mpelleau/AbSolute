@@ -81,6 +81,8 @@ module VarMap = struct
   (** builds a map from an association list*)
   let of_list (assoc : (key * 'a) list) =
     List.fold_left (fun acc (k, m) -> add k m acc) empty assoc
+
+  let keys map = fold (fun k _ acc -> k :: acc) map []
 end
 
 module VarSet = Set.Make (String)

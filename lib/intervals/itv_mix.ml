@@ -288,7 +288,7 @@ let filter_div (i1 : t) (i2 : t) (r : t) : (t * t) option =
 let filter_pow (i : t) (n : t) (r : t) : (t * t) option =
   Tools.(merge_bot (Option.bind (n_root r n) (meet i)) (Some n))
 
-let to_bexpr v (itv : t) = dispatch (I.to_bexpr v) (R.to_bexpr v) itv
+let to_constraint v = dispatch (I.to_constraint v) (R.to_constraint v)
 
 (* returns the type annotation of the represented values *)
 let to_annot x = dispatch I.to_annot R.to_annot x

@@ -50,11 +50,10 @@ module type Numeric = sig
   (** domain's internal representation of a comparison *)
   type internal_constr
 
-  val internalize :
-    ?elem:t -> Expr.t * Constraint.cmpop * Expr.t -> internal_constr
+  val internalize : ?elem:t -> Constraint.comparison -> internal_constr
   (** may use a current abstract element to simplify the constaint *)
 
-  val externalize : internal_constr -> Expr.t * Constraint.cmpop * Expr.t
+  val externalize : internal_constr -> Constraint.comparison
 
   (** {1 Constraint management} *)
 
@@ -65,11 +64,11 @@ module type Numeric = sig
   val is_representable : internal_constr -> Kleene.t
   (** checks if a constraint is suited for this abstract domain *)
 
-  val forward_eval : t -> Expr.t -> Itv.ItvQ.t
+  val forward_eval : t -> Expr.t -> Q.t * Q.t
   (** computes the range of value of a given expression within an abstract
       element *)
 
-  val to_bexpr : t -> Constraint.t
+  val to_constraint : t -> Constraint.t
   (** transforms an abstract element into constraints *)
 
   val spawn : t -> Csp.instance

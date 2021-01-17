@@ -12,7 +12,7 @@ module Make (Abs : Numeric) : Domain = struct
   type internal_constr = Abs.internal_constr Constraint.boolean
 
   let internalize ?elem c =
-    let c' = Csp_helper.remove_not c in
+    let c' = Constraint.remove_not c in
     Csp_helper.map_constr (Abs.internalize ?elem) c'
 
   let externalize = Csp_helper.map_constr Abs.externalize

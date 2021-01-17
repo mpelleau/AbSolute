@@ -18,37 +18,37 @@ type 'a boolean =
 type t = comparison boolean
 
 (** {1 Constructors} *)
-let leq e1 e2 = Cmp (e1, LEQ, e2)
+let leq e1 e2 : t = Cmp (e1, LEQ, e2)
 
-let lt e1 e2 = Cmp (e1, LT, e2)
+let lt e1 e2 : t = Cmp (e1, LT, e2)
 
-let geq e1 e2 = Cmp (e1, GEQ, e2)
+let geq e1 e2 : t = Cmp (e1, GEQ, e2)
 
-let gt e1 e2 = Cmp (e1, GT, e2)
+let gt e1 e2 : t = Cmp (e1, GT, e2)
 
-let eq e1 e2 = Cmp (e1, EQ, e2)
+let eq e1 e2 : t = Cmp (e1, EQ, e2)
 
-let neq e1 e2 = Cmp (e1, NEQ, e2)
+let neq e1 e2 : t = Cmp (e1, NEQ, e2)
 
 (** constraint for variable assignment by a constant *)
-let assign var value = eq (Expr.var var) (Expr.of_mpqf value)
+let assign var value : t = eq (Expr.var var) (Expr.of_mpqf value)
 
 (** constraint for 'e \in [low;high]' *)
-let inside v low high = And (geq v low, leq v high)
+let inside v low high : t = And (geq v low, leq v high)
 
 (** constraint for 'not (v \in [low;high])' *)
-let outside v low high = Or (lt v low, gt v high)
+let outside v low high : t = Or (lt v low, gt v high)
 
 (** same as inside but with constants instead of expressions' *)
-let inside_cst v low high = Expr.(inside (var v) (of_mpqf low) (of_mpqf high))
+let inside_cst v l h : t = Expr.(inside (var v) (of_mpqf l) (of_mpqf h))
 
 (** constraint for 'not (v \in [low;high])' *)
-let outside_cst v low high = Expr.(outside (var v) (of_mpqf low) (of_mpqf high))
+let outside_cst v l h : t = Expr.(outside (var v) (of_mpqf l) (of_mpqf h))
 
 (** {1 Operations} *)
 
 (** cmp operator inversion *)
-let inv = function
+let inv_cmp = function
   | EQ -> EQ
   | LEQ -> GEQ
   | GEQ -> LEQ
@@ -57,13 +57,41 @@ let inv = function
   | LT -> GT
 
 (** comparison operator negation *)
-let neg = function
+let neg_cmp = function
   | EQ -> NEQ
   | LEQ -> GT
   | GEQ -> LT
   | NEQ -> EQ
   | GT -> LEQ
   | LT -> GEQ
+
+(** constraint negation *)
+let rec neg : t -> t = function
+  | Cmp (e1, op, e2) -> Cmp (e1, neg_cmp op, e2)
+  | And (b1, b2) -> Or (neg b1, neg b2)
+  | Or (b1, b2) -> And (neg b1, neg b2)
+  | Not b -> b
+
+(** rewrites a constraint into an equivalent constraint without 'Not' *)
+let rec remove_not : t -> t = function
+  | Not b -> remove_not (neg b)
+  | And (b1, b2) -> And (remove_not b1, remove_not b2)
+  | Or (b1, b2) -> Or (remove_not b1, remove_not b2)
+  | x -> x
+
+(** Returns all the variables appearing in a constraint as a map where to each
+    constraint is associated the (integer) numer of occurences *)
+let rec collect_vars =
+  let merge =
+    Tools.VarMap.merge (fun _v o1 o2 ->
+        match (o1, o2) with
+        | Some i1, Some i2 -> Some (i1 + i2)
+        | None, x | x, None -> x)
+  in
+  function
+  | Not b -> collect_vars (neg b)
+  | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
+  | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
 
 (** {1 Printing} *)
 

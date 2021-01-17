@@ -8,7 +8,7 @@ module Make (A : Domain) (B : Domain) = struct
 
   type internal_constr = A.internal_constr * B.internal_constr
 
-  let internalize ?elem c =
+  let internalize ?elem (c : Constraint.t) =
     match elem with
     | None -> (A.internalize c, B.internalize c)
     | Some (a, b) -> (A.internalize ~elem:a c, B.internalize ~elem:b c)
@@ -18,13 +18,14 @@ module Make (A : Domain) (B : Domain) = struct
   let is_representable (c1, c2) =
     Kleene.or_kleene (A.is_representable c1) (B.is_representable c2)
 
-  let to_bexpr (a, b) = Constraint.And (A.to_bexpr a, B.to_bexpr b)
+  let to_constraint (a, b) =
+    Constraint.And (A.to_constraint a, B.to_constraint b)
 
   let a_meet_b a b : B.t Consistency.t =
-    A.to_bexpr a |> B.internalize |> B.filter b
+    A.to_constraint a |> B.internalize |> B.filter b
 
   let b_meet_a a b : A.t Consistency.t =
-    B.to_bexpr b |> A.internalize |> A.filter a
+    B.to_constraint b |> A.internalize |> A.filter a
 
   let reduced_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in

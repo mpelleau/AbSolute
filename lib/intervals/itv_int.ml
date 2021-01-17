@@ -210,7 +210,7 @@ let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
     ( if contains_float r 0. && contains_float i1 0. then Some i2
     else Option.bind (div r i1) (meet i2) )
 
-let to_bexpr v ((l, h) : t) =
+let to_constraint v ((l, h) : t) =
   Constraint.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)
 
 (* returns the type annotation of the represented values *)

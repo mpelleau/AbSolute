@@ -162,7 +162,7 @@ module Eval (B : BOUND) = struct
 
   let print fmt (x : t) = Format.fprintf fmt "%s" (to_string x)
 
-  let to_bexpr v (((kl, l), (kh, h)) : t) =
+  let to_constraint v (((kl, l), (kh, h)) : t) =
     let v = Expr.var v in
     let l_cst = Expr.of_mpqf (B.to_rat l)
     and h_cst = Expr.of_mpqf (B.to_rat h) in
