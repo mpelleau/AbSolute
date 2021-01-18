@@ -208,6 +208,7 @@ module Box (I : ITV) = struct
   let is_empty abs = Env.is_empty abs
 
   let add_var (abs : t) (typ, var, domain) : t =
+    let open Dom in
     VarMap.add var
       ( match (typ, domain) with
       | Int, Finite (l, u) -> I.of_rats l u

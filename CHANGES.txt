@@ -1,3 +1,4 @@
+- add Dom, Expr and Constraint modules
 - add .opam for library
 - add examples using library
 - massive documentation of library

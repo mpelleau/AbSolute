@@ -42,6 +42,7 @@ let check_ast p =
         else Hashtbl.add h v true)
       p.init
   and check_dom () =
+    let open Dom in
     let aux (_, v, d) =
       match d with
       | Finite (f1, f2) ->

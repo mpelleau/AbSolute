@@ -7,18 +7,6 @@ let is_zero = Q.equal Q.zero
 
 let is_neg c = Q.compare Q.zero c > 0
 
-(* TODO: use type *)
-
-(** converts a domain representation to a constraint *)
-let domain_to_constraints ((_, v, d) : decl) : Constraint.t =
-  match d with
-  | Finite (l, h) -> inside_cst v l h
-  | Minf i -> leq (Var v) (Cst i)
-  | Inf i -> geq (Var v) (Cst i)
-  | Set (h :: tl) ->
-      List.fold_left (fun acc e -> Or (acc, assign v e)) (assign v h) tl
-  | _ -> eq one one
-
 (** iter on expr *)
 let rec iter_expr f = function
   | Binary (_, e1, e2) as b -> f b ; iter_expr f e1 ; iter_expr f e2

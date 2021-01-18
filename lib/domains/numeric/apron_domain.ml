@@ -156,7 +156,7 @@ module MAKE (AP : ADomain) = struct
     Array.fold_left (fun a v -> (Real, Var.to_string v) :: a) iv rv
 
   let dom_to_texpr env =
-    let open Csp in
+    let open Dom in
     function
     | Top -> assert false
     | Finite (b1, b2) -> Texpr1.cst env (Coeff.i_of_mpqf b1 b2)

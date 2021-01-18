@@ -41,34 +41,6 @@ let square expr = Binary (POW, expr, two)
 (** variables constructor *)
 let var v = Var v
 
-(** {1 Printing} *)
-
-(** variables printing *)
-let pp_var = Format.pp_print_string
-
-(** binary operators printing *)
-let pp_binop fmt = function
-  | ADD -> Format.fprintf fmt "+"
-  | SUB -> Format.fprintf fmt "-"
-  | MUL -> Format.fprintf fmt "*"
-  | DIV -> Format.fprintf fmt "/"
-  | POW -> Format.fprintf fmt "^"
-
-(** expression printer *)
-let rec print fmt = function
-  | Funcall (name, args) ->
-      let print_args fmt =
-        Format.pp_print_list
-          ~pp_sep:(fun fmt () -> Format.fprintf fmt ",")
-          print fmt
-      in
-      Format.fprintf fmt "%s(%a)" name print_args args
-  | Neg e -> Format.fprintf fmt "(- %a)" print e
-  | Binary (b, e1, e2) ->
-      Format.fprintf fmt "(%a %a %a)" print e1 pp_binop b print e2
-  | Var v -> Format.fprintf fmt "%s" v
-  | Cst c -> Format.fprintf fmt "%a" Q.pp_print c
-
 (** {1 Predicates}*)
 
 (** checks if an expression contains a variable *)
@@ -102,3 +74,43 @@ let rec collect_vars =
   | Funcall (_, a) ->
       List.map collect_vars a |> List.fold_left merge VarMap.empty
   | Var v -> VarMap.singleton v 1
+
+(** [fix_var expr var cst] builds a new expression identical to the [expr] where
+    all the occurences of the variable [var] are replaced by the constant [cst] *)
+let fix_var (e : t) v (c : Q.t) : t =
+  let rec aux = function
+    | Funcall (name, args) -> Funcall (name, List.map aux args)
+    | Neg e -> aux e
+    | Binary (b, e1, e2) -> Binary (b, aux e1, aux e2)
+    | Var v' as var -> if v' = v then Cst c else var
+    | cst -> cst
+  in
+  aux e
+
+(** {1 Printing} *)
+
+(** variables printing *)
+let pp_var = Format.pp_print_string
+
+(** binary operators printing *)
+let pp_binop fmt = function
+  | ADD -> Format.fprintf fmt "+"
+  | SUB -> Format.fprintf fmt "-"
+  | MUL -> Format.fprintf fmt "*"
+  | DIV -> Format.fprintf fmt "/"
+  | POW -> Format.fprintf fmt "^"
+
+(** expression printer *)
+let rec print fmt = function
+  | Funcall (name, args) ->
+      let print_args fmt =
+        Format.pp_print_list
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt ",")
+          print fmt
+      in
+      Format.fprintf fmt "%s(%a)" name print_args args
+  | Neg e -> Format.fprintf fmt "(- %a)" print e
+  | Binary (b, e1, e2) ->
+      Format.fprintf fmt "(%a %a %a)" print e1 pp_binop b print e2
+  | Var v -> Format.fprintf fmt "%s" v
+  | Cst c -> Format.fprintf fmt "%a" Q.pp_print c

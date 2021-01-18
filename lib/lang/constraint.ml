@@ -80,18 +80,25 @@ let rec remove_not : t -> t = function
   | x -> x
 
 (** Returns all the variables appearing in a constraint as a map where to each
-    constraint is associated the (integer) numer of occurences *)
+    variable is associated the (integer) number of occurences *)
 let rec collect_vars =
-  let merge =
-    Tools.VarMap.merge (fun _v o1 o2 ->
-        match (o1, o2) with
-        | Some i1, Some i2 -> Some (i1 + i2)
-        | None, x | x, None -> x)
-  in
+  let merge = Tools.VarMap.union (fun _v i1 i2 -> Some (i1 + i2)) in
   function
   | Not b -> collect_vars (neg b)
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
   | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
+
+(** [fix_var constr var cst] builds a new expression identical to the [constr]
+    where all the occurences of the variable [var] are replaced by the constant
+    [cst] *)
+let fix_var (constr : t) v c : t =
+  let rec aux = function
+    | Cmp (e1, cmp, e2) -> Cmp (Expr.fix_var e1 v c, cmp, Expr.fix_var e2 v c)
+    | And (c1, c2) -> And (aux c1, aux c2)
+    | Or (c1, c2) -> Or (aux c1, aux c2)
+    | Not c -> Not (aux c)
+  in
+  aux constr
 
 (** {1 Printing} *)
 

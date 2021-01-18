@@ -8,16 +8,8 @@ open Tools
 (** Types of variables *)
 type typ = Int | Real
 
-(** domains of variables *)
-type dom =
-  | Finite of Q.t * Q.t  (** \[a;b\] *)
-  | Minf of Q.t  (** \]-oo; a\] *)
-  | Inf of Q.t  (** \[a; +oo\[ *)
-  | Set of Q.t list  (** \{x1; x2; ...; xn\} *)
-  | Top  (** \]-oo; +oo\[ *)
-
 (** declaration *)
-type decl = typ * string * dom
+type decl = typ * string * Dom.t
 
 (** the instance type *)
 type instance = Q.t VarMap.t
@@ -46,12 +38,12 @@ let get_var_names p = List.map (fun (_, v, _) -> v) p.init
 let empty = {init= []; constraints= []; objective= None; solutions= None}
 
 (** initalizes and unconstrained CSP *)
-let initialize (variables : (typ * string * dom) list) : problem =
+let initialize (variables : (typ * string * Dom.t) list) : problem =
   {init= variables; constraints= []; objective= None; solutions= None}
 
 (** adds a real variable in the csp *)
 let add_real_var name inf sup csp =
-  let assign = (Real, name, Finite (inf, sup)) in
+  let assign = (Real, name, Dom.interval inf sup) in
   {csp with init= assign :: csp.init}
 
 (** adds a real variable in the csp, with float bounds *)
@@ -59,7 +51,7 @@ let add_real_var_f s l h = add_real_var s (Mpqf.of_float l) (Mpqf.of_float h)
 
 (** adds an integer variable in the csp *)
 let add_int_var name inf sup csp =
-  let assign = (Int, name, Finite (inf, sup)) in
+  let assign = (Int, name, Dom.interval inf sup) in
   {csp with init= assign :: csp.init}
 
 (** adds an integer variable in the csp with integer bounds *)
@@ -74,22 +66,9 @@ let pp_typ fmt = function
   | Int -> Format.fprintf fmt "int"
   | Real -> Format.fprintf fmt "real"
 
-let pp_dom fmt = function
-  | Finite (a, b) -> Format.fprintf fmt "[%a; %a]" Q.print a Q.print b
-  | Minf i -> Format.fprintf fmt "[-oo; %a]" Q.print i
-  | Inf i -> Format.fprintf fmt "[%a; +oo]" Q.print i
-  | Set l ->
-      let print_set =
-        Format.pp_print_list
-          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
-          Q.print
-      in
-      Format.fprintf fmt "{%a}" print_set l
-  | Top -> Format.fprintf fmt "[-oo; +oo]"
-
 let pp_declarations fmt =
   List.iter (fun (a, b, c) ->
-      Format.fprintf fmt "%a %s in %a\n" pp_typ a b pp_dom c)
+      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c)
 
 let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
 

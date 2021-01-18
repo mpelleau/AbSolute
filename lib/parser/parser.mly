@@ -58,7 +58,7 @@ open Constraint
 %nonassoc POW
 
 %type <typ> typ
-%type <dom> init
+%type <Dom.t> init
 %type <Expr.t> expr
 %type <Constraint.t> bexpr
 %type <Csp.problem> file
