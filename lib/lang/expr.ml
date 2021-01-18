@@ -87,6 +87,42 @@ let fix_var (e : t) v (c : Q.t) : t =
   in
   aux e
 
+(** Evaluates the expression at the given point.
+
+    @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
+    by a non integer exposant is made. *)
+let eval (e : t) (i : Instance.t) : Q.t =
+  let rec pow a = function
+    | 0 -> Q.one
+    | 1 -> a
+    | n ->
+        let b = pow a (n / 2) in
+        Q.mul (Q.mul b b) (if n mod 2 = 0 then Q.one else a)
+  in
+  let pow q n = if n < 0 then Mpqf.div Q.one (pow q (-n)) else pow q n in
+  let rec aux = function
+    | Funcall (_name, args) ->
+        let _args = List.map aux args in
+        assert false
+    | Neg e -> Q.neg (aux e)
+    | Binary (b, e1, e2) -> (
+      match b with
+      | ADD -> Q.add (aux e1) (aux e2)
+      | SUB -> Q.sub (aux e1) (aux e2)
+      | MUL -> Q.mul (aux e1) (aux e2)
+      | DIV -> (
+        match Q.div (aux e1) (aux e2) with
+        | None -> invalid_arg "Expr.eval: division by zero"
+        | Some x -> x )
+      | POW -> (
+        match Q.to_int (aux e2) with
+        | None -> invalid_arg "Expr.eval: exponentiation by non integer value"
+        | Some x -> pow (aux e1) x ) )
+    | Var v -> VarMap.find v i
+    | Cst q -> q
+  in
+  aux e
+
 (** {1 Printing} *)
 
 (** variables printing *)

@@ -16,6 +16,8 @@ let minus_one : t = Mpqf.of_int (-1)
 
 let add : t -> t -> t = Mpqf.add
 
+let sub : t -> t -> t = Mpqf.sub
+
 let mul : t -> t -> t = Mpqf.mul
 
 let div (x : t) (y : t) : t option =

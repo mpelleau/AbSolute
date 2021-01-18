@@ -99,6 +99,27 @@ let fix_var (constr : t) v c : t =
   in
   aux constr
 
+(** Evaluates the constraint a the given point.
+
+    @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
+    by a non integer exposant is made. *)
+let eval constr i =
+  let rec aux = function
+    | Not b -> not (aux b)
+    | And (b1, b2) -> aux b1 && aux b2
+    | Or (b1, b2) -> aux b1 || aux b2
+    | Cmp (e1, cmpop, e2) -> (
+        let cmp = Q.compare (Expr.eval e1 i) (Expr.eval e2 i) in
+        match cmpop with
+        | EQ -> cmp = 0
+        | LEQ -> cmp <= 0
+        | GEQ -> cmp >= 0
+        | NEQ -> cmp <> 0
+        | GT -> cmp > 0
+        | LT -> cmp < 0 )
+  in
+  aux constr
+
 (** {1 Printing} *)
 
 (** comparison operator printer *)
