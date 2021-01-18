@@ -40,7 +40,7 @@ let check_ast p =
             (Semantic_error
                (Format.sprintf "two variables share the same name: %s" v))
         else Hashtbl.add h v true)
-      p.init
+      p.variables
   and check_dom () =
     let open Dom in
     let aux (_, v, d) =
@@ -53,7 +53,7 @@ let check_ast p =
                     (Mpqf.to_string f1) (Mpqf.to_string f2)))
       | _ -> ()
     in
-    List.iter aux p.init
+    List.iter aux p.variables
   and check_constrs () =
     let check_v = function
       | Var v ->
@@ -106,7 +106,7 @@ let expr (str : string) =
   (Parser.expreof Lexer.token) lexb
 
 (* open a file and parse it *)
-let parse (filename : string) : problem =
+let parse (filename : string) : Csp.t =
   if !Constant.debug > 0 then Format.printf "parsing\n%!" ;
   let f = open_in filename in
   let lex = from_channel f in

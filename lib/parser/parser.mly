@@ -61,7 +61,7 @@ open Constraint
 %type <Dom.t> init
 %type <Expr.t> expr
 %type <Constraint.t> bexpr
-%type <Csp.problem> file
+%type <Csp.t> file
 
 /* entry points */
 %start <Constraint.t> bexpreof
@@ -107,7 +107,7 @@ file:
   EOF
   {
     {
-      init=domains;
+      variables=domains;
       objective=o;
       constraints=constr;
       solutions=s;

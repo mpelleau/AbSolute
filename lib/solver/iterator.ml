@@ -9,9 +9,9 @@ module Make (D : Domain) = struct
 
   type t = {space: space; constr: D.internal_constr list}
 
-  let init ?(verbose = false) (p : Csp.problem) : t =
+  let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
-    let space = List.fold_left D.add_var D.empty p.Csp.init in
+    let space = List.fold_left D.add_var D.empty p.Csp.variables in
     if verbose then Format.printf " done.\n" ;
     if verbose then Format.printf "constraint conversion ...%!" ;
     let constraints = List.map (D.internalize ~elem:space) p.Csp.constraints in

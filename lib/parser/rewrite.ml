@@ -137,6 +137,6 @@ let rewrite (e1, cmp, e2) : Constraint.comparison =
   let e2 = Expr.zero in
   (simp_left, cmp, e2)
 
-let rewrite_csp (p : Csp.problem) : Csp.problem =
+let rewrite_csp (p : Csp.t) : Csp.t =
   let res = List.map (Csp_helper.map_constr rewrite) p.constraints in
   {p with constraints= res}

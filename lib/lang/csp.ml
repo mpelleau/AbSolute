@@ -21,8 +21,8 @@ type info =
   | Known of (instance * bool) list
 
 (** type of constraint satisfaction problems *)
-type problem =
-  { init: decl list
+type t =
+  { variables: decl list
   ; constraints: Constraint.t list
   ; objective: Expr.t option
   ; solutions: info option (* extra information about feasbility *) }
@@ -30,21 +30,21 @@ type problem =
 (** {1 Accessors} *)
 
 (** computes the list of all variable names *)
-let get_var_names p = List.map (fun (_, v, _) -> v) p.init
+let get_var_names p = List.map (fun (_, v, _) -> v) p.variables
 
 (** {1 Constructors}*)
 
 (** empty problem, with no variables and no constraints *)
-let empty = {init= []; constraints= []; objective= None; solutions= None}
+let empty = {variables= []; constraints= []; objective= None; solutions= None}
 
 (** initalizes and unconstrained CSP *)
-let initialize (variables : (typ * string * Dom.t) list) : problem =
-  {init= variables; constraints= []; objective= None; solutions= None}
+let initialize (variables : (typ * string * Dom.t) list) : t =
+  {variables; constraints= []; objective= None; solutions= None}
 
 (** adds a real variable in the csp *)
 let add_real_var name inf sup csp =
   let assign = (Real, name, Dom.interval inf sup) in
-  {csp with init= assign :: csp.init}
+  {csp with variables= assign :: csp.variables}
 
 (** adds a real variable in the csp, with float bounds *)
 let add_real_var_f s l h = add_real_var s (Mpqf.of_float l) (Mpqf.of_float h)
@@ -52,7 +52,7 @@ let add_real_var_f s l h = add_real_var s (Mpqf.of_float l) (Mpqf.of_float h)
 (** adds an integer variable in the csp *)
 let add_int_var name inf sup csp =
   let assign = (Int, name, Dom.interval inf sup) in
-  {csp with init= assign :: csp.init}
+  {csp with variables= assign :: csp.variables}
 
 (** adds an integer variable in the csp with integer bounds *)
 let add_int_var_i s l h = add_int_var s (Mpqf.of_int l) (Mpqf.of_int h)
@@ -70,7 +70,7 @@ let fix_var csp v cst =
     constraints=
       List.map (fun cstr -> Constraint.fix_var cstr v cst) csp.constraints
   ; objective= Option.map (fun expr -> Expr.fix_var expr v cst) csp.objective
-  ; init= List.filter (fun (_, v', _) -> v' <> v) csp.init }
+  ; variables= List.filter (fun (_, v', _) -> v' <> v) csp.variables }
 
 (** {1 Printing} *)
 
@@ -92,5 +92,5 @@ let pp_instance fmt instance =
   |> Format.fprintf fmt "{%a}" (Format.pp_print_list ~pp_sep:newline_sep bind)
 
 let print fmt p =
-  Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations p.init
-    pp_constraints p.constraints
+  Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations
+    p.variables pp_constraints p.constraints

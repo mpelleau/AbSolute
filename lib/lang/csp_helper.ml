@@ -213,7 +213,7 @@ let ctr_jacobian c vars =
 
 let compute_jacobian csp =
   List.fold_left
-    (fun l c -> (c, ctr_jacobian c csp.init) :: l)
+    (fun l c -> (c, ctr_jacobian c csp.variables) :: l)
     [] csp.constraints
 
 (*****************************************)
