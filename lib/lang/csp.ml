@@ -16,9 +16,9 @@ type instance = Q.t VarMap.t
 
 (** annotations to test the validity of the solver *)
 type info =
-  | Exact of instance list
+  | Exact of Instance.t list
   | Unfeasible
-  | Known of (instance * bool) list
+  | Known of (Instance.t * bool) list
 
 (** type of constraint satisfaction problems *)
 type t =
@@ -83,13 +83,6 @@ let pp_declarations fmt =
       Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c)
 
 let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
-
-let pp_instance fmt instance =
-  let bind fmt (var, value) =
-    Format.fprintf fmt "%s : %a" var Q.pp_print value
-  in
-  VarMap.bindings instance
-  |> Format.fprintf fmt "{%a}" (Format.pp_print_list ~pp_sep:newline_sep bind)
 
 let print fmt p =
   Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations

@@ -6,6 +6,7 @@ module Csp = Csp
 module Constraint = Constraint
 module Expr = Expr
 module Dom = Dom
+module Instance = Instance
 
 (** This module defines several parsing utilities *)
 module Parser = struct
