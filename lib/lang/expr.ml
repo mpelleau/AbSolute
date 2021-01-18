@@ -150,3 +150,6 @@ let rec print fmt = function
       Format.fprintf fmt "(%a %a %a)" print e1 pp_binop b print e2
   | Var v -> Format.fprintf fmt "%s" v
   | Cst c -> Format.fprintf fmt "%a" Q.pp_print c
+
+(** Conversion to a string *)
+let to_string : t -> string = Format.asprintf "%a" print

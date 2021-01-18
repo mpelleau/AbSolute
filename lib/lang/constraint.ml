@@ -45,6 +45,18 @@ let inside_cst v l h : t = Expr.(inside (var v) (of_mpqf l) (of_mpqf h))
 (** constraint for 'not (v \in [low;high])' *)
 let outside_cst v l h : t = Expr.(outside (var v) (of_mpqf l) (of_mpqf h))
 
+(** conversion of a point [p] to a conjunctive constraint whose only solution is
+    the point p.
+
+    @raise [Invalid_arg] if the instance is empty *)
+let of_instance (i : Instance.t) =
+  match Tools.VarMap.bindings i with
+  | [] -> invalid_arg "Instance.to_constraint: empty instance"
+  | (v, q) :: tl ->
+      List.fold_left
+        (fun acc (v', q') -> Or (acc, eq (Var v') (Cst q')))
+        (eq (Var v) (Cst q)) tl
+
 (** {1 Operations} *)
 
 (** cmp operator inversion *)
@@ -139,3 +151,6 @@ let rec print fmt : t -> unit = function
   | And (b1, b2) -> Format.fprintf fmt "%a && %a" print b1 print b2
   | Or (b1, b2) -> Format.fprintf fmt "%a || %a" print b1 print b2
   | Not b -> Format.fprintf fmt "not %a" print b
+
+(** Conversion to a string *)
+let to_string : t -> string = Format.asprintf "%a" print

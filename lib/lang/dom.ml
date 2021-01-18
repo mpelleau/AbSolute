@@ -64,3 +64,6 @@ let print fmt = function
       in
       Format.fprintf fmt "{%a}" print_set l
   | Top -> Format.fprintf fmt "[-oo; +oo]"
+
+(** Conversion to a string *)
+let to_string : t -> string = Format.asprintf "%a" print
