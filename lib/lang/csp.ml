@@ -60,6 +60,18 @@ let add_int_var_i s l h = add_int_var s (Mpqf.of_int l) (Mpqf.of_int h)
 (** adds a constraint to the csp *)
 let add_constr c csp = {csp with constraints= c :: csp.constraints}
 
+(** {1 Operations} *)
+
+(** [fix_var csp var cst] builds a new csp identical to the [csp] where all the
+    occurences of the variable [var] are replaced by the constant [cst], and
+    where the variables [v] is removed from the csp variables.*)
+let fix_var csp v cst =
+  { csp with
+    constraints=
+      List.map (fun cstr -> Constraint.fix_var cstr v cst) csp.constraints
+  ; objective= Option.map (fun expr -> Expr.fix_var expr v cst) csp.objective
+  ; init= List.filter (fun (_, v', _) -> v' <> v) csp.init }
+
 (** {1 Printing} *)
 
 let pp_typ fmt = function

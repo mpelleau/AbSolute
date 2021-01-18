@@ -75,8 +75,8 @@ let rec collect_vars =
       List.map collect_vars a |> List.fold_left merge VarMap.empty
   | Var v -> VarMap.singleton v 1
 
-(** [fix_var expr var cst] builds a new expression identical to the [expr] where
-    all the occurences of the variable [var] are replaced by the constant [cst] *)
+(** [fix_var expr var cst] builds a new expression identical to [expr] where all
+    the occurences of the variable [var] are replaced by the constant [cst] *)
 let fix_var (e : t) v (c : Q.t) : t =
   let rec aux = function
     | Funcall (name, args) -> Funcall (name, List.map aux args)

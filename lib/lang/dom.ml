@@ -49,7 +49,7 @@ let to_constraint v =
       List.fold_left
         (fun acc e -> Constraint.Or (acc, assign v e))
         (assign v h) tl
-  | _ -> eq Expr.one Expr.one
+  | _ -> eq Expr.zero Expr.zero
 
 (** {1 Printing} *)
 let print fmt = function

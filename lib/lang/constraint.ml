@@ -88,9 +88,8 @@ let rec collect_vars =
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
   | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
 
-(** [fix_var constr var cst] builds a new expression identical to the [constr]
-    where all the occurences of the variable [var] are replaced by the constant
-    [cst] *)
+(** [fix_var constr var cst] builds a new constraint identical to [constr] where
+    all the occurences of the variable [var] are replaced by the constant [cst] *)
 let fix_var (constr : t) v c : t =
   let rec aux = function
     | Cmp (e1, cmp, e2) -> Cmp (Expr.fix_var e1 v c, cmp, Expr.fix_var e2 v c)
