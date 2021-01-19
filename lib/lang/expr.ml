@@ -75,31 +75,28 @@ let rec collect_vars =
       List.map collect_vars a |> List.fold_left merge VarMap.empty
   | Var v -> VarMap.singleton v 1
 
-(** [fix_var expr var cst] builds a new expression identical to [expr] where all
-    the occurences of the variable [var] are replaced by the constant [cst] *)
-let fix_var (e : t) v (c : Q.t) : t =
+(** [replace expr var value] builds a new expression identical to [expr] where
+    all the occurences of the variable [var] are replaced by the expression
+    [value] *)
+let replace e1 v value =
   let rec aux = function
     | Funcall (name, args) -> Funcall (name, List.map aux args)
     | Neg e -> aux e
     | Binary (b, e1, e2) -> Binary (b, aux e1, aux e2)
-    | Var v' as var -> if v' = v then Cst c else var
+    | Var v' as var -> if v' = v then value else var
     | cst -> cst
   in
-  aux e
+  aux e1
+
+(** [fix_var expr var cst] builds a new expression identical to [expr] where all
+    the occurences of the variable [var] are replaced by the constant [cst] *)
+let fix_var (e : t) v (c : Q.t) : t = replace e v (Cst c)
 
 (** Evaluates the expression at the given point.
 
     @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
     by a non integer exposant is made. *)
 let eval (e : t) (i : Instance.t) : Q.t =
-  let rec pow a = function
-    | 0 -> Q.one
-    | 1 -> a
-    | n ->
-        let b = pow a (n / 2) in
-        Q.mul (Q.mul b b) (if n mod 2 = 0 then Q.one else a)
-  in
-  let pow q n = if n < 0 then Mpqf.div Q.one (pow q (-n)) else pow q n in
   let rec aux = function
     | Funcall (_name, args) ->
         let _args = List.map aux args in
@@ -117,7 +114,7 @@ let eval (e : t) (i : Instance.t) : Q.t =
       | POW -> (
         match Q.to_int (aux e2) with
         | None -> invalid_arg "Expr.eval: exponentiation by non integer value"
-        | Some x -> pow (aux e1) x ) )
+        | Some x -> Q.pow (aux e1) x ) )
     | Var v -> VarMap.find v i
     | Cst q -> q
   in

@@ -23,6 +23,16 @@ let mul : t -> t -> t = Mpqf.mul
 let div (x : t) (y : t) : t option =
   if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
 
+let pow =
+  let rec pow a = function
+    | 0 -> one
+    | 1 -> a
+    | n ->
+        let b = pow a (n / 2) in
+        mul (mul b b) (if n mod 2 = 0 then one else a)
+  in
+  fun q n -> if n < 0 then Mpqf.div one (pow q (-n)) else pow q n
+
 let neg (x : t) : t = Mpqf.neg x
 
 let ceil (x : t) = x |> Mpqf.to_float |> ceil |> int_of_float

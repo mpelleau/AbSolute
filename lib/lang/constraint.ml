@@ -100,16 +100,21 @@ let rec collect_vars =
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
   | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
 
-(** [fix_var constr var cst] builds a new constraint identical to [constr] where
-    all the occurences of the variable [var] are replaced by the constant [cst] *)
-let fix_var (constr : t) v c : t =
+(** [replace constr var expr] builds a new constraint identical to [constr]
+    where all the occurences of the variable [var] are replaced by the
+    expression [expr] *)
+let replace (constr : t) v c : t =
   let rec aux = function
-    | Cmp (e1, cmp, e2) -> Cmp (Expr.fix_var e1 v c, cmp, Expr.fix_var e2 v c)
+    | Cmp (e1, cmp, e2) -> Cmp (Expr.replace e1 v c, cmp, Expr.replace e2 v c)
     | And (c1, c2) -> And (aux c1, aux c2)
     | Or (c1, c2) -> Or (aux c1, aux c2)
     | Not c -> Not (aux c)
   in
   aux constr
+
+(** [fix_var constr var cst] builds a new constraint identical to [constr] where
+    all the occurences of the variable [var] are replaced by the constant [cst] *)
+let fix_var constr v (c : Q.t) : t = replace constr v (Cst c)
 
 (** Evaluates the constraint a the given point.
 
