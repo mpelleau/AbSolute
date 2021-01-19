@@ -1,4 +1,4 @@
-(** This module defines the type of point (also called instances), i.e mapps
+(** This module defines the type of points (also called instances), i.e mappings
     from variables to rational coordinates. *)
 
 open Tools

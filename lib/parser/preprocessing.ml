@@ -11,7 +11,7 @@ let replace_cst_cstrs (id, cst) cstrs =
   List.map
     (fun (c, vars) ->
       if VarSet.mem id vars then
-        (replace_cst_bexpr (id, cst) c, VarSet.remove id vars)
+        (Constraint.fix_var c id cst, VarSet.remove id vars)
       else (c, vars))
     cstrs
 

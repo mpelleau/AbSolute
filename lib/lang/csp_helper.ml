@@ -220,41 +220,7 @@ let compute_jacobian csp =
 (*        PREPROCESSING FUNCTIONS        *)
 (*****************************************)
 
-let rec replace_cst_expr (id, cst) expr =
-  match expr with
-  | Var v when v = id -> Cst cst
-  | Neg e -> Neg (replace_cst_expr (id, cst) e)
-  | Binary (op, e1, e2) ->
-      Binary (op, replace_cst_expr (id, cst) e1, replace_cst_expr (id, cst) e2)
-  | Funcall (v, e) -> Funcall (v, List.map (replace_cst_expr (id, cst)) e)
-  | _ as e -> e
-
-let rec replace_cst_bexpr cst = function
-  | Cmp (e1, op, e2) ->
-      Cmp (replace_cst_expr cst e1, op, replace_cst_expr cst e2)
-  | And (b1, b2) -> And (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
-  | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
-  | Not b -> Not (replace_cst_bexpr cst b)
-
 let get_vars_set_expr e = VarSet.of_list (Expr.collect_vars e |> VarMap.keys)
 
 let get_vars_set_bexpr c =
   VarSet.of_list (Constraint.collect_vars c |> VarMap.keys)
-
-let get_vars_jacob jacob =
-  List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
-
-let replace_cst_jacob (id, cst) jacob =
-  List.map
-    (fun (c, vars, j) ->
-      if VarSet.mem id vars then
-        (replace_cst_bexpr (id, cst) c, VarSet.remove id vars, j)
-      else (c, vars, j))
-    jacob
-
-let from_cst_to_expr (id, (l, u)) =
-  if l = u then [(Var id, EQ, Cst l)]
-  else [(Var id, GEQ, Cst l); (Var id, LEQ, Cst u)]
-
-let csts_to_expr csts =
-  List.fold_left (fun l cst -> List.append (from_cst_to_expr cst) l) [] csts
