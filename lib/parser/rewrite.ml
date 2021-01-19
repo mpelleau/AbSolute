@@ -44,24 +44,12 @@ let rec simplify env expr : PI.t * string CoEnv.t =
     | Var v -> (PI.of_var v, env)
     | Cst c -> (PI.of_rational c, env)
     | Binary (op, e1, e2) -> (
-        (*Format.printf "===== %a, %a@." print_expr e1 print_expr e2;*)
         let p1, env' = simplify env e1 in
         let p2, env'' = simplify env' e2 in
-        (*Format.printf "!!!!! %a, %a@." print_expr (polynom_to_expr p1 env')
-          print_expr (polynom_to_expr p2 env'');*)
         match op with
-        | ADD ->
-            (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.add p1
-              p2) env'');*)
-            (PI.add p1 p2, env'')
-        | SUB ->
-            (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.sub p1
-              p2) env'');*)
-            (PI.sub p1 p2, env'')
-        | MUL ->
-            (*Format.printf "§§§§§ %a@." print_expr (polynom_to_expr (PI.mul p1
-              p2) env'');*)
-            (PI.mul p1 p2, env'')
+        | ADD -> (PI.add p1 p2, env'')
+        | SUB -> (PI.sub p1 p2, env'')
+        | MUL -> (PI.mul p1 p2, env'')
         | DIV ->
             (* TODO: handle division by a constant to make sure we do not shadow
                any dbz *)

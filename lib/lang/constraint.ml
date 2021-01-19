@@ -151,6 +151,7 @@ let pp_cmpop fmt = function
 let pp_comparison fmt ((e1, c, e2) : comparison) =
   Format.fprintf fmt "%a %a %a" Expr.print e1 pp_cmpop c Expr.print e2
 
+(** printer *)
 let rec print fmt : t -> unit = function
   | Cmp c -> pp_comparison fmt c
   | And (b1, b2) -> Format.fprintf fmt "%a && %a" print b1 print b2
