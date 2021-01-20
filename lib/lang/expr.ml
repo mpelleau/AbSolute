@@ -1,5 +1,4 @@
-(** This module defines the numerical language, and some basic operations over
-    it*)
+(** This module defines the numerical language and some basic operations over it*)
 
 open Tools
 
@@ -41,8 +40,14 @@ let var v = Var v
 (** addition *)
 let add e1 e2 = Binary (ADD, e1, e2)
 
+(** substraction *)
+let sub e1 e2 = Binary (SUB, e1, e2)
+
 (** multiplication *)
 let mul e1 e2 = Binary (MUL, e1, e2)
+
+(** multiplication *)
+let div e1 e2 = Binary (DIV, e1, e2)
 
 (** given an expression [e] builds the expresspion for [e*e]*)
 let square expr = Binary (POW, expr, two)
@@ -57,7 +62,11 @@ let rec has_variable = function
   | Var _ -> true
   | Cst _ -> false
 
-(** checks if an expression is linear *)
+(** checks if an expression is linear:
+
+    - is_linear (2*x + 4*y) = true
+    - is_linear (2*x*z + y) = false *)
+
 let rec is_linear = function
   | Neg e -> is_linear e
   | Binary (MUL, e1, e2) ->

@@ -89,6 +89,11 @@ let cmp_to_fun cmpop : Q.t -> Q.t -> bool =
   | GT -> cmp > 0
   | LT -> cmp < 0
 
+(** [nullify c] computes a comparison equivalent to [c], with its
+    right-hand-side being 0 *)
+let nullify_rhs ((e1, c, e2) : comparison) : comparison =
+  (Expr.sub e1 e2, c, Expr.zero)
+
 (** constraint negation *)
 let rec neg : t -> t = function
   | Cmp (e1, op, e2) -> Cmp (e1, neg_cmp op, e2)
@@ -130,9 +135,9 @@ let fix_var constr v (c : Q.t) : t = replace constr v (Cst c)
 
 (** Evaluates the constraint a the given point.
 
-    @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
+    @raise [Invalid_arg] if a division by zero occurs or if an exponentitation
     by a non integer exposant is made. *)
-let eval constr i =
+let eval (constr : t) i =
   let rec aux = function
     | Not b -> not (aux b)
     | And (b1, b2) -> aux b1 && aux b2
@@ -145,12 +150,12 @@ let eval constr i =
 
 (** comparison operator printer *)
 let pp_cmpop fmt = function
-  | EQ -> Format.fprintf fmt "="
+  | NEQ -> Format.fprintf fmt "<>"
   | LEQ -> Format.fprintf fmt "<="
   | GEQ -> Format.fprintf fmt ">="
-  | NEQ -> Format.fprintf fmt "<>"
-  | GT -> Format.fprintf fmt ">"
+  | EQ -> Format.fprintf fmt "="
   | LT -> Format.fprintf fmt "<"
+  | GT -> Format.fprintf fmt ">"
 
 let pp_comparison fmt ((e1, c, e2) : comparison) =
   Format.fprintf fmt "%a %a %a" Expr.print e1 pp_cmpop c Expr.print e2
