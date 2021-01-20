@@ -87,7 +87,7 @@ and polynom_to_expr (p : PI.t) (fake_vars : string CoEnv.t) : Expr.t =
   let var_to_expr ((id, exp) : PI.var) : Expr.t =
     let rec iter acc = function
       | 0 -> acc
-      | n -> iter (Expr.Binary (MUL, acc, of_id id)) (n - 1)
+      | n -> iter (Expr.mul acc (of_id id)) (n - 1)
     in
     match exp with 0 -> Expr.one | n -> iter (of_id id) (n - 1)
   in
@@ -98,19 +98,16 @@ and polynom_to_expr (p : PI.t) (fake_vars : string CoEnv.t) : Expr.t =
       match v with
       | h :: tl ->
           List.fold_left
-            (fun acc e -> Expr.Binary (MUL, acc, var_to_expr e))
+            (fun acc e -> Expr.mul acc (var_to_expr e))
             (var_to_expr h) tl
       | _ -> assert false
-    else
-      List.fold_left
-        (fun acc e -> Expr.Binary (MUL, acc, var_to_expr e))
-        (Cst c) v
+    else List.fold_left (fun acc e -> Expr.mul acc (var_to_expr e)) (Cst c) v
   in
   match p with
   | [] -> Expr.zero
   | h :: tl ->
       List.fold_left
-        (fun acc c -> Expr.Binary (ADD, acc, cell_to_expr c))
+        (fun acc c -> Expr.add acc (cell_to_expr c))
         (cell_to_expr h) tl
 
 (* simplify the polynomial part of a constraint *)

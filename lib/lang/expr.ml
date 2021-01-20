@@ -35,11 +35,17 @@ let of_float f = Cst (Q.of_float f)
 (** builds an expression from an Mpqf.t *)
 let of_mpqf m = Cst m
 
-(** given an expression [e] builds the expresspion for [e*e]*)
-let square expr = Binary (POW, expr, two)
-
 (** variables constructor *)
 let var v = Var v
+
+(** addition *)
+let add e1 e2 = Binary (ADD, e1, e2)
+
+(** multiplication *)
+let mul e1 e2 = Binary (MUL, e1, e2)
+
+(** given an expression [e] builds the expresspion for [e*e]*)
+let square expr = Binary (POW, expr, two)
 
 (** {1 Predicates}*)
 
@@ -54,8 +60,10 @@ let rec has_variable = function
 (** checks if an expression is linear *)
 let rec is_linear = function
   | Neg e -> is_linear e
-  | Binary (MUL, e1, e2) | Binary (DIV, e1, e2) ->
+  | Binary (MUL, e1, e2) ->
       (not (has_variable e1 && has_variable e2)) && is_linear e1 && is_linear e2
+  | Binary (DIV, e1, e2) ->
+      (not (has_variable e2)) && is_linear e1 && is_linear e2
   | Binary (POW, e1, e2) -> not (has_variable e1 || has_variable e2)
   | Binary (_, e1, e2) -> is_linear e1 && is_linear e2
   | Var _ | Cst _ -> true

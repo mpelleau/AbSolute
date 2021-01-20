@@ -1,7 +1,5 @@
-(*************************************************************************)
-(* This modules handles symbolic computations over multivariate polynoms *)
-(* It is parametrized by a ring module which deals with basic arithmetic *)
-(*************************************************************************)
+(** This modules handles symbolic computations over multivariate polynoms It is
+    parametrized by a ring module which deals with basic arithmetic **)
 
 module Make (R : Ring.T) = struct
   type t = cell list

@@ -33,10 +33,10 @@ let neq e1 e2 : t = Cmp (e1, NEQ, e2)
 (** constraint for variable assignment by a constant *)
 let assign var value : t = eq (Expr.var var) (Expr.of_mpqf value)
 
-(** constraint for 'e \in [low;high]' *)
+(** constraint for 'e \in \[low;high\]' *)
 let inside v low high : t = And (geq v low, leq v high)
 
-(** constraint for 'not (v \in [low;high])' *)
+(** constraint for 'not (v \in \[low;high\])' *)
 let outside v low high : t = Or (lt v low, gt v high)
 
 (** same as inside but with constants instead of expressions' *)
@@ -76,6 +76,18 @@ let neg_cmp = function
   | NEQ -> EQ
   | GT -> LEQ
   | LT -> GEQ
+
+(** returns the rational function corresponding to the cmp operator *)
+let cmp_to_fun cmpop : Q.t -> Q.t -> bool =
+ fun a b ->
+  let cmp = Q.compare a b in
+  match cmpop with
+  | EQ -> cmp = 0
+  | LEQ -> cmp <= 0
+  | GEQ -> cmp >= 0
+  | NEQ -> cmp <> 0
+  | GT -> cmp > 0
+  | LT -> cmp < 0
 
 (** constraint negation *)
 let rec neg : t -> t = function
@@ -125,15 +137,7 @@ let eval constr i =
     | Not b -> not (aux b)
     | And (b1, b2) -> aux b1 && aux b2
     | Or (b1, b2) -> aux b1 || aux b2
-    | Cmp (e1, cmpop, e2) -> (
-        let cmp = Q.compare (Expr.eval e1 i) (Expr.eval e2 i) in
-        match cmpop with
-        | EQ -> cmp = 0
-        | LEQ -> cmp <= 0
-        | GEQ -> cmp >= 0
-        | NEQ -> cmp <> 0
-        | GT -> cmp > 0
-        | LT -> cmp < 0 )
+    | Cmp (e1, op, e2) -> (cmp_to_fun op) (Expr.eval e1 i) (Expr.eval e2 i)
   in
   aux constr
 
