@@ -29,7 +29,6 @@ module Make (D : Domain) = struct
     if verbose then loading d ;
     v
 
-  (** coverage of the solution space*)
   let coverage ?(verbose = false) prec max_depth prob : S.space Result.t =
     let csp = S.init ~verbose prob in
     if verbose then Format.printf "coverage ... %!" ;
@@ -49,7 +48,6 @@ module Make (D : Domain) = struct
     in
     aux 1 Result.empty csp
 
-  (** satisfiability check *)
   let satisfiability ?(verbose = false) prec max_depth prob : Kleene.t =
     let csp = S.init ~verbose prob in
     if verbose then Format.printf "satisfiability ... %!" ;
@@ -74,7 +72,6 @@ module Make (D : Domain) = struct
     in
     try aux 1 csp with Exit -> Kleene.True
 
-  (** satisfiability check, with witness *)
   let witness ?(verbose = false) prec max_depth prob :
       Kleene.t * Csp.instance option =
     let csp = S.init ~verbose prob in
