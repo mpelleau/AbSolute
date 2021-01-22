@@ -58,3 +58,7 @@ module Constant = Constant
 module Q = Q
 module F = F
 module I = I
+
+(** {1 Miscellaneous}*)
+
+module Tools = Tools

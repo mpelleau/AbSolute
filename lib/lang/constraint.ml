@@ -1,3 +1,5 @@
+open Tools
+
 type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
 
 type comparison = Expr.t * cmpop * Expr.t
@@ -33,12 +35,43 @@ let inside_cst v l h : t = Expr.(inside (var v) (of_mpqf l) (of_mpqf h))
 let outside_cst v l h : t = Expr.(outside (var v) (of_mpqf l) (of_mpqf h))
 
 let of_instance (i : Instance.t) =
-  match Tools.VarMap.bindings i with
+  match VarMap.bindings i with
   | [] -> invalid_arg "Instance.to_constraint: empty instance"
   | (v, q) :: tl ->
       List.fold_left
         (fun acc (v', q') -> Or (acc, eq (Var v') (Cst q')))
         (eq (Var v) (Cst q)) tl
+
+let convex_hull =
+  let open Apronext in
+  let instance_to_gen (i : Instance.t) =
+    let env, coords = VarMap.bindings i |> List.split in
+    let e = Environmentext.make_s (Array.of_list env) [||] in
+    Generatorext.of_rational_point e coords
+  in
+  let of_lincons lc =
+    let c_to_q c = c |> Coeffext.to_mpqf |> Expr.of_mpqf in
+    let res =
+      Linconsext.fold
+        (fun c v -> Expr.(add (mul (c_to_q c) (var (Apron.Var.to_string v)))))
+        c_to_q lc
+    in
+    let cmp =
+      match Linconsext.get_typ lc with
+      | SUPEQ -> geq
+      | SUP -> gt
+      | EQ -> eq
+      | _ -> assert false
+    in
+    cmp res Expr.zero
+  in
+  fun (instances : Instance.t list) : t ->
+    let g_l = List.map instance_to_gen instances in
+    let pol = Apol.of_generator_list g_l in
+    match Apol.to_lincons_list pol with
+    | [] -> assert false
+    | h :: tl ->
+        List.fold_left (fun acc c -> And (acc, of_lincons c)) (of_lincons h) tl
 
 let inv_cmp = function
   | EQ -> EQ
@@ -67,12 +100,9 @@ let cmp_to_fun cmpop : Q.t -> Q.t -> bool =
   | GT -> cmp > 0
   | LT -> cmp < 0
 
-(** [nullify c] computes a comparison equivalent to [c], with its
-    right-hand-side being 0 *)
 let nullify_rhs ((e1, c, e2) : comparison) : comparison =
   (Expr.sub e1 e2, c, Expr.zero)
 
-(** constraint negation *)
 let rec neg : t -> t = function
   | Cmp (e1, op, e2) -> Cmp (e1, neg_cmp op, e2)
   | And (b1, b2) -> Or (neg b1, neg b2)
