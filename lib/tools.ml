@@ -18,14 +18,9 @@ let inplace_print () =
     in
     Format.fprintf fmt "%s%s" back s
 
-(** semi_colon separator *)
-let semi_colon_sep fmt () = Format.fprintf fmt ";"
-
-(** comma separator *)
-let comma_sep fmt () = Format.fprintf fmt ","
-
-(** newline separator *)
-let newline_sep fmt () = Format.fprintf fmt "\n"
+(** same as pp_list but with a string as a separator *)
+let pp_list_sep str print =
+  Format.pp_print_list ~pp_sep:(fun fmt () -> Format.fprintf fmt "%s" str) print
 
 (** misc *)
 let swap_pair (a, b) = (b, a)

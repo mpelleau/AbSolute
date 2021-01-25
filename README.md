@@ -77,10 +77,24 @@ absolute --help
 
 ### Developpers
 
-Install the [apron library](http://apron.cri.ensmp.fr/library/) dependency, and then clone and build AbSolute from the Github repository:
+Install the [apron library](http://apron.cri.ensmp.fr/library/), the dune build system and the lablgtk library (used for visualisation):
 
 ```sh
-opam install dune apron apronext picasso
+opam install dune apron lablgtk
+```
+
+You might also want to install get the developpement version of the apronext and the picasso library (which used to be part of AbSolute) which you can by doing:
+
+```sh
+git clone https://github.com/ghilesZ/apronext
+make install -C apronext
+git clone https://github.com/ghilesZ/picasso
+make install -C picasso 
+```
+
+You can then clone and build AbSolute (both the tool and the library) by doing:
+
+```sh
 git clone https://github.com/mpelleau/AbSolute
 cd AbSolute
 make
@@ -89,7 +103,7 @@ make
 Then, verify everything is working well on an example:
 
 ```sh
-./absolute problems/booth.abs
+./_build/default//absolute-solver/absolute.exe problems/booth.abs
 ```
 
 ##### Coding style

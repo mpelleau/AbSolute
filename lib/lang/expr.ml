@@ -1,12 +1,7 @@
-(** This module defines the numerical language and some basic operations over it*)
-
 open Tools
 
-(** binary arithmetic operators *)
 type binop = ADD | SUB | MUL | DIV | POW
 
-(** numeric expressions (function call, unary negation, binary operations,
-    variables and constants)*)
 type t =
   | Funcall of string * t list
   | Neg of t
@@ -14,58 +9,40 @@ type t =
   | Var of string
   | Cst of Q.t
 
-(** {1 Constructors} *)
+exception Division_by_zero
 
-(** {2 Constants}*)
+exception Non_integer_exposant
+
 let one = Cst Q.one
 
 let zero = Cst Q.zero
 
 let two = Cst Q.two
 
-(** {2 Expression Constructors} *)
-
-(** builds an expression from an integer *)
 let of_int n = Cst (Q.of_int n)
 
-(** builds an expression from an float *)
 let of_float f = Cst (Q.of_float f)
 
-(** builds an expression from an Mpqf.t *)
 let of_mpqf m = Cst m
 
-(** variables constructor *)
 let var v = Var v
 
-(** addition *)
 let add e1 e2 = Binary (ADD, e1, e2)
 
-(** substraction *)
 let sub e1 e2 = Binary (SUB, e1, e2)
 
-(** multiplication *)
 let mul e1 e2 = Binary (MUL, e1, e2)
 
-(** multiplication *)
 let div e1 e2 = Binary (DIV, e1, e2)
 
-(** given an expression [e] builds the expresspion for [e*e]*)
 let square expr = Binary (POW, expr, two)
 
-(** {1 Predicates}*)
-
-(** checks if an expression contains a variable *)
 let rec has_variable = function
   | Funcall (_, args) -> List.exists has_variable args
   | Neg e -> has_variable e
   | Binary (_, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
   | Cst _ -> false
-
-(** checks if an expression is linear:
-
-    - is_linear (2*x + 4*y) = true
-    - is_linear (2*x*z + y) = false *)
 
 let rec is_linear = function
   | Neg e -> is_linear e
@@ -78,10 +55,6 @@ let rec is_linear = function
   | Var _ | Cst _ -> true
   | _ -> false
 
-(** {1 Operations} *)
-
-(** Returns all the variables appearing in an expression as a map where to each
-    variable is associated the (integer) number of its occurences *)
 let rec collect_vars =
   let merge = VarMap.union (fun _v i1 i2 -> Some (i1 + i2)) in
   function
@@ -92,10 +65,39 @@ let rec collect_vars =
       List.map collect_vars a |> List.fold_left merge VarMap.empty
   | Var v -> VarMap.singleton v 1
 
-(** [replace expr var value] builds a new expression identical to [expr] where
-    all the occurences of the variable [var] are replaced by the expression
-    [value] *)
-let replace e1 v value =
+let op_to_fun = function
+  | ADD -> Q.add
+  | SUB -> Q.sub
+  | MUL -> Q.mul
+  | DIV -> (
+      fun a b ->
+        match Q.div a b with None -> raise Division_by_zero | Some q -> q )
+  | POW -> (
+      fun a b ->
+        match Q.to_int b with
+        | None -> raise Non_integer_exposant
+        | Some e -> Q.pow a e )
+
+let rec constant_propagation = function
+  | Neg x -> (
+    match constant_propagation x with Cst c -> Cst (Q.neg c) | x -> Neg x )
+  | Binary (ADD, e, Cst z) when z = Q.zero -> e
+  | Binary (ADD, Cst z, e) when z = Q.zero -> e
+  | Binary (MUL, _, Cst z) when z = Q.zero -> zero
+  | Binary (MUL, Cst z, _) when z = Q.zero -> zero
+  | Binary (MUL, e, Cst z) when z = Q.one -> e
+  | Binary (MUL, Cst z, e) when z = Q.one -> e
+  | Binary (MUL, e, Cst z) when z = Q.minus_one -> Neg e
+  | Binary (MUL, Cst z, e) when z = Q.minus_one -> Neg e
+  | Binary (op, e1, e2) -> (
+    match (constant_propagation e1, constant_propagation e2) with
+    | Cst c1, Cst c2 ->
+        let f = op_to_fun op in
+        Cst (f c1 c2)
+    | e1, e2 -> Binary (op, e1, e2) )
+  | x -> x
+
+let replace ?(simplify = true) e1 v value =
   let rec aux = function
     | Funcall (name, args) -> Funcall (name, List.map aux args)
     | Neg e -> aux e
@@ -103,16 +105,12 @@ let replace e1 v value =
     | Var v' as var -> if v' = v then value else var
     | cst -> cst
   in
-  aux e1
+  let res = aux e1 in
+  if simplify then constant_propagation res else res
 
-(** [fix_var expr var cst] builds a new expression identical to [expr] where all
-    the occurences of the variable [var] are replaced by the constant [cst] *)
-let fix_var (e : t) v (c : Q.t) : t = replace e v (Cst c)
+let fix_var ?(simplify = true) (e : t) v (c : Q.t) : t =
+  replace ~simplify e v (Cst c)
 
-(** Evaluates the expression at the given point.
-
-    @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
-    by a non integer exposant is made. *)
 let eval (e : t) (i : Instance.t) : Q.t =
   let rec aux = function
     | Funcall (_name, args) ->
@@ -137,12 +135,8 @@ let eval (e : t) (i : Instance.t) : Q.t =
   in
   aux e
 
-(** {1 Printing} *)
-
-(** variables printing *)
 let pp_var = Format.pp_print_string
 
-(** binary operators printing *)
 let pp_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
   | SUB -> Format.fprintf fmt "-"
@@ -150,7 +144,6 @@ let pp_binop fmt = function
   | DIV -> Format.fprintf fmt "/"
   | POW -> Format.fprintf fmt "^"
 
-(** expression printer *)
 let rec print fmt = function
   | Funcall (name, args) ->
       let print_args fmt =
@@ -165,5 +158,4 @@ let rec print fmt = function
   | Var v -> Format.fprintf fmt "%s" v
   | Cst c -> Format.fprintf fmt "%a" Q.pp_print c
 
-(** Conversion to a string *)
 let to_string : t -> string = Format.asprintf "%a" print

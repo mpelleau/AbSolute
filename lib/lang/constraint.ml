@@ -42,36 +42,34 @@ let of_instance (i : Instance.t) =
         (fun acc (v', q') -> Or (acc, eq (Var v') (Cst q')))
         (eq (Var v) (Cst q)) tl
 
+let of_apron_lincons lc =
+  let open Apronext in
+  let c_to_q c = c |> Coeffext.to_mpqf |> Expr.of_mpqf in
+  let res =
+    Linconsext.fold
+      (fun c v -> Expr.(add (mul (c_to_q c) (var (Apron.Var.to_string v)))))
+      c_to_q lc
+  in
+  let cmp =
+    match Linconsext.get_typ lc with
+    | SUPEQ -> geq
+    | SUP -> gt
+    | EQ -> eq
+    | _ -> assert false
+  in
+  cmp res Expr.zero
+
 let convex_hull =
   let open Apronext in
-  let instance_to_gen (i : Instance.t) =
-    let env, coords = VarMap.bindings i |> List.split in
-    let e = Environmentext.make_s (Array.of_list env) [||] in
-    Generatorext.of_rational_point e coords
-  in
-  let of_lincons lc =
-    let c_to_q c = c |> Coeffext.to_mpqf |> Expr.of_mpqf in
-    let res =
-      Linconsext.fold
-        (fun c v -> Expr.(add (mul (c_to_q c) (var (Apron.Var.to_string v)))))
-        c_to_q lc
-    in
-    let cmp =
-      match Linconsext.get_typ lc with
-      | SUPEQ -> geq
-      | SUP -> gt
-      | EQ -> eq
-      | _ -> assert false
-    in
-    cmp res Expr.zero
-  in
   fun (instances : Instance.t list) : t ->
-    let g_l = List.map instance_to_gen instances in
+    let g_l = List.map Instance.to_apron_gen instances in
     let pol = Apol.of_generator_list g_l in
     match Apol.to_lincons_list pol with
     | [] -> assert false
     | h :: tl ->
-        List.fold_left (fun acc c -> And (acc, of_lincons c)) (of_lincons h) tl
+        List.fold_left
+          (fun acc c -> And (acc, of_apron_lincons c))
+          (of_apron_lincons h) tl
 
 let inv_cmp = function
   | EQ -> EQ
