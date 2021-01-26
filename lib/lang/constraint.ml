@@ -24,6 +24,14 @@ let eq e1 e2 : t = Cmp (e1, EQ, e2)
 
 let neq e1 e2 : t = Cmp (e1, NEQ, e2)
 
+let and_ b1 b2 : t = And (b1, b2)
+
+let or_ b1 b2 : t = Or (b1, b2)
+
+let not_ b : t = Not b
+
+let imply b1 b2 = Or (Not b1, b2)
+
 let assign var value : t = eq (Expr.var var) (Expr.of_mpqf value)
 
 let inside v low high : t = And (geq v low, leq v high)
