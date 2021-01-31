@@ -47,8 +47,8 @@ let of_instance (i : Instance.t) =
   | [] -> invalid_arg "Instance.to_constraint: empty instance"
   | (v, q) :: tl ->
       List.fold_left
-        (fun acc (v', q') -> Or (acc, eq (Var v') (Cst q')))
-        (eq (Var v) (Cst q)) tl
+        (fun acc (v', q') -> and_ acc (assign v' q'))
+        (assign v q) tl
 
 let of_apron_lincons lc =
   let open Apronext in
@@ -95,8 +95,7 @@ let neg_cmp = function
   | GT -> LEQ
   | LT -> GEQ
 
-let cmp_to_fun cmpop : Q.t -> Q.t -> bool =
- fun a b ->
+let cmp_to_fun cmpop a b =
   let cmp = Q.compare a b in
   match cmpop with
   | EQ -> cmp = 0

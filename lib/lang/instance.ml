@@ -2,7 +2,9 @@ open Tools
 
 type t = Q.t VarMap.t
 
-let of_list : (string * Q.t) list -> t = VarMap.of_list
+let of_list = function
+  | [] -> invalid_arg "Instance.of_list: no coordinate given"
+  | x -> VarMap.of_list x
 
 let translate i1 i2 =
   VarMap.fold (fun v q acc -> VarMap.update v (Option.map (Q.add q)) acc) i1 i2

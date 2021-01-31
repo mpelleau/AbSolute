@@ -9,8 +9,6 @@ let max_depth = ref 100000000
 
 let max_sol = ref 10000000
 
-let problem = ref ""
-
 let domain = ref "box"
 
 let boolean = ref "boolean"
@@ -71,10 +69,6 @@ let set_pruning_iter i =
 let set_max_sol s =
   if s > 0 then max_sol := s
   else raise (Error "number of solutions must be stricly positive")
-
-let set_prob s =
-  if Sys.file_exists s then problem := s
-  else raise (Error (Format.sprintf "%s : file not found" s))
 
 let set_split s =
   match s with

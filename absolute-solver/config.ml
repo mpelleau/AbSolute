@@ -114,5 +114,11 @@ let globaldescr =
    check out https://github.com/mpelleau/AbSolute\n"
 
 let parse_args () =
-  Argext.parse_args_aliases speclist aliases Constant.set_prob globaldescr ;
-  if !Constant.problem = "" then raise (Constant.Error "no filename specified")
+  let problem = ref "" in
+  let set_prob s =
+    if Sys.file_exists s then problem := s
+    else invalid_arg (Format.sprintf "%s : file not found" s)
+  in
+  Argext.parse_args_aliases speclist aliases set_prob globaldescr ;
+  if !problem = "" then raise (Constant.Error "no filename specified") ;
+  !problem

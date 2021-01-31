@@ -20,6 +20,7 @@ type t = comparison boolean
 (** {1 Constructors} *)
 
 (** {2 Comparisons}*)
+
 val leq : Expr.t -> Expr.t -> t
 (** e1 <= e2 *)
 
@@ -41,14 +42,18 @@ val neq : Expr.t -> Expr.t -> t
 (** {2 Boolean formulae}*)
 
 val and_ : t -> t -> t
+(** b1 && b2 *)
 
 val or_ : t -> t -> t
+(** b1 || b2 *)
 
 val imply : t -> t -> t
+(** b1 => b2 *)
 
 val not_ : t -> t
+(** not b *)
 
-(** {2 utilities} *)
+(** {2 Utilities} *)
 
 val assign : string -> Q.t -> t
 (** constraint for variable assignment by a constant *)

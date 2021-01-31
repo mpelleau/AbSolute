@@ -81,13 +81,13 @@ let op_to_fun = function
 let rec constant_propagation = function
   | Neg x -> (
     match constant_propagation x with Cst c -> Cst (Q.neg c) | x -> Neg x )
-  | Binary (ADD, e, Cst z) when z = Q.zero -> e
-  | Binary (ADD, Cst z, e) when z = Q.zero -> e
+  | Binary ((ADD | SUB), e, Cst z) when z = Q.zero -> e
+  | Binary ((ADD | SUB), Cst z, e) when z = Q.zero -> e
   | Binary (MUL, _, Cst z) when z = Q.zero -> zero
   | Binary (MUL, Cst z, _) when z = Q.zero -> zero
-  | Binary (MUL, e, Cst z) when z = Q.one -> e
+  | Binary ((MUL | DIV), e, Cst z) when z = Q.one -> e
   | Binary (MUL, Cst z, e) when z = Q.one -> e
-  | Binary (MUL, e, Cst z) when z = Q.minus_one -> Neg e
+  | Binary ((MUL | DIV), e, Cst z) when z = Q.minus_one -> Neg e
   | Binary (MUL, Cst z, e) when z = Q.minus_one -> Neg e
   | Binary (op, e1, e2) -> (
     match (constant_propagation e1, constant_propagation e2) with
