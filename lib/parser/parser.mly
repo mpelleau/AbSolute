@@ -3,12 +3,6 @@
 open Csp
 open Constraint
 
-let _var_of_dim,set_order =
-  let dims = ref [] in
-  (List.nth !dims),
-  (fun domains ->
-    dims := List.map (fun (_,id,_) -> id) domains;
-    domains)
 %}
 
 
@@ -60,10 +54,10 @@ let _var_of_dim,set_order =
 /* priorities */
 %left OR AND
 %nonassoc NOT
+%left POW
 %left PLUS MINUS
 %left MULTIPLY  DIVIDE
 %nonassoc unary_minus
-%nonassoc POW
 
 %type <typ> typ
 %type <Dom.t> init
@@ -82,11 +76,15 @@ let _var_of_dim,set_order =
 
 // {x}
 %inline brace(YOURSELF):
-  | LBRACE content=YOURSELF RBRACE { content }
+  | LBRACE; content=YOURSELF; RBRACE { content }
 
 // [x]
 %inline bracket(X):
-  | LBRACKET content=X RBRACKET { content }
+  | LBRACKET; content=X; RBRACKET { content }
+
+// (x)
+%inline paren(X):
+  | LPAREN; content=X; RPAREN { content }
 
 // [x;y]
 %inline itv(X,Y):
@@ -115,7 +113,7 @@ file:
   EOF
   {
     {
-      variables=set_order domains;
+      variables=domains;
       objective=o;
       constraints=constr;
       solutions=s;
@@ -161,36 +159,32 @@ bexpreof:
   | bexpr EOF {$1}
 
 bexpr:
-  | CONVEX ; LPAREN a=separated_list(COMMA,instance) RPAREN { convex_hull a }
-  | expr cmp expr                                 { Cmp ($1, $2, $3) }
-  | bexpr OR bexpr                                { Or ($1,$3) }
-  | bexpr AND bexpr                               { And ($1,$3) }
-  | NOT bexpr                                     { Not $2}
-  | expr IN LBRACKET expr SCOLON expr RBRACKET    { inside $1 $4 $6 }
-  | expr NOTIN LBRACKET expr SCOLON expr RBRACKET { outside $1 $4 $6 }
-  | LPAREN bexpr RPAREN                           { $2 }
-
-const:
-  | TOK_const {$1}
-  | MINUS TOK_const {Mpqf.neg $2}
+  | CONVEX a=paren(separated_list(COMMA,instance)) { convex_hull a }
+  | expr cmp expr                                  { Cmp ($1, $2, $3) }
+  | bexpr OR bexpr                                 { Or ($1,$3) }
+  | bexpr AND bexpr                                { And ($1,$3) }
+  | NOT bexpr                                      { Not $2}
+  | expr IN LBRACKET expr SCOLON expr RBRACKET     { inside $1 $4 $6 }
+  | expr NOTIN LBRACKET expr SCOLON expr RBRACKET  { outside $1 $4 $6 }
+  | paren(bexpr)                                   { $1 }
 
 expreof:
   | expr EOF {$1}
 
 expr:
-  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN { Expr.Funcall (i,a) }
-  | LPAREN expr RPAREN           { $2 }
-  | expr binop expr              { Binary($2,$1,$3) }
-  | MINUS expr %prec unary_minus { Neg $2 }
-  | TOK_const                    { Cst $1 }
-  | TOK_id                       { Var $1 }
+  | i=TOK_id a=paren(separated_list(COMMA,expr)) { Expr.Funcall (i,a) }
+  | paren(expr)                                  { $1 }
+  | binop_expr                                   { $1 }
+  | MINUS expr %prec unary_minus                 { Neg $2 }
+  | TOK_const                                    { Cst $1 }
+  | TOK_id                                       { Var $1 }
 
-binop:
-  | POW      { Expr.POW }
-  | DIVIDE   { Expr.DIV }
-  | MULTIPLY { Expr.MUL }
-  | PLUS     { Expr.ADD }
-  | MINUS    { Expr.SUB }
+binop_expr:
+  | expr POW expr      {Binary(POW,$1,$3)}
+  | expr DIVIDE expr   {Binary(DIV,$1,$3)}
+  | expr MULTIPLY expr {Binary(MUL,$1,$3)}
+  | expr PLUS expr     {Binary(ADD,$1,$3)}
+  | expr MINUS expr    {Binary(SUB,$1,$3)}
 
 cmp:
   | LESS          { LT }
@@ -201,5 +195,11 @@ cmp:
   | NOT_EQUAL     { NEQ }
 
 instance:
-  | brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,const))) {Instance.of_list $1}
- // | i=brace(optend(SCOLON,const)) {Instance.of_list (List.mapi (fun i c -> _var_of_dim i, c) i)}
+  | brace(separated_list(SCOLON, coord)) {Instance.of_list $1}
+
+coord:
+  | TOK_id ASSIGN const { $1, $3 }
+
+const:
+  | TOK_const {$1}
+  | MINUS TOK_const {Mpqf.neg $2}
