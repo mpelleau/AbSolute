@@ -1,7 +1,14 @@
 %{
-open Tools
+
 open Csp
 open Constraint
+
+let _var_of_dim,set_order =
+  let dims = ref [] in
+  (List.nth !dims),
+  (fun domains ->
+    dims := List.map (fun (_,id,_) -> id) domains;
+    domains)
 %}
 
 
@@ -17,6 +24,7 @@ open Constraint
 %token INF           /* oo */
 %token IN            /* in */
 %token NOTIN         /* notin */
+%token CONVEX        /* convex */
 
 /* Delimiters */
 %token LBRACE        /* { */
@@ -90,24 +98,24 @@ open Constraint
   | x=X; sep; xs=optend(sep,X) {x::xs}
   | {[]}
 
-// bloc of the form  NAME{CONTENT}
-%public bloc(NAME,CONTENT):
+// block of the form  NAME{CONTENT}
+%public block(NAME,CONTENT):
   | NAME content=brace(CONTENT) {content}
 
-// bloc of the form : NAME{CONTENT;CONTENT ...} with optional ';' at the end
-%public bloc_list(NAME,CONTENT):
+// block of the form : NAME{CONTENT;CONTENT ...} with optional ';' at the end
+%public block_list(NAME,CONTENT):
   | NAME content=brace(optend(SCOLON,CONTENT)) {content}
 
 file:
   loption(constants)
-  domains=bloc_list(INIT,domains)
+  domains=block_list(INIT,domains)
   o=option(objective)
   constr=constraints
   s=option(solutions)
   EOF
   {
     {
-      variables=domains;
+      variables=set_order domains;
       objective=o;
       constraints=constr;
       solutions=s;
@@ -128,7 +136,7 @@ solutions:
  | SOL brace(NONE) {Unfeasible}
 
 sols:
-  | b=boption(NOT) i=brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,const))) {VarMap.of_list i,b}
+  | b=boption(NOT) i=instance {i,b}
 
 constants:
   | CST c=brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,value))) {c}
@@ -145,18 +153,15 @@ typ: INT {Int} | REAL {Real}
 
 init:
   | MINUS INF SCOLON option(PLUS) INF {Top}
-  | MINUS INF SCOLON rational         {Minf ($4)}
-  | rational SCOLON option(PLUS) INF  {Inf ($1)}
+  | MINUS INF SCOLON rational         {Minf $4}
+  | rational SCOLON option(PLUS) INF  {Inf $1}
   | rational SCOLON rational          {Finite($1,$3)}
-
-const:
-  | TOK_const {$1}
-  | MINUS TOK_const {(Mpqf.neg $2)}
 
 bexpreof:
   | bexpr EOF {$1}
 
 bexpr:
+  | CONVEX ; LPAREN a=separated_list(COMMA,instance) RPAREN { convex_hull a }
   | expr cmp expr                                 { Cmp ($1, $2, $3) }
   | bexpr OR bexpr                                { Or ($1,$3) }
   | bexpr AND bexpr                               { And ($1,$3) }
@@ -165,23 +170,27 @@ bexpr:
   | expr NOTIN LBRACKET expr SCOLON expr RBRACKET { outside $1 $4 $6 }
   | LPAREN bexpr RPAREN                           { $2 }
 
+const:
+  | TOK_const {$1}
+  | MINUS TOK_const {Mpqf.neg $2}
+
 expreof:
   | expr EOF {$1}
 
 expr:
-  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN    { Expr.Funcall (i,a) }
+  | i=TOK_id LPAREN a=separated_list(COMMA,expr) RPAREN { Expr.Funcall (i,a) }
   | LPAREN expr RPAREN           { $2 }
-  | binop_expr                   { $1 }
+  | expr binop expr              { Binary($2,$1,$3) }
   | MINUS expr %prec unary_minus { Neg $2 }
   | TOK_const                    { Cst $1 }
   | TOK_id                       { Var $1 }
 
-binop_expr:
-  | expr POW expr      {Binary(POW,$1,$3)}
-  | expr DIVIDE expr   {Binary(DIV,$1,$3)}
-  | expr MULTIPLY expr {Binary(MUL,$1,$3)}
-  | expr PLUS expr     {Binary(ADD,$1,$3)}
-  | expr MINUS expr    {Binary(SUB,$1,$3)}
+binop:
+  | POW      { Expr.POW }
+  | DIVIDE   { Expr.DIV }
+  | MULTIPLY { Expr.MUL }
+  | PLUS     { Expr.ADD }
+  | MINUS    { Expr.SUB }
 
 cmp:
   | LESS          { LT }
@@ -190,3 +199,7 @@ cmp:
   | GREATER_EQUAL { GEQ }
   | ASSIGN        { EQ }
   | NOT_EQUAL     { NEQ }
+
+instance:
+  | brace(optend(SCOLON,separated_pair(TOK_id,ASSIGN,const))) {Instance.of_list $1}
+ // | i=brace(optend(SCOLON,const)) {Instance.of_list (List.mapi (fun i c -> _var_of_dim i, c) i)}

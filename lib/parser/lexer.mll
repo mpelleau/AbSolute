@@ -17,7 +17,8 @@ let _ =
       "real",           REAL;
       "oo",             INF;
       "in",             IN;
-      "notin",          NOTIN
+      "notin",          NOTIN;
+      "convex",         CONVEX
     ]
 
 (* (exact) parsing of decimal constants *)
