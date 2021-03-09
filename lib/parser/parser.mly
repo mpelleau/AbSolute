@@ -54,10 +54,10 @@ open Constraint
 /* priorities */
 %left OR AND
 %nonassoc NOT
-%left POW
 %left PLUS MINUS
 %left MULTIPLY  DIVIDE
 %nonassoc unary_minus
+%nonassoc POW
 
 %type <typ> typ
 %type <Dom.t> init
