@@ -1,3 +1,5 @@
+- use of Picasso.show
+- add covex primitive in parser 
 - add Dom, Expr and Constraint modules
 - add .opam for library
 - add examples using library
