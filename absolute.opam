@@ -21,6 +21,7 @@ depends: [
   "picasso"
   "menhir"
   "libabsolute"
+  "odoc"
 ]
 synopsis: "AbSolute solver"
 description: "AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation."
