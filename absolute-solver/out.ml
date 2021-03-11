@@ -26,8 +26,16 @@ module Make (D : Domain) = struct
     fun abciss ordinate res ->
       let open Result in
       let r = Rendering.create ~abciss ~ordinate ~title:"AbSolute" 800. 800. in
-      let r = Rendering.add_l r (List.map (fun e -> b,D.render e) res.sure) in
-      Rendering.add_l r (List.map (fun e -> g,D.render e) res.unsure)
+      let r =
+        Rendering.add_l r (List.map (fun e -> (b, D.render e)) res.sure)
+      in
+      Rendering.add_l r (List.map (fun e -> (g, D.render e)) res.unsure)
+
+  let build_render3d abciss ordinate height res =
+    let open Result in
+    let r = Rendering3d.create ~abciss ~ordinate ~height () in
+    let r = Rendering3d.add_l r (List.map D.render res.sure) in
+    Rendering3d.add_l r (List.map D.render res.unsure)
 
   let witness w =
     let open Kleene in
@@ -53,13 +61,21 @@ module Make (D : Domain) = struct
     let size = Array.length vars in
     (vars.(0), vars.(1 mod size))
 
+  let vars3D prob =
+    let vars = Csp.get_var_names prob |> Array.of_list in
+    let size = Array.length vars in
+    (vars.(0), vars.(1 mod size), vars.(2 mod size))
+
   let results ?(t = false) prob res =
     let open Constant in
     Format.printf "%a\n%!" (terminal_output ~t) res ;
-    if !visualization || !tex || !obj then (
+    ( if !obj then
+      let v1, v2, v3 = vars3D prob in
+      let render = build_render3d v1 v2 v3 res in
+      to_obj render "out/absolute.obj" ) ;
+    if !visualization || !tex then (
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name" ;
-      if !obj then failwith "picasso 3d" ;
       if !visualization then show render )
 end
