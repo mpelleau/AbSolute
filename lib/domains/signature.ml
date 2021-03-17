@@ -98,7 +98,7 @@ module type Domain = sig
 
   val externalize : internal_constr -> Constraint.t
 
-  val filter : t -> internal_constr -> t Consistency.t
+  val filter : t -> internal_constr -> (t * internal_constr) Consistency.t
   (** redefinition of filter and is_representable using boolean expression *)
 
   val is_representable : internal_constr -> Kleene.t

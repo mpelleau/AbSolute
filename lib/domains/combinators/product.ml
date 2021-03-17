@@ -22,10 +22,10 @@ module Make (A : Domain) (B : Domain) = struct
     Constraint.And (A.to_constraint a, B.to_constraint b)
 
   let a_meet_b a b : B.t Consistency.t =
-    A.to_constraint a |> B.internalize |> B.filter b
+    A.to_constraint a |> B.internalize |> B.filter b |> Consistency.map fst
 
   let b_meet_a a b : A.t Consistency.t =
-    B.to_constraint b |> A.internalize |> A.filter a
+    B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
 
   let reduced_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
@@ -66,15 +66,16 @@ module Make (A : Domain) (B : Domain) = struct
           match reduced_product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
-          | Filtered (x, _) -> x)
+          | Filtered (x, _) -> x )
         (A.meet a a') (B.meet b b')
     with Exit -> None
 
-  let filter ((a, b) : t) (c1, c2) : t Consistency.t =
+  let filter ((a, b) : t) (c1, c2) : (t * internal_constr) Consistency.t =
     let open Kleene in
     match B.is_representable c2 with
-    | True -> Consistency.map (fun b -> (a, b)) (B.filter b c2)
-    | Unknown | False -> Consistency.map (fun a -> (a, b)) (A.filter a c1)
+    | True -> Consistency.map (fun (b, c) -> ((a, b), (c1, c))) (B.filter b c2)
+    | Unknown | False ->
+        Consistency.map (fun (a, c) -> ((a, b), (c, c2))) (A.filter a c1)
 
   let forward_eval ((a, b) : t) obj =
     let l_a, u_a = A.forward_eval a obj in

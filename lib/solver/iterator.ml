@@ -26,8 +26,8 @@ module Make (D : Domain) = struct
         match D.filter abs c with
         | Unsat -> Unsat
         | Sat -> loop sat acc abs tl
-        | Filtered (abs', true) -> loop sat acc abs' tl
-        | Filtered (abs', false) -> loop false (c :: acc) abs' tl )
+        | Filtered ((abs', _), true) -> loop sat acc abs' tl
+        | Filtered ((abs', c'), false) -> loop false (c' :: acc) abs' tl )
     in
     loop true [] space constr
 

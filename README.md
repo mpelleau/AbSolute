@@ -106,6 +106,14 @@ Then, verify everything is working well on an example:
 ./_build/default//absolute-solver/absolute.exe problems/booth.abs
 ```
 
+##### Results
+Beside the ouptut, AbSolute uses the following return code to describe the results.
+- 1 for internal error
+- 3 when the problem is unsatisfiable
+- 4 when the problem *may* admit solutions but the solver failed to find one
+- 5 when the problem is satisfiable 
+
+
 ##### Coding style
 Functionnal is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
 

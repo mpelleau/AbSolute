@@ -29,7 +29,7 @@ type t =
 
 (** {1 Accessors} *)
 
-(** computes the list of all variable names *)
+(** returns list of all variable names *)
 let get_var_names p = List.map (fun (_, v, _) -> v) p.variables
 
 (** {1 Constructors}*)
@@ -47,7 +47,7 @@ let add_real_var name inf sup csp =
   {csp with variables= assign :: csp.variables}
 
 (** adds a real variable in the csp, with float bounds *)
-let add_real_var_f s l h = add_real_var s (Mpqf.of_float l) (Mpqf.of_float h)
+let add_real_var_f s l h = add_real_var s (Q.of_float l) (Q.of_float h)
 
 (** adds an integer variable in the csp *)
 let add_int_var name inf sup csp =
@@ -55,7 +55,7 @@ let add_int_var name inf sup csp =
   {csp with variables= assign :: csp.variables}
 
 (** adds an integer variable in the csp with integer bounds *)
-let add_int_var_i s l h = add_int_var s (Mpqf.of_int l) (Mpqf.of_int h)
+let add_int_var_i s l h = add_int_var s (Q.of_int l) (Q.of_int h)
 
 (** adds a constraint to the csp *)
 let add_constr c csp = {csp with constraints= c :: csp.constraints}
@@ -80,7 +80,7 @@ let pp_typ fmt = function
 
 let pp_declarations fmt =
   List.iter (fun (a, b, c) ->
-      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c)
+      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c )
 
 let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
 

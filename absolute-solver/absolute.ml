@@ -12,9 +12,11 @@ let parse (fn : string) =
 
 (* entry point *)
 let _ =
+  Printexc.record_backtrace true ;
   Random.init 0x4162536f6c757465 ;
   try
     let prob = Config.parse_args () in
     Terminal.go prob ;
     file prob |> Config.run (Domains.parse !domain !boolean)
-  with Error msg | Semantic_error msg | Syntax_error msg -> Terminal.error msg
+  with Error msg | Semantic_error msg | Syntax_error msg ->
+    Terminal.error msg ; exit 1

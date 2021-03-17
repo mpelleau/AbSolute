@@ -62,9 +62,12 @@ module Make (D : Numeric) : Domain = struct
   (* constructors *)
   let leaf x = Leaf x
 
+  let union e a b = Union {envelopp= e; sons= (a, b)}
+
   (* TODO: improve when exact join is met *)
   let join a b =
-    Union {envelopp= fst (D.join (bounding a) (bounding b)); sons= (a, b)}
+    ( Union {envelopp= fst (D.join (bounding a) (bounding b)); sons= (a, b)}
+    , true )
 
   let rec meet q1 q2 =
     match (q1, q2) with
@@ -72,58 +75,61 @@ module Make (D : Numeric) : Domain = struct
     | Union {envelopp; sons= l, r}, b | b, Union {envelopp; sons= l, r} -> (
       match D.meet envelopp (bounding b) with
       | None -> None
-      | Some _ -> Tools.join_bot2 join (meet b l) (meet b r) )
+      | Some _ ->
+          Tools.join_bot2 (fun a b -> fst (join a b)) (meet b l) (meet b r) )
+
+  let meet_env hull = function
+    | Leaf e -> Option.map leaf (D.meet e hull)
+    | Union ({envelopp; _} as u) ->
+        D.meet envelopp hull
+        |> Option.map (fun b' -> Union {u with envelopp= b'})
 
   (* filter for numeric predicates *)
   let filter_cmp (t : t) cmp : t Consistency.t =
-    let rec loop = function
-      | Leaf e -> Consistency.map leaf (D.filter e cmp)
-      | Union {envelopp; sons= l, r} -> (
-        match D.filter envelopp cmp with
-        | Sat -> Sat
-        | Unsat -> Unsat
-        | _ -> (
-          match loop l with
-          | Unsat -> loop r
-          | Sat -> (
-            match loop r with
-            | Unsat -> Filtered (l, true)
-            | Sat -> Sat
-            | Filtered (r', sat) -> Filtered (join l r', sat) )
-          | Filtered (l', satl) as left -> (
-            match loop r with
-            | Unsat -> left
-            | Sat -> Filtered (join l' r, satl)
-            | Filtered (r', satr) -> Filtered (join l' r', satl && satr) ) ) )
-    in
-    loop t
+    match t with
+    | Leaf e -> Consistency.map leaf (D.filter e cmp)
+    | Union {envelopp; sons= l, r} -> (
+      match D.filter envelopp cmp with
+      | Sat -> Sat
+      | Unsat -> Unsat
+      | Filtered (e', x) -> (
+        match Tools.join_bot2 (union e') (meet_env e' l) (meet_env e' r) with
+        | None -> Unsat
+        | Some e -> Filtered (e, x) ) )
 
   (* filter for boolean expressions *)
-  let filter (n : t) c : t Consistency.t =
+  let filter (n : t) c : (t * internal_constr) Consistency.t =
     let open Constraint in
     let rec loop e = function
-      | Cmp a -> filter_cmp e a
+      | Cmp a -> Consistency.map (fun x -> (x, c)) (filter_cmp e a)
       | Or (b1, b2) -> (
         match loop e b1 with
         | Sat -> Sat
         | Unsat -> loop e b2
-        | Filtered (n1, sat1) as x -> (
+        | Filtered ((n1, b1'), sat1) as x -> (
           match loop e b2 with
           | Sat -> Sat
           | Unsat -> x
-          | Filtered (n2, sat2) -> Filtered (join n1 n2, sat1 && sat2) ) )
-      | And (b1, b2) -> Consistency.fold_and loop e [b1; b2]
+          | Filtered ((n2, b2'), sat2) ->
+              let union, exact = join n1 n2 in
+              Filtered ((union, Or (b1', b2')), sat1 && sat2 && exact) ) )
+      | And (b1, b2) -> (
+        match loop e b1 with
+        | Unsat -> Unsat
+        | Sat -> loop e b2
+        | Filtered ((n1, b1'), sat1) as x -> (
+          match loop n1 b2 with
+          | Sat -> x
+          | Unsat -> Unsat
+          | Filtered ((num', b2'), sat2) ->
+              Filtered ((num', And (b1', b2')), sat1 && sat2) ) )
       | Not _ -> assert false
     in
     loop n c
 
-  let join a b = (join a b, true)
-
   let split prec = function
     | Leaf x -> List.rev_map leaf (D.split prec x)
     | Union {sons= l, r; _} -> [l; r]
-
-  let split x = split x
 
   let is_abstraction t i =
     try
@@ -136,7 +142,7 @@ module Make (D : Numeric) : Domain = struct
 
   let rec spawn = function
     | Leaf l -> D.spawn l
-    | Union {sons= l, _; _} -> spawn l
+    | Union {sons= l, r; _} -> spawn (if Random.bool () then l else r)
 
   let diff = None
 

@@ -29,7 +29,7 @@ module Box (I : ITV) = struct
     Env.fold
       (fun v _ acc ->
         let typ = if is_integer abs v then Int else Real in
-        (typ, v) :: acc)
+        (typ, v) :: acc )
       abs []
 
   let is_representable _ = Kleene.True
@@ -52,7 +52,8 @@ module Box (I : ITV) = struct
   let meet (a : t) (b : t) : t option =
     let meet_opt a b =
       match (a, b) with
-      | Some a, Some b -> Some (Option.get (I.meet a b))
+      | Some a, Some b -> (
+        match I.meet a b with None -> raise Exit | x -> x )
       | _ -> raise Exit
     in
     try Some (VarMap.merge (fun _ -> meet_opt) a b) with Exit -> None
@@ -64,7 +65,7 @@ module Box (I : ITV) = struct
   let max_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) ->
-        if I.float_size i > I.float_size io then (v, i) else (vo, io))
+        if I.float_size i > I.float_size io then (v, i) else (vo, io) )
       a (VarMap.min_binding a)
 
   (* variable with maximal range if real or with minimal if integer *)
@@ -253,7 +254,7 @@ module Box (I : ITV) = struct
       (fun k value ->
         let value = Mpqf.to_float value in
         let itv = VarMap.find_fail k a in
-        I.contains_float itv value)
+        I.contains_float itv value )
       i
 
   (* split *)
