@@ -86,7 +86,6 @@ module Make (D : Domain) = struct
 
   let results ?(t = false) prob res =
     let open Constant in
-    Format.printf "%a\n%!" (terminal_output ~t) res ;
     ( if !obj then
       let v1, v2, v3 = vars3D prob in
       let render = build_render3d v1 v2 v3 res in
@@ -95,5 +94,6 @@ module Make (D : Domain) = struct
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
       if !tex then to_latex render "name" ;
-      if !visualization then show render )
+      if !visualization then show render ) ;
+    Format.printf "%a\n%!" (terminal_output ~t) res
 end
