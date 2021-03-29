@@ -8,22 +8,24 @@ let is_zero = Q.equal Q.zero
 let is_neg c = Q.compare Q.zero c > 0
 
 (** iter on expr *)
-let rec iter_expr f = function
-  | Binary (_, e1, e2) as b -> f b ; iter_expr f e1 ; iter_expr f e2
-  | Neg e as u -> f u ; iter_expr f e
-  | x -> f x
+let iter_expr f =
+  let rec loop = function
+    | Binary (_, e1, e2) as b -> f b ; loop e1 ; loop e2
+    | Neg e as u -> f u ; loop e
+    | x -> f x
+  in
+  loop
 
 (** iter on constraints *)
-let rec iter_constr f_expr f_constr = function
-  | Cmp (e1, _, e2) as constr ->
-      f_constr constr ; iter_expr f_expr e1 ; iter_expr f_expr e2
-  | (And (b1, b2) as constr) | (Or (b1, b2) as constr) ->
-      f_constr constr ;
-      iter_constr f_expr f_constr b1 ;
-      iter_constr f_expr f_constr b2
-  | Not b as constr ->
-      f_constr constr ;
-      iter_constr f_expr f_constr b
+let iter_constr f_expr f_constr =
+  let rec loop = function
+    | Cmp (e1, _, e2) as constr ->
+        f_constr constr ; iter_expr f_expr e1 ; iter_expr f_expr e2
+    | (And (b1, b2) as constr) | (Or (b1, b2) as constr) ->
+        f_constr constr ; loop b1 ; loop b2
+    | Not b as constr -> f_constr constr ; loop b
+  in
+  loop
 
 (** boolean formulae map *)
 let map_constr f =
@@ -40,16 +42,20 @@ let apply f e1 e2 b op =
   let e2', b2 = f e2 b in
   (Binary (op, e1', e2'), b1 || b2)
 
-let rec distribute ((op, c) as opc) = function
-  | (Funcall _ | Cst _ | Var _) as x -> Binary (op, x, c)
-  | Neg e -> Neg (distribute opc e)
-  | Binary (POW, _, _) as expr -> Binary (op, expr, c)
-  | Binary (b, e, Cst a) when b = op -> Binary (op, e, Binary (MUL, Cst a, c))
-  | Binary (b, Cst a, e) when b = op -> Binary (op, Binary (op, Cst a, c), e)
-  | Binary (((DIV | MUL) as b), Cst a, e) -> Binary (b, Binary (op, Cst a, c), e)
-  | Binary (DIV, e, Cst a) -> Binary (op, e, Binary (DIV, c, Cst a))
-  | Binary (MUL, e, Cst a) -> Binary (MUL, e, Binary (op, Cst a, c))
-  | Binary (b, e1, e2) -> Binary (b, distribute opc e1, distribute opc e2)
+let distribute (op, c) =
+  let rec loop = function
+    | (Funcall _ | Cst _ | Var _) as x -> Binary (op, x, c)
+    | Neg e -> Neg (loop e)
+    | Binary (POW, _, _) as expr -> Binary (op, expr, c)
+    | Binary (b, e, Cst a) when b = op -> Binary (op, e, Binary (MUL, Cst a, c))
+    | Binary (b, Cst a, e) when b = op -> Binary (op, Binary (op, Cst a, c), e)
+    | Binary (((DIV | MUL) as b), Cst a, e) ->
+        Binary (b, Binary (op, Cst a, c), e)
+    | Binary (DIV, e, Cst a) -> Binary (op, e, Binary (DIV, c, Cst a))
+    | Binary (MUL, e, Cst a) -> Binary (MUL, e, Binary (op, Cst a, c))
+    | Binary (b, e1, e2) -> Binary (b, loop e1, loop e2)
+  in
+  loop
 
 let rec expand = function
   | (Funcall _ | Cst _ | Var _) as x -> x
