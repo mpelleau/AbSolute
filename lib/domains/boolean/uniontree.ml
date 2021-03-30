@@ -1,8 +1,10 @@
 open Signature
 open Consistency
 
-(* This module implements the tree abstract domain described in Abstract Domains
-   for Constraint Programming with Differential Equations *)
+(* This module implements the tree abstract domain described in "Abstract
+   Domains for Constraint Programming with Differential Equations". It provides
+   efficient an pre-calculus for large disjunctions, based on dichotomic search
+   and convex hulls. *)
 
 module Make (D : Numeric) : Domain = struct
   type t = Leaf of D.t | Union of {envelopp: D.t; sons: t * t}
@@ -66,8 +68,8 @@ module Make (D : Numeric) : Domain = struct
 
   (* TODO: improve when exact join is met *)
   let join a b =
-    ( Union {envelopp= fst (D.join (bounding a) (bounding b)); sons= (a, b)}
-    , true )
+    let hull, _exact = D.join (bounding a) (bounding b) in
+    (Union {envelopp= hull; sons= (a, b)}, true)
 
   let rec meet q1 q2 =
     match (q1, q2) with
@@ -88,14 +90,14 @@ module Make (D : Numeric) : Domain = struct
   let filter_cmp (t : t) cmp : t Consistency.t =
     match t with
     | Leaf e -> Consistency.map leaf (D.filter e cmp)
-    | Union {envelopp; sons= l, r} -> (
-      match D.filter envelopp cmp with
-      | Sat -> Sat
-      | Unsat -> Unsat
-      | Filtered (e', x) -> (
-        match Tools.join_bot2 (union e') (meet_env e' l) (meet_env e' r) with
-        | None -> Unsat
-        | Some e -> Filtered (e, x) ) )
+    | Union {envelopp; sons= l, r} ->
+        D.filter envelopp cmp
+        |> Consistency.bind (fun e' x ->
+               match
+                 Tools.join_bot2 (union e') (meet_env e' l) (meet_env e' r)
+               with
+               | None -> Unsat
+               | Some e -> Filtered (e, x))
 
   (* filter for boolean expressions *)
   let filter (n : t) c : (t * internal_constr) Consistency.t =

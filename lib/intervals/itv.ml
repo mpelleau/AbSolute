@@ -369,7 +369,7 @@ module Itv (B : BOUND) = struct
     if is_singleton i1 && i1 = i2 then Sat
     else
       let l = B.max l1 l2 and u = B.min h1 h2 in
-      if B.leq l u then Filtered ((l, u), false) else Unsat
+      if B.leq l u then Filtered ((l, u), l = u) else Unsat
 
   let filter_neq ((l1, h1) as i1 : t) ((l2, h2) as i2 : t) :
       (t * t) Consistency.t =
