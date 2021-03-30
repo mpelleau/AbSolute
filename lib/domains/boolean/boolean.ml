@@ -49,7 +49,7 @@ module Make (Abs : Numeric) : Domain = struct
     loop num c
 
   let rec is_representable = function
-    | And (a, b) -> Kleene.and_kleene (is_representable a) (is_representable b)
+    | And (a, b) -> Kleene.and_ (is_representable a) (is_representable b)
     | Cmp c -> Abs.is_representable c
     | _ -> Kleene.False
 end

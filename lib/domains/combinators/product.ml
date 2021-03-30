@@ -16,7 +16,7 @@ module Make (A : Domain) (B : Domain) = struct
   let externalize (c, _) = A.externalize c
 
   let is_representable (c1, c2) =
-    Kleene.or_kleene (A.is_representable c1) (B.is_representable c2)
+    Kleene.or_ (A.is_representable c1) (B.is_representable c2)
 
   let to_constraint (a, b) =
     Constraint.And (A.to_constraint a, B.to_constraint b)
@@ -66,7 +66,7 @@ module Make (A : Domain) (B : Domain) = struct
           match reduced_product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
-          | Filtered (x, _) -> x )
+          | Filtered (x, _) -> x)
         (A.meet a a') (B.meet b b')
     with Exit -> None
 

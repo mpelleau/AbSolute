@@ -1,5 +1,5 @@
-(** This module internalizes the constraints into an internal state and then
-    handles the order of propagations *)
+(** This module internalizes the constraints into an internal state and handles
+    the order of propagations *)
 
 open Signature
 open Consistency
@@ -18,7 +18,7 @@ module Make (D : Domain) = struct
     if verbose then Format.printf " done.\n%!" ;
     {space; constr= constraints}
 
-  (* filtering constraints in turn only once *)
+  (* filtering constraints in round-robin order *)
   let propagate {space; constr} : t Consistency.t =
     let rec loop sat acc abs = function
       | [] -> Filtered ({space= abs; constr= acc}, sat)

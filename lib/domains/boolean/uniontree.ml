@@ -20,7 +20,7 @@ module Make (D : Numeric) : Domain = struct
 
   let rec is_representable = function
     | Constraint.And (a, b) | Or (a, b) ->
-        Kleene.and_kleene (is_representable a) (is_representable b)
+        Kleene.and_ (is_representable a) (is_representable b)
     | Constraint.Not e -> is_representable e
     | Constraint.Cmp c -> D.is_representable c
 

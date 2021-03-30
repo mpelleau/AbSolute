@@ -277,13 +277,14 @@ module Eval (B : BOUND) = struct
     match p with
     | 0 -> one
     | 1 -> (il, ih)
-    | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
-    | x when x > 1 ->
-        if B.leq il B.zero && B.geq ih B.zero then
-          (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
-        else if B.geq il B.zero then (B.pow_down il p, B.pow_up ih p)
-        else (B.pow_down ih p, B.pow_up il p)
-    | _ -> failwith "cant handle negatives powers"
+    | x ->
+        if x > 1 then
+          if x mod 2 = 1 then (B.pow_down il p, B.pow_up ih p)
+          else if B.leq il B.zero && B.geq ih B.zero then
+            (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+          else if B.geq il B.zero then (B.pow_down il p, B.pow_up ih p)
+          else (B.pow_down ih p, B.pow_up il p)
+        else failwith "cant handle negatives powers"
 
   (* nth-root *)
   let n_root ((il, ih) : t) (exp : t) =

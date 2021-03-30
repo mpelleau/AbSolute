@@ -11,10 +11,10 @@ module Make (D : Domain) = struct
      a searchspace is processed (Sat, Unsat or too small) at a given depth d, we
      increase the progress bar by 1/(2^d). *)
   let loading =
-    let q100 = Q.of_int 100 in
     let z1 = Mpz.of_int 1 in
     let progress = ref Q.zero in
     let print = Tools.inplace_print () in
+    let q100 = Q.of_int 100 in
     let p = Mpz.init () in
     fun depth ->
       Mpz.mul_2exp p z1 (depth - 1) ;
@@ -66,7 +66,7 @@ module Make (D : Domain) = struct
             try
               S.split prec a
               |> List.fold_left
-                   (fun acc elem -> Kleene.or_kleene acc (aux (depth + 1) elem))
+                   (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
             with TooSmall -> return ~verbose depth Kleene.Unknown )
     in
@@ -91,7 +91,7 @@ module Make (D : Domain) = struct
             try
               S.split prec a
               |> List.fold_left
-                   (fun acc elem -> Kleene.or_kleene acc (aux (depth + 1) elem))
+                   (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
             with TooSmall -> return ~verbose depth Kleene.Unknown )
       | Unsat ->
