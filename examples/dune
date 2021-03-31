@@ -1,3 +1,3 @@
 (executables
- (names polynomial convex)
+ (names polynomial convex tree)
  (libraries libabsolute))

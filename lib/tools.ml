@@ -5,7 +5,7 @@
 (** same as failwith but uses a format instead *)
 let fail_fmt fmt = Format.kasprintf failwith fmt
 
-(** printing that erases previous output. should not be intertwined with orher
+(** printing that erases previous output. should not be intertwined with other
     prints *)
 let inplace_print () =
   let size_last = ref 0 in
@@ -39,7 +39,7 @@ let fold_on_combination_2 ?duplicate:(d = false) f acc arr =
   aux acc 0 0
 
 (** meet on options *)
-let meet_bot f x y = Option.bind x (fun x -> Option.map (fun y -> f x y) y)
+let meet_bot f x y = Option.bind x (fun x -> Option.map (f x) y)
 
 (** merge on options *)
 let merge_bot x y = Option.bind x (fun x -> Option.map (fun y -> (x, y)) y)

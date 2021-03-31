@@ -35,7 +35,7 @@ module Parser = struct
 
   (** parses a [.abs] file and builds the corresponding problem. Raises
       [Syntax_error] when the input is syntactically invalid and
-      [Semantic_error] when the input maakes no sense (e.g unbound variable).
+      [Semantic_error] when the input makes no sense (e.g unbound variable).
       When check is set to false, no semantic check is performed *)
   let file ?(check = true) filename =
     let p = File_parser.parse filename in
@@ -48,7 +48,6 @@ end
 module Signature = Signature
 module Domains = Domains
 module Solver = Solver
-module Kleene = Kleene
 module Consistency = Consistency
 module Result = Result
 module Constant = Constant
@@ -62,3 +61,4 @@ module I = I
 (** {1 Miscellaneous}*)
 
 module Tools = Tools
+module Kleene = Kleene

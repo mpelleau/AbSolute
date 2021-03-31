@@ -6,7 +6,7 @@ module Solver = Solver.Make (Domains.Boolean.Make (Domains.BoxS))
 let () =
   let open Csp in
   let prob =
-    Csp.empty
+    empty
     |> add_real_var_f "x" (-1000.) 1000.
     |> add_constr (Parser.constr {|3*x^2 +4*x -5 = 0|})
   in

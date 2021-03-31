@@ -90,20 +90,29 @@ let show_error fname line col =
   let col = String.make (col - 1) ' ' in
   Format.asprintf "%s\n%s^" line col
 
-let print_pos ppf lex =
+let print_pos_file ppf lex =
   let p = lex.lex_curr_p in
   let col = p.pos_cnum - p.pos_bol in
-  Format.fprintf ppf "file %s, Line %d, Column %d\n%s" p.pos_fname p.pos_lnum
-    col
+  Format.fprintf ppf "file %s, Line %d, Column %d%s" p.pos_fname p.pos_lnum col
     (show_error p.pos_fname p.pos_lnum col)
 
 let constr (str : string) =
-  let lexb = Lexing.from_string str in
-  (Parser.bexpreof Lexer.token) lexb
+  let lex = Lexing.from_string str in
+  try (Parser.bexpreof Lexer.token) lex
+  with _ ->
+    let p = lex.lex_curr_p in
+    let col = p.pos_cnum - p.pos_bol in
+    let msg = Format.asprintf "Syntax Error at char %i: '%c'" col str.[col] in
+    raise (Syntax_error msg)
 
 let expr (str : string) =
-  let lexb = Lexing.from_string str in
-  (Parser.expreof Lexer.token) lexb
+  let lex = Lexing.from_string str in
+  try (Parser.expreof Lexer.token) lex
+  with _ ->
+    let p = lex.lex_curr_p in
+    let col = p.pos_cnum - p.pos_bol in
+    let msg = Format.asprintf "Syntax Error at char %i" col in
+    raise (Syntax_error msg)
 
 (* open a file and parse it *)
 let parse (filename : string) : Csp.t =
@@ -115,5 +124,5 @@ let parse (filename : string) : Csp.t =
     lex.lex_curr_p <- {lex.lex_curr_p with pos_fname= filename} ;
     fileparser lex
   with _ ->
-    let msg = Format.asprintf "Syntax Error in %a\n" print_pos lex in
+    let msg = Format.asprintf "Syntax Error in %a\n" print_pos_file lex in
     close_in f ; raise (Syntax_error msg)

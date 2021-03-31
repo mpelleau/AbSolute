@@ -3,8 +3,8 @@ open Consistency
 
 (* This module implements the tree abstract domain described in "Abstract
    Domains for Constraint Programming with Differential Equations". It provides
-   efficient an pre-calculus for large disjunctions, based on dichotomic search
-   and convex hulls. *)
+   an efficient pre-calculus for meets and filter on large disjunctions, based
+   on dichotomy and convex hulls. *)
 
 module Make (D : Numeric) : Domain = struct
   type t = Leaf of D.t | Union of {envelopp: D.t; sons: t * t}
