@@ -103,7 +103,7 @@ module Make (D : Numeric) : Domain = struct
   let filter (n : t) c : (t * internal_constr) Consistency.t =
     let open Constraint in
     let rec loop e = function
-      | Cmp a -> Consistency.map (fun x -> (x, c)) (filter_cmp e a)
+      | Cmp a as c -> Consistency.map (fun x -> (x, c)) (filter_cmp e a)
       | Or (b1, b2) -> (
         match loop e b1 with
         | Sat -> Sat
