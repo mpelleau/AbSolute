@@ -42,16 +42,6 @@ Please also consult our [documentation](https://github.com/mpelleau/AbSolute/blo
 
 The installation process should be easy, if you have any problem, see the Section `Troubleshooting`, fill an issue or email us directly.
 
-### Requirements
-
-The following is a list of the dependencies to build AbSolute; note that we explain in the next section how to install `OCaml` and `Apron` if you do not have them already.
-
-- An ANSI C compiler
-- OCaml >= 4.03 : http://ocaml.org/
-- Apron: http://apron.cri.ensmp.fr/library/
-- picasso: https://github.com/ghilesZ/picasso
-- dune
-
 ### Installation
 
 The easiest way to install AbSolute is through the OCaml package manager [opam](http://opam.ocaml.org/).
@@ -84,7 +74,7 @@ Install the [apron library](http://apron.cri.ensmp.fr/library/), the dune build 
 opam install dune apron apronext odoc picasso
 ```
 
-You might also want to install get the developpement version of the apronext and the picasso library (which used to be part of AbSolute) which you can by doing:
+You might want to get the developpement version of the apronext and the picasso library (which used to be part of AbSolute) in which case you can install them by doing:
 
 ```sh
 git clone https://github.com/ghilesZ/apronext
@@ -104,11 +94,10 @@ make
 Then, verify everything is working well on an example:
 
 ```sh
-./_build/default//absolute-solver/absolute.exe problems/booth.abs
+./_build/default/absolute-solver/absolute.exe problems/booth.abs
 ```
 
-##### Coding style
-Functionnal is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
+If you want to contribute to the project, note that functionnal programming is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
 
 ##### Results
 Beside the ouptut, AbSolute uses the following return code to describe the results.
