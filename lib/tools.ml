@@ -5,6 +5,9 @@
 (** same as failwith but uses a format instead *)
 let fail_fmt fmt = Format.kasprintf failwith fmt
 
+(** same as invalid_arg but uses a format instead *)
+let invalid_fmt fmt = Format.kasprintf invalid_arg fmt
+
 (** printing that erases previous output. should not be intertwined with other
     prints *)
 let inplace_print () =

@@ -3,7 +3,7 @@
 AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation.
 It implements the solving method presented in: ["A Constraint Solver Based on Abstract Domains"](https://hal.archives-ouvertes.fr/hal-00785604/file/Pelleau_Mine_Truchet_Benhamou.pdf).
 
-This repository provides code for two packages: the AbSolute solver and the libabsolute library. You can use the later from you OCaml programs.
+This repository provides code for two packages: the AbSolute solver and the libabsolute library. You can use the later from you OCaml programs, its documentation is available [here](https://mpelleau.github.io/AbSolute/libabsolute/index.html).
 
 AbSolute is still in developpement, and have not been fully tested.
 Feel free to fill an [issue](https://github.com/mpelleau/AbSolute/issues) or contact any member of the developpement team if you want to report a bug or suggest a feature.
@@ -25,8 +25,8 @@ init{
 }
 
 constraints{
-  y < (sin x) + 1;
-  y > (cos x) - 1;
+  y < sin(x) + 1;
+  y > cos(x) - 1;
 }
 ```
 
@@ -49,15 +49,16 @@ The following is a list of the dependencies to build AbSolute; note that we expl
 - An ANSI C compiler
 - OCaml >= 4.03 : http://ocaml.org/
 - Apron: http://apron.cri.ensmp.fr/library/
+- picasso: https://github.com/ghilesZ/picasso
 - dune
 
 ### Installation
 
-We install OCaml and AbSolute through the OCaml package manager [opam](http://opam.ocaml.org/).
+The easiest way to install AbSolute is through the OCaml package manager [opam](http://opam.ocaml.org/).
 You will have to [install it](http://opam.ocaml.org/doc/Install.html) if you do not have it. For example:
 ```sh
 apt-get install opam # on Debian, see opam documentation for other distributions.
-opam init --comp 4.06.1 # Initialize ~/.opam with a freshly compiled OCaml 4.06.1
+opam init --comp 4.09.0 # Initialize ~/.opam with a freshly compiled OCaml 4.09.0
 ```
 
 The next step is to download and build AbSolute.
@@ -77,10 +78,10 @@ absolute --help
 
 ### Developpers
 
-Install the [apron library](http://apron.cri.ensmp.fr/library/), the dune build system and the lablgtk library (used for visualisation):
+Install the [apron library](http://apron.cri.ensmp.fr/library/), the dune build system, the odoc documentation generator and the picasso library (used for visualisation):
 
 ```sh
-opam install dune apron lablgtk
+opam install dune apron apronext odoc picasso
 ```
 
 You might also want to install get the developpement version of the apronext and the picasso library (which used to be part of AbSolute) which you can by doing:
@@ -106,16 +107,16 @@ Then, verify everything is working well on an example:
 ./_build/default//absolute-solver/absolute.exe problems/booth.abs
 ```
 
-##### Results
-Beside the ouptut, AbSolute uses the following return code to describe the results.
-- 1 for internal error
-- 3 when the problem is unsatisfiable
-- 4 when the problem *may* admit solutions but the solver failed to find one
-- 5 when the problem is satisfiable 
-
-
 ##### Coding style
 Functionnal is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
+
+##### Results
+Beside the ouptut, AbSolute uses the following return code to describe the results.
+- 1 for an internal error
+- 2 misuse of options
+- 3 the problem is unsatisfiable
+- 4 the problem *may* admit solutions but the solver failed to find one
+- 5 the problem is satisfiable 
 
 ### Troubleshooting
 
@@ -152,7 +153,7 @@ You can simply add the following to your .emacs:
 (define-generic-mode 'absolute-mode          ;; name of the mode
   '("/*" "*/")                               ;; comments start with '/*' and end with '*/'
   '("init" "constraints" "solutions"
-    "real" "int")                            ;; keywords
+    "real" "int" "in" "notin")               ;; keywords
   '(("\\(?:cos\\|exp\\|s\\(?:in\\|qrt\\)\\)"
      . 'font-lock-function-name-face))       ;; function names
   '("\\.abs$")                               ;; files for which to activate this mode

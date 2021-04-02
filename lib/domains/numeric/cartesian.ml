@@ -29,7 +29,7 @@ module Box (I : ITV) = struct
     Env.fold
       (fun v _ acc ->
         let typ = if is_integer abs v then Int else Real in
-        (typ, v) :: acc )
+        (typ, v) :: acc)
       abs []
 
   let is_representable _ = Kleene.True
@@ -65,7 +65,7 @@ module Box (I : ITV) = struct
   let max_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) ->
-        if I.float_size i > I.float_size io then (v, i) else (vo, io) )
+        if I.float_size i > I.float_size io then (v, i) else (vo, io))
       a (VarMap.min_binding a)
 
   (* variable with maximal range if real or with minimal if integer *)
@@ -199,7 +199,9 @@ module Box (I : ITV) = struct
       | NEQ -> I.filter_neq i1 i2
       | EQ -> Consistency.map (fun x -> (x, x)) (I.filter_eq i1 i2)
     in
-    Consistency.map (fun (j1, j2) -> refine (refine a b1 j1) b2 j2) res
+    Consistency.bind
+      (fun (j1, j2) _b -> Filtered (refine (refine a b1 j1) b2 j2, false))
+      res
 
   let filter (a : t) (e1, binop, e2) : t Consistency.t =
     try test a e1 binop e2 with Invalid_argument _ -> Consistency.Unsat
@@ -254,7 +256,7 @@ module Box (I : ITV) = struct
       (fun k value ->
         let value = Mpqf.to_float value in
         let itv = VarMap.find_fail k a in
-        I.contains_float itv value )
+        I.contains_float itv value)
       i
 
   (* split *)

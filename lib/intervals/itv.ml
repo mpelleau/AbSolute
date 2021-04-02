@@ -3,6 +3,7 @@
     Therefore it does not handle "holes" in the domain. *)
 
 open Bound_sig
+open Tools
 
 module Eval (B : BOUND) = struct
   (* interval bound (possibly -oo or +oo *)
@@ -15,11 +16,22 @@ module Eval (B : BOUND) = struct
      return it as Bot *)
   type t = bound * bound
 
-  (* not all pairs of rationals are valid intervals *)
+  (* PRINTING *)
+
+  let pp_print_bound fmt (b : B.t) =
+    if B.ceil b = b then Format.fprintf fmt "%0F" (B.to_float_down b)
+    else Format.fprintf fmt "%a" Format.pp_print_float (B.to_float_down b)
+
+  (* printer *)
+  let print fmt ((l, h) : t) =
+    if l = h then pp_print_bound fmt l
+    else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
+
+  (* not all pairs of bounds are valid intervals *)
   let validate ((l, h) : t) : t =
     match (B.classify l, B.classify h) with
     | (B.INVALID, _ | _, B.INVALID | B.MINF, _ | _, B.INF | _) when B.gt l h ->
-        invalid_arg "int.validate"
+        invalid_fmt "int.validate : [%a; %a]" pp_print_bound l pp_print_bound h
     | _ -> (l, h)
 
   (* maps empty intervals to explicit bottom *)
@@ -70,17 +82,6 @@ module Eval (B : BOUND) = struct
   let of_float (x : float) = of_floats x x
 
   let hull (x : B.t) (y : B.t) = (B.min x y, B.max x y)
-
-  (* PRINTING *)
-
-  let pp_print_bound fmt (b : B.t) =
-    if B.ceil b = b then Format.fprintf fmt "%0F" (B.to_float_down b)
-    else Format.fprintf fmt "%a" Format.pp_print_float (B.to_float_down b)
-
-  (* printer *)
-  let print fmt ((l, h) : t) =
-    if l = h then pp_print_bound fmt l
-    else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
 
   let to_constraint v ((l, h) : t) =
     Constraint.inside_cst v (B.to_rat l) (B.to_rat h)
@@ -159,8 +160,10 @@ module Eval (B : BOUND) = struct
   let mean ((l, h) : t) : B.t =
     match (is_finite l, is_finite h) with
     | true, true ->
-        (* finite bounds: returns the actual mean *)
-        B.div_up (B.add_up l h) B.two
+        (* finite bounds: either split on 0 to esure monotony, or return the
+           actual mean *)
+        if B.lt l B.zero && B.gt h B.zero then B.zero
+        else B.div_up (B.sub_up h l) B.two |> B.add_down l
     | true, false ->
         (* [l,+oo] *)
         if B.sign l < 0 then B.zero (* cut at 0 if [l,+oo] contains 0 *)
@@ -337,7 +340,6 @@ module Eval (B : BOUND) = struct
     | "exp" -> arity_1 exp
     | "ln" -> arity_1_bot ln
     | "log" -> arity_1_bot log
-    (* min max *)
     | "max" -> arity_2 max
     | "min" -> arity_2 min
     | s -> failwith (Format.sprintf "unknown eval function : %s" s)
@@ -348,14 +350,13 @@ module Itv (B : BOUND) = struct
   include E
   include Filter.Make (E)
 
-  (* tests *)
-  (* ----- *)
+  (* guards *)
 
   let filter_leq ((l1, h1) : t) ((l2, h2) : t) : (t * t) Consistency.t =
     let open Consistency in
     if B.leq h1 l2 then Sat
     else if B.gt l1 h2 then Unsat
-    else Filtered (((l1, B.min h1 h2), (B.max l1 l2, h2)), false)
+    else Filtered (((l1, B.min h1 h2), (B.max l1 l2, h2)), l1 = h1 || l2 = h2)
 
   let filter_lt ((l1, h1) as i1 : t) ((l2, h2) as i2 : t) :
       (t * t) Consistency.t =
