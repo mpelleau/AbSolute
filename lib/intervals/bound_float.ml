@@ -87,11 +87,11 @@ let classify (x : t) : kind =
 
 let zero : t = 0.
 
-let one : t = 1.
+let one : t = F.one
 
-let two : t = 2.
+let two : t = F.two
 
-let minus_one : t = -1.
+let minus_one : t = F.minus_one
 
 let inf : t = infinity
 
@@ -146,11 +146,11 @@ let bound_div f x y =
 (* TODO: improve and check soundness *)
 let sqrt_up x = sqrt x
 
-let sqrt_down x = div_down 1. (sqrt (div_up 1. x))
+let sqrt_down x = div_down F.one (sqrt (div_up F.one x))
 
 let pow_up x n = x ** float n
 
-let pow_down x n = div_down 1. (div_up 1. x ** float n)
+let pow_down x n = div_down F.one (div_up F.one x ** float n)
 
 let root_up x n =
   if x < 0. && n mod 2 = 1 then -.exp (log (-.x) /. float n)
@@ -162,7 +162,7 @@ let root_down x n =
 
 let pi = 3.141592653589793
 
-let twopi = 2. *. pi
+let twopi = F.two *. pi
 
 (* returns true is cos is monotonic and strictly decreasing around x; x in
    [0;2pi] *)
@@ -173,7 +173,7 @@ let to_zero_twopi x = x -. ((x /. twopi |> floor) *. twopi)
 (* returns true is cos is monotonic and strictly decreasing around x*)
 let is_cos_decreasing x = is_cos_decreasing (to_zero_twopi x)
 
-let is_sin_decreasing x = is_cos_decreasing (x +. (pi /. 2.))
+let is_sin_decreasing x = is_cos_decreasing (x +. (pi /. F.two))
 
 (* let cos_up x = if is_cos_decreasing x then cos x else -.(cos (-.x)) *)
 
@@ -212,7 +212,7 @@ let atan_down = atan
 
 let exp_up = exp
 
-let exp_down x = div_down 1. (exp_up (-.x))
+let exp_down x = div_down F.one (exp_up (-.x))
 
 let ln_up = log
 
@@ -230,15 +230,15 @@ let min_exp = -1022
 
 let max_exp = 1023
 
-let min_denormal = ldexp 1. (min_exp - mant_size)
+let min_denormal = ldexp F.one (min_exp - mant_size)
 
-let min_normal = ldexp 1. min_exp
+let min_normal = ldexp F.one min_exp
 
-let max_normal = ldexp (2. -. ldexp 1. (-mant_size)) max_exp
+let max_normal = ldexp (2. -. ldexp F.one (-mant_size)) max_exp
 
-let max_exact = ldexp 1. mant_size
+let max_exact = ldexp F.one mant_size
 
-let ulp = ldexp 1. (-mant_size)
+let ulp = ldexp F.one (-mant_size)
 
 let floor = floor
 

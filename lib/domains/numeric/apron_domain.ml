@@ -6,11 +6,8 @@ open Apronext
 let itv_to_mpqf i = Interval.(Scalarext.(to_mpqf i.inf, to_mpqf i.sup))
 
 let scalar_mul_sqrt2 =
-  let sqrt2_mpqf = Mpqf.of_float 0.707106781186548 in
-  fun sca ->
-    let value = Scalarext.to_mpqf sca in
-    let mult = Mpqf.mul value sqrt2_mpqf in
-    Scalar.of_mpqf mult
+  let sqrt2_mpqf = Scalarext.of_float 0.707106781186548 in
+  fun s -> Scalarext.mul s sqrt2_mpqf
 
 type point = float array
 

@@ -12,7 +12,9 @@ let parse (fn : string) =
 
 (* entry point *)
 let _ =
-  Printexc.record_backtrace true ;
+  (* for debug *)
+  (* Printexc.record_backtrace true ; *)
+  (* Memtrace.trace_if_requested ~context:"absolute" () ; *)
   Random.init 0x4162536f6c757465 ;
   try
     let prob = Config.parse_args () in

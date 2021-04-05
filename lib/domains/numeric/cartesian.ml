@@ -118,37 +118,40 @@ module Box (I : ITV) = struct
      division by zero). - We raise Bot_found in case the expression only
      evaluates to error values. - Otherwise, we return only the non-error
      values. *)
-  let rec eval (a : t) (e : Expr.t) : bexpri =
-    match e with
-    | Funcall (name, args) ->
-        let bargs = List.map (eval a) args in
-        let iargs = List.map snd bargs in
-        let r = Option.get (I.eval_fun name iargs) in
-        (BFuncall (name, bargs), r)
-    | Var v ->
-        let r = find v a in
-        (BVar v, r)
-    | Cst c ->
-        let r = I.of_rat c in
-        (BCst r, r)
-    | Neg e1 ->
-        let ((_, i1) as b1) = eval a e1 in
-        (BNeg b1, I.neg i1)
-    | Binary (o, e1, e2) ->
-        let ((_, i1) as b1) = eval a e1 and ((_, i2) as b2) = eval a e2 in
-        let r =
-          match o with
-          | ADD -> I.add i1 i2
-          | SUB -> I.sub i1 i2
-          | DIV -> Option.get (I.div i1 i2)
-          | MUL ->
-              let r = I.mul i1 i2 in
-              if e1 = e2 then (* special case: squares are positive *)
-                I.abs r
-              else r
-          | POW -> I.pow i1 i2
-        in
-        (BBinary (o, b1, b2), r)
+  let eval (a : t) (e : Expr.t) : bexpri =
+    let open Expr in
+    let rec loop = function
+      | Funcall (name, args) ->
+          let bargs = List.map loop args in
+          let iargs = List.map snd bargs in
+          let r = Option.get (I.eval_fun name iargs) in
+          (BFuncall (name, bargs), r)
+      | Var v ->
+          let r = find v a in
+          (BVar v, r)
+      | Cst c ->
+          let r = I.of_rat c in
+          (BCst r, r)
+      | Neg e1 ->
+          let ((_, i1) as b1) = loop e1 in
+          (BNeg b1, I.neg i1)
+      | Binary (o, e1, e2) ->
+          let ((_, i1) as b1) = loop e1 and ((_, i2) as b2) = loop e2 in
+          let r =
+            match o with
+            | ADD -> I.add i1 i2
+            | SUB -> I.sub i1 i2
+            | DIV -> Option.get (I.div i1 i2)
+            | MUL ->
+                let r = I.mul i1 i2 in
+                if e1 = e2 then (* special case: squares are positive *)
+                  I.abs r
+                else r
+            | POW -> I.pow i1 i2
+          in
+          (BBinary (o, b1, b2), r)
+    in
+    loop e
 
   (* Second step of the HC4-revise algorithm. It propagates the intervals from
      the root of the expression tree `e` to the leaves. For example: Given `y =
@@ -157,6 +160,7 @@ module Box (I : ITV) = struct
      `[4..6]` due to the equality. Note that we can call again `eval` to
      restrain further `+`, and then another round of `refine` will restrain `x`
      as well. We raise `Bot_found` in case of unsatisfiability. *)
+
   let rec refine (a : t) (e : bexpr) (x : I.t) : t =
     (*Format.printf "%a\n" print_bexpri (e, x);*)
     match e with
@@ -224,14 +228,6 @@ module Box (I : ITV) = struct
   let forward_eval abs cons =
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
-
-  let rec is_applicable (abs : t) (e : Expr.t) : bool =
-    match e with
-    | Var v -> VarMap.mem v abs
-    | Cst _ -> true
-    | Neg e1 -> is_applicable abs e1
-    | Binary (_, e1, e2) -> is_applicable abs e1 && is_applicable abs e2
-    | Funcall (_, _) -> false
 
   (* check if sound *)
 

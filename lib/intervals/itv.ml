@@ -28,15 +28,15 @@ module Eval (B : BOUND) = struct
     else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
 
   (* not all pairs of bounds are valid intervals *)
-  let validate ((l, h) : t) : t =
+  let validate ((l, h) as i : t) : t =
     match (B.classify l, B.classify h) with
     | (B.INVALID, _ | _, B.INVALID | B.MINF, _ | _, B.INF | _) when B.gt l h ->
         invalid_fmt "int.validate : [%a; %a]" pp_print_bound l pp_print_bound h
-    | _ -> (l, h)
+    | _ -> i
 
   (* maps empty intervals to explicit bottom *)
-  let check_bot ((l, h) : t) : t option =
-    if B.leq l h then Some (l, h) else None
+  let check_bot ((l, h) as i : t) : t option =
+    if B.leq l h then Some i else None
 
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
