@@ -13,7 +13,7 @@ Supported by ANR CoVerif.
 
 # The AbSolute Solver
 
-## Quick introductory example
+#### introductory example
 
 In AbSolute, you first declare your variables in the `init` section, and then the constraints on these variables in the `constraints` section:
 
@@ -108,6 +108,9 @@ If you want to contribute to the project, note that functionnal programming is t
 
 Also, we recommend you to monitor the memory usage of the changes you may introduce in the solver. To do so, you can install [memtrace](https://github.com/janestreet/memtrace) and [memtrace_viewer](https://github.com/janestreet/memtrace_viewer) 
 (both are available via opam). This will allow you to create an executable *memabsolute* from the Makefile, by doing `make memabsolute`. This executable basically initializes a memory trace, calls absolute, and then shows the memory consumption in a browser.
+
+When contributing to AbSolute, please first discuss the change you
+wish to make via an issue, then feel free to fork and submit a PR.
 
 ##### Results
 Beside the ouptut, AbSolute uses the following return code to describe the results.
