@@ -97,7 +97,17 @@ Then, verify everything is working well on an example:
 ./_build/default/absolute-solver/absolute.exe problems/booth.abs
 ```
 
+Or maybe simpler create an executable in the root directory and run it by doing:
+```sh
+make absolute
+./absolute problems/booth.abs
+```
+
+###### Contribution
 If you want to contribute to the project, note that functionnal programming is the prefered style. Also we strongly recommend the use of [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
+
+Also, we recommend you to monitor the memory usage of the changes you may introduce in the solver. To do so, you can install [memtrace](https://github.com/janestreet/memtrace) and [memtrace_viewer](https://github.com/janestreet/memtrace_viewer) 
+(both are available via opam). This will allow you to create an executable *memabsolute* from the Makefile, by doing `make memabsolute`. This executable basically initializes a memory trace, calls absolute, and then shows the memory consumption in a browser.
 
 ##### Results
 Beside the ouptut, AbSolute uses the following return code to describe the results.

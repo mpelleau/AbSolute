@@ -1,5 +1,18 @@
+(library
+  (wrapped false)
+  (name libsolver)
+  (modules argext terminal out config)
+  (libraries libabsolute)
+ )
+
 (executable
  (package absolute)
  (name absolute)
+ (modules absolute)
  (public_name absolute)
- (libraries libabsolute))
+ (libraries libabsolute libsolver))
+
+(executable
+ (name memabsolute)
+ (modules memabsolute)
+ (libraries libabsolute libsolver memtrace))

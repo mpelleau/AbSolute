@@ -310,12 +310,12 @@ module MAKE (AP : ADomain) = struct
     let inf, sup = itv_to_mpqf i in
     match typ with
     | Environment.INT ->
-        let size = Mpqf.sub sup inf |> Q.ceil in
+        let size = Q.sub sup inf |> Q.ceil in
         let r = Q.of_int (Random.int (size + 1)) in
         Q.add inf r
     | Environment.REAL ->
         let r = Q.of_float (Random.float 1.) in
-        Q.add inf (Q.mul (Mpqf.sub sup inf) r)
+        Q.add inf (Q.mul (Q.sub sup inf) r)
 
   (** spawns an instance within a box *)
   let spawn_box box =

@@ -27,6 +27,8 @@ let obj = ref false
 
 let tex = ref false
 
+let svg = ref false
+
 let trace = ref false
 
 let debug = ref 0

@@ -5,6 +5,7 @@
 (******************************************************************)
 open Libabsolute
 open Signature
+open Parser
 
 (** Solve a CSP with the abstract domain Abs *)
 module GoS (D : Domain) = struct
@@ -94,6 +95,7 @@ let speclist =
   ; ("-witness", Set witness, "Enables witness mode")
   ; ("-obj", Set obj, "Generates an .obj file (for 3D visualization)")
   ; ("-tex", Set tex, "Prints the solutions in latex format on standard output")
+  ; ("-svg", Set svg, "Prints the solutions in svg format in  out directory")
   ; ("-sbs", Set step_by_step, "Enabling step by step visualization") ]
 
 (*************** ALIASES ************)
@@ -122,3 +124,23 @@ let parse_args () =
   Argext.parse_args_aliases speclist aliases set_prob globaldescr ;
   if !problem = "" then raise (Constant.Error "no filename specified") ;
   !problem
+
+let parse (fn : string) =
+  Format.printf "parsing ... %!" ;
+  let p = Parser.file ~check:false fn in
+  Format.printf "done.\nsemantic check ... %!" ;
+  Parser.semantic_check p ;
+  Format.printf "done.\n%!" ;
+  p
+
+(* entry point *)
+let main () =
+  (* for debug *)
+  (* Printexc.record_backtrace true ; *)
+  Random.init 0x4162536f6c757465 ;
+  try
+    let prob = parse_args () in
+    Terminal.go prob ;
+    file prob |> run (Domains.parse !Constant.domain !Constant.boolean)
+  with Constant.Error msg | Semantic_error msg | Syntax_error msg ->
+    Terminal.error msg ; exit 1
