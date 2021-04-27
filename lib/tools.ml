@@ -1,5 +1,8 @@
 (** This module defines diverse utilities *)
 
+(** exception for bottom values *)
+exception Bot_found
+
 (** {1 Printing stuff} *)
 
 (** same as failwith but uses a format instead *)

@@ -45,6 +45,8 @@ let rewrite = ref true
 
 let step_by_step = ref false
 
+let pol_as_gen = ref false
+
 let set_debug_lv lv =
   if lv >= 0 then debug := lv else raise (Error "debug level must be positive")
 

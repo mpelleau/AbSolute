@@ -152,4 +152,16 @@ module PolyCP = struct
             (a, []) (A.to_lincons_array man b)
         in
         pruned)
+
+  let print_gen fmt =
+    Generatorext.iter (fun c v ->
+        Format.fprintf fmt "%a=%f;" Var.print v (Coeffext.to_float c))
+
+  let print_vertex fmt pol =
+    Format.fprintf fmt "convex ({" ;
+    List.iter (Format.fprintf fmt "%a\n" print_gen) (Apol.to_generator_list pol) ;
+    Format.fprintf fmt "})%!"
+
+  let print fmt pol =
+    if !Constant.pol_as_gen then print_vertex fmt pol else print fmt pol
 end

@@ -92,13 +92,23 @@ let join (x1 : t) (x2 : t) : t =
   | Real x1, Real x2 -> Real (R.join x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 -> Real (R.join (to_float x1) x2)
 
-let meet (x1 : t) (x2 : t) : t option =
+let meet_opt (x1 : t) (x2 : t) : t option =
   match (x1, x2) with
-  | Int x1, Int x2 -> Option.map int (I.meet x1 x2)
-  | Real x1, Real x2 -> Option.map real (R.meet x1 x2)
+  | Int x1, Int x2 -> Option.map int (I.meet_opt x1 x2)
+  | Real x1, Real x2 -> Option.map real (R.meet_opt x1 x2)
   | Int x1, Real x2 | Real x2, Int x1 ->
       let x1 = to_float x1 in
-      Option.map int (Option.bind (R.meet x1 x2) to_int)
+      Option.map int (Option.bind (R.meet_opt x1 x2) to_int)
+
+let meet (x1 : t) (x2 : t) : t =
+  match (x1, x2) with
+  | Int x1, Int x2 -> int (I.meet x1 x2)
+  | Real x1, Real x2 -> real (R.meet x1 x2)
+  | Int x1, Real x2 | Real x2, Int x1 -> (
+      let x1 = to_float x1 in
+      match to_int (R.meet x1 x2) with
+      | Some i -> int i
+      | None -> raise Tools.Bot_found )
 
 (* predicates *)
 (* ---------- *)
@@ -178,7 +188,7 @@ let div (x1 : t) (x2 : t) : t option =
   match x2 with
   | Int x2 ->
       if I.contains_float x2 0. then
-        let pos = I.meet I.positive x2 and neg = I.meet I.negative x2 in
+        let pos = I.meet_opt I.positive x2 and neg = I.meet_opt I.negative x2 in
         let divpos = Option.bind pos (fun x -> R.div x1 (to_float x))
         and divneg = Option.bind neg (fun x -> R.div x1 (to_float x)) in
         Option.map real (Tools.join_bot2 R.join divpos divneg)
@@ -246,7 +256,7 @@ let filter_eq i1 i2 =
   let open Consistency in
   if is_singleton i1 && i1 = i2 then Sat
   else
-    match meet i1 i2 with
+    match meet_opt i1 i2 with
     | Some i -> Filtered (i, is_singleton i)
     | None -> Unsat
 
@@ -256,37 +266,37 @@ let filter_neq = filter I.filter_neq R.filter_neq
    operation, returns a refined interval argument(s) where points that cannot
    contribute to a value in the result are removed; may also return option if no
    point in an argument can lead to a point in the result *)
-let filter_neg (i : t) (r : t) : t option = meet i (neg r)
+let filter_neg (i : t) (r : t) : t option = meet_opt i (neg r)
 
 let filter_abs (i : t) (r : t) : t option =
-  if is_positive i then meet i r
-  else if is_negative i then meet i (neg r)
-  else meet i (join (neg r) r)
+  if is_positive i then meet_opt i r
+  else if is_negative i then meet_opt i (neg r)
+  else meet_opt i (join (neg r) r)
 
 let filter_add (i1 : t) (i2 : t) (r : t) : (t * t) option =
-  Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
+  Tools.merge_bot (meet_opt i1 (sub r i2)) (meet_opt i2 (sub r i1))
 
 (* r = i1-i2 => i1 = i2+r /\ i2 = i1-r *)
 let filter_sub (i1 : t) (i2 : t) (r : t) : (t * t) option =
-  Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+  Tools.merge_bot (meet_opt i1 (add i2 r)) (meet_opt i2 (sub i1 r))
 
 (* r = i1*i2 => (i1 = r/i2 \/ i2=r=0) /\ (i2 = r/i1 \/ i1=r=0) *)
 let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
   Tools.merge_bot
     ( if contains_float r 0. && contains_float i2 0. then Some i1
-    else Option.bind (div r i2) (meet i1) )
+    else Option.bind (div r i2) (meet_opt i1) )
     ( if contains_float r 0. && contains_float i1 0. then Some i2
-    else Option.bind (div r i1) (meet i2) )
+    else Option.bind (div r i1) (meet_opt i2) )
 
 (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
 let filter_div (i1 : t) (i2 : t) (r : t) : (t * t) option =
   Tools.merge_bot
-    (meet i1 (mul i2 r))
+    (meet_opt i1 (mul i2 r))
     ( if contains_float r 0. && contains_float i1 0. then Some i2
-    else Option.bind (div i1 r) (meet i2) )
+    else Option.bind (div i1 r) (meet_opt i2) )
 
 let filter_pow (i : t) (n : t) (r : t) : (t * t) option =
-  Tools.(merge_bot (Option.bind (n_root r n) (meet i)) (Some n))
+  Tools.(merge_bot (Option.bind (n_root r n) (meet_opt i)) (Some n))
 
 let to_constraint v = dispatch (I.to_constraint v) (R.to_constraint v)
 

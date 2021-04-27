@@ -51,12 +51,10 @@ module Box (I : ITV) = struct
 
   let meet (a : t) (b : t) : t option =
     let meet_opt a b =
-      match (a, b) with
-      | Some a, Some b -> (
-        match I.meet a b with None -> raise Exit | x -> x )
-      | _ -> raise Exit
+      match (a, b) with Some a, Some b -> Some (I.meet a b) | _ -> raise Exit
     in
-    try Some (VarMap.merge (fun _ -> meet_opt) a b) with Exit -> None
+    try Some (VarMap.merge (fun _ -> meet_opt) a b)
+    with Exit | Bot_found -> None
 
   (* mesure *)
   (* ------ *)
@@ -81,7 +79,7 @@ module Box (I : ITV) = struct
           let add i = Env.add v i a in
           let i_a = Env.find v a in
           let d = diff i_a i_b in
-          let rest = I.meet i_a i_b |> Option.get in
+          let rest = I.meet_opt i_a i_b |> Option.get in
           aux diff (add rest) (List.rev_append (List.rev_map add d) acc) tl
     in
     match I.prune with
@@ -170,9 +168,9 @@ module Box (I : ITV) = struct
         List.fold_left2
           (fun acc e1 e2 -> refine acc e2 e1)
           a (Option.get res) bexpr
-    | BVar v -> Env.add v (Option.get (I.meet x (find v a))) a
+    | BVar v -> Env.add v (I.meet x (find v a)) a
     | BCst i ->
-        ignore (Option.get (I.meet x i)) ;
+        ignore (I.meet x i) ;
         a
     | BNeg (e1, i1) -> refine a e1 (Option.get (I.filter_neg i1 x))
     | BBinary (o, (e1, i1), (e2, i2)) ->
@@ -208,7 +206,8 @@ module Box (I : ITV) = struct
       res
 
   let filter (a : t) (e1, binop, e2) : t Consistency.t =
-    try test a e1 binop e2 with Invalid_argument _ -> Consistency.Unsat
+    try test a e1 binop e2
+    with Invalid_argument _ | Bot_found -> Consistency.Unsat
 
   let empty : t = Env.empty
 

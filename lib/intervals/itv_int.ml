@@ -8,7 +8,9 @@ let validate ((l, h) : t) : t =
   else (l, h)
 
 (* maps empty intervals to explicit bottom *)
-let check_bot ((l, h) : t) : t option = if l <= h then Some (l, h) else None
+let check_bot ((l, h) as i : t) : t option = if l <= h then Some i else None
+
+let debot ((l, h) as i : t) : t = if l <= h then i else raise Tools.Bot_found
 
 (************************************************************************)
 (* CONSTRUCTORS AND CONSTANTS *)
@@ -55,8 +57,10 @@ let print (fmt : Format.formatter) ((a, b) : t) =
 (* ---------- *)
 let join ((l1, h1) : t) ((l2, h2) : t) : t = (min l1 l2, max h1 h2)
 
-let meet ((l1, h1) : t) ((l2, h2) : t) : t option =
+let meet_opt ((l1, h1) : t) ((l2, h2) : t) : t option =
   check_bot (max l1 l2, min h1 h2)
+
+let meet ((l1, h1) : t) ((l2, h2) : t) : t = debot (max l1 l2, min h1 h2)
 
 (* predicates *)
 (* ---------- *)
@@ -127,8 +131,8 @@ let div_sign (l1, h1) (l2, h2) = mix4 ( / ) l1 h1 l2 h2
 let div (i1 : t) (i2 : t) : t option =
   Format.printf "\n\n Integer division : %a / %a\n%!" print i1 print i2 ;
   (* split into positive and negative dividends *)
-  let pos = (Option.map (div_sign i1)) (meet i2 positive)
-  and neg = (Option.map (div_sign i1)) (meet i2 negative) in
+  let pos = (Option.map (div_sign i1)) (meet_opt i2 positive)
+  and neg = (Option.map (div_sign i1)) (meet_opt i2 negative) in
   (* joins the result *)
   Tools.join_bot2 join pos neg
 
@@ -190,25 +194,25 @@ let filter_neq ((l1, h1) as i1 : t) ((l2, h2) as i2 : t) : (t * t) Consistency.t
 (* --------- *)
 
 (* r = -i => i = -r *)
-let filter_neg (i : t) (r : t) : t option = meet i (neg r)
+let filter_neg (i : t) (r : t) : t option = meet_opt i (neg r)
 
 let filter_abs ((il, ih) as i : t) ((_, rh) as r : t) : t option =
-  if il >= 0 then meet i r
-  else if ih <= 0 then meet i (neg r)
-  else meet i (-rh, rh)
+  if il >= 0 then meet_opt i r
+  else if ih <= 0 then meet_opt i (neg r)
+  else meet_opt i (-rh, rh)
 
 let filter_add (i1 : t) (i2 : t) (r : t) : (t * t) option =
-  Tools.merge_bot (meet i1 (sub r i2)) (meet i2 (sub r i1))
+  Tools.merge_bot (meet_opt i1 (sub r i2)) (meet_opt i2 (sub r i1))
 
 let filter_sub (i1 : t) (i2 : t) (r : t) : (t * t) option =
-  Tools.merge_bot (meet i1 (add i2 r)) (meet i2 (sub i1 r))
+  Tools.merge_bot (meet_opt i1 (add i2 r)) (meet_opt i2 (sub i1 r))
 
 let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
   Tools.merge_bot
     ( if contains_float r 0. && contains_float i2 0. then Some i1
-    else Option.bind (div r i2) (meet i1) )
+    else Option.bind (div r i2) (meet_opt i1) )
     ( if contains_float r 0. && contains_float i1 0. then Some i2
-    else Option.bind (div r i1) (meet i2) )
+    else Option.bind (div r i1) (meet_opt i2) )
 
 let to_constraint v ((l, h) : t) =
   Constraint.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)

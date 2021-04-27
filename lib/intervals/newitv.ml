@@ -89,6 +89,10 @@ module Eval (B : BOUND) = struct
   let check_bot ((((_, l) as b1), ((_, h) as b2)) as itv) : t option =
     if in_half b1 true h && in_half b2 false l then Some itv else None
 
+  let debot ((((_, l) as b1), ((_, h) as b2)) as itv) : t =
+    if in_half b1 true h && in_half b2 false l then itv
+    else raise Tools.Bot_found
+
   (* not all pairs of rationals are valid intervals *)
   let validate x = if check_bot x = None then failwith "invalid interval" else x
 
@@ -179,8 +183,11 @@ module Eval (B : BOUND) = struct
   (* ---------- *)
   let join ((l1, h1) : t) ((l2, h2) : t) : t = (min_low l1 l2, max_up h1 h2)
 
-  let meet ((l1, h1) : t) ((l2, h2) : t) : t option =
+  let meet_opt ((l1, h1) : t) ((l2, h2) : t) : t option =
     check_bot (max_low l1 l2, min_up h1 h2)
+
+  let meet ((l1, h1) : t) ((l2, h2) : t) : t =
+    debot (max_low l1 l2, min_up h1 h2)
 
   (* ---------- *)
   (* predicates *)
@@ -199,7 +206,7 @@ module Eval (B : BOUND) = struct
 
   (*TODO: improve rounding errors resiliance *)
 
-  let intersect i1 i2 : bool = meet i1 i2 <> None
+  let intersect i1 i2 : bool = meet_opt i1 i2 <> None
 
   let is_finite ((_, x) : real_bound) : bool = B.classify x = B.FINITE
 
@@ -222,7 +229,8 @@ module Eval (B : BOUND) = struct
   let score itv = float_size itv
 
   (* length of the intersection (>= 0) *)
-  let overlap i1 i2 = match meet i1 i2 with None -> B.zero | Some i -> range i
+  let overlap i1 i2 =
+    match meet_opt i1 i2 with None -> B.zero | Some i -> range i
 
   let magnitude (((_, l), (_, h)) : t) : B.t = B.max (B.abs l) (B.abs h)
 
@@ -316,12 +324,12 @@ module Eval (B : BOUND) = struct
       , max_up (max_up (l1 /@ l2) (l1 /@ h2)) (max_up (h1 /@ l2) (h1 /@ h2)) )
 
   let div (i1 : t) (i2 : t) : t option =
-    let pos = (Option.map (div_sgn i1)) (meet i2 positive) in
-    let neg = (Option.map (div_sgn i1)) (meet i2 negative) in
+    let pos = (Option.map (div_sgn i1)) (meet_opt i2 positive) in
+    let neg = (Option.map (div_sgn i1)) (meet_opt i2 negative) in
     Tools.join_bot2 join pos neg
 
   let sqrt (itv : t) : t option =
-    meet itv positive |> Option.map (mon_incr (B.sqrt_down, B.sqrt_up))
+    meet_opt itv positive |> Option.map (mon_incr (B.sqrt_down, B.sqrt_up))
 
   let force_int ((sl, l), (sh, h)) =
     if sl = Large && B.floor l = l && sh = sl && h = l then
@@ -346,7 +354,7 @@ module Eval (B : BOUND) = struct
     let f_down_up = ((fun b -> B.root_down b i), fun b -> B.root_up b i) in
     let root_odd x : t = mon_incr f_down_up x
     and root_even x : t option =
-      meet x positive
+      meet_opt x positive
       |> Option.map (fun x ->
              let pos_part = mon_incr f_down_up x in
              join pos_part (neg pos_part))
@@ -358,7 +366,7 @@ module Eval (B : BOUND) = struct
     | _ -> failwith "can only handle stricly positive roots"
 
   let ln (i : t) : t option =
-    meet i positive |> Option.map (mon_incr (B.ln_down, B.ln_up))
+    meet_opt i positive |> Option.map (mon_incr (B.ln_down, B.ln_up))
 
   let exp (i : t) = mon_incr (B.exp_down, B.exp_up) i
 

@@ -44,7 +44,10 @@ module type ITV_EVAL = sig
   val join : t -> t -> t
   (** operations *)
 
-  val meet : t -> t -> t option
+  val meet : t -> t -> t
+
+  val meet_opt : t -> t -> t option
+  (** same as meet but returns an option instead of raising Exit *)
 
   val split : t -> t list
 

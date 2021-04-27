@@ -38,6 +38,8 @@ module Eval (B : BOUND) = struct
   let check_bot ((l, h) as i : t) : t option =
     if B.leq l h then Some i else None
 
+  let debot ((l, h) as i) = if B.leq l h then i else raise Bot_found
+
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
@@ -90,8 +92,15 @@ module Eval (B : BOUND) = struct
 
   let join ((l1, h1) : t) ((l2, h2) : t) : t = (B.min l1 l2, B.max h1 h2)
 
-  let meet ((l1, h1) : t) ((l2, h2) : t) : t option =
-    check_bot (B.max l1 l2, B.min h1 h2)
+  let meet_opt ((l1, h1) as i1 : t) ((l2, h2) as i2 : t) : t option =
+    if B.leq l1 l2 then if B.geq h1 h2 then Some i2 else check_bot (l2, h1)
+    else if B.geq h2 h1 then Some i1
+    else check_bot (l1, h2)
+
+  let meet ((l1, h1) as i1 : t) ((l2, h2) as i2 : t) : t =
+    if B.leq l1 l2 then if B.geq h1 h2 then i2 else debot (l2, h1)
+    else if B.geq h2 h1 then i1
+    else debot (l1, h2)
 
   let negative_part ((l1, h1) : t) : t option =
     if B.geq l1 B.zero then None else check_bot (l1, B.min h1 B.zero)

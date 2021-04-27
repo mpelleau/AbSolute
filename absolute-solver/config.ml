@@ -96,6 +96,7 @@ let speclist =
   ; ("-obj", Set obj, "Generates an .obj file (for 3D visualization)")
   ; ("-tex", Set tex, "Prints the solutions in latex format on standard output")
   ; ("-svg", Set svg, "Prints the solutions in svg format in  out directory")
+  ; ("-pol_as_gen", Set pol_as_gen, "Sets the polyhedra printer to generators")
   ; ("-sbs", Set step_by_step, "Enabling step by step visualization") ]
 
 (*************** ALIASES ************)

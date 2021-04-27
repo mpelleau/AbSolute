@@ -244,7 +244,7 @@ module Make (I : Itv_sig.ITV) = struct
     let other = I.add return_range pi_itv in
     fun itv result ->
       (* handling of the symetry *)
-      match (I.meet itv return_range, I.meet itv other) with
+      match (I.meet_opt itv return_range, I.meet_opt itv other) with
       | None, None -> None
       | Some _, None -> fun_itv result
       | None, Some _ -> Option.map (I.add pi_itv) (fun_itv (I.neg result))
@@ -265,12 +265,12 @@ module Make (I : Itv_sig.ITV) = struct
       try
         let i', delta = normalize 0. twopiup i in
         let first_part =
-          match I.meet i' domain_range with
+          match I.meet_opt i' domain_range with
           | None -> None
           | Some i' -> Option.map (I.add delta) (fun_itv i' r)
         in
         let second_part =
-          match I.meet i' other with
+          match I.meet_opt i' other with
           | Some x ->
               let x' = I.sub x twopi_itv in
               Option.map (I.add (I.add delta twopi_itv)) (fun_itv x' r)
@@ -294,17 +294,17 @@ module Make (I : Itv_sig.ITV) = struct
   let filter_tan (i : I.t) (r : I.t) : I.t option =
     try
       let i', delta = normalize (-.pihalf_up) pi_up i in
-      Option.map (I.add delta) (I.meet i' (atan_itv r))
+      Option.map (I.add delta) (I.meet_opt i' (atan_itv r))
     with Exit -> Some i
 
   (* r = asin i => i = sin r *)
-  let filter_asin i r = I.meet i (sin_itv r)
+  let filter_asin i r = I.meet_opt i (sin_itv r)
 
   (* r = acos i => i = cos r *)
-  let filter_acos i r = I.meet i (cos_itv r)
+  let filter_acos i r = I.meet_opt i (cos_itv r)
 
   (* r = atan i => i = tan r *)
-  let filter_atan i r = I.meet i (atan_itv r)
+  let filter_atan i r = I.meet_opt i (atan_itv r)
 
   (* we augment the function filterer to add to it the trigonometrical stuff *)
   let filter_fun name args r : I.t list option =
