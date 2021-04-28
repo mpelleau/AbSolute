@@ -59,6 +59,17 @@ module Make (A : Domain) (B : Domain) = struct
     let b, exact_b = B.join b b' in
     ((a, b), exact_a && exact_b)
 
+  (* TODO: try to do better than this *)
+  let join_list (l : t list) : t * bool =
+    match l with
+    | [] -> invalid_arg "Product.join_list: empty list"
+    | h :: t ->
+        List.fold_left
+          (fun (e, b) e' ->
+            let e, b' = join e e' in
+            (e, b && b'))
+          (h, true) t
+
   let meet (a, b) (a', b') =
     try
       Tools.meet_bot

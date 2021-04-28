@@ -13,7 +13,7 @@ let complementary env var value =
 
 (** Module for the Box Abstract Domains for Constraint Programming. *)
 module BoxCP = struct
-  include Apron_domain.MAKE (Box)
+  include Apron_domain.Make (Box)
 
   let is_representable _ = Kleene.True
 
@@ -29,7 +29,7 @@ end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
 module OctMinMinCP = struct
-  include Apron_domain.MAKE (Oct)
+  include Apron_domain.Make (Oct)
 
   (* Compute the max and the min for the basis Bij *)
   let minmax_bij oct i j =
@@ -97,7 +97,7 @@ end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
 module OctMinMaxCP = struct
-  include Apron_domain.MAKE (Oct)
+  include Apron_domain.Make (Oct)
 
   let split prec octad =
     let env = Abstract1.env octad in
@@ -107,7 +107,7 @@ end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
 module OctCP = struct
-  include Apron_domain.MAKE (Oct)
+  include Apron_domain.Make (Oct)
 
   let is_representable _ = Kleene.True
 
@@ -123,7 +123,7 @@ end
 
 (** Module for the Polyhedron Abstract Domains for Constraint Programming. *)
 module PolyCP = struct
-  include Apron_domain.MAKE (struct
+  include Apron_domain.Make (struct
     type t = Polka.strict Polka.t
 
     let manager_alloc = Polka.manager_alloc_strict

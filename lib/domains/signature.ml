@@ -33,6 +33,11 @@ module type Numeric = sig
   (** Joins two abstract elements. The boolean flag indicates if the join was
       exact. It is always sound to return false *)
 
+  val join_list : t list -> t * bool
+  (** Joins a list of [n] abstract elements. May be faster than joining
+      pairwise. The boolean flag indicates if the join was exact. It is always
+      sound to return false *)
+
   val meet : t -> t -> t option
   (** meet two abstract elements *)
 

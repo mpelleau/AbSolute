@@ -127,7 +127,7 @@ end
 (* Some types and values that all the domains of apron can share *)
 (* These are generic and can be redefined in the actuals domains *)
 (*****************************************************************)
-module MAKE (AP : ADomain) = struct
+module Make (AP : ADomain) = struct
   module A = Abstractext
   module E = Environmentext
 
@@ -184,6 +184,10 @@ module MAKE (AP : ADomain) = struct
 
   let join a b = (A.join man a b, false)
 
+  let join_list l =
+    let a = Array.of_list l in
+    (A.join_array man a, false)
+
   let meet a b =
     let m = A.meet man a b in
     if is_empty m then None else Some m
@@ -218,13 +222,14 @@ module MAKE (AP : ADomain) = struct
     let env = A.env abs in
     let box = A.to_box man abs in
     let tab = box.A.interval_array in
-    let rec aux cur i_max diam_max itv_max =
-      if cur >= Array.length tab then (i_max, diam_max, itv_max)
+    let len = Array.length tab in
+    let rec aux idx i_max diam_max itv_max =
+      if idx >= len then (i_max, diam_max, itv_max)
       else
-        let e = tab.(cur) in
+        let e = tab.(idx) in
         let diam = Intervalext.range_mpqf e in
-        if Mpqf.cmp diam diam_max > 0 then aux (cur + 1) cur diam e
-        else aux (cur + 1) i_max diam_max itv_max
+        if Mpqf.cmp diam diam_max > 0 then aux (idx + 1) idx diam e
+        else aux (idx + 1) i_max diam_max itv_max
     in
     let a, b, c = aux 0 0 Q.zero tab.(0) in
     (E.var_of_dim env a, c, b)
@@ -246,14 +251,14 @@ module MAKE (AP : ADomain) = struct
   let generate_linexpr env p1 p2 =
     let size = E.size env in
     let rec loop i l1 l2 cst =
-      if i >= size then (l1, l2, cst)
+      if i >= size then (List.rev l1, List.rev l2, cst)
       else
         let ci = p2.(i) -. p1.(i) in
         let cst' = cst +. ((p1.(i) +. p2.(i)) *. ci) in
         let ci' = 2. *. ci in
         let c = Coeff.s_of_float ci' in
-        let list1' = List.append l1 [(c, E.var_of_dim env i)] in
-        let list2' = List.append l2 [(Coeff.neg c, E.var_of_dim env i)] in
+        let list1' = (c, E.var_of_dim env i) :: l1 in
+        let list2' = (Coeff.neg c, E.var_of_dim env i) :: l2 in
         loop (i + 1) list1' list2' cst'
     in
     loop 0 [] [] 0.
@@ -270,8 +275,9 @@ module MAKE (AP : ADomain) = struct
   let volume abs =
     let b = A.to_box man abs in
     b.A.interval_array
-    |> Array.fold_left (fun v i -> Q.mul v (Intervalext.range_mpqf i)) Q.one
-    |> Q.to_float
+    |> Array.fold_left
+         (fun v i -> v *. (Intervalext.range i |> Scalarext.to_float))
+         1.
 
   (* Polyhedric version of some operations *)
   let get_expr prec (polyad : Polka.strict Polka.t A.t) =

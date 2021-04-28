@@ -49,6 +49,17 @@ module Box (I : ITV) = struct
     in
     (VarMap.merge (fun _ -> join_opt) a b, false)
 
+  (* TODO: try to do better than this *)
+  let join_list (l : t list) : t * bool =
+    match l with
+    | [] -> invalid_arg "Cartesian.join_list: empty list"
+    | h :: t ->
+        List.fold_left
+          (fun (e, b) e' ->
+            let e, b' = join e e' in
+            (e, b && b'))
+          (h, true) t
+
   let meet (a : t) (b : t) : t option =
     let meet_opt a b =
       match (a, b) with Some a, Some b -> Some (I.meet a b) | _ -> raise Exit

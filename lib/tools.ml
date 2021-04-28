@@ -70,4 +70,6 @@ module VarMap = struct
   let keys map = fold (fun k _ acc -> k :: acc) map []
 end
 
+let list_pick l = List.nth l (Random.int (List.length l))
+
 module VarSet = Set.Make (String)
