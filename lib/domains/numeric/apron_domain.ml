@@ -163,12 +163,10 @@ module Make (AP : ADomain) = struct
 
   let add_var abs (typ, v, dom) =
     let e = A.env abs in
-    let v = Var.of_string v in
-    let ints, reals = if typ = Int then ([|v|], [||]) else ([||], [|v|]) in
-    let env = E.add e ints reals in
-    let abs = A.change_environment man abs env false in
-    let texpr = dom_to_texpr env dom in
-    A.assign_texpr man abs v texpr None
+    let e' = if typ = Int then E.add_int_s v e else E.add_real_s v e in
+    let abs = A.change_environment man abs e' false in
+    let texpr = dom_to_texpr e' dom in
+    A.assign_texpr man abs (Var.of_string v) texpr None
 
   let var_bounds abs v =
     let var = Var.of_string v in
