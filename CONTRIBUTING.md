@@ -1,8 +1,8 @@
 # Contributing to AbSolute
 
-This guide is for anybody who wants to contribute to AbSolute.  Before
-all, thank you for working on AbSolute and we encourage you to discuss
-your project with us to be sure your contributions can eventually be
+This guide is for anybody who wants to contribute to AbSolute.  First,
+thank you for working on AbSolute and we encourage you to discuss your
+project with us to be sure your contributions can eventually be
 integrated.
 
 ### Getting ready
@@ -40,12 +40,24 @@ of automating indentation, for example using
 [ocamlformat](https://github.com/ocaml-ppx/ocamlformat).
 
 ### Monitoring the performances
-We recommend you to monitor the memory and time usage of the changes you may introduce in the solver. To do so, you can install [memtrace](https://github.com/janestreet/memtrace) and [memtrace_viewer](https://github.com/janestreet/memtrace_viewer) for the memory, and landmark for the time usage (available via opam):
+It is wishable to monitor the memory and time usage of the changes you
+may introduce in the solver. To do so, you can install
+[memtrace](https://github.com/janestreet/memtrace) and
+[memtrace_viewer](https://github.com/janestreet/memtrace_viewer) for
+the memory, and landmark for the time usage (available via opam):
 
 ```sh
 opam install memtrace memtrace_viewer landmarks
 ```
-This will allow you to create an executable *memabsolute* from the Makefile, by doing `make memabsolute`. This executable can be used in the same way than absolute but it adds to it a few changes: it initializes a memory trace, adds trace points using landmarks, calls absolute, and then outputs a memory trace in the file `memperf.log` and time usage trace in the file `timeperf.json`.
+
+This will allow you to create an executable *memabsolute* from the
+Makefile, by doing `make memabsolute`. This executable can be used in
+the same way than the `absolute` executable (it may be slightly
+slower) but it differs from it a few way: it initializes a memory
+trace, adds trace points using landmarks, calls absolute, and then
+outputs a memory trace in the file `memperf.log` and a time usage
+trace in the file `timeperf.json`. You can then examine the traces
+from a browser.
 
 ### Additional cool stuff about `dune`:
 

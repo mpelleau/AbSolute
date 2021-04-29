@@ -19,6 +19,8 @@ let witness = ref false
 
 let split = ref "default"
 
+let join = ref "weak"
+
 let minimizing = ref false
 
 let visualization = ref false

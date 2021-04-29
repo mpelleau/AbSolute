@@ -184,6 +184,25 @@ module Make (AP : ADomain) = struct
 
   let join a b = (A.join man a b, false)
 
+  let weak_join a b =
+    let l_a = A.to_lincons_array man a in
+    let l_b = A.to_lincons_array man b in
+    let sat_a =
+      Linconsext.array_fold
+        (fun acc c -> if A.sat_lincons man b c then c :: acc else acc)
+        [] l_a
+    in
+    let sat_b =
+      Linconsext.array_fold
+        (fun acc c -> if A.sat_lincons man a c then c :: acc else acc)
+        [] l_b
+    in
+    ( A.of_lincons_array man a.env
+        (List.rev_append sat_a sat_b |> Linconsext.array_of_list)
+    , false )
+
+  let join a b = if !Constant.join = "weak" then weak_join a b else join a b
+
   let join_list l =
     let a = Array.of_list l in
     (A.join_array man a, false)

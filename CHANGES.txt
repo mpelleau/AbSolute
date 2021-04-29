@@ -1,10 +1,12 @@
+- Add the executable memabsolute, which compiles a instrumented version of the solver
 - use of Picasso.show
-- add covex primitive in parser 
+- add convex primitive in parser 
 - add Dom, Expr and Constraint modules
 - add .opam for library
 - add examples using library
 - massive documentation of library
 - split sources into lib + solver
+- add uniontree combinator
 - remove vpl dependency
 - parsers cleaning
 
