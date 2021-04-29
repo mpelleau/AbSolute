@@ -10,8 +10,7 @@
  (name absolute)
  (modules absolute)
  (public_name absolute)
- (libraries libabsolute libsolver landmarks)
- (preprocess (pps landmarks.ppx)))
+ (libraries libabsolute libsolver))
 
 (executable
  (name memabsolute)
