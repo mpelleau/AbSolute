@@ -72,8 +72,7 @@ module Make (D : Domain) = struct
     in
     try aux 1 csp with Exit -> Kleene.True
 
-  let witness ?(verbose = false) prec max_depth prob :
-      Kleene.t * Csp.instance option =
+  let witness ?(verbose = false) prec max_depth prob : feasible =
     let csp = S.init ~verbose prob in
     if verbose then Format.printf "witness ... %!" ;
     let exception Found of Csp.instance in
@@ -98,5 +97,10 @@ module Make (D : Domain) = struct
           if verbose then loading depth ;
           Kleene.False
     in
-    try (aux 1 csp, None) with Found i -> (Kleene.True, Some i)
+    let of_kleene = function
+      | Kleene.Unknown -> Maybe
+      | Kleene.False -> Unfeasible
+      | Kleene.True -> assert false
+    in
+    try aux 1 csp |> of_kleene with Found i -> Witness i
 end

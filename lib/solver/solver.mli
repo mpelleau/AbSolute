@@ -8,7 +8,6 @@ module Make : functor (D : Signature.Domain) -> sig
   val satisfiability : ?verbose:bool -> float -> int -> Csp.t -> Kleene.t
   (** satisfiability check *)
 
-  val witness :
-    ?verbose:bool -> float -> int -> Csp.t -> Kleene.t * Csp.instance option
+  val witness : ?verbose:bool -> float -> int -> Csp.t -> Consistency.feasible
   (** satisfiability check, with witness *)
 end

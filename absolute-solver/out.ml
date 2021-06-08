@@ -26,19 +26,18 @@ module Make (D : Domain) = struct
     Rendering3d.add_l r (List.map green res.unsure)
 
   let witness w =
-    let open Kleene in
+    let open Consistency in
     match w with
-    | False, None ->
+    | Unfeasible ->
         Format.printf "problem unsatisfiable.\n" ;
         exit 3
-    | Unknown, None ->
+    | Maybe ->
         Format.printf "no solution found, but the problem maybe admits some.\n" ;
         exit 4
-    | True, Some i ->
+    | Witness i ->
         Format.printf "problem satisfiable.\nwitness value:\n%a\n"
           Instance.print i ;
         exit 5
-    | _ -> assert false
 
   let satisfiability w =
     let open Kleene in

@@ -8,6 +8,8 @@ type 'a t =
   | Unsat  (** when s' = \emptyset *)
   | Filtered of 'a * bool  (** filtered (s',b) : x \in s', b => p(x) *)
 
+type feasible = Unfeasible | Maybe | Witness of Csp.instance
+
 let print fmt = function
   | Unsat -> Format.fprintf fmt "Unsat"
   | Sat -> Format.fprintf fmt "Sat"
