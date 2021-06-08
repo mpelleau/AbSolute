@@ -80,7 +80,7 @@ let pp_typ fmt = function
 
 let pp_declarations fmt =
   List.iter (fun (a, b, c) ->
-      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c )
+      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c)
 
 let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
 

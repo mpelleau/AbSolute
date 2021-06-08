@@ -47,7 +47,7 @@ let distribute (op, c) =
     | (Funcall _ | Cst _ | Var _) as x -> Binary (op, x, c)
     | Neg e -> Neg (loop e)
     | Binary (POW, _, _) as expr -> Binary (op, expr, c)
-    | Binary (b, e, Cst a) when b = op -> Binary (op, e, Binary (MUL, Cst a, c))
+    | Binary (b, e, Cst a) when b = op -> Binary (op, e, mul (Cst a) c)
     | Binary (b, Cst a, e) when b = op -> Binary (op, Binary (op, Cst a, c), e)
     | Binary (((DIV | MUL) as b), Cst a, e) ->
         Binary (b, Binary (op, Cst a, c), e)
@@ -73,7 +73,7 @@ let rec simplify_expr expr change =
     | Cst c when is_zero c -> (zero, true)
     | Cst c -> (Cst (Q.neg c), true)
     | Neg e' -> simplify_expr e' true
-    | Binary (SUB, Cst a, Cst b) -> (Cst (Mpqf.sub b a), true)
+    | Binary (SUB, Cst a, Cst b) -> (Cst (Q.sub b a), true)
     | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
     | _ ->
         let e', b = simplify_expr e change in
@@ -82,19 +82,16 @@ let rec simplify_expr expr change =
     match b with
     | ADD -> (
       match (e1, e2) with
-      | Cst a, Cst b -> (Cst (Mpqf.add a b), true)
+      | Cst a, Cst b -> (Cst (Q.add a b), true)
       | Cst z, e2 when is_zero z -> simplify_expr e2 change
       | e1, Cst z when is_zero z -> simplify_expr e1 change
-      | e1, Cst c when is_neg c ->
-          simplify_expr (Binary (SUB, e1, Cst (Mpqf.neg c))) true
-      | Cst c, e1 when is_neg c ->
-          simplify_expr (Binary (SUB, e1, Cst (Mpqf.neg c))) true
-      | e1, Neg e -> simplify_expr (Binary (SUB, e1, e)) true
-      | Neg e, e2 -> simplify_expr (Binary (SUB, e2, e)) true
+      | (e1, Cst c | Cst c, e1) when is_neg c ->
+          simplify_expr (sub e1 (Cst (Q.neg c))) true
+      | e1, Neg e2 | Neg e2, e1 -> simplify_expr (sub e1 e2) true
       | e1, e2 -> apply simplify_expr e1 e2 change ADD )
     | SUB -> (
       match (e1, e2) with
-      | Cst a, Cst b -> (Cst (Mpqf.sub a b), true)
+      | Cst a, Cst b -> (Cst (Q.sub a b), true)
       | Cst c, _ when is_zero c ->
           let e, _ = simplify_expr e2 change in
           (Neg e, true)
@@ -108,15 +105,15 @@ let rec simplify_expr expr change =
       | _, _ -> apply simplify_expr e1 e2 change SUB )
     | MUL -> (
       match (e1, e2) with
-      | Cst a, Cst b -> (Cst (Mpqf.mul a b), true)
+      | Cst a, Cst b -> (Cst (Q.mul a b), true)
       | Cst c, _ when is_zero c -> (zero, true)
       | _, Cst c when is_zero c -> (zero, true)
-      | Cst c, _ when Mpqf.equal Q.one c -> simplify_expr e2 change
-      | _, Cst c when Mpqf.equal Q.one c -> simplify_expr e1 change
+      | Cst c, _ when Q.equal Q.one c -> simplify_expr e2 change
+      | _, Cst c when Q.equal Q.one c -> simplify_expr e1 change
       | e1, Cst c when is_neg c ->
-          simplify_expr (Neg (Binary (MUL, e1, Cst (Mpqf.neg c)))) true
+          simplify_expr (Neg (Binary (MUL, e1, Cst (Q.neg c)))) true
       | Cst c, e1 when is_neg c ->
-          simplify_expr (Neg (Binary (MUL, e1, Cst (Mpqf.neg c)))) true
+          simplify_expr (Neg (Binary (MUL, e1, Cst (Q.neg c)))) true
       | e', Neg e | Neg e, e' -> simplify_expr (Neg (Binary (MUL, e, e'))) true
       | _, _ -> apply simplify_expr e1 e2 change MUL )
     | DIV -> (
@@ -195,32 +192,26 @@ let rec derivate expr var =
 
 (* TODO IMPLEMENTATION *)
 
-let rec derivative bexpr var =
-  match bexpr with
+let rec derivative var = function
   | Cmp (e1, op, e2) -> Cmp (derivate e1 var, op, derivate e2 var)
-  | And (b1, b2) -> And (derivative b1 var, derivative b2 var)
-  | Or (b1, b2) -> Or (derivative b1 var, derivative b2 var)
-  | Not b -> Not (derivative b var)
+  | And (b1, b2) -> And (derivative var b1, derivative var b2)
+  | Or (b1, b2) -> Or (derivative var b1, derivative var b2)
+  | Not b -> Not (derivative var b)
 
 let is_arith = function Cmp (_, _, _) -> true | _ -> false
 
-let ctr_jacobian c vars =
-  List.fold_left
-    (fun l (_, v, _) ->
+let ctr_jacobian c =
+  List.rev_map (fun (_, v, _) ->
       let expr =
         if is_arith c then
-          let new_c = simplify_bexpr (derivative c v) in
-          let _, e = left_hand new_c in
-          e
+          let new_c = simplify_bexpr (derivative v c) in
+          snd (left_hand new_c)
         else zero
       in
-      (v, expr) :: l)
-    [] vars
+      (v, expr))
 
-let compute_jacobian csp =
-  List.fold_left
-    (fun l c -> (c, ctr_jacobian c csp.variables) :: l)
-    [] csp.constraints
+let compute_jacobian p =
+  List.rev_map (fun c -> (c, ctr_jacobian c p.variables)) p.constraints
 
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)
