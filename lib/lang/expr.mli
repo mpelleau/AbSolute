@@ -56,6 +56,9 @@ val mul : t -> t -> t
 val div : t -> t -> t
 (** multiplication *)
 
+val pow : t -> t -> t
+(** given an expression [e] builds the expresspion for [e1^e2]*)
+
 val square : t -> t
 (** given an expression [e] builds the expresspion for [e*e]*)
 

@@ -35,6 +35,8 @@ let mul e1 e2 = Binary (MUL, e1, e2)
 
 let div e1 e2 = Binary (DIV, e1, e2)
 
+let pow e1 e2 = Binary (POW, e1, e2)
+
 let square expr = Binary (POW, expr, two)
 
 let rec has_variable = function
