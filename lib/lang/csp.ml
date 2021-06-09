@@ -58,7 +58,7 @@ let add_int_var name inf sup csp =
 let add_int_var_i s l h = add_int_var s (Q.of_int l) (Q.of_int h)
 
 (** adds a constraint to the csp *)
-let add_constr c csp = {csp with constraints= c :: csp.constraints}
+let add_constr csp c = {csp with constraints= c :: csp.constraints}
 
 (** {1 Operations} *)
 

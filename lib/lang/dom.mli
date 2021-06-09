@@ -13,6 +13,10 @@ type t =
 val interval : Q.t -> Q.t -> t
 (** \[a;b\]*)
 
+val of_ints : int -> int -> t
+
+val of_floats : float -> float -> t
+
 val inf : Q.t -> t
 (** semi-open interval : \[x;+oo\[*)
 

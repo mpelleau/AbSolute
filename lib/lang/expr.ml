@@ -146,6 +146,15 @@ let eval (e : t) (i : Instance.t) : Q.t =
   in
   aux e
 
+let rec deannot = function
+  | AFuncall (f, args) -> Funcall (f, List.map (fun (e, _a) -> deannot e) args)
+  | ANeg (e, _) -> Neg (deannot e)
+  | ABinary (b, (e1, _), (e2, _)) -> Binary (b, deannot e1, deannot e2)
+  | AVar v -> Var v
+  | ACst c -> Cst c
+
+let deannot ((e, _a) : 'a annot_t) = deannot e
+
 let pp_var = Format.pp_print_string
 
 let pp_binop fmt = function

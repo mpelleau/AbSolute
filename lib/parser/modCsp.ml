@@ -146,7 +146,7 @@ let toCsp m =
         else failwith ("vars with inf index greater than sup index : " ^ v)
     | SubjectTo (_, constr) ->
         let constr' = substitute_constr env constr in
-        (env, Csp.add_constr (to_csp_constr constr') csp)
+        (env, Csp.add_constr csp (to_csp_constr constr'))
     | Ignore -> (env, csp)
   in
   let empty_csp = Csp.empty in

@@ -15,6 +15,10 @@ let inf x = Inf x
 
 let top = Top
 
+let of_ints inf sup = Finite (Q.of_int inf, Q.of_int sup)
+
+let of_floats inf sup = Finite (Q.of_float inf, Q.of_float sup)
+
 let belong (value : Q.t) = function
   | Finite (i, s) -> Mpqf.cmp i value <= 0 && Mpqf.cmp value s <= 0
   | Minf s -> Mpqf.cmp value s <= 0

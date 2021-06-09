@@ -122,6 +122,9 @@ val eval : t -> Instance.t -> Q.t
     @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
     by a non integer exposant is made. *)
 
+val deannot : 'a annot_t -> t
+(** removes annotations from an annotated expression *)
+
 (** {1 Printing} *)
 
 val pp_var : Format.formatter -> string -> unit
