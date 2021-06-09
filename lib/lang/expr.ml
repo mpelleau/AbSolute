@@ -9,6 +9,15 @@ type t =
   | Var of string
   | Cst of Q.t
 
+type 'a annot =
+  | AFuncall of string * 'a annot_t list
+  | ANeg of 'a annot_t
+  | ABinary of binop * 'a annot_t * 'a annot_t
+  | AVar of string
+  | ACst of Q.t
+
+and 'a annot_t = 'a annot * 'a
+
 exception Division_by_zero
 
 exception Non_integer_exposant

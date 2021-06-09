@@ -109,14 +109,7 @@ module Box (I : ITV) = struct
   (************************************************************************)
 
   (* trees with nodes annotated with evaluation *)
-  type bexpr =
-    | BFuncall of string * bexpri list
-    | BNeg of bexpri
-    | BBinary of Expr.binop * bexpri * bexpri
-    | BVar of string
-    | BCst of I.t
-
-  and bexpri = bexpr * I.t
+  type bexpri = I.t Expr.annot_t
 
   (* First step of the HC4-revise algorithm: it computes the intervals for each
      node of the expression. For example: given `x + 3` with `x in [1..3]`, then
@@ -134,16 +127,16 @@ module Box (I : ITV) = struct
           let bargs = List.map loop args in
           let iargs = List.map snd bargs in
           let r = Option.get (I.eval_fun name iargs) in
-          (BFuncall (name, bargs), r)
+          (AFuncall (name, bargs), r)
       | Var v ->
           let r = find v a in
-          (BVar v, r)
+          (AVar v, r)
       | Cst c ->
           let r = I.of_rat c in
-          (BCst r, r)
+          (ACst c, r)
       | Neg e1 ->
           let ((_, i1) as b1) = loop e1 in
-          (BNeg b1, I.neg i1)
+          (ANeg b1, I.neg i1)
       | Binary (o, e1, e2) ->
           let ((_, i1) as b1) = loop e1 and ((_, i2) as b2) = loop e2 in
           let r =
@@ -158,7 +151,7 @@ module Box (I : ITV) = struct
                 else r
             | POW -> I.pow i1 i2
           in
-          (BBinary (o, b1, b2), r)
+          (ABinary (o, b1, b2), r)
     in
     loop e
 
@@ -170,21 +163,21 @@ module Box (I : ITV) = struct
      restrain further `+`, and then another round of `refine` will restrain `x`
      as well. We raise `Bot_found` in case of unsatisfiability. *)
 
-  let rec refine (a : t) (e : bexpr) (x : I.t) : t =
-    (*Format.printf "%a\n" print_bexpri (e, x);*)
+  let rec refine (a : t) (e : I.t Expr.annot) (x : I.t) : t =
+    let open Expr in
     match e with
-    | BFuncall (name, args) ->
+    | AFuncall (name, args) ->
         let bexpr, itv = List.split args in
         let res = I.filter_fun name itv x in
         List.fold_left2
           (fun acc e1 e2 -> refine acc e2 e1)
           a (Option.get res) bexpr
-    | BVar v -> Env.add v (I.meet x (find v a)) a
-    | BCst i ->
-        ignore (I.meet x i) ;
+    | AVar v -> Env.add v (I.meet x (find v a)) a
+    | ACst i ->
+        ignore (I.meet x (I.of_rat i)) ;
         a
-    | BNeg (e1, i1) -> refine a e1 (Option.get (I.filter_neg i1 x))
-    | BBinary (o, (e1, i1), (e2, i2)) ->
+    | ANeg (e1, i1) -> refine a e1 (Option.get (I.filter_neg i1 x))
+    | ABinary (o, (e1, i1), (e2, i2)) ->
         let j =
           match o with
           | ADD -> I.filter_add i1 i2 x

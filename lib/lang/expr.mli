@@ -12,6 +12,16 @@ type t =
   | Var of string
   | Cst of Q.t
 
+(** generic type for annotated expressions *)
+type 'a annot =
+  | AFuncall of string * 'a annot_t list
+  | ANeg of 'a annot_t
+  | ABinary of binop * 'a annot_t * 'a annot_t
+  | AVar of string
+  | ACst of Q.t
+
+and 'a annot_t = 'a annot * 'a
+
 (** {1 Errors} *)
 
 (** raised by evaluation functions *)
