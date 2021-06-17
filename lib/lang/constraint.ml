@@ -44,7 +44,7 @@ let outside_cst v l h : t = Expr.(outside (var v) (of_mpqf l) (of_mpqf h))
 
 let of_instance (i : Instance.t) =
   match VarMap.bindings i with
-  | [] -> invalid_arg "Instance.to_constraint: empty instance"
+  | [] -> invalid_arg "Constraint.of_instance: empty instance"
   | (v, q) :: tl ->
       List.fold_left
         (fun acc (v', q') -> and_ acc (assign v' q'))
@@ -121,7 +121,7 @@ let rec remove_not : t -> t = function
   | x -> x
 
 let rec collect_vars =
-  let merge = Tools.VarMap.union (fun _v i1 i2 -> Some (i1 + i2)) in
+  let merge = VarMap.union (fun _v i1 i2 -> Some (i1 + i2)) in
   function
   | Not b -> collect_vars (neg b)
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)

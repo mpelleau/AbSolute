@@ -91,9 +91,9 @@ module SyntaxTranslator (D : ADomain) = struct
           | Texpr1.Add -> Expr.ADD
           | Texpr1.Sub -> Expr.SUB
           | Texpr1.Mul -> Expr.MUL
+          | Texpr1.Pow -> Expr.POW
           | Texpr1.Div -> Expr.DIV
           | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
-          | _ -> failwith "operation not yet supported with AbSolute"
         in
         Binary (o, to_expr e1, to_expr e2)
 
