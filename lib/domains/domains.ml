@@ -114,6 +114,7 @@ module Poly : Numeric = Relational.PolyCP
 
 module Oct : Numeric = Relational.OctCP
 
+(** specialized reduced product *)
 module Product : D2 = Product
 
 module Boolean : B = Boolean

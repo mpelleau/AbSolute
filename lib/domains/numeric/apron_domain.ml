@@ -3,8 +3,6 @@ open Tools
 open Apron
 open Apronext
 
-let itv_to_mpqf i = Interval.(Scalarext.(to_mpqf i.inf, to_mpqf i.sup))
-
 let scalar_mul_sqrt2 =
   let sqrt2_mpqf = Scalarext.of_float 0.707106781186548 in
   fun s -> Scalarext.mul s sqrt2_mpqf
@@ -75,8 +73,8 @@ module SyntaxTranslator (D : ADomain) = struct
   let apron_to_var abs =
     let env = Abstract1.env abs in
     let iv, rv = Environment.vars env in
-    let ivars = Array.map (fun v -> Var.to_string v) iv in
-    let rvars = Array.map (fun v -> Var.to_string v) rv in
+    let ivars = Array.map Var.to_string iv in
+    let rvars = Array.map Var.to_string rv in
     (Array.to_list ivars, Array.to_list rvars)
 
   let rec to_expr = function
@@ -171,7 +169,7 @@ module Make (AP : ADomain) = struct
   let var_bounds abs v =
     let var = Var.of_string v in
     let i = A.bound_variable man abs var in
-    itv_to_mpqf i
+    Intervalext.to_mpqf i
 
   let rm_var abs v =
     let var = Var.of_string v in
@@ -230,7 +228,7 @@ module Make (AP : ADomain) = struct
   (** interval evaluation of an expression within an abtract domain *)
   let forward_eval abs cons =
     let ap_expr = of_expr (A.env abs) cons in
-    A.bound_texpr man abs ap_expr |> itv_to_mpqf
+    A.bound_texpr man abs ap_expr |> Intervalext.to_mpqf
 
   (* Given `largest abs = (v, i, d)`, `largest` extracts the variable `v` from
      `abs` * with the largest interval `i` = [l, u], and `d` the dimension of
@@ -312,16 +310,16 @@ module Make (AP : ADomain) = struct
 
   (* Sanity checking functions *)
 
-  (** given an abstraction and instance, verifies if the abstraction is implied
-      by the instance *)
+  (** given an abstract value [e] and an instance [i], verifies if
+      [i \in \gamma(e)] *)
   let is_abstraction poly instance =
     let env = A.env poly in
     let var, texpr =
       VarMap.fold
-        (fun var value (acc1, acc2) ->
-          let var = Apron.Var.of_string var in
-          let value = Texpr1.cst env (Coeff.s_of_mpqf value) in
-          (var :: acc1, value :: acc2))
+        (fun k v (acc1, acc2) ->
+          let k = Var.of_string k in
+          let v = Texpr1.cst env (Coeff.s_of_mpqf v) in
+          (k :: acc1, v :: acc2))
         instance ([], [])
     in
     let var = Array.of_list var and tar = Array.of_list texpr in
@@ -330,7 +328,7 @@ module Make (AP : ADomain) = struct
 
   (** Random uniform value within an interval, according to the type *)
   let spawn_itv typ (i : Interval.t) =
-    let inf, sup = itv_to_mpqf i in
+    let inf, sup = Intervalext.to_mpqf i in
     match typ with
     | Environment.INT ->
         let size = Q.sub sup inf |> Q.ceil in
@@ -338,7 +336,7 @@ module Make (AP : ADomain) = struct
         Q.add inf r
     | Environment.REAL ->
         let r = Q.of_float (Random.float 1.) in
-        Q.add inf (Q.mul (Q.sub sup inf) r)
+        Q.(add inf (mul (sub sup inf) r))
 
   (** spawns an instance within a box *)
   let spawn_box box =
@@ -367,7 +365,7 @@ module Make (AP : ADomain) = struct
       let b = A.to_box man poly in
       let instance = spawn_box b in
       if is_abstraction poly instance then instance
-      else if n >= nb_try then (
+      else if n >= nb_try then
         (* in case we didnt find an instance, we fix a variable and retry. we
            give up on uniformity to enforce termination *)
         let v = E.var_of_dim env idx in
@@ -375,12 +373,9 @@ module Make (AP : ADomain) = struct
         let v_itv = A.bound_variable man poly v in
         let v = Texpr1.var env (E.var_of_dim env idx) in
         let value = Texpr1.cst env (Coeff.s_of_mpqf (spawn_itv typ v_itv)) in
-        let texpr = Texprext.sub v value in
-        let tcons = Tcons1.make texpr Tcons1.EQ in
-        let tearray = Tcons1.array_make env 1 in
-        Tcons1.array_set tearray 0 tcons ;
-        let poly = A.meet_tcons_array man poly tearray in
-        retry poly 0 (idx + 1) )
+        let tcons = Tconsext.eq v value in
+        let poly = A.filter_tcons man poly tcons in
+        retry poly 0 (idx + 1)
       else retry poly (n + 1) idx
     in
     retry poly 0 0

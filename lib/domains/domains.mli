@@ -79,5 +79,7 @@ module Utree : B
 
 (** {2 Combinators} *)
 
-(** Reduced product *)
+(** Specialized Reduced Product. Corresponds to the option [-d product (a,b)] of
+    AbSolute. if a constraint can be filtered exactly by the domain [b], it is
+    affected to it, otherwise it is affected to [b].*)
 module Product : D2

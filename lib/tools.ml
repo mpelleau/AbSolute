@@ -16,13 +16,13 @@ let invalid_fmt fmt = Format.kasprintf invalid_arg fmt
 let inplace_print () =
   let size_last = ref 0 in
   fun fmt s ->
-    let back = String.make !size_last '\b' in
+    let last = String.make !size_last '\b' in
     let cur_s = String.length s in
     size_last := max !size_last cur_s ;
     let s =
       String.init !size_last (fun i -> if i >= cur_s then ' ' else s.[i])
     in
-    Format.fprintf fmt "%s%s" back s
+    Format.fprintf fmt "%s%s" last s
 
 (** same as pp_list but with a string as a separator *)
 let pp_list_sep str print =
