@@ -129,7 +129,9 @@ module PolyCP = struct
     let manager_alloc = Polka.manager_alloc_strict
   end)
 
-  let is_representable _ = Kleene.True
+  let is_representable (c : internal_constr) =
+    let e1, _, e2 = externalize c in
+    (Expr.is_linear e1 && Expr.is_linear e2) |> Kleene.of_bool
 
   let split prec poly = split poly (get_expr prec poly)
 

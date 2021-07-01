@@ -1,6 +1,6 @@
 (** This module implements a 3-valued logic *)
 
-(** the type of truth values in a 3vl *)
+(** the type of truth values *)
 type t = False | True | Unknown
 
 (** Conjunction *)

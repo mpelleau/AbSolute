@@ -1,5 +1,5 @@
 module VSet = Set.Make (struct
-  type t = Csp.typ * string * Dom.t
+  type t = Csp.decl
 
   let compare = compare
 end)
@@ -14,7 +14,7 @@ let fresh =
     incr cpt ;
     Format.asprintf "x_%i" !cpt
 
-let ( let$ ) dom f =
+let ( let$ ) (dom : int list) (f : VSet.t Expr.annot_t -> 'a) =
   match dom with
   | [inf; sup] ->
       let v = fresh () in
