@@ -67,7 +67,7 @@ module VarMap = struct
     List.fold_left (fun acc (k, m) -> add k m acc) empty assoc
 
   (** builds the list of all the keys of the map *)
-  let keys map = fold (fun k _ acc -> k :: acc) map []
+  let keys map = fold (fun k _ acc -> List.cons k :: acc) map []
 end
 
 let list_pick l = List.nth l (Random.int (List.length l))

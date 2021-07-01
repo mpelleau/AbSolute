@@ -28,6 +28,17 @@ let ( let@ ) dom (f : VSet.t Expr.annot_t -> 'a) =
       f (Expr.AVar v, single_float v inf sup)
   | _ -> invalid_arg "let@"
 
+let parse_const litteral =
+  match File_parser.expr litteral with
+  | Expr.Cst x -> (Expr.ACst x, VSet.empty)
+  | _ -> invalid_arg ("wrong litteral: " ^ litteral)
+
+let ( ~. ) x = (Expr.ACst (Q.of_int x), VSet.empty)
+
+let ( ~.. ) x = (Expr.ACst (Q.of_float x), VSet.empty)
+
+let ( ~- ) ((_, s) as e) = (Expr.ANeg e, s)
+
 let ( * ) ((_, s1) as e1) ((_, s2) as e2) =
   (Expr.ABinary (MUL, e1, e2), VSet.union s1 s2)
 
@@ -56,7 +67,13 @@ let ( <= ) e1 e2 = cmp Constraint.GEQ e1 e2
 
 let ( = ) e1 e2 = cmp Constraint.EQ e1 e2
 
-let ( ~. ) x = (Expr.ACst (Q.of_int x), VSet.empty)
+let ( <> ) e1 e2 = cmp Constraint.NEQ e1 e2
+
+let ( && ) e1 e2 = Constraint.And (e1, e2)
+
+let ( || ) e1 e2 = Constraint.Or (e1, e2)
+
+let ( ! ) e = Constraint.Not e
 
 let rec get_vars =
   let open Constraint in
@@ -73,13 +90,11 @@ let rec deannot_constr =
   | Or (c1, c2) -> Or (deannot_constr c1, deannot_constr c2)
   | And (c1, c2) -> And (deannot_constr c1, deannot_constr c2)
 
-let build cstrs =
-  let vset =
-    List.fold_left (fun acc c -> get_vars c |> VSet.union acc) VSet.empty cstrs
-  in
-  let cstrs = List.rev_map deannot_constr cstrs in
-  let csp = Csp.initialize (VSet.elements vset) in
-  List.fold_left Csp.add_constr csp cstrs
+let build c =
+  let v = List.fold_left VSet.union VSet.empty (List.rev_map get_vars c) in
+  let c' = List.rev_map deannot_constr c in
+  let csp = Csp.initialize (VSet.elements v) in
+  List.fold_left Csp.add_constr csp c'
 
 let prob =
   let@ x = [-1000.; 1000.] in

@@ -97,7 +97,7 @@ let print_pos_file ppf lex =
     (show_error p.pos_fname p.pos_lnum col)
 
 let constr (str : string) =
-  let lex = Lexing.from_string str in
+  let lex = from_string str in
   try (Parser.bexpreof Lexer.token) lex
   with _ ->
     let p = lex.lex_curr_p in
@@ -106,7 +106,7 @@ let constr (str : string) =
     raise (Syntax_error msg)
 
 let expr (str : string) =
-  let lex = Lexing.from_string str in
+  let lex = from_string str in
   try (Parser.expreof Lexer.token) lex
   with _ ->
     let p = lex.lex_curr_p in
