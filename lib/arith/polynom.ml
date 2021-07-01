@@ -17,10 +17,10 @@ module Make (R : Ring.T) = struct
 
   and coeff = R.t
 
-  (* if a monom correspont to a constant *)
+  (* is a monom a constant *)
   let is_monom_constant ((_, v) : cell) = match v with [] -> true | _ -> false
 
-  (* if a polynom is a monom *)
+  (* is a polynom a monom *)
   let is_monom = function [_] -> true | _ -> false
 
   let to_monom_opt = function [h] -> Some h | _ -> None
@@ -143,8 +143,7 @@ module Make (R : Ring.T) = struct
     if coeff = R.zero then monomzero else (coeff, mul_list vars1 vars2)
 
   (* multiplication of one polynom with one monom *)
-  let mul_ex_cell (e : t) (c : cell) : t =
-    List.map (fun e -> mul_cell_cell c e) e
+  let mul_ex_cell (e : t) (c : cell) : t = List.map (mul_cell_cell c) e
 
   (* multiplication of two polynoms *)
   let mul (e1 : t) (e2 : t) =
