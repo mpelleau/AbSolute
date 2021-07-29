@@ -54,9 +54,13 @@ module Constant = Constant
 
 (** {1 Arithmetic modules} *)
 
+module Ring = Ring
 module Q = Q
 module F = F
 module I = I
+
+(** Module for polynomials over an abstract arithmetic rings *)
+module Polynom = Polynom
 
 (** {1 Miscellaneous}*)
 

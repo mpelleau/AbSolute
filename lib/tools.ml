@@ -5,10 +5,10 @@ exception Bot_found
 
 (** {1 Printing stuff} *)
 
-(** same as failwith but uses a format instead *)
+(** same as [failwith] but uses a format instead *)
 let fail_fmt fmt = Format.kasprintf failwith fmt
 
-(** same as invalid_arg but uses a format instead *)
+(** same as [invalid_arg] but uses a format instead *)
 let invalid_fmt fmt = Format.kasprintf invalid_arg fmt
 
 (** printing that erases previous output. should not be intertwined with other
@@ -24,7 +24,7 @@ let inplace_print () =
     in
     Format.fprintf fmt "%s%s" last s
 
-(** same as pp_list but with a string as a separator *)
+(** same as [Format.pp_print_list] but with a string as a separator *)
 let pp_list_sep str print =
   Format.pp_print_list ~pp_sep:(fun fmt () -> Format.fprintf fmt "%s" str) print
 
@@ -58,7 +58,7 @@ let join_bot2 f x y =
 module VarMap = struct
   include Map.Make (String)
 
-  (** fails directly with an error msg instead of raising Not_found *)
+  (** fails directly with an error msg instead of raising [Not_found] *)
   let find_fail key map =
     try find key map with Not_found -> fail_fmt "key not found: %s" key
 

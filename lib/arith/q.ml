@@ -23,7 +23,7 @@ let mul : t -> t -> t = Mpqf.mul
 let div (x : t) (y : t) : t option =
   if not (Mpqf.equal zero y) then Some (Mpqf.div x y) else None
 
-let pow =
+let pow : t -> int -> t =
   let rec pow a = function
     | 0 -> one
     | 1 -> a

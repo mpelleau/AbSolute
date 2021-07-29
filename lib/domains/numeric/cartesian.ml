@@ -4,29 +4,23 @@ open Csp
 
 (* Generic functor for a parametrized Cartesian representation *)
 module Box (I : ITV) = struct
-  (* maps from variables *)
-  module Env = Tools.VarMap
-
   (* maps each variable to a (non-empty) interval *)
-  type t = I.t Env.t
+  type t = I.t VarMap.t
 
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Constraint.comparison
 
   (* elem is not used but required by the interface. disabling the unused
-     parameter warning to make merlin happy *)
+     parameter warning to make dune happy *)
   let[@warning "-27"] internalize ?elem = Fun.id
 
   let externalize = Fun.id
-
-  (* same as find but prints the key before failing *)
-  let find = VarMap.find_fail
 
   (* true if 'var' is an integer in the given environment *)
   let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
 
   let vars abs =
-    Env.fold
+    VarMap.fold
       (fun v _ acc ->
         let typ = if is_integer abs v then Int else Real in
         (typ, v) :: acc)
@@ -87,15 +81,15 @@ module Box (I : ITV) = struct
     let rec aux diff a acc = function
       | [] -> acc
       | (v, i_b) :: tl ->
-          let add i = Env.add v i a in
-          let i_a = Env.find v a in
+          let add i = VarMap.add v i a in
+          let i_a = VarMap.find v a in
           let d = diff i_a i_b in
           let rest = I.meet_opt i_a i_b |> Option.get in
           aux diff (add rest) (List.rev_append (List.rev_map add d) acc) tl
     in
     match I.prune with
     | None -> None
-    | Some diff -> Some (fun a b -> aux diff a [] (Env.bindings b))
+    | Some diff -> Some (fun a b -> aux diff a [] (VarMap.bindings b))
 
   let volume (a : t) : float =
     VarMap.fold (fun _ x v -> I.float_size x *. v) a 1.
@@ -129,7 +123,7 @@ module Box (I : ITV) = struct
           let r = Option.get (I.eval_fun name iargs) in
           (AFuncall (name, bargs), r)
       | Var v ->
-          let r = find v a in
+          let r = VarMap.find_fail v a in
           (AVar v, r)
       | Cst c ->
           let r = I.of_rat c in
@@ -172,7 +166,7 @@ module Box (I : ITV) = struct
         List.fold_left2
           (fun acc e1 e2 -> refine acc e2 e1)
           a (Option.get res) bexpr
-    | AVar v -> Env.add v (I.meet x (find v a)) a
+    | AVar v -> VarMap.add v (I.meet x (VarMap.find_fail v a)) a
     | ACst i ->
         ignore (I.meet x (I.of_rat i)) ;
         a
@@ -213,9 +207,9 @@ module Box (I : ITV) = struct
     try test a e1 binop e2
     with Invalid_argument _ | Bot_found -> Consistency.Unsat
 
-  let empty : t = Env.empty
+  let empty : t = VarMap.empty
 
-  let is_empty abs = Env.is_empty abs
+  let is_empty abs = VarMap.is_empty abs
 
   let add_var (abs : t) (typ, var, domain) : t =
     let open Dom in
@@ -226,13 +220,11 @@ module Box (I : ITV) = struct
       | _ -> failwith "cartesian.ml : add_var" )
       abs
 
-  let rm_var abs var : t = Env.remove var abs
+  let rm_var abs var : t = VarMap.remove var abs
 
   let forward_eval abs cons =
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
-
-  (* check if sound *)
 
   let to_constraint (a : t) : Constraint.t =
     match VarMap.bindings a with
@@ -246,14 +238,14 @@ module Box (I : ITV) = struct
 
   (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn (a : t) : instance =
-    VarMap.(fold (fun k itv -> add k (Q.of_float (I.spawn itv))) a empty)
+    VarMap.(map (fun itv -> Q.of_float (I.spawn itv)) a)
 
   (* given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)
   let is_abstraction (a : t) (i : instance) =
     VarMap.for_all
       (fun k value ->
-        let value = Mpqf.to_float value in
+        let value = Q.to_float value in
         let itv = VarMap.find_fail k a in
         I.contains_float itv value)
       i
