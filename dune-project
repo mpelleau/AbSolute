@@ -1,3 +1,3 @@
 (lang dune 2.0)
 (name absolute)
-(using menhir 1.0)
+(using menhir 2.0)
