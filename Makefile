@@ -11,7 +11,7 @@ memabsolute:
 	@mv lib/dune lib/dune.tmp
 	@echo "(include_subdirs unqualified)\n(library (public_name libabsolute) (name libabsolute)\
  (libraries bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ apronext picasso landmarks)\
- (preprocess (pps landmarks.ppx --auto)) (foreign_stubs (language c) (names ml_float)))" > lib/dune;
+ (preprocess (pps landmarks-ppx --auto)) (foreign_stubs (language c) (names ml_float)))" > lib/dune;
 	dune build absolute-solver/memabsolute.exe
 	@mv lib/dune.tmp lib/dune
 	@echo "OCAML_LANDMARKS=on,output=timeperf.json,format=json MEMTRACE=memperf.ctf ./_build/default/absolute-solver/memabsolute.exe \$$@" > memabsolute;

@@ -2,6 +2,7 @@
 
 open Csp
 open Constraint
+open Dom
 
 %}
 

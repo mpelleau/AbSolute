@@ -16,4 +16,4 @@
  (name memabsolute)
  (modules memabsolute)
  (libraries libabsolute libsolver memtrace landmarks)
- (preprocess (pps landmarks.ppx --auto)))
+ (preprocess (pps landmarks-ppx --auto)))
