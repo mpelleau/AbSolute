@@ -210,9 +210,9 @@ let filter_sub (i1 : t) (i2 : t) (r : t) : (t * t) option =
 let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
   Tools.merge_bot
     ( if contains_float r 0. && contains_float i2 0. then Some i1
-    else Option.bind (div r i2) (meet_opt i1) )
+      else Option.bind (div r i2) (meet_opt i1) )
     ( if contains_float r 0. && contains_float i1 0. then Some i2
-    else Option.bind (div r i1) (meet_opt i2) )
+      else Option.bind (div r i1) (meet_opt i2) )
 
 let to_constraint v ((l, h) : t) =
   Constraint.inside_cst v (Mpqf.of_int l) (Mpqf.of_int h)

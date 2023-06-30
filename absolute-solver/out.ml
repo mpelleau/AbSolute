@@ -88,12 +88,12 @@ module Make (D : Domain) = struct
     ( if !obj then
       let v1, v2, v3 = vars3D prob in
       let render = build_render3d v1 v2 v3 res in
-      to_obj render "out/absolute.obj" ) ;
+      to_obj render ~filename:"out/absolute.obj" ) ;
     if !visualization || !tex || !svg then (
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
-      if !tex then to_latex render "out/name.tex" ;
-      if !svg then to_svg render "out/name.svg" ;
+      if !tex then to_latex render ~filename:"out/name.tex" ;
+      if !svg then to_svg render ~filename:"out/name.svg" ;
       if !visualization then show render ) ;
     Format.printf "%a\n%!" (terminal_output ~t) res
 end
