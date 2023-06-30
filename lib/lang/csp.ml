@@ -78,11 +78,12 @@ let pp_typ fmt = function
   | Int -> Format.fprintf fmt "int"
   | Real -> Format.fprintf fmt "real"
 
-let pp_declarations fmt =
-  List.iter (fun (a, b, c) ->
-      Format.fprintf fmt "%a %s in %a\n" pp_typ a b Dom.print c)
+let pp_decl fmt (a, b, c) =
+  Format.fprintf fmt "%a %s in %a" pp_typ a b Dom.print c
 
-let pp_constraints fmt = List.iter (Format.fprintf fmt "%a\n" Constraint.print)
+let pp_declarations = pp_list_sep "\n" pp_decl
+
+let pp_constraints = pp_list_sep "\n" Constraint.print
 
 let print fmt p =
   Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations
