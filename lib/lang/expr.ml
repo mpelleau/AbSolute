@@ -22,6 +22,8 @@ exception Division_by_zero
 
 exception Non_integer_exposant
 
+exception Arity_error
+
 let one = Cst Q.one
 
 let zero = Cst Q.zero
@@ -122,11 +124,43 @@ let replace ?(simplify = true) e1 v value =
 let fix_var ?(simplify = true) (e : t) v (c : Q.t) : t =
   replace ~simplify e v (Cst c)
 
+let check_arity_1 args = match args with [x] -> x | _ -> raise Arity_error
+
+let check_arity_2 args =
+  match args with [x; y] -> (x, y) | _ -> raise Arity_error
+
+let function_env_1 =
+  [ ("sqrt", sqrt)
+  ; ("exp", exp)
+  ; ("ln", log)
+  ; ("cos", cos)
+  ; ("sin", sin)
+  ; ("tan", tan)
+  ; ("acos", acos)
+  ; ("asin", asin)
+  ; ("atan", atan) ]
+
+let apply fn args =
+  match fn with
+  | "abs" -> Q.abs (check_arity_1 args)
+  | "max" ->
+      let x, y = check_arity_2 args in
+      if Q.compare x y > 0 then x else y
+  | "min" ->
+      let x, y = check_arity_2 args in
+      if Q.compare x y > 0 then y else x
+  (* potential rounding errors *)
+  | _ -> (
+    (* all remaining function are unary *)
+    try
+      let a = check_arity_1 args in
+      Q.of_float ((List.assoc fn function_env_1) (Q.to_float a))
+    with Not_found ->
+      failwith (Format.sprintf "function %s not supported in Expr.eval" fn) )
+
 let eval (e : t) (i : Instance.t) : Q.t =
   let rec aux = function
-    | Funcall (_name, args) ->
-        let _args = List.map aux args in
-        assert false
+    | Funcall (name, args) -> apply name (List.map aux args)
     | Neg e -> Q.neg (aux e)
     | Binary (b, e1, e2) -> (
       match b with
@@ -135,11 +169,11 @@ let eval (e : t) (i : Instance.t) : Q.t =
       | MUL -> Q.mul (aux e1) (aux e2)
       | DIV -> (
         match Q.div (aux e1) (aux e2) with
-        | None -> invalid_arg "Expr.eval: division by zero"
+        | None -> raise Division_by_zero
         | Some x -> x )
       | POW -> (
         match Q.to_int (aux e2) with
-        | None -> invalid_arg "Expr.eval: exponentiation by non integer value"
+        | None -> raise Non_integer_exposant
         | Some x -> Q.pow (aux e1) x ) )
     | Var v -> VarMap.find v i
     | Cst q -> q

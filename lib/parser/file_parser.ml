@@ -14,7 +14,6 @@ let runtime =
   ; ("sqrt", 1)
   ; ("exp", 1)
   ; ("ln", 1)
-  ; ("pow", 1)
   ; ("cos", 1)
   ; ("sin", 1)
   ; ("tan", 1)
@@ -38,8 +37,8 @@ let check_ast p =
         if Hashtbl.mem h v then
           raise
             (Semantic_error
-               (Format.sprintf "two variables share the same name: %s" v))
-        else Hashtbl.add h v true)
+               (Format.sprintf "two variables share the same name: %s" v) )
+        else Hashtbl.add h v true )
       p.variables
   and check_dom () =
     let open Dom in
@@ -50,7 +49,7 @@ let check_ast p =
             raise
               (Semantic_error
                  (Format.sprintf "Illegal domain : %s in [%s;%s]" v
-                    (Mpqf.to_string f1) (Mpqf.to_string f2)))
+                    (Mpqf.to_string f1) (Mpqf.to_string f2) ) )
       | _ -> ()
     in
     List.iter aux p.variables
@@ -67,7 +66,7 @@ let check_ast p =
             not
               (List.exists
                  (fun (funname, arrity) -> name = funname && nb_args = arrity)
-                 runtime)
+                 runtime )
           then
             let msg = illegal_funcall name nb_args in
             raise (Semantic_error msg)

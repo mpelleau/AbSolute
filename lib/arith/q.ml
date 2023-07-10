@@ -35,6 +35,8 @@ let pow : t -> int -> t =
 
 let neg (x : t) : t = Mpqf.neg x
 
+let abs (x : t) : t = Mpqf.abs x
+
 let ceil (x : t) = x |> Mpqf.to_float |> ceil |> int_of_float
 
 let floor (x : t) = x |> Mpqf.to_float |> floor |> int_of_float

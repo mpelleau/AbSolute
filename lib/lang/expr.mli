@@ -119,8 +119,9 @@ val fix_var : ?simplify:bool -> t -> string -> Q.t -> t
 val eval : t -> Instance.t -> Q.t
 (** Evaluates the expression at the given point.
 
-    @raise [Invalid_arg] if a division by zero occurs of if an exponentitation
-    by a non integer exposant is made. *)
+    @raise [Invalid_arg]
+      if a division by zero occurs of if an exponentitation by a non integer
+      exposant is made. *)
 
 val deannot : 'a annot_t -> t
 (** removes annotations from an annotated expression *)
