@@ -50,8 +50,8 @@ module Make (A : Domain) (B : Domain) = struct
 
   let diff : (t -> t -> t list) option = None
 
-  let split f ((a, b) : t) =
-    let split_a = A.split f a in
+  let split ?prec ((a, b) : t) =
+    let split_a = A.split ?prec a in
     List.map (fun x -> (x, b)) split_a
 
   let join (a, b) (a', b') =
@@ -67,7 +67,7 @@ module Make (A : Domain) (B : Domain) = struct
         List.fold_left
           (fun (e, b) e' ->
             let e, b' = join e e' in
-            (e, b && b'))
+            (e, b && b') )
           (h, true) t
 
   let meet (a, b) (a', b') =
@@ -77,7 +77,7 @@ module Make (A : Domain) (B : Domain) = struct
           match reduced_product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
-          | Filtered (x, _) -> x)
+          | Filtered (x, _) -> x )
         (A.meet a a') (B.meet b b')
     with Exit -> None
 

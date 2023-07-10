@@ -44,7 +44,7 @@ module Make (D : Numeric) : Domain = struct
         Format.fprintf fmt "(%a)"
           (Format.pp_print_list
              ~pp_sep:(fun f () -> Format.fprintf f " || ")
-             print)
+             print )
           sons
 
   let map f t =
@@ -88,7 +88,7 @@ module Make (D : Numeric) : Domain = struct
         Option.map
           (fun _ ->
             ignore sons ;
-            assert false)
+            assert false )
           (D.meet envelopp (bounding b))
 
   (* Tools.join_bot2 (fun a b -> fst (join a b)) (meet b l) (meet b r) ) *)
@@ -109,12 +109,13 @@ module Make (D : Numeric) : Domain = struct
                let sons' =
                  List.fold_left
                    (fun acc e ->
-                     match meet_env e' e with None -> acc | Some e -> e :: acc)
+                     match meet_env e' e with None -> acc | Some e -> e :: acc
+                     )
                    [] sons
                in
                match sons' with
                | [] -> Unsat
-               | e -> Filtered (union_list e' e, x))
+               | e -> Filtered (union_list e' e, x) )
 
   (* filter for boolean expressions *)
   let filter (n : t) c : (t * internal_constr) Consistency.t =
@@ -139,7 +140,7 @@ module Make (D : Numeric) : Domain = struct
                   | Unsat -> x
                   | Filtered ((n2, b2'), sat2) ->
                       let union, _exact = join n1 n2 in
-                      Filtered ((union, Or (b1', b2')), sat1 && sat2) ))
+                      Filtered ((union, Or (b1', b2')), sat1 && sat2) ) )
               (loop e (List.hd atoms))
               (List.tl atoms)
           with Exit -> Sat )
@@ -157,8 +158,8 @@ module Make (D : Numeric) : Domain = struct
     in
     loop n c
 
-  let split prec = function
-    | Leaf x -> List.rev_map leaf (D.split prec x)
+  let split ?prec = function
+    | Leaf x -> List.rev_map leaf (D.split ?prec x)
     | Union {sons; _} -> sons
 
   let is_abstraction t i =

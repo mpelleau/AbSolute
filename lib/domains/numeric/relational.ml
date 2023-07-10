@@ -17,14 +17,15 @@ module BoxCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split prec abs =
+  let split ?prec abs =
     let env = Abstract1.env abs in
     let var, itv, size = largest abs in
-    if Mpqf.to_float size < prec then raise Signature.Too_small
-    else
-      let mid = Intervalext.mid itv in
-      let e1, e2 = complementary env var mid in
-      split abs (e1, e2)
+    Option.iter
+      (fun prec -> if Mpqf.to_float size < prec then raise Signature.Too_small)
+      prec ;
+    let mid = Intervalext.mid itv in
+    let e1, e2 = complementary env var mid in
+    split abs (e1, e2)
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
@@ -99,10 +100,10 @@ end
 module OctMinMaxCP = struct
   include Apron_domain.Make (Oct)
 
-  let split prec octad =
+  let split ?prec octad =
     let env = Abstract1.env octad in
     let poly = to_poly octad env in
-    split octad (get_expr prec poly)
+    split octad (get_expr ?prec poly)
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
@@ -111,14 +112,20 @@ module OctCP = struct
 
   let is_representable _ = Kleene.True
 
-  let split prec octad =
+  let split ?prec octad =
     let env = Abstract1.env octad in
     let var, itv, size = largest octad in
-    if Mpqf.to_float size < prec then raise Signature.Too_small
-    else
-      let mid = Intervalext.mid itv in
-      let e1, e2 = complementary env var mid in
-      split octad (e1, e2)
+    match prec with
+    | None ->
+        let mid = Intervalext.mid itv in
+        let e1, e2 = complementary env var mid in
+        split octad (e1, e2)
+    | Some prec ->
+        if Mpqf.to_float size < prec then raise Signature.Too_small
+        else
+          let mid = Intervalext.mid itv in
+          let e1, e2 = complementary env var mid in
+          split octad (e1, e2)
 end
 
 (** Module for the Polyhedron Abstract Domains for Constraint Programming. *)
@@ -133,7 +140,7 @@ module PolyCP = struct
     let e1, _, e2 = externalize c in
     (Expr.is_linear e1 && Expr.is_linear e2) |> Kleene.of_bool
 
-  let split prec poly = split poly (get_expr prec poly)
+  let split ?prec poly = split poly (get_expr ?prec poly)
 
   let diff =
     let neg acc a c =
