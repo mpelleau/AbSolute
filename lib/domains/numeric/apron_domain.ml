@@ -21,7 +21,7 @@ let most_distant_pair (pts : point array) : point * point * float =
   fold_on_combination_2
     (fun ((_, _, dist) as old) p1 p2 ->
       let dist' = sq_dist p1 p2 in
-      if dist' > dist then (p1, p2, dist') else old)
+      if dist' > dist then (p1, p2, dist') else old )
     (pts.(0), pts.(0), 0.)
     pts
 
@@ -299,7 +299,7 @@ module Make (AP : ADomain) = struct
     let poly = A.to_generator_array pman polyad in
     let env = poly.Generator1.array_env in
     let p1, p2, dist = Generatorext.to_float_array poly |> most_distant_pair in
-    if dist <= prec then raise Signature.TooSmall
+    if dist <= prec then raise Signature.Too_small
     else
       let list1, list2, cst = generate_linexpr env p1 p2 in
       let linexp = Linexpr1.make env in
@@ -319,7 +319,7 @@ module Make (AP : ADomain) = struct
         (fun k v (acc1, acc2) ->
           let k = Var.of_string k in
           let v = Texpr1.cst env (Coeff.s_of_mpqf v) in
-          (k :: acc1, v :: acc2))
+          (k :: acc1, v :: acc2) )
         instance ([], [])
     in
     let var = Array.of_list var and tar = Array.of_list texpr in
@@ -348,7 +348,7 @@ module Make (AP : ADomain) = struct
           let v = E.var_of_dim env idx in
           let typ = E.typ_of_var env v in
           let instance = VarMap.add (Var.to_string v) (spawn_itv typ i) acc in
-          (instance, idx + 1))
+          (instance, idx + 1) )
         (VarMap.empty, 0) itvs
     in
     instance

@@ -20,7 +20,7 @@ module BoxCP = struct
   let split prec abs =
     let env = Abstract1.env abs in
     let var, itv, size = largest abs in
-    if Mpqf.to_float size < prec then raise Signature.TooSmall
+    if Mpqf.to_float size < prec then raise Signature.Too_small
     else
       let mid = Intervalext.mid itv in
       let e1, e2 = complementary env var mid in
@@ -114,7 +114,7 @@ module OctCP = struct
   let split prec octad =
     let env = Abstract1.env octad in
     let var, itv, size = largest octad in
-    if Mpqf.to_float size < prec then raise Signature.TooSmall
+    if Mpqf.to_float size < prec then raise Signature.Too_small
     else
       let mid = Intervalext.mid itv in
       let e1, e2 = complementary env var mid in
@@ -150,14 +150,14 @@ module PolyCP = struct
                 let c1, c2 = Linconsext.spliteq c in
                 let a', acc' = neg acc a c1 in
                 neg acc' a' c2
-              else neg acc a c)
+              else neg acc a c )
             (a, []) (A.to_lincons_array man b)
         in
-        pruned)
+        pruned )
 
   let print_gen fmt =
     Generatorext.iter (fun c v ->
-        Format.fprintf fmt "%a=%f;" Var.print v (Coeffext.to_float c))
+        Format.fprintf fmt "%a=%f;" Var.print v (Coeffext.to_float c) )
 
   let print_vertex fmt pol =
     Format.fprintf fmt "convex ({" ;

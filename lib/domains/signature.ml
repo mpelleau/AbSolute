@@ -2,7 +2,7 @@
     must feature consistency, split and precision operators. *)
 
 (** can be raised by split operations *)
-exception TooSmall
+exception Too_small
 
 module type Numeric = sig
   (** the type of (non-bottom) abstract elements *)

@@ -23,7 +23,7 @@ module Box (I : ITV) = struct
     VarMap.fold
       (fun v _ acc ->
         let typ = if is_integer abs v then Int else Real in
-        (typ, v) :: acc)
+        (typ, v) :: acc )
       abs []
 
   let is_representable _ = Kleene.True
@@ -51,7 +51,7 @@ module Box (I : ITV) = struct
         List.fold_left
           (fun (e, b) e' ->
             let e, b' = join e e' in
-            (e, b && b'))
+            (e, b && b') )
           (h, true) t
 
   let meet (a : t) (b : t) : t option =
@@ -68,7 +68,7 @@ module Box (I : ITV) = struct
   let max_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) ->
-        if I.float_size i > I.float_size io then (v, i) else (vo, io))
+        if I.float_size i > I.float_size io then (v, i) else (vo, io) )
       a (VarMap.min_binding a)
 
   (* variable with maximal range if real or with minimal if integer *)
@@ -247,7 +247,7 @@ module Box (I : ITV) = struct
       (fun k value ->
         let value = Q.to_float value in
         let itv = VarMap.find_fail k a in
-        I.contains_float itv value)
+        I.contains_float itv value )
       i
 
   (* split *)
@@ -260,7 +260,7 @@ module Box (I : ITV) = struct
 
   let split prec (a : t) : t list =
     let v, i = max_range a in
-    if I.float_size i < prec then raise Signature.TooSmall else split_along a v
+    if I.float_size i < prec then raise Signature.Too_small else split_along a v
 
   let render x =
     let vars, values = VarMap.bindings x |> List.split in

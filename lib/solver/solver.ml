@@ -43,7 +43,7 @@ module Make (D : Domain) = struct
             return ~verbose depth (S.to_result ~inner:false res abs')
           else
             try S.split prec abs' |> List.fold_left (aux (depth + 1)) res
-            with TooSmall ->
+            with Too_small ->
               return ~verbose depth (S.to_result ~inner:false res abs') )
     in
     aux 1 Result.empty csp
@@ -68,7 +68,7 @@ module Make (D : Domain) = struct
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
-            with TooSmall -> return ~verbose depth Kleene.Unknown )
+            with Too_small -> return ~verbose depth Kleene.Unknown )
     in
     try aux 1 csp with Exit -> Kleene.True
 
@@ -92,7 +92,7 @@ module Make (D : Domain) = struct
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
-            with TooSmall -> return ~verbose depth Kleene.Unknown )
+            with Too_small -> return ~verbose depth Kleene.Unknown )
       | Unsat ->
           if verbose then loading depth ;
           Kleene.False
