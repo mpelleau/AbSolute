@@ -1,12 +1,13 @@
 (** This module provides types and operations for handling consistencies. A
     consitency is a property obtained after a filtering operation f(s,p): given
-    an abstract value s, and a predicate p, it computes a set s' \subseteq s
-    such that : forall x in s, p(x) => x in s *)
+    an abstract value s, and a predicate p, it computes a set {m s' \subseteq s}
+    such that : {m \forall x \in s, p(x) \implies x \in s'} *)
 
 type 'a t =
-  | Sat  (** when s' = s *)
-  | Unsat  (** when s' = \emptyset *)
-  | Filtered of 'a * bool  (** filtered (s',b) : x \in s', b => p(x) *)
+  | Sat  (** when {m s' = s} *)
+  | Unsat  (** when {m s' = \emptyset} *)
+  | Filtered of 'a * bool
+      (** {m filtered (s',b) : \forall x \in s', b \implies p(x)} *)
 
 type feasible = Unfeasible | Maybe | Witness of Csp.instance
 
