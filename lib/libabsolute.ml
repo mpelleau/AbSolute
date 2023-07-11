@@ -48,6 +48,7 @@ end
 module Signature = Signature
 module Domains = Domains
 module Solver = Solver
+module Iterator = Iterator
 module Consistency = Consistency
 module Result = Result
 module Constant = Constant

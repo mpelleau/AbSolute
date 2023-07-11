@@ -42,7 +42,7 @@ module Make (D : Domain) = struct
           if depth >= max_depth then
             return ~verbose depth (S.to_result ~inner:false res abs')
           else
-            try S.split prec abs' |> List.fold_left (aux (depth + 1)) res
+            try S.split ~prec abs' |> List.fold_left (aux (depth + 1)) res
             with Too_small ->
               return ~verbose depth (S.to_result ~inner:false res abs') )
     in
@@ -64,7 +64,7 @@ module Make (D : Domain) = struct
           if depth >= max_depth then return ~verbose depth Kleene.Unknown
           else
             try
-              S.split prec a
+              S.split ~prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
@@ -88,7 +88,7 @@ module Make (D : Domain) = struct
           if depth >= max_depth then return depth Kleene.Unknown
           else
             try
-              S.split prec a
+              S.split ~prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
