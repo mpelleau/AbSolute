@@ -16,6 +16,12 @@ val translate : t -> t -> t
     corresponding the translation of i by v. Useful for gradient descent
     techniques *)
 
+val iter : (string -> Q.t -> unit) -> t -> unit
+(** iterates through variablez and their coordinante **)
+
+val to_seq : t -> (string * Q.t) Seq.t
+(** conversion to sequence **)
+
 val to_apron_gen : t -> Apron.Generator1.t
 (** conversion to apron generator *)
 

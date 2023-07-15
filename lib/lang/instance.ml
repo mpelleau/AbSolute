@@ -22,3 +22,7 @@ let print fmt instance =
   VarMap.bindings instance |> Format.fprintf fmt "{%a}" (pp_list_sep "\n" bind)
 
 let to_string : t -> string = Format.asprintf "%a" print
+
+let iter = VarMap.iter
+
+let to_seq = VarMap.to_seq
