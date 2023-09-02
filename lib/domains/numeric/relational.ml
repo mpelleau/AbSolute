@@ -12,7 +12,7 @@ let complementary env var value =
   (e1, e2)
 
 (** Module for the Box Abstract Domains for Constraint Programming. *)
-module BoxCP = struct
+module Box = struct
   include Apron_domain.Make (Box)
 
   let is_representable _ = Kleene.True
@@ -107,7 +107,7 @@ module OctMinMaxCP = struct
 end
 
 (** Module for the Octagon Abstract Domains for Constraint Programming. *)
-module OctCP = struct
+module Oct = struct
   include Apron_domain.Make (Oct)
 
   let is_representable _ = Kleene.True
@@ -129,7 +129,7 @@ module OctCP = struct
 end
 
 (** Module for the Polyhedron Abstract Domains for Constraint Programming. *)
-module PolyCP = struct
+module Poly = struct
   include Apron_domain.Make (struct
     type t = Polka.strict Polka.t
 

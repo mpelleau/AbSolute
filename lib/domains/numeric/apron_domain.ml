@@ -145,10 +145,31 @@ module Make (AP : ADomain) = struct
 
   let externalize = apron_to_bexpr
 
+  let var_bounds abs v =
+    let var = Var.of_string v in
+    let i = A.bound_variable man abs var in
+    Intervalext.to_mpqf i
+
+  let dom_of_int v abs =
+    let i = A.bound_variable man abs v in
+    Dom.of_ints
+      (Scalarext.to_float i.inf |> int_of_float)
+      (Scalarext.to_float i.sup |> int_of_float)
+
+  let dom_of_float v abs =
+    let i = A.bound_variable man abs v in
+    Dom.Finite (Scalarext.to_mpqf i.inf, Scalarext.to_mpqf i.sup)
+
   let vars abs =
     let iv, rv = E.vars (A.env abs) in
-    let iv = Array.fold_left (fun a v -> (Int, Var.to_string v) :: a) [] iv in
-    Array.fold_left (fun a v -> (Real, Var.to_string v) :: a) iv rv
+    let iv =
+      Array.fold_left
+        (fun a v -> (Int, Var.to_string v, dom_of_int v abs) :: a)
+        [] iv
+    in
+    Array.fold_left
+      (fun a v -> (Real, Var.to_string v, dom_of_float v abs) :: a)
+      iv rv
 
   let dom_to_texpr env =
     let open Dom in
@@ -165,11 +186,6 @@ module Make (AP : ADomain) = struct
     let abs = A.change_environment man abs e' false in
     let texpr = dom_to_texpr e' dom in
     A.assign_texpr man abs (Var.of_string v) texpr None
-
-  let var_bounds abs v =
-    let var = Var.of_string v in
-    let i = A.bound_variable man abs var in
-    Intervalext.to_mpqf i
 
   let rm_var abs v =
     let var = Var.of_string v in

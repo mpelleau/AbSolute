@@ -50,15 +50,12 @@ module Make (D : Domain) = struct
 
   let satisfiability ?(verbose = false) prec max_depth prob : Kleene.t =
     let csp = S.init ~verbose prob in
+    let loading = if verbose then loading else ignore in
     if verbose then Format.printf "satisfiability ... %!" ;
     let rec aux depth abs =
       match S.propagate abs with
-      | Sat ->
-          if verbose then loading 1 ;
-          raise Exit
-      | Filtered (_, true) ->
-          if verbose then loading 1 ;
-          raise Exit
+      | Sat -> loading 1 ; raise Exit
+      | Filtered (_, true) -> loading 1 ; raise Exit
       | Unsat -> Kleene.False
       | Filtered (a, false) -> (
           if depth >= max_depth then return ~verbose depth Kleene.Unknown
@@ -72,18 +69,18 @@ module Make (D : Domain) = struct
     in
     try aux 1 csp with Exit -> Kleene.True
 
+  exception Found of Csp.instance
+
+  let found a = raise (Found (S.spawn a))
+
   let witness ?(verbose = false) prec max_depth prob : feasible =
     let csp = S.init ~verbose prob in
+    let loading = if verbose then loading else ignore in
     if verbose then Format.printf "witness ... %!" ;
-    let exception Found of Csp.instance in
     let rec aux depth abs =
       match S.propagate abs with
-      | Sat ->
-          if verbose then loading 1 ;
-          raise (Found (S.spawn abs))
-      | Filtered (a, true) ->
-          if verbose then loading 1 ;
-          raise (Found (S.spawn a))
+      | Sat -> loading 1 ; found abs
+      | Filtered (a, true) -> loading 1 ; found a
       | Filtered (a, false) -> (
           if depth >= max_depth then return depth Kleene.Unknown
           else
@@ -93,9 +90,7 @@ module Make (D : Domain) = struct
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
             with Too_small -> return ~verbose depth Kleene.Unknown )
-      | Unsat ->
-          if verbose then loading depth ;
-          Kleene.False
+      | Unsat -> loading depth ; Kleene.False
     in
     let of_kleene = function
       | Kleene.Unknown -> Maybe

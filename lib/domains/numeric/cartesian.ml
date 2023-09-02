@@ -21,9 +21,10 @@ module Box (I : ITV) = struct
 
   let vars abs =
     VarMap.fold
-      (fun v _ acc ->
+      (fun v i acc ->
         let typ = if is_integer abs v then Int else Real in
-        (typ, v) :: acc )
+        let l, u = I.to_float_range i in
+        (typ, v, Dom.of_floats l u) :: acc )
       abs []
 
   let is_representable _ = Kleene.True

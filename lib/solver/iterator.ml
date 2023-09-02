@@ -39,4 +39,9 @@ module Make (D : Domain) = struct
   let to_result ~inner res elm =
     if inner then Result.add_inner res elm.space
     else Result.add_outer res elm.space
+
+  let to_csp elm =
+    let vars = D.vars elm.space in
+    let cstrs = List.map D.externalize elm.constr in
+    List.fold_left Csp.add_constr (Csp.initialize vars) cstrs
 end

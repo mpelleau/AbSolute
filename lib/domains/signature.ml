@@ -19,8 +19,8 @@ module type Numeric = sig
   val rm_var : t -> string -> t
   (** removes a variable from the environnement *)
 
-  val vars : t -> (Csp.typ * string) list
-  (** returns the variables annoted by their type *)
+  val vars : t -> (Csp.typ * string * Dom.t) list
+  (** returns the variables annoted by their type and their definition domain *)
 
   (** {1 Measure} *)
 

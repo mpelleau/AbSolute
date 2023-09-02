@@ -100,19 +100,18 @@ let parse name boolean =
   try loop name
   with Not_found ->
     fail_fmt "domain unknown %s. Possible domains are %a" name
-      Format.(
-        pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string)
+      Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string)
       (get_all ())
 
 module BoxF : Numeric = Cartesian.BoxF
 
 module BoxS : Numeric = Cartesian.BoxStrict
 
-module ApronBox : Numeric = Relational.BoxCP
+module ApronBox : Numeric = Relational.Box
 
-module Poly : Numeric = Relational.PolyCP
+module Poly : Numeric = Relational.Poly
 
-module Oct : Numeric = Relational.OctCP
+module Oct : Numeric = Relational.Oct
 
 (** specialized reduced product *)
 module Product : D2 = Product
