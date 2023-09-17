@@ -138,6 +138,7 @@ val print : Format.formatter -> t -> unit
 val to_string : t -> string
 (** Conversion to a string *)
 
+(** Classic infix boolean operators are redefined on [t]. *)
 module Operators : sig
   val ( > ) : Expr.t -> Expr.t -> t
 
