@@ -139,3 +139,13 @@ val print : Format.formatter -> t -> unit
 
 val to_string : t -> string
 (** Conversion to a string *)
+
+module Operators : sig
+  val ( + ) : t -> t -> t
+
+  val ( * ) : t -> t -> t
+
+  val ( - ) : t -> t -> t
+
+  val ( / ) : t -> t -> t
+end

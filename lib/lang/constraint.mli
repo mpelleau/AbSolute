@@ -120,8 +120,9 @@ val fix_var : t -> string -> Q.t -> t
 val eval : t -> Instance.t -> bool
 (** Evaluates the constraint a the given point.
 
-    @raise [Invalid_arg] if a division by zero occurs or if an exponentitation
-    by a non integer exposant is made. *)
+    @raise [Invalid_arg]
+      if a division by zero occurs or if an exponentitation by a non integer
+      exposant is made. *)
 
 (** {1 Printing} *)
 
@@ -136,3 +137,17 @@ val print : Format.formatter -> t -> unit
 
 val to_string : t -> string
 (** Conversion to a string *)
+
+module Operators : sig
+  val ( > ) : Expr.t -> Expr.t -> t
+
+  val ( < ) : Expr.t -> Expr.t -> t
+
+  val ( >= ) : Expr.t -> Expr.t -> t
+
+  val ( <= ) : Expr.t -> Expr.t -> t
+
+  val ( = ) : Expr.t -> Expr.t -> t
+
+  val ( <> ) : Expr.t -> Expr.t -> t
+end

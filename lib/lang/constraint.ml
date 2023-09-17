@@ -165,3 +165,17 @@ let rec print fmt : t -> unit = function
   | Not b -> Format.fprintf fmt "not %a" print b
 
 let to_string : t -> string = Format.asprintf "%a" print
+
+module Operators = struct
+  let ( < ) = lt
+
+  let ( > ) = gt
+
+  let ( <= ) = leq
+
+  let ( >= ) = geq
+
+  let ( = ) = eq
+
+  let ( <> ) = neq
+end

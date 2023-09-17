@@ -213,3 +213,13 @@ let rec print fmt = function
   | Cst c -> Format.fprintf fmt "%a" Q.pp_print c
 
 let to_string : t -> string = Format.asprintf "%a" print
+
+module Operators = struct
+  let ( + ) = add
+
+  let ( * ) = mul
+
+  let ( - ) = sub
+
+  let ( / ) = div
+end
