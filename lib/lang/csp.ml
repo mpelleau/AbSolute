@@ -109,10 +109,10 @@ let to_graphviz p output =
         VarMap.iter
           (fun v2 _ ->
             if v1 <> v2 then
-              Format.fprintf fmt "%s -> %s [label=\"%s\"];" v1 v2 label )
+              Format.fprintf fmt "%s -- %s [label=\"%s\"];@," v1 v2 label )
           vars )
       vars
   in
-  Format.fprintf fmt_oc "@[<v 2>digraph G{@,%a@]@,}"
+  Format.fprintf fmt_oc "@[<v 2>graph G{@,%a@]@,}"
     (Format.pp_print_list print_edges)
     p.constraints
