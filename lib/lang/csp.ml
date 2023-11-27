@@ -97,3 +97,22 @@ let pp_constraints = pp_list_sep "\n" Constraint.print
 let print fmt p =
   Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations
     p.variables pp_constraints p.constraints
+
+let to_graphviz p output =
+  let oc = open_out output in
+  let fmt_oc = Format.formatter_of_out_channel oc in
+  let print_edges fmt c =
+    let label = Constraint.to_string c in
+    let vars = Constraint.collect_vars c in
+    VarMap.iter
+      (fun v1 _ ->
+        VarMap.iter
+          (fun v2 _ ->
+            if v1 <> v2 then
+              Format.fprintf fmt "%s -> %s [label=\"%s\"];" v1 v2 label )
+          vars )
+      vars
+  in
+  Format.fprintf fmt_oc "@[<v 2>digraph G{@,%a}]@"
+    (Format.pp_print_list print_edges)
+    p.constraints
