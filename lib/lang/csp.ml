@@ -113,6 +113,6 @@ let to_graphviz p output =
           vars )
       vars
   in
-  Format.fprintf fmt_oc "@[<v 2>digraph G{@,%a}]@"
+  Format.fprintf fmt_oc "@[<v 2>digraph G{@,%a@]@,}"
     (Format.pp_print_list print_edges)
     p.constraints
