@@ -105,7 +105,7 @@ let to_graphviz p output =
     let label = Constraint.to_string c in
     let vars = Constraint.collect_vars c in
     let print_edge fmt (a, b) =
-      Format.fprintf fmt "%s -- %s [label=\"%s\"];@," a b label
+      Format.fprintf fmt "%s -- %s [label=\"%s\"];" a b label
     in
     let pairs =
       VarMap.fold
