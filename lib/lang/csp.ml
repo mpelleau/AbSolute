@@ -108,7 +108,7 @@ let to_graphviz p output =
       (fun v1 _ ->
         VarMap.iter
           (fun v2 _ ->
-            if v1 <> v2 then
+            if v1 < v2 (* to avoid printing twice the same edge *) then
               Format.fprintf fmt "%s -- %s [label=\"%s\"];@," v1 v2 label )
           vars )
       vars
