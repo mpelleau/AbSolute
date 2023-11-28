@@ -104,15 +104,22 @@ let to_graphviz p output =
   let print_edges fmt c =
     let label = Constraint.to_string c in
     let vars = Constraint.collect_vars c in
-    VarMap.iter
-      (fun v1 _ ->
-        VarMap.iter
-          (fun v2 _ ->
-            if v1 < v2 (* to avoid printing twice the same edge *) then
-              Format.fprintf fmt "%s -- %s [label=\"%s\"];@," v1 v2 label )
-          vars )
-      vars
+    let print_edge fmt (a, b) =
+      Format.fprintf fmt "%s -- %s [label=\"%s\"];@," a b label
+    in
+    let pairs =
+      VarMap.fold
+        (fun v1 _ acc ->
+          VarMap.fold
+            (fun v2 _ acc ->
+              if v1 < v2 (* to avoid printing twice the same edge *) then
+                (v1, v2) :: acc
+              else acc )
+            vars acc )
+        vars []
+    in
+    Format.fprintf fmt "%a" (Format.pp_print_list print_edge) pairs
   in
-  Format.fprintf fmt_oc "@[<v 2>graph G{@,%a@]@,}"
+  Format.fprintf fmt_oc "@[<v 2>graph G{@,%a@]@,}%!"
     (Format.pp_print_list print_edges)
     p.constraints
