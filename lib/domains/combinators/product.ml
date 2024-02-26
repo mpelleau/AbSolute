@@ -36,7 +36,9 @@ module Make (A : Domain) (B : Domain) = struct
       match a_meet_b a' b with
       | Sat -> Filtered ((a', b), success1)
       | Unsat -> Unsat
-      | Filtered (b', success2) -> Filtered ((a', b'), success1 && success2) )
+      | Filtered (b', success2) -> Filtered ((a', b'), success1 && success2)
+      | Pruned _ -> failwith "" )
+    | Pruned _ -> failwith ""
 
   let empty = (A.empty, B.empty)
 
@@ -77,7 +79,8 @@ module Make (A : Domain) (B : Domain) = struct
           match reduced_product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
-          | Filtered (x, _) -> x )
+          | Filtered (x, _) -> x
+          | Pruned _ -> failwith "" )
         (A.meet a a') (B.meet b b')
     with Exit -> None
 

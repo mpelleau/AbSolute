@@ -99,13 +99,17 @@ let print fmt p =
     p.variables pp_constraints p.constraints
 
 let to_graphviz p output =
+  let get_c_id =
+    let i = ref 0 in
+    fun () -> incr i ; !i
+  in
   let oc = open_out output in
   let fmt_oc = Format.formatter_of_out_channel oc in
   let print_edges fmt c =
-    let label = Constraint.to_string c in
+    let label = get_c_id () in
     let vars = Constraint.collect_vars c in
     let print_edge fmt (a, b) =
-      Format.fprintf fmt "%s -- %s [label=\"%s\"];" a b label
+      Format.fprintf fmt "%s -- %s [label=\"%i\"];" a b label
     in
     let pairs =
       VarMap.fold

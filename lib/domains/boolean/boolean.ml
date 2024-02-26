@@ -33,7 +33,9 @@ module Make (Abs : Numeric) : Domain = struct
           | Unsat -> x
           | Filtered ((n2, b2'), sat2) ->
               let union, exact = Abs.join n1 n2 in
-              Filtered ((union, Or (b1', b2')), sat1 && sat2 && exact) ) )
+              Filtered ((union, Or (b1', b2')), sat1 && sat2 && exact)
+          | _ -> failwith "pruned" )
+        | _ -> failwith "pruned" )
       | And (b1, b2) -> (
         match loop num b1 with
         | Unsat -> Unsat
@@ -43,7 +45,9 @@ module Make (Abs : Numeric) : Domain = struct
           | Sat -> x
           | Unsat -> Unsat
           | Filtered ((num', b2'), sat2) ->
-              Filtered ((num', And (b1', b2')), sat1 && sat2) ) )
+              Filtered ((num', And (b1', b2')), sat1 && sat2)
+          | _ -> failwith "pruned" )
+        | _ -> failwith "pruned" )
       | Not _ -> assert false
     in
     loop num c

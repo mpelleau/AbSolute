@@ -140,7 +140,9 @@ module Make (D : Numeric) : Domain = struct
                   | Unsat -> x
                   | Filtered ((n2, b2'), sat2) ->
                       let union, _exact = join n1 n2 in
-                      Filtered ((union, Or (b1', b2')), sat1 && sat2) ) )
+                      Filtered ((union, Or (b1', b2')), sat1 && sat2)
+                  | Pruned _ -> failwith "" )
+                | Pruned _ -> failwith "" )
               (loop e (List.hd atoms))
               (List.tl atoms)
           with Exit -> Sat )
@@ -153,7 +155,9 @@ module Make (D : Numeric) : Domain = struct
           | Sat -> x
           | Unsat -> Unsat
           | Filtered ((num', b2'), sat2) ->
-              Filtered ((num', And (b1', b2')), sat1 && sat2) ) )
+              Filtered ((num', And (b1', b2')), sat1 && sat2)
+          | Pruned _ -> failwith "" )
+        | Pruned _ -> failwith "" )
       | Not _ -> assert false
     in
     loop n c
