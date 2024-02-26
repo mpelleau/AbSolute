@@ -1,5 +1,5 @@
-(** This module internalizes the constraints into an internal state and handles
-    the order of propagations *)
+(** This module converts the constraints into an internal state and handles the
+    order of filtering *)
 
 open Signature
 open Consistency
@@ -8,6 +8,8 @@ module Make (D : Domain) = struct
   type space = D.t
 
   type t = {space: space; constr: D.internal_constr list}
+
+  let make space constr = {space; constr}
 
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
@@ -27,8 +29,9 @@ module Make (D : Domain) = struct
         | Unsat -> Unsat
         | Sat -> loop sat acc abs tl
         | Filtered ((abs', _), true) -> loop sat acc abs' tl
-        | Filtered ((abs', c'), false) -> loop false (c' :: acc) abs' tl )
-    in
+        | Filtered ((abs', c'), false) -> loop false (c' :: acc) abs' tl
+        | Pruned {sure; unsure} -> prune sat acc sure unsure tl )
+    and prune _sat _acc _sure _unsure = function _ -> failwith "" in
     loop true [] space constr
 
   let split ?prec e =

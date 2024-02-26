@@ -45,6 +45,11 @@ module Make (D : Domain) = struct
             try S.split ~prec abs' |> List.fold_left (aux (depth + 1)) res
             with Too_small ->
               return ~verbose depth (S.to_result ~inner:false res abs') )
+      | Pruned {sure; unsure} ->
+          let res' = List.fold_left (S.to_result ~inner:true) res sure in
+          List.fold_left (aux (depth + 1)) res' unsure
+      (* this (potentially) results in progress bar going over 100% ... but who
+         cares? *)
     in
     aux 1 Result.empty csp
 
@@ -66,6 +71,7 @@ module Make (D : Domain) = struct
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
             with Too_small -> return ~verbose depth Kleene.Unknown )
+      | Pruned _ -> loading 1 ; raise Exit
     in
     try aux 1 csp with Exit -> Kleene.True
 
@@ -91,6 +97,7 @@ module Make (D : Domain) = struct
                    Kleene.False
             with Too_small -> return ~verbose depth Kleene.Unknown )
       | Unsat -> loading depth ; Kleene.False
+      | Pruned {sure; _} -> found (List.hd sure)
     in
     let of_kleene = function
       | Kleene.Unknown -> Maybe
@@ -99,3 +106,5 @@ module Make (D : Domain) = struct
     in
     try aux 1 csp |> of_kleene with Found i -> Witness i
 end
+
+module Default = Make (Domains.Boolean.Make (Domains.BoxS))
