@@ -15,12 +15,11 @@ let pp_constr fmt = List.iter (print_intern fmt)
 let () =
   let open Csp in
   let prob =
-    empty
-    |> add_real_var_f "x" (-1000.) 1000.
-    |> add_real_var_f "t" 0. 1000.
-    |> add_constr
-         (Parser.constr
-            {|(x in [0;10] && t in [0;1]) || (x in [5;15] && t in [1;2])|})
+    let csp = add_real_var_f "x" (-1000.) 1000. empty in
+    let csp = add_real_var_f "t" 0. 1000. csp in
+    add_constr csp
+      (Parser.constr
+         {|(x in [0;10] && t in [0;1]) || (x in [5;15] && t in [1;2])|} )
   in
   let s, c = init prob in
   Format.printf "%a, %a\n" D.print s pp_constr c ;
@@ -33,7 +32,8 @@ let () =
         | Unsat -> Format.printf "%a unsatisfiable\n" print_intern h
         | Filtered ((s', c'), _) ->
             Format.printf "new abstract value:\n %a\n" D.print s' ;
-            Format.printf "new constraint:\n%a\n" print_intern c' ) ;
+            Format.printf "new constraint:\n%a\n" print_intern c'
+        | Pruned _ -> Format.printf "pruned\n" ) ;
         aux t
   in
   aux c

@@ -36,7 +36,7 @@ doc:
 	cp -r _build/default/_doc/_html/* docs/
 
 build:
-	dune build absolute-solver/absolute.exe
+	dune build .
 
 test:
 	dune runtest -f
