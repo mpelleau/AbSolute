@@ -68,8 +68,8 @@ let () =
   match int_of_string_opt Sys.argv.(1) with
   | Some nb_points ->
       let csp = build_csp nb_points in
-      Format.printf "%a\n" Csp.print csp ;
-      Csp.to_graphviz csp (Format.sprintf "convex%i.viz" nb_points)
+      Format.printf "%a\n" Csp.print csp
+      (* Csp.to_graphviz csp (Format.sprintf "convex%i.viz" nb_points) *)
   | None ->
       Format.printf "expecting numeric argument %s\n" Sys.argv.(1) ;
       exit 1

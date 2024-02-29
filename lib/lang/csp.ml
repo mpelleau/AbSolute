@@ -90,9 +90,9 @@ let pp_typ fmt = function
 let pp_decl fmt (a, b, c) =
   Format.fprintf fmt "%a %s in %a" pp_typ a b Dom.print c
 
-let pp_declarations = pp_list_sep "\n" pp_decl
+let pp_declarations = pp_list_sep ";\n" pp_decl
 
-let pp_constraints = pp_list_sep "\n" Constraint.print
+let pp_constraints = pp_list_sep ";\n" Constraint.print
 
 let print fmt p =
   Format.fprintf fmt "init{\n%a\n}\nconstraints{\n%a\n}" pp_declarations
