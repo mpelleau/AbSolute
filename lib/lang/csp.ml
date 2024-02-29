@@ -95,7 +95,7 @@ let pp_declarations = pp_list_sep "\n" pp_decl
 let pp_constraints = pp_list_sep "\n" Constraint.print
 
 let print fmt p =
-  Format.fprintf fmt "Variables:%a\nConstraints:%a\n" pp_declarations
+  Format.fprintf fmt "init{\n%a\n}\nconstraints{\n%a\n}" pp_declarations
     p.variables pp_constraints p.constraints
 
 let to_graphviz p output =
