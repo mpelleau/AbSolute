@@ -88,7 +88,7 @@ let pp_typ fmt = function
   | Real -> Format.fprintf fmt "real"
 
 let pp_decl fmt (a, b, c) =
-  Format.fprintf fmt "%a %s in %a" pp_typ a b Dom.print c
+  Format.fprintf fmt "%a %s = %a" pp_typ a b Dom.print c
 
 let pp_declarations = pp_list_sep ";\n" pp_decl
 
