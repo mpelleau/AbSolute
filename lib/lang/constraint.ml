@@ -127,6 +127,8 @@ let rec collect_vars =
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
   | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
 
+let support c = VarMap.keys (collect_vars c)
+
 let replace (constr : t) v c : t =
   let rec aux = function
     | Cmp (e1, cmp, e2) -> Cmp (Expr.replace e1 v c, cmp, Expr.replace e2 v c)

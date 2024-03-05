@@ -108,6 +108,9 @@ val collect_vars : t -> int Tools.VarMap.t
 (** Returns all the variables appearing in a constraint as a map where to each
     variable is associated the (integer) number of occurences *)
 
+val support : t -> string list
+(** Returns all the variables appearing in a constraint as a list *)
+
 val replace : t -> string -> Expr.t -> t
 (** [replace constr var expr] builds a new constraint identical to [constr]
     where all the occurences of the variable [var] are replaced by the
