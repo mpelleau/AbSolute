@@ -1,5 +1,5 @@
-(** this example defines the csp for sorted list of size n and output a graphviz
-    file.
+(** this example defines the csp for sorted list of size n and outputs a
+    graphviz file.
 
     It is possible to view it by doing:
 
