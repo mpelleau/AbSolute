@@ -10,7 +10,7 @@ let _ =
     (fun f ->
       Format.printf "Parsing %s\n" f ;
       let csp = Parser.file f in
-      let nb_var = List.length (Csp.get_var_names csp) in
+      let nb_var = List.length (Csp.var_names csp) in
       let nb_cstr = List.length csp.Csp.constraints in
       if nb_var > 2 then
         let viz_name =

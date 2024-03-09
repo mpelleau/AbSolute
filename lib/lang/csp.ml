@@ -29,8 +29,11 @@ type t =
 
 (** {1 Accessors} *)
 
+(** returns the number of variables of a csp *)
+let dimensions csp = List.length csp.variables
+
 (** returns list of all variable names *)
-let get_var_names p = List.map (fun (_, v, _) -> v) p.variables
+let var_names p = List.map (fun (_, v, _) -> v) p.variables
 
 (** {1 Constructors}*)
 

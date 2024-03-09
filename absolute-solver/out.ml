@@ -74,21 +74,21 @@ module Make (D : Domain) = struct
         exit 5
 
   let vars2D prob =
-    let vars = Csp.get_var_names prob |> Array.of_list in
+    let vars = Csp.var_names prob |> Array.of_list in
     let size = Array.length vars in
     (vars.(0), vars.(1 mod size))
 
   let vars3D prob =
-    let vars = Csp.get_var_names prob |> Array.of_list in
+    let vars = Csp.var_names prob |> Array.of_list in
     let size = Array.length vars in
     (vars.(0), vars.(1 mod size), vars.(2 mod size))
 
   let results ?(t = false) prob res =
     let open Constant in
     ( if !obj then
-      let v1, v2, v3 = vars3D prob in
-      let render = build_render3d v1 v2 v3 res in
-      to_obj render ~filename:"out/absolute.obj" ) ;
+        let v1, v2, v3 = vars3D prob in
+        let render = build_render3d v1 v2 v3 res in
+        to_obj render ~filename:"out/absolute.obj" ) ;
     if !visualization || !tex || !svg then (
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
