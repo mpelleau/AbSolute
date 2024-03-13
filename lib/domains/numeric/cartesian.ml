@@ -10,6 +10,8 @@ module Box (I : ITV) = struct
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Constraint.comparison
 
+  let sat i c = Constraint.eval_comparison c i
+
   (* elem is not used but required by the interface. disabling the unused
      parameter warning to make dune happy *)
   let[@warning "-27"] internalize ?elem = Fun.id

@@ -17,6 +17,12 @@ module Make (Abs : Numeric) : Domain = struct
 
   let externalize = Csp_helper.map_constr Abs.externalize
 
+  let rec sat i = function
+    | Cmp a -> Abs.sat i a
+    | And (b1, b2) -> sat i b1 && sat i b2
+    | Or (b1, b2) -> sat i b1 || sat i b2
+    | Not b -> not (sat i b)
+
   (* filter on boolean formulae. It also computes a simplified boolean formulae
      e.g: - false || c <=> c - true && c <=> c *)
   let filter (num : Abs.t) c =

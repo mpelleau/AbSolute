@@ -143,6 +143,20 @@ module Make (AP : ADomain) = struct
            the environment"
     | Some e -> of_cmp_expr e c
 
+  let sat i c =
+    let env, coords = VarMap.bindings i |> List.split in
+    let e = Environmentext.make_s (Array.of_list env) [||] in
+    let abs = A.top man e in
+    let abs' =
+      List.fold_left2
+        (fun acc v q ->
+          A.assign_texpr man acc (Var.of_string v)
+            (Texprext.cst e (Coeffext.s_of_mpqf q))
+            None )
+        abs env coords
+    in
+    A.sat_tcons man abs' c
+
   let externalize = apron_to_bexpr
 
   let var_bounds abs v =

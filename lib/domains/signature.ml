@@ -62,6 +62,9 @@ module type Numeric = sig
 
   (** {1 Constraint management} *)
 
+  val sat : Instance.t -> internal_constr -> bool
+  (** satisfaction test on the internal constraint representation *)
+
   val filter : t -> internal_constr -> t Consistency.t
   (** filters an abstract element with respect to an arithmetic constraint, may
       raise bot found. *)
@@ -105,6 +108,9 @@ module type Domain = sig
 
   val filter : t -> internal_constr -> (t * internal_constr) Consistency.t
   (** redefinition of filter and is_representable using boolean expression *)
+
+  val sat : Instance.t -> internal_constr -> bool
+  (** satisfaction test on the internal constraint representation *)
 
   val is_representable : internal_constr -> Kleene.t
 end

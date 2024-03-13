@@ -13,6 +13,8 @@ module Make (A : Domain) (B : Domain) = struct
     | None -> (A.internalize c, B.internalize c)
     | Some (a, b) -> (A.internalize ~elem:a c, B.internalize ~elem:b c)
 
+  let sat i (ca, cb) = A.sat i ca && B.sat i cb
+
   let externalize (c, _) = A.externalize c
 
   let is_representable (c1, c2) =

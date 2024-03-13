@@ -20,6 +20,14 @@ module Make (D : Numeric) : Domain = struct
 
   let externalize = Csp_helper.map_constr D.externalize
 
+  let rec sat i =
+    let open Constraint in
+    function
+    | Cmp a -> D.sat i a
+    | And (b1, b2) -> sat i b1 && sat i b2
+    | Or (b1, b2) -> sat i b1 || sat i b2
+    | Not b -> not (sat i b)
+
   let rec is_representable = function
     | Constraint.And (a, b) | Or (a, b) ->
         Kleene.and_ (is_representable a) (is_representable b)
