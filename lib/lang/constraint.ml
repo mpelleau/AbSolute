@@ -140,12 +140,15 @@ let replace (constr : t) v c : t =
 
 let fix_var constr v (c : Q.t) : t = replace constr v (Cst c)
 
+let eval_comparison (e1, op, e2) i =
+  (cmp_to_fun op) (Expr.eval e1 i) (Expr.eval e2 i)
+
 let eval (constr : t) i =
   let rec aux = function
     | Not b -> not (aux b)
     | And (b1, b2) -> aux b1 && aux b2
     | Or (b1, b2) -> aux b1 || aux b2
-    | Cmp (e1, op, e2) -> (cmp_to_fun op) (Expr.eval e1 i) (Expr.eval e2 i)
+    | Cmp cmp -> eval_comparison cmp i
   in
   aux constr
 

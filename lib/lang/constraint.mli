@@ -120,6 +120,13 @@ val fix_var : t -> string -> Q.t -> t
 (** [fix_var constr var cst] builds a new constraint identical to [constr] where
     all the occurences of the variable [var] are replaced by the constant [cst] *)
 
+val eval_comparison : comparison -> Instance.t -> bool
+(** Evaluates the constraint a the given point.
+
+    @raise [Invalid_arg]
+      if a division by zero occurs or if an exponentitation by a non integer
+      exposant is made. *)
+
 val eval : t -> Instance.t -> bool
 (** Evaluates the constraint a the given point.
 
