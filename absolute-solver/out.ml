@@ -83,6 +83,12 @@ module Make (D : Domain) = struct
     let size = Array.length vars in
     (vars.(0), vars.(1 mod size), vars.(2 mod size))
 
+  let output_name () =
+    let open Constant in
+    Format.asprintf "%s_%s_%i"
+      Filename.(chop_extension !name |> basename)
+      !domain !max_depth
+
   let results ?(t = false) prob res =
     let open Constant in
     ( if !obj then
@@ -92,8 +98,9 @@ module Make (D : Domain) = struct
     if !visualization || !tex || !svg then (
       let v1, v2 = vars2D prob in
       let render = build_render v1 v2 res in
-      if !tex then to_latex render ~filename:"out/name.tex" ;
-      if !svg then to_svg render ~filename:"out/name.svg" ;
+      let name = output_name () in
+      if !tex then to_latex render ~filename:("out/" ^ name ^ ".tex") ;
+      if !svg then to_svg render ~filename:("out/" ^ name ^ ".svg") ;
       if !visualization then show render ) ;
     Format.printf "%a\n%!" (terminal_output ~t) res
 end

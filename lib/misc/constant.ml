@@ -1,6 +1,8 @@
 (** the type of error exception *)
 exception Error of string
 
+let name = ref ""
+
 let precision = ref 0.01
 
 let max_iter = ref 100000000

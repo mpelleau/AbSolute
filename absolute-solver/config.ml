@@ -124,6 +124,7 @@ let parse_args () =
   in
   Argext.parse_args_aliases speclist aliases set_prob globaldescr ;
   if !problem = "" then raise (Constant.Error "no filename specified") ;
+  Constant.name := !problem ;
   !problem
 
 let parse (fn : string) =
