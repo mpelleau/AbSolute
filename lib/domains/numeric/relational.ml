@@ -2,15 +2,6 @@ open Apron
 open Apronext
 open Apron_domain
 
-(* build the pair of constraints var >= value and var <= value *)
-let complementary env var value =
-  let value = Coeff.Scalar value in
-  let e1 = Linexpr1.make env in
-  Linexpr1.set_list e1 [(Coeffext.minus_one, var)] (Some value) ;
-  let e2 = Linexpr1.make env in
-  Linexpr1.set_list e2 [(Coeffext.one, var)] (Some (Coeff.neg value)) ;
-  (e1, e2)
-
 (** Module for the Box Abstract Domains for Constraint Programming. *)
 module Box = struct
   include Apron_domain.Make (Box)

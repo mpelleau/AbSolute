@@ -47,6 +47,9 @@ module type Numeric = sig
       doesn't use the pruning features. precondition: the two abstract elements
       must be defined onto the same set of variables. *)
 
+  val split_var : ?prec:float -> string -> t -> t list
+  (** splits an abstract element *)
+
   val split : ?prec:float -> t -> t list
   (** splits an abstract element *)
 

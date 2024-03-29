@@ -308,6 +308,15 @@ module Make (AP : ADomain) = struct
     in
     loop 0 [] [] 0.
 
+  (* build the pair of constraints var >= value and var <= value *)
+  let complementary env var value =
+    let value = Coeff.Scalar value in
+    let e1 = Linexpr1.make env in
+    Linexpr1.set_list e1 [(Coeffext.minus_one, var)] (Some value) ;
+    let e2 = Linexpr1.make env in
+    Linexpr1.set_list e2 [(Coeffext.one, var)] (Some (Coeff.neg value)) ;
+    (e1, e2)
+
   let split abs (e1, e2) =
     let meet_linexpr abs expr =
       let cons = Linconsext.make expr Lincons1.SUPEQ in
@@ -316,6 +325,14 @@ module Make (AP : ADomain) = struct
     let abs1 = meet_linexpr abs e1 in
     let abs2 = meet_linexpr abs e2 in
     [abs1; abs2]
+
+  let split_var ?prec var abs =
+    ignore prec ;
+    let env = Abstract1.env abs in
+    let l, h = var_bounds abs var in
+    let mid = Mpqf.div (Mpqf.add l h) (Mpqf.of_int 2) |> Scalar.of_mpqf in
+    let e1, e2 = complementary env (Var.of_string var) mid in
+    split abs (e1, e2)
 
   let volume abs =
     let b = A.to_box man abs in
