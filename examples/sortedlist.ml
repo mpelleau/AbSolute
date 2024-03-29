@@ -11,10 +11,7 @@
 open Libabsolute
 
 (* Function that builds the list of constraints corresponding to the check that
-   a list of points forms a convex polygon. This is done by verifying that the
-   vectors corresponding to two consecutive edges of the polygons have a
-   negative cross-product (We could have also picked positive, but we enforce
-   less representations for the same polyhedron that way). *)
+   a list is sorted in increasing order. *)
 let sorted l =
   let rec loop = function
     | x1 :: x2 :: rest ->
@@ -26,7 +23,7 @@ let sorted l =
   | [] | [_] -> failwith "Invalid input: At least 2 numbers are required."
   | _ -> loop l
 
-(* build two variables xn, yn per points of the polygon *)
+(* build variables xn *)
 let build_vars n =
   let rec loop acc = function
     | 0 -> List.rev acc
@@ -36,6 +33,7 @@ let build_vars n =
   in
   loop [] n
 
+(* actual csp building *)
 let build_csp n =
   let names = build_vars n in
   let csp =
