@@ -32,7 +32,11 @@ module Box (I : ITV) = struct
   let is_representable _ = Kleene.True
 
   (* Printer *)
-  let print = VarMap.print (fun fmt -> Format.fprintf fmt "=%a" I.print)
+  let print fmt =
+    Format.fprintf fmt "{%a}"
+      (VarMap.print
+         ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+         (fun fmt -> Format.fprintf fmt "=%a" I.print) )
 
   (* Set-theoretic *)
 
