@@ -141,7 +141,15 @@ let replace (constr : t) v c : t =
 let fix_var constr v (c : Q.t) : t = replace constr v (Cst c)
 
 let eval_comparison (e1, op, e2) i =
-  (cmp_to_fun op) (Expr.eval e1 i) (Expr.eval e2 i)
+  let v1 = Expr.eval e1 i in
+  let v2 = Expr.eval e2 i in
+  match op with
+  | EQ -> Q.equal v1 v2
+  | LEQ -> Q.compare v1 v2 <= 0
+  | GEQ -> Q.compare v1 v2 >= 0
+  | NEQ -> not (Q.equal v1 v2)
+  | GT -> Q.compare v1 v2 > 0
+  | LT -> Q.compare v1 v2 < 0
 
 let eval (constr : t) i =
   let rec aux = function

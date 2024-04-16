@@ -32,7 +32,7 @@ module Box (I : ITV) = struct
   let is_representable _ = Kleene.True
 
   (* Printer *)
-  let print fmt = VarMap.iter (fun v -> Format.fprintf fmt "%s:%a\n" v I.print)
+  let print = VarMap.print (fun fmt -> Format.fprintf fmt "=%a" I.print)
 
   (* Set-theoretic *)
 
@@ -241,7 +241,7 @@ module Box (I : ITV) = struct
 
   (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn (a : t) : instance =
-    VarMap.(map (fun itv -> Q.of_float (I.spawn itv)) a)
+    VarMap.map (fun itv -> Q.of_float (I.spawn itv)) a
 
   (* given an abstraction and instance, verifies if the abstraction is implied
      by the instance *)

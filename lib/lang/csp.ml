@@ -93,13 +93,17 @@ let pp_typ fmt = function
 let pp_decl fmt (a, b, c) =
   Format.fprintf fmt "%a %s = %a" pp_typ a b Dom.print c
 
-let pp_declarations = pp_list_sep ";\n" pp_decl
+let pp_declarations =
+  Format.pp_print_list ~pp_sep:(fun fmt () -> Format.fprintf fmt ";@,") pp_decl
 
-let pp_constraints = pp_list_sep ";\n" Constraint.print
+let pp_constraints =
+  Format.pp_print_list
+    ~pp_sep:(fun fmt () -> Format.fprintf fmt ";@,")
+    Constraint.print
 
 let print fmt p =
-  Format.fprintf fmt "init{\n%a\n}\nconstraints{\n%a\n}" pp_declarations
-    p.variables pp_constraints p.constraints
+  Format.fprintf fmt "@[@[<v 2>init{@,%a@]@,}@,@[<v 2>constraints{@,%a@]@,}@]"
+    pp_declarations p.variables pp_constraints p.constraints
 
 let to_graphviz p output =
   let get_c_id =
