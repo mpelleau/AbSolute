@@ -72,6 +72,10 @@ module type Numeric = sig
   (** filters an abstract element with respect to an arithmetic constraint, may
       raise bot found. *)
 
+  val filter_diff : t -> internal_constr -> (t * Tools.VarSet.t) Consistency.t
+  (** same as filter but also return a set of variables that had their domains
+      effectively reduced *)
+
   val is_representable : internal_constr -> Kleene.t
   (** checks if a constraint is suited for this abstract domain *)
 
@@ -109,11 +113,17 @@ module type Domain = sig
 
   val externalize : internal_constr -> Constraint.t
 
-  val filter : t -> internal_constr -> (t * internal_constr) Consistency.t
-  (** redefinition of filter and is_representable using boolean expression *)
-
   val sat : Instance.t -> internal_constr -> bool
   (** satisfaction test on the internal constraint representation *)
+
+  val filter : t -> internal_constr -> (t * internal_constr) Consistency.t
+  (** redefinition of filter using boolean expression, it also computes a
+      potentially simplified equivalent constraint e.g:
+      - false || c <=> c
+      - true && c <=> c *)
+
+  val filter_diff :
+    t -> internal_constr -> (t * internal_constr * Tools.VarSet.t) Consistency.t
 
   val is_representable : internal_constr -> Kleene.t
 end

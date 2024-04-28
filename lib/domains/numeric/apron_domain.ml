@@ -246,6 +246,8 @@ module Make (AP : ADomain) = struct
       let succ = is_empty (A.filter_tcons man a (Tconsext.neg c)) in
       Consistency.Filtered (a, succ)
 
+  let filter_diff _abs _c = invalid_arg "filter_diff for apron domains"
+
   let print = A.print
 
   let pman = Polka.manager_alloc_strict ()

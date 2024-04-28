@@ -97,6 +97,19 @@ module Make (A : Domain) (B : Domain) = struct
     | Unknown | False ->
         Consistency.map (fun (a, c) -> ((a, b), (c, c2))) (A.filter a c1)
 
+  let filter_diff ((a, b) : t) (c1, c2) :
+      (t * internal_constr * Tools.VarSet.t) Consistency.t =
+    let open Kleene in
+    match B.is_representable c2 with
+    | True ->
+        Consistency.map
+          (fun (b, c, vb) -> ((a, b), (c1, c), vb))
+          (B.filter_diff b c2)
+    | Unknown | False ->
+        Consistency.map
+          (fun (a, c, va) -> ((a, b), (c, c2), va))
+          (A.filter_diff a c1)
+
   let forward_eval ((a, b) : t) obj =
     let l_a, u_a = A.forward_eval a obj in
     let l_b, u_b = B.forward_eval b obj in

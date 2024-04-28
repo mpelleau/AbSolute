@@ -125,6 +125,25 @@ module Make (D : Numeric) : Domain = struct
                | [] -> Unsat
                | e -> Filtered (union_list e' e, x) )
 
+  (* filter for numeric predicates *)
+  let filter_cmp_diff (t : t) cmp : (t * Tools.VarSet.t) Consistency.t =
+    match t with
+    | Leaf e ->
+        Consistency.map (fun (d, t) -> (leaf d, t)) (D.filter_diff e cmp)
+    | Union {envelopp; sons} ->
+        D.filter_diff envelopp cmp
+        |> Consistency.bind (fun (e', v) x ->
+               let sons' =
+                 List.fold_left
+                   (fun acc e ->
+                     match meet_env e' e with None -> acc | Some e -> e :: acc
+                     )
+                   [] sons
+               in
+               match sons' with
+               | [] -> Unsat
+               | e -> Filtered ((union_list e' e, v), x) )
+
   (* filter for boolean expressions *)
   let filter (n : t) c : (t * internal_constr) Consistency.t =
     let open Constraint in
@@ -164,6 +183,56 @@ module Make (D : Numeric) : Domain = struct
           | Unsat -> Unsat
           | Filtered ((num', b2'), sat2) ->
               Filtered ((num', And (b1', b2')), sat1 && sat2)
+          | Pruned _ -> failwith "" )
+        | Pruned _ -> failwith "" )
+      | Not _ -> assert false
+    in
+    loop n c
+
+  (* filter for boolean expressions *)
+  let filter_diff (n : t) c :
+      (t * internal_constr * Tools.VarSet.t) Consistency.t =
+    let open Constraint in
+    let rec collect_or = function
+      | Or (b1, b2) -> collect_or b1 @ collect_or b2
+      | b -> [b]
+    in
+    let rec loop e = function
+      | Cmp a as c ->
+          Consistency.map (fun (x, v) -> (x, c, v)) (filter_cmp_diff e a)
+      | Or _ as x -> (
+          let atoms = collect_or x in
+          try
+            List.fold_left
+              (fun acc c ->
+                match acc with
+                | Sat -> raise Exit
+                | Unsat -> loop e c
+                | Filtered ((n1, b1', v1), sat1) as x -> (
+                  match loop e c with
+                  | Sat -> raise Exit
+                  | Unsat -> x
+                  | Filtered ((n2, b2', v2), sat2) ->
+                      let union, _exact = join n1 n2 in
+                      Filtered
+                        ( (union, Or (b1', b2'), Tools.VarSet.union v1 v2)
+                        , sat1 && sat2 )
+                  | Pruned _ -> failwith "" )
+                | Pruned _ -> failwith "" )
+              (loop e (List.hd atoms))
+              (List.tl atoms)
+          with Exit -> Sat )
+      | And (b1, b2) -> (
+        match loop e b1 with
+        | Unsat -> Unsat
+        | Sat -> loop e b2
+        | Filtered ((n1, b1', v1), sat1) as x -> (
+          match loop n1 b2 with
+          | Sat -> x
+          | Unsat -> Unsat
+          | Filtered ((num', b2', v2), sat2) ->
+              Filtered
+                ((num', And (b1', b2'), Tools.VarSet.union v1 v2), sat1 && sat2)
           | Pruned _ -> failwith "" )
         | Pruned _ -> failwith "" )
       | Not _ -> assert false

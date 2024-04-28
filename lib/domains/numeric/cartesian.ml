@@ -214,6 +214,67 @@ module Box (I : ITV) = struct
     try test a e1 binop e2
     with Invalid_argument _ | Bot_found -> Consistency.Unsat
 
+  let rec refine_diff (a : t) (e : I.t Expr.annot) (x : I.t) : t * VarSet.t =
+    let open Expr in
+    match e with
+    | AFuncall (name, args) ->
+        let bexpr, itv = List.split args in
+        let res = I.filter_fun name itv x in
+        List.fold_left2
+          (fun (acc, v) e1 e2 ->
+            let a', v' = refine_diff acc e2 e1 in
+            (a', VarSet.union v v') )
+          (a, VarSet.empty) (Option.get res) bexpr
+    | AVar v ->
+        let old_i = VarMap.find_fail v a in
+        let new_i = I.meet x old_i in
+        if old_i = new_i then (a, VarSet.empty)
+        else (VarMap.add v new_i a, VarSet.singleton v)
+    | ACst i ->
+        ignore (I.meet x (I.of_rat i)) ;
+        (a, VarSet.empty)
+    | ANeg (e1, i1) -> refine_diff a e1 (Option.get (I.filter_neg i1 x))
+    | ABinary (o, (e1, i1), (e2, i2)) ->
+        let j =
+          match o with
+          | ADD -> I.filter_add i1 i2 x
+          | SUB -> I.filter_sub i1 i2 x
+          | MUL -> I.filter_mul i1 i2 x
+          | DIV -> I.filter_div i1 i2 x
+          | POW -> I.filter_pow i1 i2 x
+        in
+        let j1, j2 = Option.get j in
+        let r1, v1 = refine_diff a e1 j1 in
+        let r2, v2 = refine_diff r1 e2 j2 in
+        (r2, VarSet.union v1 v2)
+
+  (* test transfer function. Apply the evaluation followed by the refine step of
+     the HC4-revise algorithm. It prunes the domain of the variables in `a`
+     according to the constraint `e1 o e2`. *)
+  let test_diff (a : t) (e1 : Expr.t) (o : Constraint.cmpop) (e2 : Expr.t) :
+      (t * VarSet.t) Consistency.t =
+    let (b1, i1), (b2, i2) = (eval a e1, eval a e2) in
+    let res =
+      match o with
+      | LT -> I.filter_lt i1 i2
+      | LEQ -> I.filter_leq i1 i2
+      (* a > b <=> b < a*)
+      | GEQ -> Consistency.map swap_pair (I.filter_leq i2 i1)
+      | GT -> Consistency.map swap_pair (I.filter_lt i2 i1)
+      | NEQ -> I.filter_neq i1 i2
+      | EQ -> Consistency.map (fun x -> (x, x)) (I.filter_eq i1 i2)
+    in
+    Consistency.bind
+      (fun (j1, j2) _b ->
+        let r1, v1 = refine_diff a b1 j1 in
+        let r2, v2 = refine_diff r1 b2 j2 in
+        Filtered ((r2, VarSet.union v1 v2), false) )
+      res
+
+  let filter_diff (a : t) (e1, binop, e2) : (t * VarSet.t) Consistency.t =
+    try test_diff a e1 binop e2
+    with Invalid_argument _ | Bot_found -> Consistency.Unsat
+
   let empty : t = VarMap.empty
 
   let is_empty abs = VarMap.is_empty abs
