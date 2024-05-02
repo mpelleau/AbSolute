@@ -214,6 +214,8 @@ let rec print fmt = function
 
 let to_string : t -> string = Format.asprintf "%a" print
 
+let compare : t -> t -> int = compare
+
 module Operators = struct
   let ( + ) = add
 

@@ -22,6 +22,8 @@ type 'a annot =
 
 and 'a annot_t = 'a annot * 'a
 
+val compare : t -> t -> int
+
 (** {1 Errors} *)
 
 (** raised by evaluation functions *)

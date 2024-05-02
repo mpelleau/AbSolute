@@ -17,6 +17,8 @@ type 'a boolean =
 (** type for constraints *)
 type t = comparison boolean
 
+val compare : t -> t -> int
+
 (** {1 Constructors} *)
 
 (** {2 Comparisons}*)

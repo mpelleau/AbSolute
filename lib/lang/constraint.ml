@@ -179,6 +179,8 @@ let rec print fmt : t -> unit = function
 
 let to_string : t -> string = Format.asprintf "%a" print
 
+let compare : t -> t -> int = compare
+
 (** Classic infix boolean operators are redefined on [t]. *)
 
 module Operators = struct

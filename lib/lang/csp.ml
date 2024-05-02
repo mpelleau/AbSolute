@@ -70,7 +70,7 @@ let add_constr csp c = {csp with constraints= c :: csp.constraints}
 
     @raise [Invalid_arg]
       if a division by zero occurs or if an exponentitation by a non integer
-      exposant is made. *)
+      exponant is made. *)
 let sat csp instance =
   List.for_all (fun c -> Constraint.eval c instance) csp.constraints
 

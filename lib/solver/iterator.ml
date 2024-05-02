@@ -9,8 +9,6 @@ module Make (D : Domain) = struct
 
   type t = {space: space; constr: D.internal_constr list}
 
-  let make space constr = {space; constr}
-
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
     let space = List.fold_left D.add_var D.empty p.Csp.variables in
@@ -31,7 +29,9 @@ module Make (D : Domain) = struct
         | Filtered ((abs', _), true) -> loop sat acc abs' tl
         | Filtered ((abs', c'), false) -> loop false (c' :: acc) abs' tl
         | Pruned {sure; unsure} -> prune sat acc sure unsure tl )
-    and prune _sat _acc _sure _unsure = function _ -> failwith "" in
+    and prune _sat _acc _sure _unsure = function
+      | _ -> failwith "pruning not implemented"
+    in
     loop true [] space constr
 
   let split ?prec e =
