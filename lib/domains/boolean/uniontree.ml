@@ -239,8 +239,8 @@ module Make (D : Numeric) : Domain = struct
     in
     loop n c
 
-  let split_var ?prec var = function
-    | Leaf x -> List.rev_map leaf (D.split_var var ?prec x)
+  let split_along ?prec var = function
+    | Leaf x -> List.rev_map leaf (D.split_along var ?prec x)
     | Union {sons; _} -> sons
 
   let split ?prec = function

@@ -12,7 +12,8 @@ let print print_node print_edge fmt (graph : ('a, 'b) t) =
            (List.of_seq (Hashtbl.to_seq neighbors)) ) )
     (List.of_seq (Hashtbl.to_seq graph))
 
-(* adds "neighbour" to the list of neighbours of "node" if not already present *)
+(* adds "neighbour" to the list of neighbours of "node" if not already
+   present *)
 let add_neighbour (graph : ('a, 'b) t) node neighbor edge =
   match Hashtbl.find_opt graph node with
   | None ->
@@ -32,8 +33,8 @@ let add_edge (graph : ('a, 'b) t) (n1, n2) e : unit =
   add_neighbour graph n2 n1 e
 
 let connected_components (graph : ('a, 'b) t) : ('a, 'b) t list =
-  (* adds to the current connected component the neighbours of 'node'
-     that are not already visited *)
+  (* adds to the current connected component the neighbours of 'node' that are
+     not already visited *)
   let n = Hashtbl.length graph in
   let visited = Hashtbl.create n in
   let rec explore (graph : ('a, 'b) t) component node =
@@ -77,8 +78,7 @@ let find_bridges (graph : ('a, 'b) t) =
           let disc_u = Hashtbl.find disc u in
           Hashtbl.add low u (min low_u low_v) ;
           if low_v > disc_u then result := (u, v) :: !result )
-        else if (not (Hashtbl.mem parent u)) || Hashtbl.find parent u <> v
-        then
+        else if (not (Hashtbl.mem parent u)) || Hashtbl.find parent u <> v then
           let low_u = Hashtbl.find low u in
           let disc_v = Hashtbl.find disc v in
           Hashtbl.add low u (min low_u disc_v) )
@@ -101,8 +101,7 @@ let central_bridge (graph : ('a, 'b) t) (bridges : ('a * 'a) list) =
       incr score ;
       Hashtbl.add visited u true ;
       Hashtbl.iter
-        (fun v _ ->
-          if (not (Hashtbl.mem visited v)) && not (v = v2) then dfs v )
+        (fun v _ -> if (not (Hashtbl.mem visited v)) && not (v = v2) then dfs v)
         ( match Hashtbl.find_opt graph u with
         | None ->
             Format.printf "Graph.find_bridges: node not found\n" ;
@@ -151,8 +150,23 @@ let build size (neighbours : ('a list * 'b) list) : ('a, 'b) t =
     neighbours ;
   g
 
-(* iterates over the edges of a vertex *)
-let iter_edges (f : 'b -> unit) (graph : ('a, 'b) t) (node : 'a) : unit =
+(* iterates over the edges from a vertex *)
+let iter_edges_from (f : 'b -> unit) (graph : ('a, 'b) t) (node : 'a) : unit =
   match Hashtbl.find_opt graph node with
-  | None -> invalid_arg "Egraph.get_edges"
+  | None -> invalid_arg "Egraph.iter_edges_from"
   | Some neighbours -> Hashtbl.iter (fun _ e -> f e) neighbours
+
+(* folder over the edges of a graph. If two or more edges hold the same value,
+   the second may be ignored by setting ~duplicate to false *)
+let fold_edges ?(duplicate = true) f acc (graph : ('a, 'b) t) =
+  if duplicate then
+    Hashtbl.fold (fun _e1 -> Hashtbl.fold (fun _e2 -> f)) graph acc
+  else
+    let n = Hashtbl.length graph in
+    let visited = Hashtbl.create n in
+    Hashtbl.fold
+      (fun _e1 ->
+        Hashtbl.fold (fun _e2 c acc ->
+            if Hashtbl.mem visited c then acc
+            else (Hashtbl.add visited c true ; f c acc) ) )
+      graph acc

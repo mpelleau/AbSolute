@@ -24,16 +24,29 @@ module Make (D : Domain) = struct
     if verbose then Format.printf " done.\n%!" ;
     {space; graph}
 
+  (* graph propagation : each constraint is activated at most once *)
   let propagate {space; graph} : t Consistency.t =
     let queue = Queue.create () in
+    let activated = Hashtbl.create 1 in
+    let add_to_queue diff =
+      Tools.VarSet.iter
+        (Egraph.iter_edges_from
+           (fun c ->
+             if not (Hashtbl.mem activated c) then (
+               Hashtbl.add activated c true ;
+               Queue.add c queue ) )
+           graph )
+        diff
+    in
     let rec loop sat abs =
       if Queue.is_empty queue then Filtered ({space= abs; graph}, sat)
       else
         match D.filter_diff abs (Queue.pop queue) with
         | Unsat -> Unsat
         | Sat -> loop sat abs
-        | Filtered ((abs', _, _), true) -> loop sat abs'
-        | Filtered ((abs', _c', _), false) -> loop false abs'
+        | Filtered ((abs', _, diff), true) -> add_to_queue diff ; loop sat abs'
+        | Filtered ((abs', _c', diff), false) ->
+            add_to_queue diff ; loop false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
     loop true space
@@ -47,17 +60,7 @@ module Make (D : Domain) = struct
     if inner then Result.add_inner res elm.space
     else Result.add_outer res elm.space
 
-  let constraints graph =
-    let module CSet = Set.Make (struct
-      type t = D.internal_constr
-
-      let compare = compare
-    end) in
-    Hashtbl.fold
-      (fun _e1 neighbours acc ->
-        Hashtbl.fold (fun _e2 c acc -> CSet.add c acc) neighbours acc )
-      graph CSet.empty
-    |> CSet.to_seq |> List.of_seq
+  let constraints graph = Egraph.fold_edges ~duplicate:false List.cons [] graph
 
   let to_csp elm =
     let vars = D.vars elm.space in

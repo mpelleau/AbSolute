@@ -308,8 +308,7 @@ module Box (I : ITV) = struct
   let spawn (a : t) : instance =
     VarMap.map (fun itv -> Q.of_float (I.spawn itv)) a
 
-  (* given an abstraction and instance, verifies if the abstraction is implied
-     by the instance *)
+  (* given an abstraction a and an instance i , verifies if i \in \gamma(a) *)
   let is_abstraction (a : t) (i : instance) =
     VarMap.for_all
       (fun k value ->
@@ -321,7 +320,7 @@ module Box (I : ITV) = struct
   (* split *)
   (* ----- *)
 
-  let split_var ?prec (v : string) (a : t) : t list =
+  let split_along ?prec (v : string) (a : t) : t list =
     ignore prec ;
     let i = VarMap.find v a in
     let i_list = I.split i in
@@ -330,10 +329,10 @@ module Box (I : ITV) = struct
   let split ?prec (a : t) : t list =
     let v, i = max_range a in
     match prec with
-    | None -> split_var v a
+    | None -> split_along v a
     | Some prec ->
         if I.float_size i < prec then raise Signature.Too_small
-        else split_var v a
+        else split_along v a
 
   let render x =
     let vars, values = VarMap.bindings x |> List.split in

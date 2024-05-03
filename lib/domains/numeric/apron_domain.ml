@@ -328,7 +328,7 @@ module Make (AP : ADomain) = struct
     let abs2 = meet_linexpr abs e2 in
     [abs1; abs2]
 
-  let split_var ?prec var abs =
+  let split_along ?prec var abs =
     ignore prec ;
     let env = Abstract1.env abs in
     let l, h = var_bounds abs var in
