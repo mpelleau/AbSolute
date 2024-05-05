@@ -71,7 +71,9 @@ let sprint () x = to_string x
 
 let bprint b x = Buffer.add_string b (to_string x)
 
-let pp_print f x = Format.pp_print_string f (to_string x)
+let pp_print fmt x =
+  let i = int_of_float x in
+  if float i = x then Format.fprintf fmt "%i" i else Format.pp_print_float fmt x
 
 (* classification *)
 

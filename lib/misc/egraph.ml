@@ -1,4 +1,5 @@
 (* graphs as adjacency lists, values on both edges and vertices *)
+(* FIXME: how associate two different constraint to the same edge? *)
 type ('a, 'b) t = ('a, ('a, 'b) Hashtbl.t) Hashtbl.t
 
 let print print_node print_edge fmt (graph : ('a, 'b) t) =
@@ -22,6 +23,12 @@ let add_neighbour (graph : ('a, 'b) t) node neighbor edge =
       Hashtbl.add graph node tbl
   | Some neighbors -> Hashtbl.add neighbors neighbor edge
 
+(* FIXME: remove correct constraint *)
+let remove_neighbour (graph : ('a, 'b) t) node neighbor _edge =
+  match Hashtbl.find_opt graph node with
+  | None -> ()
+  | Some neighbors -> Hashtbl.remove neighbors neighbor
+
 (* adds a node if not already present, does nothing otherwise *)
 let add_node (graph : ('a, 'b) t) n =
   match Hashtbl.find_opt graph n with
@@ -32,7 +39,9 @@ let add_edge (graph : ('a, 'b) t) (n1, n2) e : unit =
   add_neighbour graph n1 n2 e ;
   add_neighbour graph n2 n1 e
 
-let remove_edges (_graph : ('a, 'b) t) _e : unit = failwith "graph remove edge"
+let remove_edge (graph : ('a, 'b) t) (n1, n2) e : unit =
+  remove_neighbour graph n1 n2 e ;
+  remove_neighbour graph n2 n1 e
 
 (* iters on the list of edges for every pair in nodes *)
 let iter_edges f nodes =

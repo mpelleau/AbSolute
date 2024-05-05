@@ -33,6 +33,11 @@ module Make (D : Domain) = struct
     List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
     {space; graph; supports}
 
+  let remove_constr graph supports c =
+    let sup = Hashtbl.find supports c in
+    Egraph.(iter_edges (fun e -> remove_edge graph e c) sup) ;
+    Hashtbl.remove supports c
+
   (* graph propagation : each constraint is activated at most once *)
   let propagate {space; graph; supports} : t Consistency.t =
     let queue = Queue.create () in
@@ -53,10 +58,10 @@ module Make (D : Domain) = struct
         match D.filter_diff abs c with
         | Unsat -> Unsat
         | Sat ->
-            Egraph.remove_edges graph c ;
+            remove_constr graph supports c ;
             loop sat abs
         | Filtered ((abs', _, diff), true) ->
-            Egraph.remove_edges graph c ;
+            remove_constr graph supports c ;
             add_to_queue diff ;
             loop sat abs'
         | Filtered ((abs', _c', diff), false) ->
