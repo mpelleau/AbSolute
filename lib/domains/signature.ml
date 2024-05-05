@@ -51,7 +51,7 @@ module type Numeric = sig
   (** splits an abstract element along the specified variable *)
 
   val split : ?prec:float -> t -> t list
-  (** splits an abstract element *)
+  (** splits an abstract element according to an internal heuristic *)
 
   (** {2 constraint conversion} *)
 
@@ -59,7 +59,8 @@ module type Numeric = sig
   type internal_constr
 
   val internalize : ?elem:t -> Constraint.comparison -> internal_constr
-  (** may use a current abstract element to simplify the constaint *)
+  (** converts a comparison to the domain's internal represenatation. May use a
+      current abstract element to simplify the constaint *)
 
   val externalize : internal_constr -> Constraint.comparison
 
@@ -109,7 +110,8 @@ module type Domain = sig
   type internal_constr
 
   val internalize : ?elem:t -> Constraint.t -> internal_constr
-  (** constraint conversion *)
+  (** Converts a constraint to the domain's internal representation. May use a
+      current abstract element to simplify the constaint *)
 
   val externalize : internal_constr -> Constraint.t
 
@@ -124,6 +126,11 @@ module type Domain = sig
 
   val filter_diff :
     t -> internal_constr -> (t * internal_constr * Tools.VarSet.t) Consistency.t
+  (** same as filter but also returns the set of variables that have been
+      effectively filtered *)
 
   val is_representable : internal_constr -> Kleene.t
+  (** checks if a constraint can be encoded without loss of precision;
+      i.e {m \forall x, \gamma(\rho(x,c)) = \{v \in \gamma(x) |
+      c(v)\}}*)
 end

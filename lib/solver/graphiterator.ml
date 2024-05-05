@@ -7,7 +7,12 @@ open Consistency
 module Make (D : Domain) = struct
   type space = D.t
 
-  type t = {space: space; graph: (string, D.internal_constr) Egraph.t}
+  type constraint_graph = (string, D.internal_constr) Egraph.t
+
+  type t =
+    { space: space
+    ; graph: constraint_graph
+    ; supports: (D.internal_constr, string list) Hashtbl.t }
 
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
@@ -15,20 +20,24 @@ module Make (D : Domain) = struct
     if verbose then Format.printf " done.\n" ;
     if verbose then Format.printf "constraint conversion ...%!" ;
     let n = List.length p.variables in
-    let graph =
-      Egraph.build n
-        (List.map
-           (fun c -> (Constraint.support c, D.internalize ~elem:space c))
-           p.Csp.constraints )
+    let constraints =
+      List.map
+        (fun c -> (Constraint.support c, D.internalize ~elem:space c))
+        p.Csp.constraints
     in
     if verbose then Format.printf " done.\n%!" ;
-    {space; graph}
+    if verbose then Format.printf "graph building ...%!" ;
+    let graph = Egraph.build n constraints in
+    if verbose then Format.printf " done.\n%!" ;
+    let supports = Hashtbl.create 1 in
+    List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
+    {space; graph; supports}
 
   (* graph propagation : each constraint is activated at most once *)
-  let propagate {space; graph} : t Consistency.t =
+  let propagate {space; graph; supports} : t Consistency.t =
     let queue = Queue.create () in
     let activated = Hashtbl.create 1 in
-    let add_to_queue diff =
+    let add_to_queue =
       Tools.VarSet.iter
         (Egraph.iter_edges_from
            (fun c ->
@@ -36,15 +45,20 @@ module Make (D : Domain) = struct
                Hashtbl.add activated c true ;
                Queue.add c queue ) )
            graph )
-        diff
     in
     let rec loop sat abs =
-      if Queue.is_empty queue then Filtered ({space= abs; graph}, sat)
+      if Queue.is_empty queue then Filtered ({space= abs; graph; supports}, sat)
       else
-        match D.filter_diff abs (Queue.pop queue) with
+        let c = Queue.pop queue in
+        match D.filter_diff abs c with
         | Unsat -> Unsat
-        | Sat -> loop sat abs
-        | Filtered ((abs', _, diff), true) -> add_to_queue diff ; loop sat abs'
+        | Sat ->
+            Egraph.remove_edges graph c ;
+            loop sat abs
+        | Filtered ((abs', _, diff), true) ->
+            Egraph.remove_edges graph c ;
+            add_to_queue diff ;
+            loop sat abs'
         | Filtered ((abs', _c', diff), false) ->
             add_to_queue diff ; loop false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure

@@ -8,6 +8,16 @@ module Box = struct
 
   let is_representable _ = Kleene.True
 
+  let split_var ?prec abs =
+    let env = Abstract1.env abs in
+    let var, itv, size = largest abs in
+    Option.iter
+      (fun prec -> if Mpqf.to_float size < prec then raise Signature.Too_small)
+      prec ;
+    let mid = Intervalext.mid itv in
+    let e1, e2 = complementary env var mid in
+    (split abs (e1, e2), Var.to_string var)
+
   let split ?prec abs =
     let env = Abstract1.env abs in
     let var, itv, size = largest abs in
