@@ -8,8 +8,8 @@ open Signature
 open Parser
 
 (** Solve a CSP with the abstract domain Abs *)
-module GoS (D : Domain) = struct
-  module Sol = Solver.Make (D)
+module GoS (D : Domain) (P : Propagator) = struct
+  module Sol = Solver.Make (D) (P)
   module Show = Out.Make (D)
 
   let time prob solve =
@@ -42,8 +42,8 @@ end
  * end *)
 
 (* runs the solver according to the solving mode *)
-let run (module D : Domain) (p : Csp.t) : unit =
-  let module Solver = GoS (D) in
+let run (module D : Domain) (module P : Propagator) (p : Csp.t) : unit =
+  let module Solver = GoS (D) (P) in
   if !Constant.trace then Format.printf "\n@[<2>%a@]%!" Csp.print p ;
   if !Constant.witness then Solver.witness p else Solver.coverage p
 
@@ -65,6 +65,9 @@ let speclist =
   ; ( "-domain"
     , Set_string domain
     , default_string "Sets the numeric domain" domain )
+  ; ( "-iterator"
+    , Set_string iterator
+    , default_string "Sets the propagation scheme" iterator )
   ; ( "-boolean"
     , Set_string boolean
     , default_string "Sets the boolean domain" domain )
@@ -143,6 +146,9 @@ let main () =
   try
     let prob = parse_args () in
     Terminal.go prob ;
-    file prob |> run (Domains.parse !Constant.domain !Constant.boolean)
+    file prob
+    |> run
+         (Domains.parse !Constant.domain !Constant.boolean)
+         (Domains.iterator ())
   with Constant.Error msg | Semantic_error msg | Syntax_error msg ->
     Terminal.error msg ; exit 1

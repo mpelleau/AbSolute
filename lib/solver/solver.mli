@@ -1,7 +1,7 @@
 (** Functor parametrized by an abstract domain and defines the three main
     solving functions *)
 
-module Make : functor (D : Signature.Domain) -> sig
+module Make : functor (D : Signature.Domain) (P : Signature.Propagator) -> sig
   val coverage : ?verbose:bool -> float -> int -> Csp.t -> D.t Result.t
   (** coverage of the solution space*)
 

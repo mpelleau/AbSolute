@@ -15,6 +15,8 @@ let domain = ref "box"
 
 let boolean = ref "boolean"
 
+let iterator = ref "roundrobin"
+
 let product = ref false
 
 let witness = ref false
@@ -82,3 +84,8 @@ let set_split s =
   match s with
   | "default" | "maxSmear" | "smear" | "pizza" -> split := s
   | x -> raise (Error ("bisection " ^ x ^ " undefined"))
+
+let set_iterator s =
+  match s with
+  | "roundrobin" | "graph" -> iterator := s
+  | x -> raise (Error ("iterator " ^ x ^ " undefined"))

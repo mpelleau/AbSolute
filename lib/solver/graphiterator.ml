@@ -7,7 +7,11 @@ open Consistency
 module Make (D : Domain) = struct
   type space = D.t
 
-  type constraint_graph = (string, D.internal_constr) Egraph.t
+  type constraint_graph = (variable, constr) Egraph.t
+
+  and constr = D.internal_constr
+
+  and variable = string
 
   type t =
     { space: space
@@ -33,15 +37,21 @@ module Make (D : Domain) = struct
     List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
     {space; graph; supports}
 
-  let remove_constr graph supports c =
-    let sup = Hashtbl.find supports c in
-    Egraph.(iter_edges (fun e -> remove_edge graph e c) sup) ;
-    Hashtbl.remove supports c
+  let remove_constr graph supports (c : D.internal_constr) =
+    let sup = Hashtbl.find_opt supports c in
+    match sup with
+    | Some sup ->
+        Egraph.(iter_edges (fun e -> remove_edge graph e c) sup) ;
+        Hashtbl.remove supports c
+    | None ->
+        failwith
+          (Format.asprintf "remove_constr %a" Constraint.print (D.externalize c))
 
   (* graph propagation : each constraint is activated at most once *)
   let propagate {space; graph; supports} : t Consistency.t =
     let queue = Queue.create () in
-    let activated = Hashtbl.create 1 in
+    let nb_constr = Hashtbl.length supports in
+    let activated = Hashtbl.create nb_constr in
     let add_to_queue =
       Tools.VarSet.iter
         (Egraph.iter_edges_from
@@ -68,10 +78,17 @@ module Make (D : Domain) = struct
             add_to_queue diff ; loop false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
+    Hashtbl.iter
+      (fun c _ ->
+        Hashtbl.add activated c true ;
+        Queue.add c queue )
+      supports ;
     loop true space
 
   let split ?prec e =
-    List.rev_map (fun space -> {e with space}) (D.split ?prec e.space)
+    List.rev_map
+      (fun space -> {e with space; graph= Egraph.copy e.graph})
+      (D.split ?prec e.space)
 
   let spawn elm = D.spawn elm.space
 

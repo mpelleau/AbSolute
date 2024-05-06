@@ -103,6 +103,12 @@ let parse name boolean =
       Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string)
       (get_all ())
 
+let iterator () : (module Propagator) =
+  match !Constant.iterator with
+  | "graph" -> (module Graphiterator)
+  | "roundrobin" -> (module Iterator)
+  | s -> fail_fmt "Domains.iterator: unknown propagator %s" s
+
 module BoxF : Numeric = Cartesian.BoxF
 
 module BoxS : Numeric = Cartesian.BoxStrict

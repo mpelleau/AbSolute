@@ -134,3 +134,23 @@ module type Domain = sig
       i.e {m \forall x, \gamma(\rho(x,c)) = \{v \in \gamma(x) |
       c(v)\}}*)
 end
+
+module type Propagator = sig
+  module Make : functor (D : Domain) -> sig
+    type space = D.t
+
+    type t
+
+    val init : ?verbose:bool -> Csp.t -> t
+
+    val propagate : t -> t Consistency.t
+
+    val split : ?prec:float -> t -> t list
+
+    val spawn : t -> Csp.instance
+
+    val to_result : inner:bool -> space Result.t -> t -> space Result.t
+
+    val to_csp : t -> Csp.t
+  end
+end

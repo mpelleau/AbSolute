@@ -50,6 +50,9 @@ val parse : string -> string -> (module Domain)
     of the predefined comibnator), and both [domain1] and [domain2] has to be
     registered. Useful to build a domain from a command line description *)
 
+val iterator : unit -> (module Propagator)
+(** current propagation scheme *)
+
 (** {1 Predefined Abstract Domains} *)
 
 (** {2 Numeric domains} *)

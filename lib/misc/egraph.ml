@@ -1,5 +1,5 @@
 (* graphs as adjacency lists, values on both edges and vertices *)
-(* FIXME: how associate two different constraint to the same edge? *)
+(* FIXME: how associate different constraints to the same edge? *)
 type ('a, 'b) t = ('a, ('a, 'b) Hashtbl.t) Hashtbl.t
 
 let print print_node print_edge fmt (graph : ('a, 'b) t) =
@@ -12,6 +12,14 @@ let print print_node print_edge fmt (graph : ('a, 'b) t) =
                 Format.fprintf fmt "%a (%a)" print_node a print_edge b ) )
            (List.of_seq (Hashtbl.to_seq neighbors)) ) )
     (List.of_seq (Hashtbl.to_seq graph))
+
+(* deep copy *)
+let copy g =
+  let g' = Hashtbl.create (Hashtbl.length g) in
+  Hashtbl.iter
+    (fun v neighbours -> Hashtbl.add g' v (Hashtbl.copy neighbours))
+    g ;
+  g'
 
 (* adds "neighbour" to the list of neighbours of "node" if not already
    present *)

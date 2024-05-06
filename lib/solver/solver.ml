@@ -4,8 +4,8 @@
 open Signature
 open Consistency
 
-module Make (D : Domain) = struct
-  module S = Iterator.Make (D)
+module Make (D : Domain) (P : Propagator) = struct
+  module P = P.Make (D)
 
   (* prints (in-place) the current approximated progression of the solving: when
      a searchspace is processed (Sat, Unsat or too small) at a given depth d, we
@@ -29,24 +29,24 @@ module Make (D : Domain) = struct
     if verbose then loading d ;
     v
 
-  let coverage ?(verbose = false) prec max_depth prob : S.space Result.t =
-    let csp = S.init ~verbose prob in
+  let coverage ?(verbose = false) prec max_depth prob : P.space Result.t =
+    let csp = P.init ~verbose prob in
     if verbose then Format.printf "coverage ... %!" ;
     let rec aux depth res abs =
-      match S.propagate abs with
+      match P.propagate abs with
       | Unsat -> return ~verbose depth res
-      | Sat -> return depth (S.to_result ~inner:true res abs)
+      | Sat -> return depth (P.to_result ~inner:true res abs)
       | Filtered (abs', true) ->
-          return ~verbose depth (S.to_result ~inner:true res abs')
+          return ~verbose depth (P.to_result ~inner:true res abs')
       | Filtered (abs', false) -> (
           if depth >= max_depth then
-            return ~verbose depth (S.to_result ~inner:false res abs')
+            return ~verbose depth (P.to_result ~inner:false res abs')
           else
-            try S.split ~prec abs' |> List.fold_left (aux (depth + 1)) res
+            try P.split ~prec abs' |> List.fold_left (aux (depth + 1)) res
             with Too_small ->
-              return ~verbose depth (S.to_result ~inner:false res abs') )
+              return ~verbose depth (P.to_result ~inner:false res abs') )
       | Pruned {sure; unsure} ->
-          let res' = List.fold_left (S.to_result ~inner:true) res sure in
+          let res' = List.fold_left (P.to_result ~inner:true) res sure in
           List.fold_left (aux (depth + 1)) res' unsure
       (* this (potentially) results in progress bar going over 100% ... but who
          cares? *)
@@ -54,11 +54,11 @@ module Make (D : Domain) = struct
     aux 1 Result.empty csp
 
   let satisfiability ?(verbose = false) prec max_depth prob : Kleene.t =
-    let csp = S.init ~verbose prob in
+    let csp = P.init ~verbose prob in
     let loading = if verbose then loading else ignore in
     if verbose then Format.printf "satisfiability ... %!" ;
     let rec aux depth abs =
-      match S.propagate abs with
+      match P.propagate abs with
       | Sat -> loading 1 ; raise Exit
       | Filtered (_, true) -> loading 1 ; raise Exit
       | Unsat -> Kleene.False
@@ -66,7 +66,7 @@ module Make (D : Domain) = struct
           if depth >= max_depth then return ~verbose depth Kleene.Unknown
           else
             try
-              S.split ~prec a
+              P.split ~prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
@@ -77,21 +77,21 @@ module Make (D : Domain) = struct
 
   exception Found of Csp.instance
 
-  let found a = raise (Found (S.spawn a))
+  let found a = raise (Found (P.spawn a))
 
   let witness ?(verbose = false) prec max_depth prob : feasible =
-    let csp = S.init ~verbose prob in
+    let csp = P.init ~verbose prob in
     let loading = if verbose then loading else ignore in
     if verbose then Format.printf "witness ... %!" ;
     let rec aux depth abs =
-      match S.propagate abs with
+      match P.propagate abs with
       | Sat -> loading 1 ; found abs
       | Filtered (a, true) -> loading 1 ; found a
       | Filtered (a, false) -> (
           if depth >= max_depth then return depth Kleene.Unknown
           else
             try
-              S.split ~prec a
+              P.split ~prec a
               |> List.fold_left
                    (fun acc elem -> Kleene.or_ acc (aux (depth + 1) elem))
                    Kleene.False
@@ -107,4 +107,5 @@ module Make (D : Domain) = struct
     try aux 1 csp |> of_kleene with Found i -> Witness i
 end
 
-module Default = Make (Domains.Boolean.Make (Domains.BoxS))
+module D = Domains.Boolean.Make (Domains.BoxS)
+module Default = Make (D) (Iterator)
