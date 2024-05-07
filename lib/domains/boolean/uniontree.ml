@@ -247,6 +247,12 @@ module Make (D : Numeric) : Domain = struct
     | Leaf x -> List.rev_map leaf (D.split ?prec x)
     | Union {sons; _} -> sons
 
+  let split_diff ?prec = function
+    | Leaf x ->
+        let split_x, diff = D.split_diff ?prec x in
+        (List.rev_map leaf split_x, diff)
+    | Union {sons; _} -> (sons, Tools.VarSet.empty)
+
   let is_abstraction t i =
     try
       fold (fun () n -> if D.is_abstraction n i then raise Exit) () t ;

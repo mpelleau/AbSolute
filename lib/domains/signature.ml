@@ -53,6 +53,10 @@ module type Numeric = sig
   val split : ?prec:float -> t -> t list
   (** splits an abstract element according to an internal heuristic *)
 
+  val split_diff : ?prec:float -> t -> t list * Tools.VarSet.t
+  (** splits an abstract element according to an internal heuristic, also
+      returns a set of variable that have been affected by the split *)
+
   (** {2 constraint conversion} *)
 
   (** domain's internal representation of a comparison *)

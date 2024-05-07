@@ -116,17 +116,22 @@ module Oct = struct
   let split ?prec octad =
     let env = Abstract1.env octad in
     let var, itv, size = largest octad in
-    match prec with
-    | None ->
-        let mid = Intervalext.mid itv in
-        let e1, e2 = complementary env var mid in
-        split octad (e1, e2)
-    | Some prec ->
-        if Mpqf.to_float size < prec then raise Signature.Too_small
-        else
-          let mid = Intervalext.mid itv in
-          let e1, e2 = complementary env var mid in
-          split octad (e1, e2)
+    Option.iter
+      (fun p -> if Q.to_float size < p then raise Signature.Too_small)
+      prec ;
+    let mid = Intervalext.mid itv in
+    let e1, e2 = complementary env var mid in
+    split octad (e1, e2)
+
+  let split_diff ?prec octad =
+    let env = Abstract1.env octad in
+    let var, itv, size = largest octad in
+    Option.iter
+      (fun p -> if Q.to_float size < p then raise Signature.Too_small)
+      prec ;
+    let mid = Intervalext.mid itv in
+    let e1, e2 = complementary env var mid in
+    split_diff octad (e1, e2)
 end
 
 (** Module for the Polyhedron Abstract Domains for Constraint Programming. *)

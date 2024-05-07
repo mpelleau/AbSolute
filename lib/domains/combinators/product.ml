@@ -58,6 +58,10 @@ module Make (A : Domain) (B : Domain) = struct
     let split_a = A.split ?prec a in
     List.map (fun x -> (x, b)) split_a
 
+  let split_diff ?prec ((a, b) : t) =
+    let split_a, diff = A.split_diff ?prec a in
+    (List.map (fun x -> (x, b)) split_a, diff)
+
   let split_along ?prec v ((a, b) : t) =
     let split_a = A.split_along ?prec v a in
     List.map (fun x -> (x, b)) split_a
