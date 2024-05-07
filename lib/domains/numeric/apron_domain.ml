@@ -328,11 +328,28 @@ module Make (AP : ADomain) = struct
     let abs2 = meet_linexpr abs e2 in
     [abs1; abs2]
 
+  let split_diff abs (e1, e2) =
+    let cons1 = Linconsext.make e1 Lincons1.SUPEQ in
+    let cons2 = Linconsext.make e2 Lincons1.SUPEQ in
+    let abs1 = A.filter_lincons man abs cons1 in
+    let abs2 = A.filter_lincons man abs cons2 in
+    let vars =
+      Linconsext.fold
+        (fun c v acc ->
+          if Coeff.is_zero c then acc else VarSet.add (Var.to_string v) acc )
+        (fun _ -> VarSet.empty)
+        cons1
+    in
+    ([abs1; abs2], vars)
+
   let split_along ?prec var abs =
-    ignore prec ;
     let env = Abstract1.env abs in
     let l, h = var_bounds abs var in
-    let mid = Mpqf.div (Mpqf.add l h) (Mpqf.of_int 2) |> Scalar.of_mpqf in
+    let size = Mpqf.sub h l in
+    Option.iter
+      (fun p -> if Mpqf.to_float size < p then raise Signature.Too_small)
+      prec ;
+    let mid = Mpqf.div (Q.add l h) Q.two |> Scalar.of_mpqf in
     let e1, e2 = complementary env (Var.of_string var) mid in
     split abs (e1, e2)
 

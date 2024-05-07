@@ -334,6 +334,14 @@ module Box (I : ITV) = struct
         if I.float_size i < prec then raise Signature.Too_small
         else split_along v a
 
+  let split_diff ?prec (a : t) : t list * VarSet.t =
+    let v, i = max_range a in
+    match prec with
+    | None -> (split_along v a, VarSet.singleton v)
+    | Some prec ->
+        if I.float_size i < prec then raise Signature.Too_small
+        else (split_along v a, VarSet.singleton v)
+
   let render x =
     let vars, values = VarMap.bindings x |> List.split in
     Picasso.Drawable.of_ranges vars (List.map I.to_float_range values)

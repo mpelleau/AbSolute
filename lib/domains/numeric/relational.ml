@@ -8,7 +8,7 @@ module Box = struct
 
   let is_representable _ = Kleene.True
 
-  let split_var ?prec abs =
+  let split_diff ?prec abs =
     let env = Abstract1.env abs in
     let var, itv, size = largest abs in
     Option.iter
@@ -16,7 +16,7 @@ module Box = struct
       prec ;
     let mid = Intervalext.mid itv in
     let e1, e2 = complementary env var mid in
-    (split abs (e1, e2), Var.to_string var)
+    (split abs (e1, e2), Tools.VarSet.singleton (Var.to_string var))
 
   let split ?prec abs =
     let env = Abstract1.env abs in
@@ -142,6 +142,8 @@ module Poly = struct
     (Expr.is_linear e1 && Expr.is_linear e2) |> Kleene.of_bool
 
   let split ?prec poly = split poly (get_expr ?prec poly)
+
+  let split_diff ?prec poly = split_diff poly (get_expr ?prec poly)
 
   let diff =
     let neg acc a c =
