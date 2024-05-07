@@ -1,5 +1,5 @@
 (** This module converts the constraints into an internal state and handles the
-    order of filtering *)
+    order of filtering using a graph propagation scheme *)
 
 open Signature
 open Consistency
@@ -16,7 +16,8 @@ module Make (D : Domain) = struct
   type t =
     { space: space
     ; graph: constraint_graph
-    ; supports: (D.internal_constr, string list) Hashtbl.t }
+    ; supports: (D.internal_constr, string list) Hashtbl.t
+    ; splitted: Tools.VarSet.t }
 
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
@@ -35,7 +36,7 @@ module Make (D : Domain) = struct
     if verbose then Format.printf " done.\n%!" ;
     let supports = Hashtbl.create 1 in
     List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
-    {space; graph; supports}
+    {space; graph; supports; splitted= Tools.VarSet.empty}
 
   let remove_constr graph supports (c : D.internal_constr) =
     let sup = Hashtbl.find_opt supports c in
@@ -48,21 +49,22 @@ module Make (D : Domain) = struct
           (Format.asprintf "remove_constr %a" Constraint.print (D.externalize c))
 
   (* graph propagation : each constraint is activated at most once *)
-  let propagate {space; graph; supports} : t Consistency.t =
+  let propagate {space; graph; supports; splitted} : t Consistency.t =
     let queue = Queue.create () in
     let nb_constr = Hashtbl.length supports in
     let activated = Hashtbl.create nb_constr in
     let add_to_queue =
-      Tools.VarSet.iter
-        (Egraph.iter_edges_from
-           (fun c ->
-             if not (Hashtbl.mem activated c) then (
-               Hashtbl.add activated c true ;
-               Queue.add c queue ) )
-           graph )
+      Egraph.iter_edges_from
+        (fun c ->
+          if not (Hashtbl.mem activated c) then (
+            Hashtbl.add activated c true ;
+            Queue.add c queue ) )
+        graph
     in
     let rec loop sat abs =
-      if Queue.is_empty queue then Filtered ({space= abs; graph; supports}, sat)
+      if Queue.is_empty queue then
+        Filtered
+          ({space= abs; graph; supports; splitted= Tools.VarSet.empty}, sat)
       else
         let c = Queue.pop queue in
         match D.filter_diff abs c with
@@ -72,17 +74,17 @@ module Make (D : Domain) = struct
             loop sat abs
         | Filtered ((abs', _, diff), true) ->
             remove_constr graph supports c ;
-            add_to_queue diff ;
+            Tools.VarSet.iter add_to_queue diff ;
             loop sat abs'
         | Filtered ((abs', _c', diff), false) ->
-            add_to_queue diff ; loop false abs'
+            Tools.VarSet.iter add_to_queue diff ;
+            loop false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
-    Hashtbl.iter
-      (fun c _ ->
-        Hashtbl.add activated c true ;
-        Queue.add c queue )
-      supports ;
+    (* if no variable have been splitted, do a full propag *)
+    if Tools.VarSet.is_empty splitted then
+      List.iter (fun (_, v, _) -> add_to_queue v) (D.vars space)
+    else Tools.VarSet.iter add_to_queue splitted ;
     loop true space
 
   let split ?prec e =
