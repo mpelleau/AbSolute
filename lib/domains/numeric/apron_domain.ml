@@ -345,11 +345,11 @@ module Make (AP : ADomain) = struct
   let split_along ?prec var abs =
     let env = Abstract1.env abs in
     let l, h = var_bounds abs var in
-    let size = Mpqf.sub h l in
+    let s = Q.sub h l in
     Option.iter
-      (fun p -> if Mpqf.to_float size < p then raise Signature.Too_small)
+      (fun p -> if Q.to_float s < p then raise Signature.Too_small)
       prec ;
-    let mid = Mpqf.div (Q.add l h) Q.two |> Scalar.of_mpqf in
+    let mid = Q.add l (Mpqf.div s Q.two) |> Scalar.of_mpqf in
     let e1, e2 = complementary env (Var.of_string var) mid in
     split abs (e1, e2)
 
