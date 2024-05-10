@@ -61,7 +61,7 @@ module Make (D : Domain) = struct
             Queue.add c queue ) )
         graph
     in
-    let rec loop sat abs =
+    let rec loop graph sat abs =
       if Queue.is_empty queue then
         Filtered
           ({space= abs; graph; supports; splitted= Tools.VarSet.empty}, sat)
@@ -70,30 +70,28 @@ module Make (D : Domain) = struct
         match D.filter_diff abs c with
         | Unsat -> Unsat
         | Sat ->
-            remove_constr graph supports c ;
-            loop sat abs
+            let graph' = Cgraph.copy graph in
+            remove_constr graph' supports c ;
+            loop graph' sat abs
         | Filtered ((abs', _, diff), true) ->
-            remove_constr graph supports c ;
+            let graph' = Cgraph.copy graph in
+            remove_constr graph' supports c ;
             Tools.VarSet.iter add_to_queue diff ;
-            loop sat abs'
+            loop graph' sat abs'
         | Filtered ((abs', _c', diff), false) ->
             Tools.VarSet.iter add_to_queue diff ;
-            loop false abs'
+            loop graph false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
     (* if no variable have been splitted, perform a full propagation *)
     if Tools.VarSet.is_empty splitted then
       List.iter (fun (_, v, _) -> add_to_queue v) (D.vars space)
     else Tools.VarSet.iter add_to_queue splitted ;
-    loop true space
+    loop graph true space
 
   let split ?prec e =
     List.rev_map
-      (fun space ->
-        { e with
-          space
-        ; graph= Cgraph.copy e.graph
-        ; supports= Hashtbl.copy e.supports } )
+      (fun space -> {e with space; supports= Hashtbl.copy e.supports})
       (D.split ?prec e.space)
 
   let spawn elm = D.spawn elm.space

@@ -1,37 +1,17 @@
-(* hacky-ish implementation of hashset using hashtbl from keys to unit *)
-module Hashset = struct
-  type 'a t = ('a, unit) Hashtbl.t
-
-  let mem = Hashtbl.mem
-
-  let singleton x : 'a t =
-    let res = Hashtbl.create 1 in
-    Hashtbl.add res x () ; res
-
-  let add h x = Hashtbl.replace h x ()
-
-  let remove = Hashtbl.remove
-
-  let iter f h = Hashtbl.iter (fun a () -> f a) h
-
-  let fold h f = Hashtbl.fold (fun a _ -> f a) h
-
-  let copy (h : 'a t) : 'a t = Hashtbl.copy h
-end
-
 (* graphs as adjacency lists, values on both edges and vertices *)
 type ('a, 'b) t = ('a, ('a, 'b Hashset.t) Hashtbl.t) Hashtbl.t
 
-let print print_node print_edge fmt (graph : ('a, 'b) t) =
+let print pp_node pp_edge fmt (graph : ('a, 'b) t) =
   Format.fprintf fmt "@[<v 2>[@,%a@]\n]"
-    (Format.pp_print_list (fun fmt (node, neighbors) ->
-         Format.fprintf fmt "(%a, [%a])" print_node node
-           (Format.pp_print_list
+    (Format.pp_print_seq (fun fmt (n, neighbors) ->
+         Format.fprintf fmt "(%a, [%a])" pp_node n
+           (Format.pp_print_seq
               ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
-              (fun fmt (a, b) ->
-                Format.fprintf fmt "%a (%a)" print_node a print_edge b ) )
-           (List.of_seq (Hashtbl.to_seq neighbors)) ) )
-    (List.of_seq (Hashtbl.to_seq graph))
+              (fun fmt (n', e) ->
+                Format.fprintf fmt "%a (%a)" pp_node n' (Hashset.print pp_edge)
+                  e ) )
+           (Hashtbl.to_seq neighbors) ) )
+    (Hashtbl.to_seq graph)
 
 (* deep copy *)
 let copy (g : ('a, 'b) t) : ('a, 'b) t =
@@ -109,21 +89,17 @@ let iter_edges_from (f : 'b -> unit) (graph : ('a, 'b) t) (node : 'a) : unit =
   | Some neighbours -> Hashtbl.iter (fun _ e -> Hashset.iter f e) neighbours
 
 (* folder over the edges of a graph. If two or more edges hold the same value,
-   the second may be ignored by setting ~duplicate to false *)
+   only the first one may be folded on by setting ~duplicate to false *)
 let fold_edges ?(duplicate = true) f acc (graph : ('a, 'b) t) =
   if duplicate then
-    Hashtbl.fold
-      (fun _e1 -> Hashtbl.fold (fun _e2 b -> Hashset.fold b f))
-      graph acc
+    Hashtbl.fold (fun _e1 -> Hashtbl.fold (fun _e2 -> Hashset.fold f)) graph acc
   else
     let n = Hashtbl.length graph in
     let visited = Hashtbl.create n in
     Hashtbl.fold
       (fun _e1 ->
-        Hashtbl.fold (fun _e2 edges acc ->
-            Hashset.fold edges
-              (fun e acc ->
+        Hashtbl.fold (fun _e2 ->
+            Hashset.fold (fun e acc ->
                 if Hashtbl.mem visited e then acc
-                else (Hashtbl.add visited e true ; f e acc) )
-              acc ) )
+                else (Hashtbl.add visited e true ; f e acc) ) ) )
       graph acc
