@@ -7,7 +7,7 @@ open Consistency
 module Make (D : Domain) = struct
   type space = D.t
 
-  type constraint_graph = (variable, constr) Egraph.t
+  type constraint_graph = (variable, constr) Cgraph.t
 
   and constr = D.internal_constr
 
@@ -32,7 +32,7 @@ module Make (D : Domain) = struct
     in
     if verbose then Format.printf " done.\n%!" ;
     if verbose then Format.printf "graph building ...%!" ;
-    let graph = Egraph.build n constraints in
+    let graph = Cgraph.build n constraints in
     if verbose then Format.printf " done.\n%!" ;
     let supports = Hashtbl.create 1 in
     List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
@@ -42,7 +42,7 @@ module Make (D : Domain) = struct
     let sup = Hashtbl.find_opt supports c in
     match sup with
     | Some sup ->
-        Egraph.(iter_edges (fun e -> remove_edge graph e c) sup) ;
+        Cgraph.(iter_edges (fun e -> remove_edge graph e c) sup) ;
         Hashtbl.remove supports c
     | None ->
         failwith
@@ -54,7 +54,7 @@ module Make (D : Domain) = struct
     let nb_constr = Hashtbl.length supports in
     let activated = Hashtbl.create nb_constr in
     let add_to_queue =
-      Egraph.iter_edges_from
+      Cgraph.iter_edges_from
         (fun c ->
           if not (Hashtbl.mem activated c) then (
             Hashtbl.add activated c true ;
@@ -81,7 +81,7 @@ module Make (D : Domain) = struct
             loop false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
-    (* if no variable have been splitted, do a full propag *)
+    (* if no variable have been splitted, perform a full propagation *)
     if Tools.VarSet.is_empty splitted then
       List.iter (fun (_, v, _) -> add_to_queue v) (D.vars space)
     else Tools.VarSet.iter add_to_queue splitted ;
@@ -89,7 +89,11 @@ module Make (D : Domain) = struct
 
   let split ?prec e =
     List.rev_map
-      (fun space -> {e with space; graph= Egraph.copy e.graph})
+      (fun space ->
+        { e with
+          space
+        ; graph= Cgraph.copy e.graph
+        ; supports= Hashtbl.copy e.supports } )
       (D.split ?prec e.space)
 
   let spawn elm = D.spawn elm.space
@@ -98,9 +102,9 @@ module Make (D : Domain) = struct
     if inner then Result.add_inner res elm.space
     else Result.add_outer res elm.space
 
-  let constraints graph = Egraph.fold_edges ~duplicate:false List.cons [] graph
+  let constraints graph = Cgraph.fold_edges ~duplicate:false List.cons [] graph
 
-  let to_csp elm =
+  let to_csp (elm : t) =
     let vars = D.vars elm.space in
     let cstrs = List.map D.externalize (constraints elm.graph) in
     List.fold_left Csp.add_constr (Csp.initialize vars) cstrs
