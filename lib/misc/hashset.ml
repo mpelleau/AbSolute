@@ -3,7 +3,9 @@
 type 'a t = ('a, unit) Hashtbl.t
 
 let print pp_elem fmt (h : 'a t) =
-  (Format.pp_print_seq (fun fmt (e, _) -> pp_elem fmt e))
+  (Format.pp_print_seq
+     ~pp_sep:(fun fmt () -> Format.fprintf fmt ", ")
+     (fun fmt (e, _) -> pp_elem fmt e) )
     fmt (h |> Hashtbl.to_seq)
 
 let mem : 'a t -> 'a -> bool = Hashtbl.mem
