@@ -1,3 +1,6 @@
+(* hypergraphs as a double representation: 1) a map from nodes to set of edges
+   2) a map from edges to set of nodes *)
+
 type ('a, 'b) t =
   {nodes: ('a, 'b Hashset.t) Hashtbl.t; edges: ('b, 'a Hashset.t) Hashtbl.t}
 
@@ -38,7 +41,7 @@ let add_node_to_edge (graph : ('a, 'b) t) e n : unit =
   | None -> Hashtbl.add graph.edges e (Hashset.singleton n)
   | Some nodes -> Hashset.add nodes n
 
-(* removes an edge from a graph *)
+(* removes an edge from a graph, fails if does not exist *)
 let remove_edge g e =
   match Hashtbl.find_opt g.edges e with
   | Some nodes ->
@@ -49,6 +52,11 @@ let remove_edge g e =
         nodes ;
       Hashtbl.remove g.edges e
   | None -> invalid_arg "edge already removed"
+
+(* returns a copy of g where the edge e is missing *)
+let subset g e =
+  let graph' = copy g in
+  remove_edge graph' e ; graph'
 
 (* builds a graph from a list of neighbouring relations *)
 let build nb_node (supports : ('a list * 'b) list) : ('a, 'b) t =

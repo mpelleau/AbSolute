@@ -169,7 +169,7 @@ module Eval (B : BOUND) = struct
   let mean ((l, h) : t) : B.t =
     match (is_finite l, is_finite h) with
     | true, true ->
-        (* finite bounds: either split on 0 to esure monotony, or return the
+        (* finite bounds: either split on 0 to ensure monotony, or return the
            actual mean *)
         if B.lt l B.zero && B.gt h B.zero then B.zero
         else B.div_up (B.sub_up h l) B.two |> B.add_down l

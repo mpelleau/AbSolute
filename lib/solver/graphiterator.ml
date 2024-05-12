@@ -3,23 +3,23 @@
 
 open Signature
 open Consistency
+open Tools
 
 module Make (D : Domain) = struct
   type space = D.t
 
-  type constraint_graph = (variable, constr) Cgraph.t
+  type constr = {original: Constraint.t; internal: D.internal_constr; id: int}
 
-  and constr = D.internal_constr
+  type constraint_graph = (variable, constr) Cgraph.t
 
   and variable = string
 
-  let print_constr fmt c =
-    Format.fprintf fmt "%a" Constraint.print (D.externalize c)
+  let print_constr fmt c = Format.fprintf fmt "%a" Constraint.print c.original
 
   let print_graph fmt g =
     Format.fprintf fmt "%a" (Cgraph.print Format.pp_print_string print_constr) g
 
-  type t = {space: space; graph: constraint_graph; splits: Tools.VarSet.t}
+  type t = {space: space; graph: constraint_graph; splits: VarSet.t}
 
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
@@ -27,17 +27,19 @@ module Make (D : Domain) = struct
     if verbose then Format.printf " done.\n" ;
     if verbose then Format.printf "constraint conversion ...%!" ;
     let n = List.length p.variables in
-    let constraints =
-      List.map
-        (fun c -> (Constraint.support c, D.internalize ~elem:space c))
+    let supports =
+      List.mapi
+        (fun i c ->
+          ( Constraint.support c
+          , {original= c; internal= D.internalize ~elem:space c; id= i} ) )
         p.Csp.constraints
     in
     if verbose then Format.printf " done.\n%!" ;
     if verbose then Format.printf "graph building ...%!" ;
-    let graph = Cgraph.build n constraints in
+    let graph = Cgraph.build n supports in
     if verbose then Format.printf " done.\n%!" ;
     if verbose then Format.printf "edges:@,%a\n%!" print_graph graph ;
-    {space; graph; splits= Tools.VarSet.empty}
+    {space; graph; splits= VarSet.empty}
 
   (* graph propagation : each constraint is activated at most once *)
   let propagate {space; graph; splits} : t Consistency.t =
@@ -51,29 +53,25 @@ module Make (D : Domain) = struct
     let add_from v = Cgraph.iter_edges_from add_to_queue graph v in
     let rec loop graph sat abs =
       if Queue.is_empty queue then
-        Filtered ({space= abs; graph; splits= Tools.VarSet.empty}, sat)
+        Filtered ({space= abs; graph; splits= VarSet.empty}, sat)
       else
         let c = Queue.pop queue in
-        match D.filter_diff abs c with
+        match D.filter_diff abs c.internal with
         | Unsat -> Unsat
         | Sat ->
-            let graph' = Cgraph.copy graph in
-            Cgraph.remove_edge graph' c ;
+            let graph' = Cgraph.subset graph c in
             loop graph' sat abs
         | Filtered ((abs', _, diff), true) ->
-            let graph' = Cgraph.copy graph in
-            Cgraph.remove_edge graph' c ;
-            Tools.VarSet.iter add_from diff ;
-            loop graph' sat abs'
-        | Filtered ((abs', _c', diff), false) ->
-            Tools.VarSet.iter add_from diff ;
-            loop graph false abs'
+            let graph' = Cgraph.subset graph c in
+            VarSet.iter add_from diff ; loop graph' sat abs'
+        | Filtered ((abs', _, diff), false) ->
+            VarSet.iter add_from diff ; loop graph false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
     (* if no variable have been split, perform a full propagation *)
-    if Tools.VarSet.is_empty splits then
+    if VarSet.is_empty splits then
       List.iter add_to_queue (Cgraph.get_edges graph)
-    else Tools.VarSet.iter add_from splits ;
+    else VarSet.iter add_from splits ;
     loop graph true space
 
   let split ?prec e =
@@ -88,6 +86,8 @@ module Make (D : Domain) = struct
 
   let to_csp (elm : t) =
     let vars = D.vars elm.space in
-    let cstrs = List.map D.externalize (Cgraph.get_edges elm.graph) in
+    let cstrs =
+      List.map (fun c -> D.externalize c.internal) (Cgraph.get_edges elm.graph)
+    in
     List.fold_left Csp.add_constr (Csp.initialize vars) cstrs
 end
