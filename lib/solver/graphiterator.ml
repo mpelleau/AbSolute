@@ -74,6 +74,7 @@ module Make (D : Domain) = struct
     else VarSet.iter add_from splits ;
     loop graph true space
 
+  (* splits and update the set of split variables *)
   let split ?prec e =
     let splits, diff = D.split_diff ?prec e.space in
     List.rev_map (fun space -> {e with space; splits= diff}) splits

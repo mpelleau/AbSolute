@@ -72,11 +72,14 @@ module Box (I : ITV) = struct
   (* ------ *)
 
   (* variable with maximal range *)
-  let max_range (a : t) : string * I.t =
+  let max_range (a : t) : string * float =
+    let vo, io = VarMap.min_binding a in
+    let so = I.float_size io in
     VarMap.fold
-      (fun v i (vo, io) ->
-        if I.float_size i > I.float_size io then (v, i) else (vo, io) )
-      a (VarMap.min_binding a)
+      (fun v i ((_, so) as acc) ->
+        let si = I.float_size i in
+        if si > so then (v, si) else acc )
+      a (vo, so)
 
   (* variable with maximal range if real or with minimal if integer *)
   let mix_range (a : t) : string * I.t =
@@ -327,19 +330,18 @@ module Box (I : ITV) = struct
     List.fold_left (fun acc b -> VarMap.add v b a :: acc) [] i_list
 
   let split ?prec (a : t) : t list =
-    let v, i = max_range a in
+    let v, si = max_range a in
     match prec with
     | None -> split_along v a
     | Some prec ->
-        if I.float_size i < prec then raise Signature.Too_small
-        else split_along v a
+        if si < prec then raise Signature.Too_small else split_along v a
 
   let split_diff ?prec (a : t) : t list * VarSet.t =
-    let v, i = max_range a in
+    let v, si = max_range a in
     match prec with
     | None -> (split_along v a, VarSet.singleton v)
     | Some prec ->
-        if I.float_size i < prec then raise Signature.Too_small
+        if si < prec then raise Signature.Too_small
         else (split_along v a, VarSet.singleton v)
 
   let render x =
