@@ -31,11 +31,14 @@ let add_edge_to_node (graph : ('a, 'b) t) n e : unit =
   | None -> Hashtbl.add graph.nodes n (Hashset.singleton e)
   | Some edges -> Hashset.add edges e
 
+(* adds the node 'n' to the set of nodes of the edge 'e'. It also adds 'e' to
+   the graph if not already present *)
 let add_node_to_edge (graph : ('a, 'b) t) e n : unit =
   match Hashtbl.find_opt graph.edges e with
   | None -> Hashtbl.add graph.edges e (Hashset.singleton n)
   | Some nodes -> Hashset.add nodes n
 
+(* removes an edge from a graph *)
 let remove_edge g e =
   match Hashtbl.find_opt g.edges e with
   | Some nodes ->
@@ -50,7 +53,7 @@ let remove_edge g e =
 (* builds a graph from a list of neighbouring relations *)
 let build nb_node (supports : ('a list * 'b) list) : ('a, 'b) t =
   let nodes = Hashtbl.create nb_node in
-  let edges = Hashtbl.create 0 in
+  let edges = Hashtbl.create (List.length supports) in
   let graph = {nodes; edges} in
   List.iter
     (fun (ns, e) ->

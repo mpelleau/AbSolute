@@ -37,8 +37,6 @@ module Make (D : Domain) = struct
     let graph = Cgraph.build n constraints in
     if verbose then Format.printf " done.\n%!" ;
     if verbose then Format.printf "edges:@,%a\n%!" print_graph graph ;
-    let supports = Hashtbl.create 1 in
-    List.iter (fun (sup, c) -> Hashtbl.add supports c sup) constraints ;
     {space; graph; splitted= Tools.VarSet.empty}
 
   (* graph propagation : each constraint is activated at most once *)
@@ -79,7 +77,8 @@ module Make (D : Domain) = struct
     loop graph true space
 
   let split ?prec e =
-    List.rev_map (fun space -> {e with space}) (D.split ?prec e.space)
+    let splits, diff = D.split_diff ?prec e.space in
+    List.rev_map (fun space -> {e with space; splitted= diff}) splits
 
   let spawn elm = D.spawn elm.space
 
