@@ -19,7 +19,7 @@ module Make (D : Domain) = struct
   let print_graph fmt g =
     Format.fprintf fmt "%a" (Cgraph.print Format.pp_print_string print_constr) g
 
-  type t = {space: space; graph: constraint_graph; splitted: Tools.VarSet.t}
+  type t = {space: space; graph: constraint_graph; splits: Tools.VarSet.t}
 
   let init ?(verbose = false) (p : Csp.t) : t =
     if verbose then Format.printf "variable declaration ...%!" ;
@@ -37,10 +37,10 @@ module Make (D : Domain) = struct
     let graph = Cgraph.build n constraints in
     if verbose then Format.printf " done.\n%!" ;
     if verbose then Format.printf "edges:@,%a\n%!" print_graph graph ;
-    {space; graph; splitted= Tools.VarSet.empty}
+    {space; graph; splits= Tools.VarSet.empty}
 
   (* graph propagation : each constraint is activated at most once *)
-  let propagate {space; graph; splitted} : t Consistency.t =
+  let propagate {space; graph; splits} : t Consistency.t =
     let queue = Queue.create () in
     let activated = Hashtbl.create (Cgraph.nb_edges graph) in
     let add_to_queue c =
@@ -51,7 +51,7 @@ module Make (D : Domain) = struct
     let add_from v = Cgraph.iter_edges_from add_to_queue graph v in
     let rec loop graph sat abs =
       if Queue.is_empty queue then
-        Filtered ({space= abs; graph; splitted= Tools.VarSet.empty}, sat)
+        Filtered ({space= abs; graph; splits= Tools.VarSet.empty}, sat)
       else
         let c = Queue.pop queue in
         match D.filter_diff abs c with
@@ -70,15 +70,15 @@ module Make (D : Domain) = struct
             loop graph false abs'
         | Pruned {sure; unsure} -> prune sat sure unsure
     and prune _sat _sure _unsure = failwith "pruning not implemented" in
-    (* if no variable have been splitted, perform a full propagation *)
-    if Tools.VarSet.is_empty splitted then
+    (* if no variable have been split, perform a full propagation *)
+    if Tools.VarSet.is_empty splits then
       List.iter add_to_queue (Cgraph.get_edges graph)
-    else Tools.VarSet.iter add_from splitted ;
+    else Tools.VarSet.iter add_from splits ;
     loop graph true space
 
   let split ?prec e =
     let splits, diff = D.split_diff ?prec e.space in
-    List.rev_map (fun space -> {e with space; splitted= diff}) splits
+    List.rev_map (fun space -> {e with space; splits= diff}) splits
 
   let spawn elm = D.spawn elm.space
 
