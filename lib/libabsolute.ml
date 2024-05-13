@@ -67,3 +67,4 @@ module Polynom = Polynom
 
 module Tools = Tools
 module Kleene = Kleene
+module Cgraph = Cgraph
