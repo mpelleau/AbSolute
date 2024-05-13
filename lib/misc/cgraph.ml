@@ -76,3 +76,16 @@ let iter_edges_from (f : 'b -> unit) (graph : ('a, 'b) t) (node : 'a) : unit =
   match Hashtbl.find_opt graph.nodes node with
   | None -> invalid_arg "Cgraph.iter_edges_from"
   | Some edges -> Hashset.iter f edges
+
+(* iterates over the neighbours of a vertex *)
+let iter_neighbours (f : 'a -> unit) (g : ('a, 'b) t) (n : 'a) =
+  let visited = Hashtbl.create (Hashtbl.length g.nodes) in
+  Hashtbl.add visited n true ;
+  iter_edges_from
+    (fun e ->
+      Hashset.iter
+        (fun n ->
+          if not (Hashtbl.mem visited n) then (Hashtbl.add visited n true ; f n)
+          )
+        (Hashtbl.find g.edges e) )
+    g n

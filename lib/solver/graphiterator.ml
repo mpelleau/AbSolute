@@ -38,7 +38,7 @@ module Make (D : Domain) = struct
     if verbose then Format.printf "graph building ...%!" ;
     let graph = Cgraph.build n supports in
     if verbose then Format.printf " done.\n%!" ;
-    if verbose then Format.printf "edges:@,%a\n%!" print_graph graph ;
+    if verbose then Format.printf "%a\n%!" print_graph graph ;
     {space; graph; splits= VarSet.empty}
 
   (* graph propagation : each constraint is activated at most once *)
