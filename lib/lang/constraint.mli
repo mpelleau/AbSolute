@@ -163,4 +163,12 @@ module Operators : sig
   val ( = ) : Expr.t -> Expr.t -> t
 
   val ( <> ) : Expr.t -> Expr.t -> t
+
+  val ( && ) : t -> t -> t
+
+  val ( || ) : t -> t -> t
+
+  val ( => ) : t -> t -> t
+
+  val not : t -> t
 end

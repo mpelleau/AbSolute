@@ -195,4 +195,12 @@ module Operators = struct
   let ( = ) = eq
 
   let ( <> ) = neq
+
+  let ( && ) = and_
+
+  let ( || ) = or_
+
+  let ( => ) = imply
+
+  let not = not_
 end
