@@ -69,8 +69,8 @@ module VarMap = struct
   (** builds the list of all the keys of the map *)
   let keys map = fold (fun k _ acc -> k :: acc) map []
 
-  (** prints bindings of the map, using pp_v for to print each value, and
-      calling pp_sep between items (pp_sep defaults to Format.pp_print_cut). *)
+  (** prints bindings of the map, using pp for to print each value, and calling
+      pp_sep between items (pp_sep defaults to Format.pp_print_cut). *)
   let print ?pp_sep pp fmt m =
     Format.pp_print_list ?pp_sep
       (fun fmt (k, v) -> Format.fprintf fmt "%s%a" k pp v)
@@ -79,4 +79,13 @@ end
 
 let list_pick l = List.nth l (Random.int (List.length l))
 
-module VarSet = Set.Make (String)
+module VarSet = struct
+  include Set.Make (String)
+
+  (** prints map, using pp_v for to print each value, and calling pp_sep between
+      items (pp_sep defaults to Format.pp_print_cut). *)
+  let print ?pp_sep pp fmt s =
+    Format.pp_print_list ?pp_sep
+      (fun fmt v -> Format.fprintf fmt "%a" pp v)
+      fmt (elements s)
+end
