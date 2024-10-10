@@ -134,6 +134,7 @@ let () =
   register_numeric "apronbox" (module ApronBox) ;
   register_numeric "poly" (module Poly) ;
   register_numeric "oct" (module Oct) ;
+  register_numeric "alias" (module Alias) ;
   (* booleans *)
   register_boolean "boolean" (module Boolean) ;
   register_boolean "uniontree" (module Uniontree) ;
