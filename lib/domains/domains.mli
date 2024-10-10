@@ -72,6 +72,9 @@ module Poly : Numeric
 (** Apron Octagons *)
 module Oct : Numeric
 
+(** Equalities *)
+module Alias : Numeric
+
 (** {2 Boolean domains} *)
 
 (** Lfts a numerical domain to a boolean one *)

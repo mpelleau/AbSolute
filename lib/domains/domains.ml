@@ -119,6 +119,8 @@ module Poly : Numeric = Relational.Poly
 
 module Oct : Numeric = Relational.Oct
 
+module Alias : Numeric = Alias
+
 (** specialized reduced product *)
 module Product : D2 = Product
 

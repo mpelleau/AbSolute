@@ -127,10 +127,15 @@ let filter_diff (a : t) (c : internal_constr) =
 
 let vars a = a.support
 
-let dom_spawn =
+let dom_spawn dom typ =
   let open Dom in
-  function
-  | Finite (l, h) -> Q.add l (Q.mul (Q.sub h l) (Q.of_float (Random.float 1.)))
+  match (dom, typ) with
+  | Finite (l, h), Csp.Real ->
+      Q.add l (Q.mul (Q.sub h l) (Q.of_float (Random.float 1.)))
+  | Finite (l, h), Csp.Int ->
+      let l = Q.ceil l in
+      let h = Q.floor h in
+      l + Random.int (h - l) |> Q.of_int
   | _ -> failwith "non finite domain"
 
 let spawn a : Instance.t =
@@ -138,8 +143,8 @@ let spawn a : Instance.t =
     (fun v1 s acc ->
       if VarMap.mem v1 acc then acc
       else
-        let _, _, dom = List.find (fun (_, v, _) -> v = v1) a.support in
-        let value = dom_spawn dom in
+        let t, _, dom = List.find (fun (_, v, _) -> v = v1) a.support in
+        let value = dom_spawn dom t in
         VarSet.fold (fun v acc -> VarMap.add v value acc) s acc )
     a.equalities VarMap.empty
 
