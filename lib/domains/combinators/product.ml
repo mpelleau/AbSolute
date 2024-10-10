@@ -139,7 +139,10 @@ module Make (A : Domain) (B : Domain) = struct
   let spawn (a, b) =
     let rec generate () =
       let i = A.spawn a in
-      if B.is_abstraction b i then i else generate ()
+      if B.is_abstraction b i then i
+      else
+        let i = B.spawn b in
+        if A.is_abstraction a i then i else generate ()
     in
     generate ()
 
