@@ -1,10 +1,16 @@
-(* domain to represent equalities between variables *)
+(* Domain to represent equalities between variables, using a union-find
+   approach: Each variable is initially alone in its own equivalence class. When
+   an equality between two variables is found, their equivalence classes are
+   merged together, the smallest variable wrt lex. order is set as the
+   representative of the class *)
+
 open Signature
 open Tools
 
-(* association from a variable to a set of equal variables. equalities between
-   two variables v1 v2 (where v1 < v2 wrt lexicograpbic order) are encoded
-   symbolically. v1 is the representative of all variables equal to it *)
+type unionfind = VarSet.t VarMap.t
+
+let uf_fold f = VarMap.fold (fun v -> VarSet.fold (f v))
+
 type t =
   {support: (Csp.typ * string * Dom.t) list; equalities: VarSet.t VarMap.t}
 
@@ -54,13 +60,10 @@ let are_eq eqs v1 v2 = get_representative eqs v1 = get_representative eqs v2
 (* we rebuild a map where we add information present in both equality table.
    both support should be the same. The support computed is the one of eq1 *)
 let union (eq1 : t) (eq2 : t) : t =
-  VarMap.fold
-    (fun v1 s acc ->
-      VarSet.fold
-        (fun v2 acc -> if are_eq eq2 v1 v2 then add_eq acc v1 v2 else acc)
-        s acc )
+  uf_fold
+    (fun v1 v2 acc -> if are_eq eq2 v1 v2 then add_eq acc v1 v2 else acc)
     eq1.equalities
-    {eq1 with equalities= VarMap.map (fun _v -> VarSet.empty) eq1.equalities}
+    {eq1 with equalities= VarMap.map (fun _ -> VarSet.empty) eq1.equalities}
 
 let join (eq1 : t) (eq2 : t) : t * bool = (union eq1 eq2, true)
 
@@ -71,10 +74,7 @@ let join_list = function
 (* this meet operation can never return None, as no incompatible information can
    be stored in two elements *)
 let meet (eq1 : t) (eq2 : t) : t option =
-  Some
-    (VarMap.fold
-       (fun v1 -> VarSet.fold (fun v2 acc -> add_eq acc v1 v2))
-       eq1.equalities eq2 )
+  Some (uf_fold (fun v1 v2 acc -> add_eq acc v1 v2) eq1.equalities eq2)
 
 let empty = {equalities= VarMap.empty; support= []}
 
@@ -89,19 +89,16 @@ let rm_var (a : t) (v : string) : t =
   { equalities= VarMap.map (VarSet.remove v) alias
   ; support= List.filter (fun (_, v', _) -> v <> v') a.support }
 
-(* conversion of an element to a set of constraint *)
+(* conversion of an element to a set of constraint. FIXME: might be none *)
 let to_constraint (a : t) =
-  let cell_to_constr v s acc =
-    VarSet.fold
-      (fun v' acc ->
-        if v' = v then acc
-        else
-          let open Constraint.Operators in
-          let eq = Expr.Var v' = Expr.Var v in
-          match acc with Some acc -> Some (acc && eq) | None -> Some eq )
-      s acc
+  let cell_to_constr v v' acc =
+    if v' = v then acc
+    else
+      let open Constraint.Operators in
+      let eq = Expr.Var v' = Expr.Var v in
+      match acc with Some acc -> Some (acc && eq) | None -> Some eq
   in
-  VarMap.fold cell_to_constr a.equalities None |> Option.get
+  uf_fold cell_to_constr a.equalities None |> Option.get
 
 (* only equalities are representable *)
 let is_representable (c : internal_constr) : Kleene.t =
@@ -111,6 +108,7 @@ let is_representable (c : internal_constr) : Kleene.t =
 let sat (i : Instance.t) (c : internal_constr) : bool =
   Constraint.eval_comparison c i
 
+(* *)
 let filter (a : t) (c : internal_constr) =
   let open Expr in
   match c with
@@ -129,7 +127,21 @@ let filter_diff (a : t) (c : internal_constr) =
 
 let vars a = a.support
 
-let spawn _a = failwith "can not spawn"
+let dom_spawn =
+  let open Dom in
+  function
+  | Finite (l, h) -> Q.add l (Q.mul (Q.sub h l) (Q.of_float (Random.float 1.)))
+  | _ -> failwith "non finite domain"
+
+let spawn a : Instance.t =
+  VarMap.fold
+    (fun v1 s acc ->
+      if VarMap.mem v1 acc then acc
+      else
+        let _, _, dom = List.find (fun (_, v, _) -> v = v1) a.support in
+        let value = dom_spawn dom in
+        VarSet.fold (fun v acc -> VarMap.add v value acc) s acc )
+    a.equalities VarMap.empty
 
 let[@warning "-27"] split ?prec _a = raise Too_small
 
