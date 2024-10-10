@@ -11,9 +11,9 @@ module type D1 = sig
   module Make : functor (D : Domain) -> Domain
 end
 
-(* domain combinators of arity 2 *)
+(* product combinators *)
 module type D2 = sig
-  module Make : functor (A : Domain) (B : Domain) -> Domain
+  module Make : functor (R : Reduction) -> Domain
 end
 
 (* boolean domain maps *)
@@ -94,7 +94,10 @@ let parse name boolean =
               let (module Mk) = VarMap.find s !arity_2 in
               let (module Arg1 : Domain) = loop arg1 in
               let (module Arg2 : Domain) = loop arg2 in
-              (module Mk.Make (Arg1) (Arg2))
+              ( module Mk.Make (struct
+                module A = Arg1
+                module B = Arg2
+              end) )
           | _ -> failwith "max arity 2 for domain description" ) )
   in
   try loop name

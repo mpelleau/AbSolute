@@ -14,9 +14,9 @@ module type D1 = sig
   module Make : functor (D : Domain) -> Domain
 end
 
-(** Type of domain combinator of arity 2 (e.g products) *)
+(** Products combinator *)
 module type D2 = sig
-  module Make : functor (A : Domain) (B : Domain) -> Domain
+  module Make : functor (R : Reduction) -> Domain
 end
 
 (** {1 Domain environment management} *)

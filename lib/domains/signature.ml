@@ -138,6 +138,12 @@ module type Domain = sig
       c(v)\}}*)
 end
 
+module type Reduction = sig
+  module A : Domain
+
+  module B : Domain
+end
+
 module type Propagator = sig
   module Make : functor (D : Domain) -> sig
     type space = D.t

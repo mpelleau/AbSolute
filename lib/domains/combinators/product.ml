@@ -4,7 +4,9 @@
 open Signature
 open Consistency
 
-module Make (A : Domain) (B : Domain) = struct
+module Make (R : Reduction) = struct
+  open R
+
   type t = A.t * B.t
 
   type internal_constr = A.internal_constr * B.internal_constr
