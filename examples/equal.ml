@@ -1,6 +1,8 @@
 open Libabsolute
-module D = Domains.Alias
-module S = Solver.Make (Domains.Boolean.Make (D)) (Iterator)
+module DA = Domains.Boolean.Make (Domains.Alias)
+module DB = Domains.Boolean.Make (Domains.BoxS)
+module AB = Domains.Product.Make (DB) (DA)
+module S = Solver.Make (AB) (Iterator)
 
 let () =
   let open Csp in
@@ -13,16 +15,15 @@ let () =
     let csp = add_int_var_i "x6" (-1000) 1000 csp in
     let csp = add_int_var_i "x7" (-1000) 1000 csp in
     let open Constraint.Operators in
-    (* let open Expr.Operators in *)
+    let open Expr.Operators in
     let csp = add_constr csp (Expr.Var "x1" = Expr.Var "x2") in
     let csp = add_constr csp (Expr.Var "x3" = Expr.Var "x4") in
     let csp = add_constr csp (Expr.Var "x5" = Expr.Var "x6") in
     let csp = add_constr csp (Expr.Var "x3" = Expr.Var "x6") in
-    (* let csp = add_constr csp (Expr.Var "x6" <= Expr.Var "x7" * Expr.Var "x7")
-       in *)
+    let csp = add_constr csp (Expr.Var "x6" <= Expr.Var "x7" * Expr.Var "x7") in
     csp
   in
-  match S.witness 0.001 1000000 prob with
+  match S.witness 0.0001 1000000 prob with
   | Witness i ->
       Format.printf "the problem admits (at least) one solution:@,%a\n"
         Instance.print i
