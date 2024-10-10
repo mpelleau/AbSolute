@@ -1,4 +1,5 @@
-(* Reduced product of domains A and B where B is more expressive than A *)
+(* Reduced product of domains A and B where B can encode exactly one kind of
+   constraints. A is the default domain used otherwise *)
 
 open Signature
 open Consistency
@@ -21,13 +22,18 @@ module Make (A : Domain) (B : Domain) = struct
     Kleene.or_ (A.is_representable c1) (B.is_representable c2)
 
   let to_constraint (a, b) =
-    Constraint.And (A.to_constraint a, B.to_constraint b)
+    try
+      let a = A.to_constraint a in
+      try Constraint.And (a, B.to_constraint b) with Tools.Top_found -> a
+    with Tools.Top_found -> B.to_constraint b
 
   let a_meet_b a b : B.t Consistency.t =
-    A.to_constraint a |> B.internalize |> B.filter b |> Consistency.map fst
+    try A.to_constraint a |> B.internalize |> B.filter b |> Consistency.map fst
+    with Tools.Top_found -> Consistency.Sat
 
   let b_meet_a a b : A.t Consistency.t =
-    B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
+    try B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
+    with Tools.Top_found -> Sat
 
   let reduced_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
@@ -114,17 +120,22 @@ module Make (A : Domain) (B : Domain) = struct
           (fun (a, c, va) -> ((a, b), (c, c2), va))
           (A.filter_diff a c1)
 
-  let forward_eval ((a, b) : t) obj =
-    let l_a, u_a = A.forward_eval a obj in
-    let l_b, u_b = B.forward_eval b obj in
-    (max l_a l_b, min u_a u_b)
+  (* intersection of evaluation *)
+  let eval ((a, b) : t) obj =
+    try
+      let l_a, u_a = A.eval a obj in
+      try
+        let l_b, u_b = B.eval b obj in
+        (max l_a l_b, min u_a u_b)
+      with Tools.Top_found -> (l_a, u_a)
+    with Tools.Top_found -> B.eval b obj
 
   let print fmt ((abs, abs') : t) =
     Format.fprintf fmt "%a, %a" A.print abs B.print abs'
 
-  let volume ((_, abs') : t) = B.volume abs'
+  let volume ((abs, _) : t) = A.volume abs
 
-  (* concretization function *)
+  (* random uniform concretization function *)
   let spawn (a, b) =
     let rec generate () =
       let i = A.spawn a in

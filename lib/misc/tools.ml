@@ -3,6 +3,9 @@
 (** exception for bottom values *)
 exception Bot_found
 
+(** exception for top values *)
+exception Top_found
+
 (** {1 Printing stuff} *)
 
 (** same as [failwith] but uses a format instead *)

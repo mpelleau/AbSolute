@@ -74,8 +74,7 @@ module type Numeric = sig
   (** satisfaction test on the internal constraint representation *)
 
   val filter : t -> internal_constr -> t Consistency.t
-  (** filters an abstract element with respect to an arithmetic constraint, may
-      raise bot found. *)
+  (** filters an abstract element with respect to an arithmetic constraint *)
 
   val filter_diff : t -> internal_constr -> (t * Tools.VarSet.t) Consistency.t
   (** same as filter but also return a set of variables that had their domains
@@ -84,12 +83,12 @@ module type Numeric = sig
   val is_representable : internal_constr -> Kleene.t
   (** checks if a constraint is suited for this abstract domain *)
 
-  val forward_eval : t -> Expr.t -> Q.t * Q.t
+  val eval : t -> Expr.t -> Q.t * Q.t
   (** computes the range of value of a given expression within an abstract
-      element *)
+      element. may raise Top_found *)
 
   val to_constraint : t -> Constraint.t
-  (** transforms an abstract element into constraints *)
+  (** transforms an abstract element into constraints. may raise Top_found *)
 
   val spawn : t -> Csp.instance
   (** Random concretization function. useful to do tests, and to reuse the

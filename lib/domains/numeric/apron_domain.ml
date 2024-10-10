@@ -258,7 +258,7 @@ module Make (AP : ADomain) = struct
     A.to_lincons_array man abs' |> A.of_lincons_array pman env
 
   (** interval evaluation of an expression within an abtract domain *)
-  let forward_eval abs cons =
+  let eval abs cons =
     let ap_expr = of_expr (A.env abs) cons in
     A.bound_texpr man abs ap_expr |> Intervalext.to_mpqf
 

@@ -34,9 +34,9 @@ module Make (D : Numeric) : Domain = struct
     | Constraint.Not e -> is_representable e
     | Constraint.Cmp c -> D.is_representable c
 
-  let forward_eval = function
-    | Leaf n -> D.forward_eval n
-    | Union {envelopp; _} -> D.forward_eval envelopp
+  let eval = function
+    | Leaf n -> D.eval n
+    | Union {envelopp; _} -> D.eval envelopp
 
   (* helper that folds over tree *)
   let fold f acc =

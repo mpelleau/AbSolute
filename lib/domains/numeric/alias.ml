@@ -98,7 +98,9 @@ let to_constraint (a : t) =
       let eq = Expr.Var v' = Expr.Var v in
       match acc with Some acc -> Some (acc && eq) | None -> Some eq
   in
-  uf_fold cell_to_constr a.equalities None |> Option.get
+  match uf_fold cell_to_constr a.equalities None with
+  | Some s -> s
+  | None -> raise Top_found
 
 (* only equalities are representable *)
 let is_representable (c : internal_constr) : Kleene.t =
@@ -135,7 +137,7 @@ let dom_spawn dom typ =
   | Finite (l, h), Csp.Int ->
       let l = Q.ceil l in
       let h = Q.floor h in
-      l + Random.int (h - l) |> Q.of_int
+      l + Random.int (h - l) |> Q.of_int (* sensible to overflows *)
   | _ -> failwith "non finite domain"
 
 let spawn a : Instance.t =
@@ -148,6 +150,17 @@ let spawn a : Instance.t =
         VarSet.fold (fun v acc -> VarMap.add v value acc) s acc )
     a.equalities VarMap.empty
 
+let is_abstraction a (i : Instance.t) : bool =
+  try
+    VarMap.iter
+      (fun v s ->
+        if not (VarSet.for_all (fun v' -> VarMap.find v' i = VarMap.find v i) s)
+        then raise Exit )
+      a.equalities ;
+    true
+  with Exit -> false
+
+(* not splittable *)
 let[@warning "-27"] split ?prec _a = raise Too_small
 
 let[@warning "-27"] split_along ?prec _a _ = raise Too_small
@@ -160,14 +173,4 @@ let diff = None
 
 let render _ = failwith "Alias.render can not render"
 
-let is_abstraction a (i : Instance.t) : bool =
-  try
-    VarMap.iter
-      (fun v s ->
-        if not (VarSet.for_all (fun v' -> VarMap.find v' i = VarMap.find v i) s)
-        then raise Exit )
-      a.equalities ;
-    true
-  with Exit -> false
-
-let forward_eval _ _ = failwith "forward_eval in alias analysis"
+let eval _ _ = raise Top_found

@@ -293,7 +293,7 @@ module Box (I : ITV) = struct
 
   let rm_var abs var : t = VarMap.remove var abs
 
-  let forward_eval abs cons =
+  let eval abs cons =
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
 

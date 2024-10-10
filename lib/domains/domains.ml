@@ -121,7 +121,7 @@ module Oct : Numeric = Relational.Oct
 
 module Alias : Numeric = Alias
 
-(** specialized reduced product *)
+(** reduced product *)
 module Product : D2 = Product
 
 module Boolean : B = Boolean
