@@ -97,6 +97,10 @@ let parse name boolean =
               ( module Mk.Make (struct
                 module A = Arg1
                 module B = Arg2
+
+                let product = None
+
+                let spawn = None
               end) )
           | _ -> failwith "max arity 2 for domain description" ) )
   in

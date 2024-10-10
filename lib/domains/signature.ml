@@ -142,6 +142,14 @@ module type Reduction = sig
   module A : Domain
 
   module B : Domain
+
+  val product : (A.t -> B.t -> (A.t * B.t) Consistency.t) option
+  (** reduction function to communicate information between domains. If None, a
+      default (potentially less precise/efficient) function is used*)
+
+  val spawn : (A.t * B.t -> Csp.instance) option
+  (** random generation function. If None, a default (potentially less
+      precise/efficient) function is used*)
 end
 
 module type Propagator = sig

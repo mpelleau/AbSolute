@@ -5,6 +5,10 @@ module DB = Domains.Boolean.Make (Domains.BoxS)
 module AB = Domains.Product.Make (struct
   module A = DB
   module B = DA
+
+  let product = None
+
+  let spawn = None
 end)
 
 module S = Solver.Make (AB) (Iterator)

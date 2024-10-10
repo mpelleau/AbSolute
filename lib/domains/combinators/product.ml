@@ -37,7 +37,7 @@ module Make (R : Reduction) = struct
     try B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
     with Tools.Top_found -> Sat
 
-  let reduced_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
+  let default_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
     match new_a with
     | Sat -> Consistency.map (fun b -> (a, b)) (a_meet_b a b)
@@ -49,6 +49,8 @@ module Make (R : Reduction) = struct
       | Filtered (b', success2) -> Filtered ((a', b'), success1 && success2)
       | Pruned _ -> failwith "" )
     | Pruned _ -> failwith ""
+
+  let product = match R.product with None -> default_product | Some r -> r
 
   let empty = (A.empty, B.empty)
 
@@ -94,7 +96,7 @@ module Make (R : Reduction) = struct
     try
       Tools.meet_bot
         (fun a b ->
-          match reduced_product a b with
+          match product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
           | Filtered (x, _) -> x
@@ -138,7 +140,7 @@ module Make (R : Reduction) = struct
   let volume ((abs, _) : t) = A.volume abs
 
   (* random uniform concretization function *)
-  let spawn (a, b) =
+  let default_spawn (a, b) =
     let rec generate () =
       let i = A.spawn a in
       if B.is_abstraction b i then i
@@ -147,6 +149,8 @@ module Make (R : Reduction) = struct
         if A.is_abstraction a i then i else generate ()
     in
     generate ()
+
+  let spawn = match R.spawn with None -> default_spawn | Some r -> r
 
   let is_abstraction (a, b) i = A.is_abstraction a i && B.is_abstraction b i
 
