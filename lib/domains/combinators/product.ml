@@ -177,7 +177,10 @@ module BoxSXAlias : Domain = Generic (struct
     let open Constraint in
     let open Expr in
     let i = A.spawn a in
-    let b_constr = B.to_constraint b |> Constraint.split_conjunctions in
+    let b_constr =
+      try B.to_constraint b |> Constraint.split_conjunctions
+      with Tools.Top_found -> []
+    in
     List.fold_left
       (fun acc c ->
         match c with
