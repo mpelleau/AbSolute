@@ -1,16 +1,5 @@
 open Libabsolute
-module DA = Domains.Boolean.Make (Domains.Alias)
-module DB = Domains.Boolean.Make (Domains.BoxS)
-
-module AB = Domains.Product.Make (struct
-  module A = DB
-  module B = DA
-
-  let product = None
-
-  let spawn = None
-end)
-
+module AB = Domains.BoxSXAlias
 module S = Solver.Make (AB) (Iterator)
 
 let () =

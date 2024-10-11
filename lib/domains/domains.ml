@@ -13,7 +13,7 @@ end
 
 (* product combinators *)
 module type D2 = sig
-  module Make : functor (R : Reduction) -> Domain
+  module Make : functor (D1 : Domain) (D2 : Domain) -> Domain
 end
 
 (* boolean domain maps *)
@@ -94,14 +94,7 @@ let parse name boolean =
               let (module Mk) = VarMap.find s !arity_2 in
               let (module Arg1 : Domain) = loop arg1 in
               let (module Arg2 : Domain) = loop arg2 in
-              ( module Mk.Make (struct
-                module A = Arg1
-                module B = Arg2
-
-                let product = None
-
-                let spawn = None
-              end) )
+              (module Mk.Make (Arg1) (Arg2))
           | _ -> failwith "max arity 2 for domain description" ) )
   in
   try loop name
@@ -128,7 +121,8 @@ module Oct : Numeric = Relational.Oct
 
 module Alias : Numeric = Alias
 
-(** reduced product *)
+module BoxSXAlias = Product.BoxSXAlias
+
 module Product : D2 = Product
 
 module Boolean : B = Boolean

@@ -143,7 +143,7 @@ module type Reduction = sig
 
   module B : Domain
 
-  val product : (A.t -> B.t -> (A.t * B.t) Consistency.t) option
+  val reduce : (A.t -> B.t -> (A.t * B.t) Consistency.t) option
   (** reduction function to communicate information between domains. If None, a
       default (potentially less precise/efficient) function is used*)
 

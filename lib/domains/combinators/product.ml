@@ -4,7 +4,7 @@
 open Signature
 open Consistency
 
-module Make (R : Reduction) = struct
+module Generic (R : Reduction) = struct
   open R
 
   type t = A.t * B.t
@@ -50,7 +50,7 @@ module Make (R : Reduction) = struct
       | Pruned _ -> failwith "" )
     | Pruned _ -> failwith ""
 
-  let product = match R.product with None -> default_product | Some r -> r
+  let product = match R.reduce with None -> default_product | Some r -> r
 
   let empty = (A.empty, B.empty)
 
@@ -156,3 +156,22 @@ module Make (R : Reduction) = struct
 
   let render (a, b) = Picasso.Drawable.product (A.render a) (B.render b)
 end
+
+(* Generic product *)
+module Make (D1 : Domain) (D2 : Domain) : Domain = Generic (struct
+  module A = D1
+  module B = D2
+
+  let spawn = None
+
+  let reduce = None
+end)
+
+module BoxSXAlias : Domain = Generic (struct
+  module A = Boolean.Make (Cartesian.BoxStrict)
+  module B = Boolean.Make (Alias)
+
+  let spawn = None
+
+  let reduce = None
+end)

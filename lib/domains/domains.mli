@@ -16,7 +16,7 @@ end
 
 (** Products combinator *)
 module type D2 = sig
-  module Make : functor (R : Reduction) -> Domain
+  module Make : functor (D1 : Domain) (D2 : Domain) -> Domain
 end
 
 (** {1 Domain environment management} *)
@@ -83,9 +83,13 @@ module Boolean : B
 (** Disjunctive form with fast-precomputation for meets *)
 module Utree : B
 
+(** reduced product of strict boxes and equalities *)
+module BoxSXAlias : Domain
+
 (** {2 Combinators} *)
 
-(** Specialized Reduced Product. Corresponds to the option [-d product (a,b)] of
-    AbSolute. if a constraint can be filtered exactly by the domain [b], it is
-    affected to it, otherwise it is affected to [b].*)
+(** Specialized Reduced Product. Corresponds to the option [-d product
+   (a,b)]
+    of AbSolute. if a constraint can be filtered exactly by the domain [b], it
+    is affected to it, otherwise it is affected to [b].*)
 module Product : D2
