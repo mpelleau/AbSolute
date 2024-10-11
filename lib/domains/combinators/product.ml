@@ -171,7 +171,21 @@ module BoxSXAlias : Domain = Generic (struct
   module A = Boolean.Make (Cartesian.BoxStrict)
   module B = Boolean.Make (Alias)
 
-  let spawn = None
+  let enforce_eq v1 v2 i = Tools.(VarMap.add v2 (VarMap.find v1 i) i)
+
+  let spawn (a, b) =
+    let open Constraint in
+    let open Expr in
+    let i = A.spawn a in
+    let b_constr = B.to_constraint b |> Constraint.split_conjunctions in
+    List.fold_left
+      (fun acc c ->
+        match c with
+        | Cmp (Var v1, EQ, Var v2) -> enforce_eq v1 v2 acc
+        | _ -> failwith "boxXalias spawn" )
+      i b_constr
+
+  let spawn = Some spawn
 
   let reduce = None
 end)

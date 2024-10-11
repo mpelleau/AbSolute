@@ -83,9 +83,6 @@ module Boolean : B
 (** Disjunctive form with fast-precomputation for meets *)
 module Utree : B
 
-(** reduced product of strict boxes and equalities *)
-module BoxSXAlias : Domain
-
 (** {2 Combinators} *)
 
 (** Specialized Reduced Product. Corresponds to the option [-d product
@@ -93,3 +90,8 @@ module BoxSXAlias : Domain
     of AbSolute. if a constraint can be filtered exactly by the domain [b], it
     is affected to it, otherwise it is affected to [b].*)
 module Product : D2
+
+(** {2 Full domains} *)
+
+(** reduced product of strict boxes and equalities *)
+module BoxSXAlias : Domain

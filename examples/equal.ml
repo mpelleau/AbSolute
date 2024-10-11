@@ -19,9 +19,10 @@ let () =
     let csp = add_constr csp (Expr.Var "x5" = Expr.Var "x6") in
     let csp = add_constr csp (Expr.Var "x3" = Expr.Var "x6") in
     let csp = add_constr csp (Expr.Var "x6" <= Expr.Var "x7" * Expr.Var "x7") in
+    let csp = add_constr csp (Expr.Var "x7" <= Expr.Var "x6") in
     csp
   in
-  match S.witness 0.0001 1000000 prob with
+  match S.witness 10. 1000000 prob with
   | Witness i ->
       Format.printf "the problem admits (at least) one solution:@,%a\n"
         Instance.print i

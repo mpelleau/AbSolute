@@ -150,6 +150,10 @@ val print : Format.formatter -> t -> unit
 val to_string : t -> string
 (** Conversion to a string *)
 
+val split_conjunctions : t -> t list
+(** breaks recursively constraint of the forms (c1 /\ c2) into list of non
+    conjunctive constraints [c1; c2] *)
+
 (** Classic infix boolean operators are redefined on [t]. *)
 module Operators : sig
   val ( > ) : Expr.t -> Expr.t -> t
