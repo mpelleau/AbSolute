@@ -151,8 +151,12 @@ val to_string : t -> string
 (** Conversion to a string *)
 
 val split_conjunctions : t -> t list
-(** breaks recursively constraint of the forms (c1 /\ c2) into list of non
+(** breaks recursively constraints of the forms (c1 /\ c2) into list of non
     conjunctive constraints [c1; c2] *)
+
+val split_disjunctions : t -> t list
+(** breaks recursively constraints of the forms (c1 \/ c2) into list of non
+    disjunctive constraints [c1; c2] *)
 
 (** Classic infix boolean operators are redefined on [t]. *)
 module Operators : sig
