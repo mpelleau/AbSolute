@@ -11,26 +11,29 @@ module type D1 = sig
   module Make : functor (D : Domain) -> Domain
 end
 
-(* domain combinators of arity 2 *)
+(* product combinators *)
 module type D2 = sig
-  module Make : functor (A : Domain) (B : Domain) -> Domain
+  module Make : functor (D1 : Domain) (D2 : Domain) -> Domain
 end
 
 (* boolean domain maps *)
 let booleans = ref VarMap.empty
 
 (* numeric domain maps *)
-let numeric = ref VarMap.empty
+let numerics = ref VarMap.empty
 
 (* combinators *)
 let arity_1 = ref VarMap.empty
 
 let arity_2 = ref VarMap.empty
 
+(* full domains maps *)
+let domains = ref VarMap.empty
+
 (** collect all domain names *)
 let get_all =
   let aux m = List.map fst @@ VarMap.bindings m in
-  fun () -> aux !numeric @ aux !arity_1 @ aux !arity_2
+  fun () -> aux !numerics @ aux !arity_1 @ aux !arity_2
 
 (* map updating *)
 let update name d = function
@@ -39,7 +42,7 @@ let update name d = function
 
 (** registers a domain into the list of available abstract domains *)
 let register_numeric name (d : (module Numeric)) =
-  numeric := VarMap.update name (update name d) !numeric
+  numerics := VarMap.update name (update name d) !numerics
 
 (* registers a domain into the list of available abstract domains *)
 let register_boolean name (d : (module B)) =
@@ -50,6 +53,13 @@ let register_1 name (d : (module D1)) =
 
 let register_2 name (d : (module D2)) =
   arity_2 := VarMap.update name (update name d) !arity_2
+
+(* builds the name of domain as it will be stored in domain map *)
+let domain_name num boolean = num ^ "," ^ boolean
+
+let register num boolean (d : (module Domain)) =
+  let name = domain_name num boolean in
+  domains := VarMap.update name (update name d) !domains
 
 (* splits a string into a list of args. ignores the nested calls *)
 let split_args (s : string) =
@@ -71,20 +81,24 @@ let split_args (s : string) =
   in
   loop [] 0 0 0
 
-let parse name boolean =
-  let rec loop name : (module Domain) =
-    match String.index_opt name '(' with
+(* Checks if the domain name is registered among the table of predefined
+   domains. If not builds the generic representation. Generic representation is
+   always sound, but might be inprecise/inneficient as some operations are
+   derived automatically (e.g the reduction function). *)
+let parse (num : string) (bool : string) : (module Domain) =
+  let rec loop num : (module Domain) =
+    match String.index_opt num '(' with
     | None ->
-        let (module M) = VarMap.find name !numeric in
-        let (module B) = VarMap.find boolean !booleans in
+        let (module M) = VarMap.find num !numerics in
+        let (module B) = VarMap.find bool !booleans in
         (module B.Make (M))
     | Some 0 -> failwith "a domain description can not begin with a parenthesis"
     | Some i -> (
-      match String.rindex_opt name ')' with
+      match String.rindex_opt num ')' with
       | None -> failwith "unmatched parenthesis '('"
       | Some j -> (
-          let s = String.sub name 0 i in
-          let args = split_args (String.sub name (i + 1) (j - i - 1)) in
+          let s = String.sub num 0 i in
+          let args = split_args (String.sub num (i + 1) (j - i - 1)) in
           match args with
           | [arg] ->
               let (module Mk) = VarMap.find s !arity_1 in
@@ -97,11 +111,16 @@ let parse name boolean =
               (module Mk.Make (Arg1) (Arg2))
           | _ -> failwith "max arity 2 for domain description" ) )
   in
-  try loop name
-  with Not_found ->
-    fail_fmt "domain unknown %s. Possible domains are %a" name
-      Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string)
-      (get_all ())
+  (* check if domain is already known, otherwise tries to build it *)
+  match VarMap.find_opt (domain_name num bool) !domains with
+  | Some (module D) -> (module D)
+  | None -> (
+    try loop num
+    with Not_found ->
+      fail_fmt "domain unknown %s. Possible domains are %a" num
+        Format.(
+          pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string )
+        (get_all ()) )
 
 let iterator () : (module Propagator) =
   match !Constant.iterator with
@@ -121,7 +140,8 @@ module Oct : Numeric = Relational.Oct
 
 module Alias : Numeric = Alias
 
-(** reduced product *)
+module BoxSXAlias = Product.BoxSXAlias
+
 module Product : D2 = Product
 
 module Boolean : B = Boolean
@@ -141,4 +161,5 @@ let () =
   register_boolean "boolean" (module Boolean) ;
   register_boolean "uniontree" (module Uniontree) ;
   (* combinators *)
-  register_2 "product" (module Product)
+  register_2 "product" (module Product) ;
+  register "product(box,alias)" "boolean" (module BoxSXAlias)

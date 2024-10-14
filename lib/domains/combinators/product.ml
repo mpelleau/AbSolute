@@ -4,7 +4,9 @@
 open Signature
 open Consistency
 
-module Make (A : Domain) (B : Domain) = struct
+module Generic (R : Reduction) = struct
+  open R
+
   type t = A.t * B.t
 
   type internal_constr = A.internal_constr * B.internal_constr
@@ -35,7 +37,7 @@ module Make (A : Domain) (B : Domain) = struct
     try B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
     with Tools.Top_found -> Sat
 
-  let reduced_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
+  let default_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
     match new_a with
     | Sat -> Consistency.map (fun b -> (a, b)) (a_meet_b a b)
@@ -47,6 +49,8 @@ module Make (A : Domain) (B : Domain) = struct
       | Filtered (b', success2) -> Filtered ((a', b'), success1 && success2)
       | Pruned _ -> failwith "" )
     | Pruned _ -> failwith ""
+
+  let product = match R.reduce with None -> default_product | Some r -> r
 
   let empty = (A.empty, B.empty)
 
@@ -92,7 +96,7 @@ module Make (A : Domain) (B : Domain) = struct
     try
       Tools.meet_bot
         (fun a b ->
-          match reduced_product a b with
+          match product a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
           | Filtered (x, _) -> x
@@ -136,7 +140,7 @@ module Make (A : Domain) (B : Domain) = struct
   let volume ((abs, _) : t) = A.volume abs
 
   (* random uniform concretization function *)
-  let spawn (a, b) =
+  let default_spawn (a, b) =
     let rec generate () =
       let i = A.spawn a in
       if B.is_abstraction b i then i
@@ -146,7 +150,45 @@ module Make (A : Domain) (B : Domain) = struct
     in
     generate ()
 
+  let spawn = match R.spawn with None -> default_spawn | Some r -> r
+
   let is_abstraction (a, b) i = A.is_abstraction a i && B.is_abstraction b i
 
   let render (a, b) = Picasso.Drawable.product (A.render a) (B.render b)
 end
+
+(* Generic product *)
+module Make (D1 : Domain) (D2 : Domain) : Domain = Generic (struct
+  module A = D1
+  module B = D2
+
+  let spawn = None
+
+  let reduce = None
+end)
+
+module BoxSXAlias : Domain = Generic (struct
+  module A = Boolean.Make (Cartesian.BoxStrict)
+  module B = Boolean.Make (Alias)
+
+  let enforce_eq v1 v2 i = Tools.(VarMap.add v2 (VarMap.find v1 i) i)
+
+  let spawn (a, b) =
+    let open Constraint in
+    let open Expr in
+    let i = A.spawn a in
+    let b_constr =
+      try B.to_constraint b |> Constraint.split_conjunctions
+      with Tools.Top_found -> []
+    in
+    List.fold_left
+      (fun acc c ->
+        match c with
+        | Cmp (Var v1, EQ, Var v2) -> enforce_eq v1 v2 acc
+        | _ -> failwith "boxXalias spawn" )
+      i b_constr
+
+  let spawn = Some spawn
+
+  let reduce = None
+end)

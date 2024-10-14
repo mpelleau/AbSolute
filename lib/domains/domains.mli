@@ -14,9 +14,9 @@ module type D1 = sig
   module Make : functor (D : Domain) -> Domain
 end
 
-(** Type of domain combinator of arity 2 (e.g products) *)
+(** Products combinator *)
 module type D2 = sig
-  module Make : functor (A : Domain) (B : Domain) -> Domain
+  module Make : functor (D1 : Domain) (D2 : Domain) -> Domain
 end
 
 (** {1 Domain environment management} *)
@@ -85,7 +85,13 @@ module Utree : B
 
 (** {2 Combinators} *)
 
-(** Specialized Reduced Product. Corresponds to the option [-d product (a,b)] of
-    AbSolute. if a constraint can be filtered exactly by the domain [b], it is
-    affected to it, otherwise it is affected to [b].*)
+(** Specialized Reduced Product. Corresponds to the option [-d product
+   (a,b)]
+    of AbSolute. if a constraint can be filtered exactly by the domain [b], it
+    is affected to it, otherwise it is affected to [b].*)
 module Product : D2
+
+(** {2 Full domains} *)
+
+(** reduced product of strict boxes and equalities *)
+module BoxSXAlias : Domain

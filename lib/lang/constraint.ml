@@ -181,6 +181,14 @@ let to_string : t -> string = Format.asprintf "%a" print
 
 let compare : t -> t -> int = compare
 
+let rec split_conjunctions : t -> t list = function
+  | And (a1, a2) -> split_conjunctions a1 @ split_conjunctions a2
+  | c -> [c]
+
+let rec split_disjunctions : t -> t list = function
+  | Or (a1, a2) -> split_disjunctions a1 @ split_disjunctions a2
+  | c -> [c]
+
 (** Classic infix boolean operators are redefined on [t]. *)
 
 module Operators = struct
