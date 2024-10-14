@@ -81,8 +81,10 @@ let split_args (s : string) =
   in
   loop [] 0 0 0
 
-(* checks if the domain name is already known, and if not builds the generic
-   representation *)
+(* Checks if the domain name is registered among the table of predefined
+   domains. If not builds the generic representation. Generic representation is
+   always sound, but might be inprecise/inneficient as some operations are
+   derived automatically (e.g the reduction function). *)
 let parse (num : string) (bool : string) : (module Domain) =
   let rec loop num : (module Domain) =
     match String.index_opt num '(' with
