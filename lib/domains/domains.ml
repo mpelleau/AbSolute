@@ -54,7 +54,11 @@ let register_1 name (d : (module D1)) =
 let register_2 name (d : (module D2)) =
   arity_2 := VarMap.update name (update name d) !arity_2
 
-let _register name (d : (module Domain)) =
+(* builds the name of domain as it will be stored in domain map *)
+let domain_name num boolean = num ^ "," ^ boolean
+
+let register num boolean (d : (module Domain)) =
+  let name = domain_name num boolean in
   domains := VarMap.update name (update name d) !domains
 
 (* splits a string into a list of args. ignores the nested calls *)
@@ -105,11 +109,16 @@ let parse (num : string) (bool : string) : (module Domain) =
               (module Mk.Make (Arg1) (Arg2))
           | _ -> failwith "max arity 2 for domain description" ) )
   in
-  try loop num
-  with Not_found ->
-    fail_fmt "domain unknown %s. Possible domains are %a" num
-      Format.(pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string)
-      (get_all ())
+  (* check if domain is already known, otherwise tries to build it *)
+  match VarMap.find_opt (domain_name num bool) !domains with
+  | Some (module D) -> (module D)
+  | None -> (
+    try loop num
+    with Not_found ->
+      fail_fmt "domain unknown %s. Possible domains are %a" num
+        Format.(
+          pp_print_list ~pp_sep:(fun f () -> fprintf f ", ") pp_print_string )
+        (get_all ()) )
 
 let iterator () : (module Propagator) =
   match !Constant.iterator with
@@ -150,4 +159,5 @@ let () =
   register_boolean "boolean" (module Boolean) ;
   register_boolean "uniontree" (module Uniontree) ;
   (* combinators *)
-  register_2 "product" (module Product)
+  register_2 "product" (module Product) ;
+  register "product(box,alias)" "boolean" (module BoxSXAlias)
