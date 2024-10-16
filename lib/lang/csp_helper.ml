@@ -1,4 +1,3 @@
-open Csp
 open Tools
 open Constraint
 open Expr
@@ -24,6 +23,7 @@ let iter_constr f_expr f_constr =
     | (And (b1, b2) as constr) | (Or (b1, b2) as constr) ->
         f_constr constr ; loop b1 ; loop b2
     | Not b as constr -> f_constr constr ; loop b
+    | constr -> f_constr constr
   in
   loop
 
@@ -34,6 +34,8 @@ let map_constr f =
     | And (b1, b2) -> And (loop b1, loop b2)
     | Or (b1, b2) -> Or (loop b1, loop b2)
     | Not b -> Not (loop b)
+    | True -> True
+    | False -> False
   in
   loop
 
@@ -133,17 +135,13 @@ let rec simplify_bexpr = function
   | And (b1, b2) -> And (simplify_bexpr b1, simplify_bexpr b2)
   | Or (b1, b2) -> Or (simplify_bexpr b1, simplify_bexpr b2)
   | Not b -> Not (simplify_bexpr b)
+  | x -> x
 
 let left_hand_side (e1, op, e2) =
   match (e1, e2) with
   | Cst c, _ when is_zero c -> (inv_cmp op, e2)
   | _, Cst c when is_zero c -> (op, e1)
   | _, _ -> (op, simplify_fp (Binary (SUB, e1, e2)))
-
-let rec left_hand = function
-  | Cmp (e1, op, e2) -> left_hand_side (e1, op, e2)
-  | And (b1, _) | Or (b1, _) -> left_hand b1
-  | Not b -> left_hand b
 
 let flatten_pow e =
   let rec loop = function
@@ -197,21 +195,13 @@ let rec derivative var = function
   | And (b1, b2) -> And (derivative var b1, derivative var b2)
   | Or (b1, b2) -> Or (derivative var b1, derivative var b2)
   | Not b -> Not (derivative var b)
+  | x -> x
 
 let is_arith = function Cmp (_, _, _) -> true | _ -> false
 
-let ctr_jacobian c =
-  List.rev_map (fun (_, v, _) ->
-      let expr =
-        if is_arith c then
-          let new_c = simplify_bexpr (derivative v c) in
-          snd (left_hand new_c)
-        else zero
-      in
-      (v, expr))
-
-let compute_jacobian p =
-  List.rev_map (fun c -> (c, ctr_jacobian c p.variables)) p.constraints
+let to_arith = function
+  | Cmp c -> c
+  | _ -> invalid_arg "not arithmetic constraint"
 
 (*****************************************)
 (*        PREPROCESSING FUNCTIONS        *)

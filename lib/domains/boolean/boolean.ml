@@ -22,6 +22,8 @@ module Make (Abs : Numeric) : Domain = struct
     | And (b1, b2) -> sat i b1 && sat i b2
     | Or (b1, b2) -> sat i b1 || sat i b2
     | Not b -> not (sat i b)
+    | True -> true
+    | False -> false
 
   (* filter on boolean formulae. It also computes a simplified boolean formulae
      e.g: - false || c <=> c - true && c <=> c *)
@@ -54,6 +56,8 @@ module Make (Abs : Numeric) : Domain = struct
         | _ -> failwith "pruned" )
       | _ -> failwith "pruned" )
     | Not _ -> assert false
+    | True -> Sat
+    | False -> Unsat
 
   (* filter on boolean formulae. It also computes a simplified boolean formulae
      e.g: - false || c <=> c - true && c <=> c *)
@@ -90,9 +94,12 @@ module Make (Abs : Numeric) : Domain = struct
         | _ -> failwith "pruned" )
       | _ -> failwith "pruned" )
     | Not _ -> assert false
+    | True -> Sat
+    | False -> Unsat
 
   let rec is_representable = function
     | And (a, b) -> Kleene.and_ (is_representable a) (is_representable b)
     | Cmp c -> Abs.is_representable c
+    | True | False -> Kleene.True
     | _ -> Kleene.False
 end

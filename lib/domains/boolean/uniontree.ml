@@ -27,12 +27,17 @@ module Make (D : Numeric) : Domain = struct
     | And (b1, b2) -> sat i b1 && sat i b2
     | Or (b1, b2) -> sat i b1 || sat i b2
     | Not b -> not (sat i b)
+    | True -> true
+    | False -> false
 
-  let rec is_representable = function
-    | Constraint.And (a, b) | Or (a, b) ->
+  let rec is_representable =
+    let open Constraint in
+    function
+    | And (a, b) | Or (a, b) ->
         Kleene.and_ (is_representable a) (is_representable b)
-    | Constraint.Not e -> is_representable e
-    | Constraint.Cmp c -> D.is_representable c
+    | Not e -> is_representable e
+    | Cmp c -> D.is_representable c
+    | True | False -> Kleene.True
 
   let eval = function
     | Leaf n -> D.eval n
@@ -186,6 +191,8 @@ module Make (D : Numeric) : Domain = struct
           | Pruned _ -> failwith "" )
         | Pruned _ -> failwith "" )
       | Not _ -> assert false
+      | True -> Sat
+      | False -> Unsat
     in
     loop n c
 
@@ -236,6 +243,8 @@ module Make (D : Numeric) : Domain = struct
           | Pruned _ -> failwith "" )
         | Pruned _ -> failwith "" )
       | Not _ -> assert false
+      | True -> Sat
+      | False -> Unsat
     in
     loop n c
 

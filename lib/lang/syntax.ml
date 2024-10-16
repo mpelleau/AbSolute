@@ -81,6 +81,7 @@ let rec get_vars =
   | Cmp (_, s) -> s
   | Not c -> get_vars c
   | Or (c1, c2) | And (c1, c2) -> VSet.union (get_vars c1) (get_vars c2)
+  | _ -> VSet.empty
 
 let rec deannot_constr =
   let open Constraint in
@@ -89,6 +90,8 @@ let rec deannot_constr =
   | Not c -> Not (deannot_constr c)
   | Or (c1, c2) -> Or (deannot_constr c1, deannot_constr c2)
   | And (c1, c2) -> And (deannot_constr c1, deannot_constr c2)
+  | True -> True
+  | False -> False
 
 let build c =
   let v = List.fold_left VSet.union VSet.empty (List.rev_map get_vars c) in

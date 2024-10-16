@@ -13,6 +13,8 @@ type 'a boolean =
   | And of 'a boolean * 'a boolean
   | Or of 'a boolean * 'a boolean
   | Not of 'a boolean
+  | True
+  | False
 
 (** type for constraints *)
 type t = comparison boolean
@@ -42,6 +44,10 @@ val neq : Expr.t -> Expr.t -> t
 (** e1 <> e2 *)
 
 (** {2 Boolean formulae}*)
+
+val true_ : t
+
+val false_ : t
 
 val and_ : t -> t -> t
 (** b1 && b2 *)

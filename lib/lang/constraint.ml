@@ -9,6 +9,8 @@ type 'a boolean =
   | And of 'a boolean * 'a boolean
   | Or of 'a boolean * 'a boolean
   | Not of 'a boolean
+  | True
+  | False
 
 type t = comparison boolean
 
@@ -23,6 +25,10 @@ let gt e1 e2 : t = Cmp (e1, GT, e2)
 let eq e1 e2 : t = Cmp (e1, EQ, e2)
 
 let neq e1 e2 : t = Cmp (e1, NEQ, e2)
+
+let true_ = True
+
+let false_ = False
 
 let and_ b1 b2 : t = And (b1, b2)
 
@@ -113,6 +119,8 @@ let rec neg : t -> t = function
   | And (b1, b2) -> Or (neg b1, neg b2)
   | Or (b1, b2) -> And (neg b1, neg b2)
   | Not b -> b
+  | True -> False
+  | False -> True
 
 let rec remove_not : t -> t = function
   | Not b -> remove_not (neg b)
@@ -126,6 +134,7 @@ let rec collect_vars =
   | Not b -> collect_vars (neg b)
   | And (b1, b2) | Or (b1, b2) -> merge (collect_vars b1) (collect_vars b2)
   | Cmp (e1, _, e2) -> merge (Expr.collect_vars e1) (Expr.collect_vars e2)
+  | True | False -> VarMap.empty
 
 let support c = VarMap.keys (collect_vars c)
 
@@ -135,6 +144,7 @@ let replace (constr : t) v c : t =
     | And (c1, c2) -> And (aux c1, aux c2)
     | Or (c1, c2) -> Or (aux c1, aux c2)
     | Not c -> Not (aux c)
+    | x -> x
   in
   aux constr
 
@@ -157,6 +167,8 @@ let eval (constr : t) i =
     | And (b1, b2) -> aux b1 && aux b2
     | Or (b1, b2) -> aux b1 || aux b2
     | Cmp cmp -> eval_comparison cmp i
+    | True -> true
+    | False -> false
   in
   aux constr
 
@@ -176,6 +188,8 @@ let rec print fmt : t -> unit = function
   | And (b1, b2) -> Format.fprintf fmt "%a && %a" print b1 print b2
   | Or (b1, b2) -> Format.fprintf fmt "%a || %a" print b1 print b2
   | Not b -> Format.fprintf fmt "not %a" print b
+  | True -> Format.fprintf fmt "true"
+  | False -> Format.fprintf fmt "false"
 
 let to_string : t -> string = Format.asprintf "%a" print
 
