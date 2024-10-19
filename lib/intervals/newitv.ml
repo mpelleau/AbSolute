@@ -173,7 +173,7 @@ module Eval (B : BOUND) = struct
     Constraint.(
       And
         ( Cmp (v, (match kl with Strict -> GT | Large -> GEQ), l_cst)
-        , Cmp (v, (match kh with Strict -> LT | Large -> LEQ), h_cst) ))
+        , Cmp (v, (match kh with Strict -> LT | Large -> LEQ), h_cst) ) )
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -357,7 +357,7 @@ module Eval (B : BOUND) = struct
       meet_opt x positive
       |> Option.map (fun x ->
              let pos_part = mon_incr f_down_up x in
-             join pos_part (neg pos_part))
+             join pos_part (neg pos_part) )
     in
     match i with
     | 1 -> Some itv
@@ -436,6 +436,7 @@ module Eval (B : BOUND) = struct
     | "exp" -> arity_1 exp
     | "ln" -> arity_1_bot ln
     | "log" -> arity_1_bot log
+    | "abs" -> arity_1 abs
     (* min max *)
     | "max" -> arity_2 max
     | "min" -> arity_2 min
