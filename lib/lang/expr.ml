@@ -50,6 +50,10 @@ let pow e1 e2 = Binary (POW, e1, e2)
 
 let square expr = Binary (POW, expr, two)
 
+let funcall f args = Funcall (f, args)
+
+let abs x = Funcall ("abs", [x])
+
 let rec has_variable = function
   | Funcall (_, args) -> List.exists has_variable args
   | Neg e -> has_variable e

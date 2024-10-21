@@ -74,6 +74,13 @@ val pow : t -> t -> t
 val square : t -> t
 (** given an expression [e] builds the expresspion for [e*e]*)
 
+val funcall : string -> t list -> t
+(** given an function name [f] and a list of arguments [a1,...,an] builds the
+    function call [f(a1,...,an]*)
+
+val abs : t -> t
+(** given an expression [e] builds the expresspion for [abs(e)]*)
+
 (** {1 Predicates}*)
 
 val has_variable : t -> bool

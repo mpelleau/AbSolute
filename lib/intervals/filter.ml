@@ -24,16 +24,16 @@ module Make (I : Itv_sig.ITV_EVAL) = struct
   let filter_mul (i1 : t) (i2 : t) (r : t) : (t * t) option =
     Tools.merge_bot
       ( if contains_float r 0. && contains_float i2 0. then Some i1
-      else Option.bind (div r i2) (meet_opt i1) )
+        else Option.bind (div r i2) (meet_opt i1) )
       ( if contains_float r 0. && contains_float i1 0. then Some i2
-      else Option.bind (div r i1) (meet_opt i2) )
+        else Option.bind (div r i1) (meet_opt i2) )
 
   (* r = i1/i2 => i1 = i2*r /\ (i2 = i1/r \/ i1=r=0) *)
   let filter_div (i1 : t) (i2 : t) (r : t) : (t * t) option =
     Tools.merge_bot
       (meet_opt i1 (mul i2 r))
       ( if contains_float r 0. && contains_float i1 0. then Some i2
-      else Option.bind (div i1 r) (meet_opt i2) )
+        else Option.bind (div i1 r) (meet_opt i2) )
 
   (* r = sqrt i => i = r*r or i < 0 *)
   let filter_sqrt (i : t) (r : t) : t option =
@@ -77,6 +77,7 @@ module Make (I : Itv_sig.ITV_EVAL) = struct
     | "sqrt" -> arity_1 filter_sqrt
     | "exp" -> arity_1 filter_exp
     | "ln" -> arity_1 filter_ln
+    | "abs" -> arity_1 filter_abs
     | "max" -> arity_2 filter_max
     | "min" -> arity_2 filter_min
     | s -> failwith (Format.sprintf "unknown filter function : %s" s)
