@@ -20,11 +20,6 @@ module Box (I : ITV) = struct
 
   let externalize = Fun.id
 
-  (* true if 'var' is an integer in the given environment *)
-  let is_integer var abs =
-    let t, _, _dom = List.find (fun (_, v, _) -> v = var) abs.support in
-    t = Csp.Int
-
   let vars (abs : t) : (Csp.typ * string * Dom.t) list = abs.support
 
   let is_representable _ = Kleene.True

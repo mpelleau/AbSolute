@@ -135,6 +135,7 @@ let check_arity_2 args =
 
 let function_env_1 =
   [ ("sqrt", sqrt)
+  ; ("abs", abs_float)
   ; ("exp", exp)
   ; ("ln", log)
   ; ("cos", cos)

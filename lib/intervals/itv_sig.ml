@@ -26,9 +26,6 @@ module type ITV_EVAL = sig
 
   val to_rational_range : t -> Q.t * Q.t
 
-  val to_annot : t -> Csp.typ
-  (** returns the type annotation of the represented values *)
-
   val print : Format.formatter -> t -> unit
 
   val to_constraint : string -> t -> Constraint.t
