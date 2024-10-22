@@ -280,16 +280,16 @@ module Box (I : ITV) = struct
 
   let is_empty abs = VarMap.is_empty abs
 
-  let add_var (abs : t) (typ, var, domain) : t =
+  let add_var (abs : t) ((typ, var, domain) as decl) : t =
     let open Dom in
-    { abs with
-      ranges=
+    { ranges=
         VarMap.add var
           ( match (typ, domain) with
           | Int, Finite (l, u) -> I.of_rats l u
           | Real, Finite (l, u) -> I.of_rats l u
           | _ -> failwith "cartesian.ml : add_var" )
-          abs.ranges }
+          abs.ranges
+    ; support= decl :: abs.support }
 
   let rm_var abs var : t = {abs with ranges= VarMap.remove var abs.ranges}
 
