@@ -348,6 +348,7 @@ module Eval (B : BOUND) = struct
     | "sqrt" -> arity_1_bot sqrt
     | "exp" -> arity_1 exp
     | "ln" -> arity_1_bot ln
+    | "abs" -> arity_1 abs
     | "log" -> arity_1_bot log
     | "max" -> arity_2 max
     | "min" -> arity_2 min

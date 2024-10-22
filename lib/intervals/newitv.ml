@@ -44,6 +44,17 @@ module Eval (B : BOUND) = struct
 
   type t = real_bound * real_bound
 
+  (************************************************************************)
+  (* PRINTING *)
+  (************************************************************************)
+  let to_string (((kl, l), (kh, h)) : t) : string =
+    Printf.sprintf "%c%a;%a%c"
+      (if kl = Strict then ']' else '[')
+      B.sprint l B.sprint h
+      (if kh = Large then ']' else '[')
+
+  let print fmt (x : t) = Format.fprintf fmt "%s" (to_string x)
+
   (* returns the half space defined by a bound and a direction. - true for going
      toward +oo - false for going toward -oo Ex: half_space (Strict,0) true
      gives ]0; +oo[ *)
@@ -94,7 +105,10 @@ module Eval (B : BOUND) = struct
     else raise Tools.Bot_found
 
   (* not all pairs of rationals are valid intervals *)
-  let validate x = if check_bot x = None then failwith "invalid interval" else x
+  let validate x =
+    if check_bot x = None then
+      failwith (Format.asprintf "invalid interval %a" print x)
+    else x
 
   (************************************************************************)
   (* CONSTRUCTORS AND CONSTANTS *)
@@ -154,17 +168,6 @@ module Eval (B : BOUND) = struct
   let half_sup (x : B.t) : t = large_strict x B.inf
 
   let half_inf (x : B.t) : t = strict_large B.minus_inf x
-
-  (************************************************************************)
-  (* PRINTING *)
-  (************************************************************************)
-  let to_string (((kl, l), (kh, h)) : t) : string =
-    Printf.sprintf "%c%a;%a%c"
-      (if kl = Strict then ']' else '[')
-      B.sprint l B.sprint h
-      (if kh = Large then ']' else '[')
-
-  let print fmt (x : t) = Format.fprintf fmt "%s" (to_string x)
 
   let to_constraint v (((kl, l), (kh, h)) : t) =
     let v = Expr.var v in
