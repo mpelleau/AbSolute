@@ -6,6 +6,9 @@ exception Semantic_error of string
 
 exception Syntax_error of string
 
+(** raised during lexing when input is invalid *)
+exception Lexing_error of string
+
 let illegal_constraint spec = Format.sprintf "Illegal constraint: %s" spec
 
 (* allowed functions and their arity *)
@@ -76,25 +79,6 @@ let check_ast p =
   in
   check_vars () ; check_dom () ; check_constrs ()
 
-let get_line fname number =
-  let ic = open_in fname in
-  let rec loop cur =
-    let cur_line = input_line ic in
-    if cur = number then (close_in ic ; cur_line) else loop (cur + 1)
-  in
-  loop 1
-
-let show_error fname line col =
-  let line = get_line fname line in
-  let col = String.make (col - 1) ' ' in
-  Format.asprintf "%s\n%s^" line col
-
-let print_pos_file ppf lex =
-  let p = lex.lex_curr_p in
-  let col = p.pos_cnum - p.pos_bol in
-  Format.fprintf ppf "file %s, Line %d, Column %d%s" p.pos_fname p.pos_lnum col
-    (show_error p.pos_fname p.pos_lnum col)
-
 let constr (str : string) =
   let lex = from_string str in
   try (Parser.bexpreof Lexer.token) lex
@@ -122,6 +106,12 @@ let parse (filename : string) : Csp.t =
   try
     lex.lex_curr_p <- {lex.lex_curr_p with pos_fname= filename} ;
     fileparser lex
-  with _ ->
-    let msg = Format.asprintf "Syntax Error in %a\n" print_pos_file lex in
-    close_in f ; raise (Syntax_error msg)
+  with
+  | Lexer.Lexical_error (msg, _, _, _) ->
+      let msg =
+        Format.asprintf "Lexical Error \"%s\" in %a\n" msg Errors.from_lex lex
+      in
+      close_in f ; raise (Lexing_error msg)
+  | _ ->
+      let msg = Format.asprintf "Syntax Error in %a\n" Errors.from_lex lex in
+      close_in f ; raise (Syntax_error msg)

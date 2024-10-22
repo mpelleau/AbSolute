@@ -150,5 +150,10 @@ let main () =
     |> run
          (Domains.parse !Constant.domain !Constant.boolean)
          (Domains.iterator ())
-  with Constant.Error msg | Semantic_error msg | Syntax_error msg ->
+  with
+  | Constant.Error msg
+   |Semantic_error msg
+   |Syntax_error msg
+   |Lexing_error msg
+  ->
     Terminal.error msg ; exit 1

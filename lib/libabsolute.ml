@@ -10,6 +10,9 @@ module Instance = Instance
 
 (** This module defines several parsing utilities *)
 module Parser = struct
+  (** Exception raised during lexing when input is invalid *)
+  exception Lexing_error = File_parser.Lexing_error
+
   (** Exception raised by parse functions when the input is syntactically
       invalid.*)
   exception Syntax_error = File_parser.Syntax_error
