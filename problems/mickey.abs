@@ -8,7 +8,6 @@
 init{
   real x = [-3; 3];
   real y = [-3; 3];
-  $
 }
 
 constraints{
