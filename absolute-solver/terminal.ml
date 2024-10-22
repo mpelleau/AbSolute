@@ -35,7 +35,7 @@ let go problem =
 
 (** Terminal ouput for errors *)
 let error msg =
-  error "AbSolute error: " ;
+  error "AbSolute error\n" ;
   Format.printf "%s\n" msg ;
   Format.printf "Usage: absolute [options] [filename]\n" ;
   Format.printf

@@ -2,6 +2,15 @@
  open Lexing
  open Parser
 
+exception Lexical_error of string * string * int * int
+
+let raise_lexical_error lexbuf msg =
+  let p = Lexing.lexeme_start_p lexbuf in
+  raise (Lexical_error (msg,
+                        p.Lexing.pos_fname,
+                        p.Lexing.pos_lnum,
+                        p.Lexing.pos_cnum - p.Lexing.pos_bol + 1))
+
 (* keyword table *)
 let kwd_table = Hashtbl.create 10
 let _ =
@@ -106,6 +115,13 @@ rule token = parse
 
 (* end of file *)
 | eof { EOF }
+
+(* error handling *)
+| _
+    { raise_lexical_error lexbuf
+        ("illegal character " ^ String.escaped(Lexing.lexeme lexbuf))
+    }
+
 
 (* nested comments (handled recursively)  *)
 and comment = parse
