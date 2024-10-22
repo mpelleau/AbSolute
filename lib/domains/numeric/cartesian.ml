@@ -5,7 +5,9 @@ open Csp
 (* Generic functor for a parametrized Cartesian representation *)
 module Box (I : ITV) = struct
   (* maps each variable to a (non-empty) interval *)
-  type t = I.t VarMap.t
+  type cart = I.t VarMap.t
+
+  type t = {support: (Csp.typ * string * Dom.t) list; ranges: cart}
 
   (* this domain uses the same language than the one defined in Csp.ml *)
   type internal_constr = Constraint.comparison
@@ -19,24 +21,21 @@ module Box (I : ITV) = struct
   let externalize = Fun.id
 
   (* true if 'var' is an integer in the given environment *)
-  let is_integer var abs = I.to_annot (VarMap.find abs var) = Csp.Int
+  let is_integer var abs =
+    let t, _, _dom = List.find (fun (_, v, _) -> v = var) abs.support in
+    t = Csp.Int
 
-  let vars abs =
-    VarMap.fold
-      (fun v i acc ->
-        let typ = if is_integer abs v then Int else Real in
-        let l, u = I.to_float_range i in
-        (typ, v, Dom.of_floats l u) :: acc )
-      abs []
+  let vars (abs : t) : (Csp.typ * string * Dom.t) list = abs.support
 
   let is_representable _ = Kleene.True
 
   (* Printer *)
-  let print fmt =
+  let print fmt a =
     Format.fprintf fmt "{%a}"
       (VarMap.print
          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
          (fun fmt -> Format.fprintf fmt "=%a" I.print) )
+      a.ranges
 
   (* Set-theoretic *)
 
@@ -48,7 +47,7 @@ module Box (I : ITV) = struct
     let join_opt a b =
       match (a, b) with Some a, Some b -> Some (I.join a b) | _ -> None
     in
-    (VarMap.merge (fun _ -> join_opt) a b, false)
+    ({a with ranges= VarMap.merge (fun _ -> join_opt) a.ranges b.ranges}, false)
 
   (* TODO: try to do better than this *)
   let join_list (l : t list) : t * bool =
@@ -65,7 +64,7 @@ module Box (I : ITV) = struct
     let meet_opt a b =
       match (a, b) with Some a, Some b -> Some (I.meet a b) | _ -> raise Exit
     in
-    try Some (VarMap.merge (fun _ -> meet_opt) a b)
+    try Some {a with ranges= VarMap.merge (fun _ -> meet_opt) a.ranges b.ranges}
     with Exit | Bot_found -> None
 
   (* mesure *)
@@ -73,36 +72,37 @@ module Box (I : ITV) = struct
 
   (* variable with maximal range *)
   let max_range (a : t) : string * float =
-    let vo, io = VarMap.min_binding a in
+    let vo, io = VarMap.min_binding a.ranges in
     let so = I.float_size io in
     VarMap.fold
       (fun v i ((_, so) as acc) ->
         let si = I.float_size i in
         if si > so then (v, si) else acc )
-      a (vo, so)
+      a.ranges (vo, so)
 
   (* variable with maximal range if real or with minimal if integer *)
   let mix_range (a : t) : string * I.t =
     VarMap.fold
       (fun v i (vo, io) -> if I.score i > I.score io then (v, i) else (vo, io))
-      a (VarMap.min_binding a)
+      a.ranges
+      (VarMap.min_binding a.ranges)
 
-  let diff =
+  let diff : (t -> t -> t list) option =
     let rec aux diff a acc = function
       | [] -> acc
       | (v, i_b) :: tl ->
-          let add i = VarMap.add v i a in
-          let i_a = VarMap.find v a in
+          let add i = {a with ranges= VarMap.add v i a.ranges} in
+          let i_a = VarMap.find v a.ranges in
           let d = diff i_a i_b in
           let rest = I.meet_opt i_a i_b |> Option.get in
           aux diff (add rest) (List.rev_append (List.rev_map add d) acc) tl
     in
     match I.prune with
     | None -> None
-    | Some diff -> Some (fun a b -> aux diff a [] (VarMap.bindings b))
+    | Some diff -> Some (fun a b -> aux diff a [] (VarMap.bindings b.ranges))
 
   let volume (a : t) : float =
-    VarMap.fold (fun _ x v -> I.float_size x *. v) a 1.
+    VarMap.fold (fun _ x v -> I.float_size x *. v) a.ranges 1.
 
   (* splitting strategies *)
 
@@ -133,7 +133,7 @@ module Box (I : ITV) = struct
           let r = Option.get (I.eval_fun name iargs) in
           (AFuncall (name, bargs), r)
       | Var v ->
-          let r = VarMap.find_fail v a in
+          let r = VarMap.find_fail v a.ranges in
           (AVar v, r)
       | Cst c ->
           let r = I.of_rat c in
@@ -176,7 +176,10 @@ module Box (I : ITV) = struct
         List.fold_left2
           (fun acc e1 e2 -> refine acc e2 e1)
           a (Option.get res) bexpr
-    | AVar v -> VarMap.add v (I.meet x (VarMap.find_fail v a)) a
+    | AVar v ->
+        { a with
+          ranges= VarMap.add v (I.meet x (VarMap.find_fail v a.ranges)) a.ranges
+        }
     | ACst i ->
         ignore (I.meet x (I.of_rat i)) ;
         a
@@ -229,10 +232,10 @@ module Box (I : ITV) = struct
             (a', VarSet.union v v') )
           (a, VarSet.empty) (Option.get res) bexpr
     | AVar v ->
-        let old_i = VarMap.find_fail v a in
+        let old_i = VarMap.find_fail v a.ranges in
         let new_i = I.meet x old_i in
         if old_i = new_i then (a, VarSet.empty)
-        else (VarMap.add v new_i a, VarSet.singleton v)
+        else ({a with ranges= VarMap.add v new_i a.ranges}, VarSet.singleton v)
     | ACst i ->
         ignore (I.meet x (I.of_rat i)) ;
         (a, VarSet.empty)
@@ -278,27 +281,29 @@ module Box (I : ITV) = struct
     try test_diff a e1 binop e2
     with Invalid_argument _ | Bot_found -> Consistency.Unsat
 
-  let empty : t = VarMap.empty
+  let empty : t = {support= []; ranges= VarMap.empty}
 
   let is_empty abs = VarMap.is_empty abs
 
   let add_var (abs : t) (typ, var, domain) : t =
     let open Dom in
-    VarMap.add var
-      ( match (typ, domain) with
-      | Int, Finite (l, u) -> I.of_rats l u
-      | Real, Finite (l, u) -> I.of_rats l u
-      | _ -> failwith "cartesian.ml : add_var" )
-      abs
+    { abs with
+      ranges=
+        VarMap.add var
+          ( match (typ, domain) with
+          | Int, Finite (l, u) -> I.of_rats l u
+          | Real, Finite (l, u) -> I.of_rats l u
+          | _ -> failwith "cartesian.ml : add_var" )
+          abs.ranges }
 
-  let rm_var abs var : t = VarMap.remove var abs
+  let rm_var abs var : t = {abs with ranges= VarMap.remove var abs.ranges}
 
-  let eval abs cons =
+  let eval (abs : t) cons =
     let _, bounds = eval abs cons in
     I.to_rational_range bounds
 
   let to_constraint (a : t) : Constraint.t =
-    match VarMap.bindings a with
+    match VarMap.bindings a.ranges with
     | [] -> assert false
     | (v, i) :: tl ->
         List.fold_left
@@ -309,14 +314,23 @@ module Box (I : ITV) = struct
 
   (* returns an randomly (uniformly?) chosen instanciation of the variables *)
   let spawn (a : t) : instance =
-    VarMap.map (fun itv -> Q.of_float (I.spawn itv)) a
+    VarMap.fold
+      (fun v itv acc ->
+        if VarMap.mem v acc then acc
+        else
+          let t, _, _dom = List.find (fun (_, v', _) -> v = v') a.support in
+          let value = I.spawn itv in
+          match t with
+          | Csp.Real -> VarMap.add v (value |> Q.of_float) acc
+          | Csp.Int -> VarMap.add v (floor value |> Q.of_float) acc )
+      a.ranges VarMap.empty
 
   (* given an abstraction a and an instance i , verifies if i \in \gamma(a) *)
   let is_abstraction (a : t) (i : instance) =
     VarMap.for_all
       (fun k value ->
         let value = Q.to_float value in
-        let itv = VarMap.find_fail k a in
+        let itv = VarMap.find_fail k a.ranges in
         I.contains_float itv value )
       i
 
@@ -325,9 +339,11 @@ module Box (I : ITV) = struct
 
   let split_along ?prec (v : string) (a : t) : t list =
     ignore prec ;
-    let i = VarMap.find v a in
+    let i = VarMap.find v a.ranges in
     let i_list = I.split i in
-    List.fold_left (fun acc b -> VarMap.add v b a :: acc) [] i_list
+    List.fold_left
+      (fun acc b -> {a with ranges= VarMap.add v b a.ranges} :: acc)
+      [] i_list
 
   let split ?prec (a : t) : t list =
     let v, si = max_range a in
@@ -344,8 +360,8 @@ module Box (I : ITV) = struct
         if si < prec then raise Signature.Too_small
         else (split_along v a, VarSet.singleton v)
 
-  let render x =
-    let vars, values = VarMap.bindings x |> List.split in
+  let render (x : t) =
+    let vars, values = VarMap.bindings x.ranges |> List.split in
     Picasso.Drawable.of_ranges vars (List.map I.to_float_range values)
 end
 
