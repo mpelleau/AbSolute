@@ -24,7 +24,11 @@ let externalize = Fun.id
 
 let print fmt a =
   Format.fprintf fmt "%a"
-    (VarMap.print (VarSet.print Format.pp_print_string))
+    (VarMap.print
+       ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+       (VarSet.print
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt ", ")
+          Format.pp_print_string ) )
     a.equalities
 
 (* returns the representative of a given variable (can be itself) *)
