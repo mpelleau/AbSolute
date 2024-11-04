@@ -181,7 +181,6 @@ module BoxSXAlias : Domain = Generic (struct
       try B.to_constraint b |> Constraint.split_conjunctions
       with Tools.Top_found -> []
     in
-    Format.printf "before enforcing eqs: %a@," Instance.print i ;
     let res =
       List.fold_left
         (fun acc c ->
@@ -190,8 +189,6 @@ module BoxSXAlias : Domain = Generic (struct
           | _ -> failwith "boxXalias spawn" )
         i b_constr
     in
-    Format.printf "after enforcing eqs from %a: %a\n@," B.print b Instance.print
-      res ;
     res
 
   let spawn = Some spawn
