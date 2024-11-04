@@ -122,7 +122,9 @@ let filter (a : t) (c : internal_constr) =
       let equalities = add_eq a v1 v2 in
       Format.printf "%a\n@," print equalities ;
       Consistency.Filtered (equalities, true)
-  | _ -> Consistency.Filtered (a, false)
+  | _ ->
+      Format.printf "filtering FAILED %a\n@," Constraint.pp_comparison c ;
+      Consistency.Filtered (a, false)
 
 let filter_diff (a : t) (c : internal_constr) =
   let open Expr in
