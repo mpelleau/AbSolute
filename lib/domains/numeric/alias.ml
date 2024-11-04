@@ -118,20 +118,14 @@ let sat (i : Instance.t) (c : internal_constr) : bool =
 let filter (a : t) (c : internal_constr) =
   match c with
   | Var v1, Constraint.EQ, Var v2 ->
-      Format.printf "filtering succuessfully %a\n@," Constraint.pp_comparison c ;
       let equalities = add_eq a v1 v2 in
-      Format.printf "%a\n@," print equalities ;
       Consistency.Filtered (equalities, true)
-  | _ ->
-      Format.printf "filtering FAILED %a\n@," Constraint.pp_comparison c ;
-      Consistency.Filtered (a, false)
+  | _ -> Consistency.Filtered (a, false)
 
 let filter_diff (a : t) (c : internal_constr) =
   match c with
   | Var v1, Constraint.EQ, Var v2 ->
-      Format.printf "filtering succuessfully %a\n@," Constraint.pp_comparison c ;
       let equalities = add_eq a v1 v2 in
-      Format.printf "%a\n@," print equalities ;
       Consistency.Filtered ((equalities, VarSet.empty), false)
   | _ -> Consistency.Filtered ((a, VarSet.empty), false)
 
