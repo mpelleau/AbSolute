@@ -127,10 +127,11 @@ let filter (a : t) (c : internal_constr) =
       Consistency.Filtered (a, false)
 
 let filter_diff (a : t) (c : internal_constr) =
-  let open Expr in
   match c with
   | Var v1, Constraint.EQ, Var v2 ->
+      Format.printf "filtering succuessfully %a\n@," Constraint.pp_comparison c ;
       let equalities = add_eq a v1 v2 in
+      Format.printf "%a\n@," print equalities ;
       Consistency.Filtered ((equalities, VarSet.empty), true)
   | _ -> Consistency.Filtered ((a, VarSet.empty), false)
 
