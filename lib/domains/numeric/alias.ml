@@ -132,7 +132,7 @@ let filter_diff (a : t) (c : internal_constr) =
       Format.printf "filtering succuessfully %a\n@," Constraint.pp_comparison c ;
       let equalities = add_eq a v1 v2 in
       Format.printf "%a\n@," print equalities ;
-      Consistency.Filtered ((equalities, VarSet.empty), true)
+      Consistency.Filtered ((equalities, VarSet.empty), false)
   | _ -> Consistency.Filtered ((a, VarSet.empty), false)
 
 let vars a = a.support
