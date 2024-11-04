@@ -177,9 +177,9 @@ module BoxSXAlias : Domain = Generic (struct
     let open Constraint in
     let open Expr in
     let i = A.spawn a in
+    let bc = B.to_constraint b in
     let b_constr =
-      try B.to_constraint b |> Constraint.split_conjunctions
-      with Tools.Top_found -> []
+      try bc |> Constraint.split_conjunctions with Tools.Top_found -> []
     in
     Format.printf "before enforcing eqs: %a@," Instance.print i ;
     let res =
@@ -190,8 +190,8 @@ module BoxSXAlias : Domain = Generic (struct
           | _ -> failwith "boxXalias spawn" )
         i b_constr
     in
-    Format.printf "after enforcing eqs from %a: %a\n@," B.print b Instance.print
-      res ;
+    Format.printf "after enforcing eqs from %a: %a\n@," Constraint.print bc
+      Instance.print res ;
     res
 
   let spawn = Some spawn
