@@ -89,13 +89,13 @@ let rm_var (a : t) (v : string) : t =
   { equalities= VarMap.map (VarSet.remove v) alias
   ; support= List.filter (fun (_, v', _) -> v <> v') a.support }
 
-(* conversion of an element to a set of constraint. FIXME: might be none *)
+(* conversion of an element to a set of constraint *)
 let to_constraint (a : t) =
   let cell_to_constr v v' acc =
-    if v' = v then acc
+    if v = v' then acc
     else
       let open Constraint.Operators in
-      let eq = Expr.Var v' = Expr.Var v in
+      let eq = Expr.Var v = Expr.Var v' in
       match acc with Some acc -> Some (acc && eq) | None -> Some eq
   in
   match uf_fold cell_to_constr a.equalities None with

@@ -173,7 +173,7 @@ module BoxSXAlias : Domain = Generic (struct
 
   let enforce_eq v1 v2 i = Tools.(VarMap.add v2 (VarMap.find v1 i) i)
 
-  let spawn (a, b) =
+  let spawn (a, b) : Instance.t =
     let open Constraint in
     let open Expr in
     let i = A.spawn a in
@@ -181,6 +181,7 @@ module BoxSXAlias : Domain = Generic (struct
       try B.to_constraint b |> Constraint.split_conjunctions
       with Tools.Top_found -> []
     in
+    Format.printf "before enforcing eqs: %a@," Instance.print i ;
     List.fold_left
       (fun acc c ->
         match c with
