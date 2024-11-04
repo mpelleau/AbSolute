@@ -19,7 +19,7 @@ let print fmt instance =
   let bind fmt (var, value) =
     Format.fprintf fmt "%s : %a" var Q.pp_print value
   in
-  VarMap.bindings instance |> Format.fprintf fmt "{%a}" (pp_list_sep "\n" bind)
+  VarMap.bindings instance |> Format.fprintf fmt "{%a}" (pp_list_sep "; " bind)
 
 let to_string : t -> string = Format.asprintf "%a" print
 

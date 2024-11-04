@@ -181,13 +181,17 @@ module BoxSXAlias : Domain = Generic (struct
       try B.to_constraint b |> Constraint.split_conjunctions
       with Tools.Top_found -> []
     in
-    Format.printf "before enforcing eqs: %a@," Instance.print i ;
-    List.fold_left
-      (fun acc c ->
-        match c with
-        | Cmp (Var v1, EQ, Var v2) -> enforce_eq v1 v2 acc
-        | _ -> failwith "boxXalias spawn" )
-      i b_constr
+    Format.printf "before enforcing eqs: %a\n@," Instance.print i ;
+    let res =
+      List.fold_left
+        (fun acc c ->
+          match c with
+          | Cmp (Var v1, EQ, Var v2) -> enforce_eq v1 v2 acc
+          | _ -> failwith "boxXalias spawn" )
+        i b_constr
+    in
+    Format.printf "after enforcing eqs: %a\n@," Instance.print res ;
+    res
 
   let spawn = Some spawn
 
