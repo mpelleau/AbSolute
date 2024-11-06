@@ -120,14 +120,14 @@ let filter (a : t) (c : internal_constr) =
   | Var v1, Constraint.EQ, Var v2 ->
       let equalities = add_eq a v1 v2 in
       Consistency.Filtered (equalities, true)
-  | _ -> Consistency.Filtered (a, false)
+  | _ -> Consistency.Filtered (a, true)
 
 let filter_diff (a : t) (c : internal_constr) =
   match c with
   | Var v1, Constraint.EQ, Var v2 ->
       let equalities = add_eq a v1 v2 in
-      Consistency.Filtered ((equalities, VarSet.empty), false)
-  | _ -> Consistency.Filtered ((a, VarSet.empty), false)
+      Consistency.Filtered ((equalities, VarSet.empty), true)
+  | _ -> Consistency.Filtered ((a, VarSet.empty), true)
 
 let vars a = a.support
 
