@@ -8,17 +8,19 @@ let iter_directory f dir =
 let _ =
   iter_directory
     (fun f ->
-      Format.printf "Parsing %s\n" f ;
+      let f_base = Filename.basename f in
+      Format.printf "Parsing %s\n" f_base ;
       let csp = Parser.file f in
       let nb_var = List.length (Csp.var_names csp) in
       let nb_cstr = List.length csp.Csp.constraints in
-      if nb_var > 2 then
+      let out_dir = "../../../out/" in
+      if nb_var > 2 then (
+        if not (Sys.file_exists out_dir) then
+          Sys.command (Format.asprintf "mkdir %s" out_dir) |> ignore ;
         let viz_name =
-          "../../../out/" ^ string_of_int nb_var ^ "_" ^ string_of_int nb_cstr
-          ^ "_"
-          ^ Filename.basename (Filename.chop_suffix f "abs")
-          ^ "viz"
+          Format.asprintf "%s%i_%i_%sviz" out_dir nb_var nb_cstr
+            (Filename.chop_suffix f_base "abs")
         in
-        Csp.to_graphviz csp viz_name )
+        Csp.to_graphviz csp viz_name ) )
     (* tests are run from _/build/default/tests/*)
     "../../../problems"

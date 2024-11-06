@@ -37,7 +37,7 @@ module Generic (R : Reduction) = struct
     try B.to_constraint b |> A.internalize |> A.filter a |> Consistency.map fst
     with Tools.Top_found -> Sat
 
-  let default_product (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
+  let default_reduction (a : A.t) (b : B.t) : (A.t * B.t) Consistency.t =
     let new_a = b_meet_a a b in
     match new_a with
     | Sat -> Consistency.map (fun b -> (a, b)) (a_meet_b a b)
@@ -50,7 +50,7 @@ module Generic (R : Reduction) = struct
       | Pruned _ -> failwith "" )
     | Pruned _ -> failwith ""
 
-  let product = match R.reduce with None -> default_product | Some r -> r
+  let reduce = match R.reduce with None -> default_reduction | Some r -> r
 
   let empty = (A.empty, B.empty)
 
@@ -96,7 +96,7 @@ module Generic (R : Reduction) = struct
     try
       Tools.meet_bot
         (fun a b ->
-          match product a b with
+          match reduce a b with
           | Sat -> (a, b)
           | Unsat -> raise Exit
           | Filtered (x, _) -> x
@@ -107,21 +107,28 @@ module Generic (R : Reduction) = struct
   let filter ((a, b) : t) (c1, c2) : (t * internal_constr) Consistency.t =
     let open Kleene in
     match B.is_representable c2 with
-    | True -> Consistency.map (fun (b, c) -> ((a, b), (c1, c))) (B.filter b c2)
+    | True ->
+        Consistency.bind
+          (fun (b, c) _ -> Consistency.map (fun x -> (x, (c1, c))) (reduce a b))
+          (B.filter b c2)
     | Unknown | False ->
-        Consistency.map (fun (a, c) -> ((a, b), (c, c2))) (A.filter a c1)
+        Consistency.bind
+          (fun (a, c) _ -> Consistency.map (fun x -> (x, (c, c2))) (reduce a b))
+          (A.filter a c1)
 
   let filter_diff ((a, b) : t) (c1, c2) :
       (t * internal_constr * Tools.VarSet.t) Consistency.t =
     let open Kleene in
     match B.is_representable c2 with
     | True ->
-        Consistency.map
-          (fun (b, c, vb) -> ((a, b), (c1, c), vb))
+        Consistency.bind
+          (fun (b, c, vb) _ ->
+            Consistency.map (fun x -> (x, (c1, c), vb)) (reduce a b) )
           (B.filter_diff b c2)
     | Unknown | False ->
-        Consistency.map
-          (fun (a, c, va) -> ((a, b), (c, c2), va))
+        Consistency.bind
+          (fun (a, c, vb) _ ->
+            Consistency.map (fun x -> (x, (c, c2), vb)) (reduce a b) )
           (A.filter_diff a c1)
 
   (* intersection of evaluation *)
