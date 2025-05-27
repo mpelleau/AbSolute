@@ -1,0 +1,22 @@
+[package]
+name = "libabsolute"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rug = "1.24"  # For GMP functionality
+rand = "0.8"
+libc = "0.2"  # For FPU control
+lalrpop-util = "0.20" # For LALRPOP runtime
+once_cell = "1.19"
+# plotters = "0.3.5" # For Picasso (drawing) replacement, can be refined later
+logos = "0.14"
+
+# Placeholder for APRON - further investigation needed
+# apron-rs = { version = "0.1.0" } # Example if a crate is found
+# or we will use bindgen with a build script
+
+[build-dependencies]
+lalrpop = "0.20" # For LALRPOP parser generation

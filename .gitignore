@@ -17,3 +17,6 @@ timeperf.json
 #executables
 absolute
 memabsolute
+
+# Rust target directory
+rust_crates/target/

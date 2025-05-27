@@ -1,0 +1,264 @@
+grammar;
+
+// Import necessary Rust types for AST nodes and tokens
+use crate::lang::lexer_token::Token;
+use crate::lang::ast_expr::{Expr, BinOp};
+use crate::lang::ast_constraint::{Constraint, Comparison, CmpOp};
+use crate::lang::ast_csp::{Csp, Declaration, VarType, Instance, SolutionInfo}; // Assuming Instance is BTreeMap<String, Q>
+use crate::lang::ast_domain::DomainPlaceholder; // Placeholder for now
+use crate::arith_q::Q; // Assuming Q is rug::Rational
+use crate::arith_q as arith_q_fns; // For functions like arith_q::neg_op if needed directly
+use std::collections::BTreeMap;
+use std::str::FromStr; // For parsing numbers if not handled by lexer token value
+
+// Define the lexer's token type for LALRPOP
+// Location type is usize (byte offset), Error type is our LexicalError
+extern {
+    type Location = usize;
+    type Error = crate::lang::lexer_token::LexicalError;
+    enum Token { // LALRPOP's internal name for the token type
+        // Keywords
+        "init" => crate::lang::lexer_token::Token::Init,
+        "objective" => crate::lang::lexer_token::Token::Objective,
+        "constraints" => crate::lang::lexer_token::Token::Constraints,
+        "constants" => crate::lang::lexer_token::Token::ConstantsDecl,
+        "solutions" => crate::lang::lexer_token::Token::Solutions,
+        "none" => crate::lang::lexer_token::Token::NoneKw,
+        "int" => crate::lang::lexer_token::Token::IntKw,
+        "real" => crate::lang::lexer_token::Token::RealKw,
+        "oo" => crate::lang::lexer_token::Token::InfKw,
+        "in" => crate::lang::lexer_token::Token::InKw,
+        "notin" => crate::lang::lexer_token::Token::NotInKw,
+        "convex" => crate::lang::lexer_token::Token::ConvexKw,
+
+        // Symbols
+        "(" => crate::lang::lexer_token::Token::LParen,
+        ")" => crate::lang::lexer_token::Token::RParen,
+        "{" => crate::lang::lexer_token::Token::LBrace,
+        "}" => crate::lang::lexer_token::Token::RBrace,
+        "[" => crate::lang::lexer_token::Token::LBracket,
+        "]" => crate::lang::lexer_token::Token::RBracket,
+        "," => crate::lang::lexer_token::Token::Comma,
+        ";" => crate::lang::lexer_token::Token::Semicolon,
+        "+" => crate::lang::lexer_token::Token::Plus,
+        "-" => crate::lang::lexer_token::Token::Minus,
+        "*" => crate::lang::lexer_token::Token::Multiply,
+        "/" => crate::lang::lexer_token::Token::Divide,
+        "^" => crate::lang::lexer_token::Token::Pow,
+        "<" => crate::lang::lexer_token::Token::Less,
+        ">" => crate::lang::lexer_token::Token::Greater,
+        "<=" => crate::lang::lexer_token::Token::LessEqual,
+        ">=" => crate::lang::lexer_token::Token::GreaterEqual,
+        "!=" => crate::lang::lexer_token::Token::NotEqual,
+        "=" => crate::lang::lexer_token::Token::Assign,
+        "&&" => crate::lang::lexer_token::Token::And,
+        "||" => crate::lang::lexer_token::Token::Or,
+        "!" => crate::lang::lexer_token::Token::NotOp,
+
+        // Literals with values
+        "identifier" => crate::lang::lexer_token::Token::TokId(<String>),
+        "constant_val" => crate::lang::lexer_token::Token::TokConst(<Q>),
+
+        "EOF" => crate::lang::lexer_token::Token::Eof,
+    }
+}
+
+// --- Operator Precedence (matches parser.mly, lowest to highest) ---
+precedence {
+    // Level 0 (Lowest)
+    POr => Left("||"),          // %left OR (OCaml had OR and AND at same level, LALRPOP needs distinct if using this style)
+                                // To match OCaml's "%left OR AND", they should be on the same level:
+                                // LogicOrAnd => Left("||", "&&"),
+                                // Let's separate them for now as per typical precedence.
+    PAnd => Left("&&"),         // %left AND
+
+    // Level 1: Comparisons (Often Nonassoc, OCaml didn't list them in main precedence block but implied by usage)
+    // Using Nonassoc as comparisons usually don't chain like a = b = c
+    PCompare => Nonassoc("=", "!=", "<", ">", "<=", ">="),
+
+    // Level 2: Additive
+    PAddSub => Left("+", "-"),    // %left PLUS MINUS
+
+    // Level 3: Multiplicative
+    PMulDiv => Left("*", "/"),  // %left MULTIPLY DIVIDE
+
+    // Level 4: Power
+    PPow => Nonassoc("^"),        // %nonassoc POW (OCaml was Nonassoc)
+
+    // Level 5: Prefix Unary Operators (Highest precedence)
+    // These are typically handled by grammar rule structure to give them high precedence.
+    // e.g., Factor: "-" Factor => ...
+    // If we want to use precedence block for them with specific tokens:
+    // PUnary => Nonassoc("neg_tok", "not_tok"), // Assuming dedicated tokens for unary - and !
+    // OCaml's "%nonassoc NOT" and "%nonassoc unary_minus" are handled by this ordering
+    // and how they are used in rules. The `Not: "!" => Nonassoc` from previous attempt was okay.
+    // Let's keep it simple and align with OCaml's explicit %nonassoc where possible.
+    // NOT for boolean expressions
+    PNot => Nonassoc("!"),       // %nonassoc NOT
+    // Unary minus is handled by rule structure (e.g., `Expr = "-" Expr %prec PUnaryMinus`)
+    // or by ensuring its production is at a higher precedence point in the grammar rules.
+    // For now, we won't explicitly list unary minus token here but ensure grammar rules give it precedence.
+}
+// --- Entry Points ---
+// The parser will generate functions for public non-terminals.
+// `pub` keyword makes them public.
+// OCaml: %start <Constraint.t> bexpreof, %start <Expr.t> expreof, %start file
+pub BExprEof: Constraint = BExpr <Token::Eof> => <>;
+pub ExprEof: Expr = Expr <Token::Eof> => <>;
+pub File: Csp = TopLevelFile <Token::Eof> => <>; // Renamed 'file' to 'TopLevelFile' to avoid Rust keyword
+
+// --- Helper for optional trailing separator list (OCaml's optend) ---
+OptEnd<T, Sep>: Vec<T> = {
+    <items:(<T> <Sep>)*> <last_item:T?> => {
+        let mut res = items.into_iter().map(|(i, _s)| i).collect::<Vec<_>>();
+        if let Some(last) = last_item {
+            res.push(last);
+        }
+        res
+    }
+};
+
+// --- Grammar Rules (starting translation) ---
+TopLevelFile: Csp = {
+    <maybe_consts: Option<ConstantsBlock>>
+    <decls_block: InitBlock>
+    <maybe_obj: Option<ObjectiveBlock>>
+    <constraints_block: ConstraintsBlock>
+    <maybe_sols: Option<SolutionsBlock>>
+    => Csp {
+        variables: decls_block,
+        objective: maybe_obj,
+        constraints: constraints_block,
+        solutions: maybe_sols,
+    }
+}
+
+InitBlock: Vec<Declaration> = <Token::Init> <Token::LBrace> <decls:OptEnd<DeclarationRule, Token::Semicolon>> <Token::RBrace> => decls;
+
+DeclarationRule: Declaration = {
+    <vt:VarTypeRule> <id:Token::TokId> <Token::Assign> <Token::LBracket> <dom:InitDomainRule> <Token::RBracket> =>
+    Declaration {
+        var_type: vt,
+        name: id,
+        domain: dom,
+    }
+}
+
+VarTypeRule: VarType = {
+    <Token::IntKw> => VarType::Int,
+    <Token::RealKw> => VarType::Real,
+};
+
+InitDomainRule: DomainPlaceholder = {
+    <Token::Minus> <Token::InfKw> <Token::Semicolon> <Token::Plus?> <Token::InfKw> => DomainPlaceholder::Interval("-oo".to_string(), "oo".to_string()),
+    <r1:RationalConst> <Token::Semicolon> <r2:RationalConst> => DomainPlaceholder::Interval(r1.to_string(), r2.to_string()),
+    => DomainPlaceholder::Unknown, // Fallback, needs full translation
+};
+
+RationalConst: Q = {
+    <q1:ConstVal> <Token::Divide> <q2:ConstVal> => {
+        arith_q_fns::div_op(&q1, &q2).unwrap_or_else(|| Q::from(0)) // Placeholder for error
+    },
+    ConstVal,
+};
+
+ConstVal: Q = {
+  <Token::TokConst>,
+  <Token::Minus> <q:Token::TokConst> => arith_q_fns::neg_op(&q),
+};
+
+ObjectiveBlock: Expr = <Token::Objective> <Token::LBrace> <e:Expr> <Token::RBrace> => e;
+ConstraintsBlock: Vec<Constraint> = <Token::Constraints> <Token::LBrace> <constraints:OptEnd<BExpr, Token::Semicolon>> <Token::RBrace> => constraints;
+
+SolutionsBlock: SolutionInfo = {
+    <Token::Solutions> <Token::LBrace> <sols:OptEnd<SolutionEntryRule, Token::Semicolon>> <Token::RBrace> => SolutionInfo::Known(sols),
+    <Token::Solutions> <Token::LBrace> <Token::NoneKw> <Token::RBrace> => SolutionInfo::Unfeasible,
+};
+
+SolutionEntryRule: (Instance, bool) = {
+    <not_present:NotTokenOpt> <inst:InstanceRule> => (inst, not_present)
+};
+NotTokenOpt: bool = {
+    <Token::NotOp> => true,
+    () => false,
+};
+
+InstanceRule: Instance = {
+    <Token::LBrace> <coords:CommaSeparatedCoords> <Token::RBrace> => coords.into_iter().collect()
+};
+
+CommaSeparatedCoords: Vec<(String, Q)> = {
+    <mut v: (<CoordRule> <Token::Semicolon>)*> <e: CoordRule?> => match e {
+        Some(expr) => { v.push((expr, Token::Semicolon));
+                        v.into_iter().map(|(item, _sep)| item).collect() }
+        None => v.into_iter().map(|(item, _sep)| item).collect(),
+    }
+};
+
+CoordRule: (String, Q) = <id:Token::TokId> <Token::Assign> <val:ConstVal> => (id, val);
+
+pub Expr: Expr = {
+    <id:Token::TokId> <Token::LParen> <args:CommaSeparated<Expr>> <Token::RParen> => Expr::Funcall(id, args),
+    <Token::LParen> <e:Expr> <Token::RParen> => e,
+    <e1:Expr> <op:BinaryOpRule> <e2:Expr> => Expr::Binary(op, Box::new(e1), Box::new(e2)),
+    UnaryMinusExpr,
+    <val:ConstVal> => Expr::Cst(val),
+    <id:Token::TokId> => Expr::Var(id),
+};
+
+UnaryMinusExpr: Expr = <Token::Minus> <e:Expr> => Expr::Neg(Box::new(e));
+
+CommaSeparated<T>: Vec<T> = {
+    <v:(<T> <Token::Comma>)*> <e:T?> => match e {
+        Some(expr) => { let mut items = v.into_iter().map(|(i, _s)| i).collect::<Vec<_>>(); items.push(expr); items }
+        None => v.into_iter().map(|(i, _s)| i).collect(),
+    }
+};
+
+BinaryOpRule: BinOp = {
+    <Token::Plus> => BinOp::Add,
+    <Token::Minus> => BinOp::Sub,
+    <Token::Multiply> => BinOp::Mul,
+    <Token::Divide> => BinOp::Div,
+    <Token::Pow> => BinOp::Pow,
+};
+
+pub BExpr: Constraint = {
+    <e1:Expr> <op:ComparisonOpRule> <e2:Expr> => Constraint::Cmp(Comparison { e1, op, e2 }),
+    <b1:BExpr> <Token::Or> <b2:BExpr> => Constraint::Or(Box::new(b1), Box::new(b2)),
+    <b1:BExpr> <Token::And> <b2:BExpr> => Constraint::And(Box::new(b1), Box::new(b2)),
+    <Token::NotOp> <b:BExpr> => Constraint::Not(Box::new(b)),
+    <e:Expr> <Token::InKw> <Token::LBracket> <low:Expr> <Token::Semicolon> <high:Expr> <Token::RBracket> => {
+        Constraint::And(
+            Box::new(Constraint::Cmp(Comparison { e1: e.clone(), op: CmpOp::Geq, e2: low })),
+            Box::new(Constraint::Cmp(Comparison { e1: e, op: CmpOp::Leq, e2: high }))
+        )
+    },
+     <e:Expr> <Token::NotInKw> <Token::LBracket> <low:Expr> <Token::Semicolon> <high:Expr> <Token::RBracket> => {
+        Constraint::Or(
+            Box::new(Constraint::Cmp(Comparison { e1: e.clone(), op: CmpOp::Lt, e2: low })),
+            Box::new(Constraint::Cmp(Comparison { e1: e, op: CmpOp::Gt, e2: high }))
+        )
+    },
+    <Token::LParen> <b:BExpr> <Token::RParen> => b,
+};
+
+ComparisonOpRule: CmpOp = {
+    <Token::Less> => CmpOp::Lt,
+    <Token::Greater> => CmpOp::Gt,
+    <Token::LessEqual> => CmpOp::Leq,
+    <Token::GreaterEqual> => CmpOp::Geq,
+    <Token::Assign> => CmpOp::Eq,
+    <Token::NotEqual> => CmpOp::Neq,
+};
+
+ConstantsBlock: Vec<(String, (Q,Q))> = {
+    <Token::ConstantsDecl> <Token::LBrace> <consts:OptEnd<ConstantEntryRule, Token::Semicolon>> <Token::RBrace> => consts
+};
+ConstantEntryRule: (String, (Q,Q)) = {
+    <id:Token::TokId> <Token::Assign> <val_pair:ValueRule> => (id, val_pair)
+};
+ValueRule: (Q, Q) = {
+    <Token::LBracket> <r1:RationalConst> <Token::Semicolon> <r2:RationalConst> <Token::RBracket> => (r1, r2),
+    <r:RationalConst> => (r.clone(), r),
+};
