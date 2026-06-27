@@ -50,3 +50,6 @@ val print_typed : Format.formatter -> typed -> unit
 
 val to_string_typed : typed -> string
 (** Conversion to a string *)
+
+val untype : typed -> t
+(** conversion from untyped to typed *)

@@ -48,3 +48,5 @@ let to_seq = VarMap.to_seq
 let to_seq_typed = VarMap.to_seq
 
 let iter_typed = VarMap.iter
+
+let untype typed : t = VarMap.map fst typed
