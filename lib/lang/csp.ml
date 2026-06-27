@@ -6,7 +6,7 @@ open Tools
 (** {1 Types} *)
 
 (** Types of variables *)
-type typ = Int | Real
+type typ = Tools.typ = Int | Real
 
 (** declaration *)
 type decl = typ * string * Dom.t

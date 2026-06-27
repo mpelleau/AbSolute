@@ -2,7 +2,14 @@ open Tools
 
 type t = Q.t VarMap.t
 
+type typed = (Q.t * typ) VarMap.t
+
 let of_list = function
+  | [] -> invalid_arg "Instance.of_list: no coordinate given"
+  | x -> VarMap.of_list x
+
+let of_list_typed coords : typed =
+  match coords with
   | [] -> invalid_arg "Instance.of_list: no coordinate given"
   | x -> VarMap.of_list x
 
@@ -21,8 +28,23 @@ let print fmt instance =
   in
   VarMap.bindings instance |> Format.fprintf fmt "{%a}" (pp_list_sep "; " bind)
 
+let print_typed fmt typed_instance =
+  let bind fmt (var, (value, typ)) =
+    match typ with
+    | Int -> Format.fprintf fmt "%s : %i" var (Q.ceil value)
+    | Real -> Format.fprintf fmt "%s : %a" var Q.pp_print value
+  in
+  VarMap.bindings typed_instance
+  |> Format.fprintf fmt "{%a}" (pp_list_sep "; " bind)
+
 let to_string : t -> string = Format.asprintf "%a" print
+
+let to_string_typed : typed -> string = Format.asprintf "%a" print_typed
 
 let iter = VarMap.iter
 
 let to_seq = VarMap.to_seq
+
+let to_seq_typed = VarMap.to_seq
+
+let iter_typed = VarMap.iter

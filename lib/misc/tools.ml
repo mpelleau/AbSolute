@@ -1,5 +1,7 @@
 (** This module defines diverse utilities *)
 
+type typ = Int | Real
+
 (** exception for bottom values *)
 exception Bot_found
 

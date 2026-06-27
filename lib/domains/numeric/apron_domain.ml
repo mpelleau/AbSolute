@@ -1,4 +1,3 @@
-open Csp
 open Tools
 open Apron
 open Apronext
