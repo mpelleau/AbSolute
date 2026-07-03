@@ -419,12 +419,12 @@ module Make (AP : ADomain) = struct
     in
     instance
 
-  (** Takes an integer and compute a spawner function. The integer * corresponds
-      to the number of tries allowed to proceed to the * generation. The bigger
-      it is, the more uniform the spawner will be. A * spawner returns a
-      randomly uniformly chosen instanciation of the * variables. if the
-      polyhedron has a nul (or very small) volume, (e.g * equalities in the
-      constraints) uniformity is not guaranteed *)
+  (** Takes an integer and compute a spawner function. The integer corresponds
+      to the number of tries allowed to proceed to the generation. The bigger it
+      is, the "more uniform" the spawner will be. It returns a randomly chosen
+      instanciation of the variables. if the polyhedron has a nul (or very
+      small) volume, (e.g equalities in the constraints) uniformity is not
+      guaranteed *)
   let spawner (nb_try : int) poly =
     let env = A.env poly in
     let rec retry poly n idx =

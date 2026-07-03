@@ -89,8 +89,9 @@ module Box (I : ITV) = struct
           let add i = {a with ranges= VarMap.add v i a.ranges} in
           let i_a = VarMap.find v a.ranges in
           let d = diff i_a i_b in
-          let rest = I.meet_opt i_a i_b |> Option.get in
-          aux diff (add rest) (List.rev_append (List.rev_map add d) acc) tl
+          let rest = I.meet_opt i_a i_b in
+          let a' = match rest with None -> a | Some i -> add i in
+          aux diff a' (List.rev_append (List.rev_map add d) acc) tl
     in
     match I.prune with
     | None -> None
